@@ -1,13 +1,17 @@
 import { NextResponse } from "next/server";
-import { getSeedDocumentBySlug } from "../../../../lib/seed-data";
+import { getRegistryBundleBySlug } from "../../../../lib/data";
+import { renderDocumentJson } from "../../../../lib/render";
 
-export async function GET(_request: Request, { params }: { params: Promise<{ slug: string }> }) {
+export async function GET(
+  _request: Request,
+  { params }: { params: Promise<{ slug: string }> },
+) {
   const { slug } = await params;
-  const document = getSeedDocumentBySlug(slug);
+  const bundle = getRegistryBundleBySlug(slug);
 
-  if (!document) {
+  if (!bundle) {
     return NextResponse.json({ error: "Document not found" }, { status: 404 });
   }
 
-  return NextResponse.json(document);
+  return NextResponse.json(renderDocumentJson(bundle));
 }
