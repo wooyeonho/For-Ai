@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
-import { getSeedDocumentBySlug, renderSeedDocumentMarkdown } from "../../../lib/seed-data";
+import { getRegistryBundleBySlug } from "../../../lib/data";
+import { renderDocumentMarkdown } from "../../../lib/render";
 
-export async function GET(_request: Request, { params }: { params: Promise<{ path: string[] }> }) {
+export async function GET(
+  _request: Request,
+  { params }: { params: Promise<{ path: string[] }> },
+) {
   const { path } = await params;
   const fileName = path.join("/");
 
@@ -10,13 +14,13 @@ export async function GET(_request: Request, { params }: { params: Promise<{ pat
   }
 
   const slug = fileName.slice(0, -3);
-  const document = getSeedDocumentBySlug(slug);
+  const bundle = getRegistryBundleBySlug(slug);
 
-  if (!document) {
+  if (!bundle) {
     return new NextResponse("Not found", { status: 404 });
   }
 
-  return new NextResponse(renderSeedDocumentMarkdown(document), {
+  return new NextResponse(renderDocumentMarkdown(bundle.document), {
     headers: { "content-type": "text/markdown; charset=utf-8" },
   });
 }
