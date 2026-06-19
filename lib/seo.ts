@@ -4,7 +4,8 @@ import { documentPageUrl, apiDocumentUrl, rawMarkdownUrl } from "./urls";
 
 export function buildDocumentMetadata(bundle: RegistryDocumentBundle): Metadata {
   const { entity, document } = bundle;
-  const title = `${document.title} — GYEOL`;
+  const title = document.title;
+  const ogTitle = `${document.title} — GYEOL`;
   const description = `${entity.canonical_name} ${document.template} 정보. 신뢰도: ${document.confidence}. GYEOL claim registry.`;
   const url = documentPageUrl(document.slug, document.lang);
 
@@ -18,7 +19,7 @@ export function buildDocumentMetadata(bundle: RegistryDocumentBundle): Metadata 
       },
     },
     openGraph: {
-      title,
+      title: ogTitle,
       description,
       url,
       siteName: "GYEOL",
