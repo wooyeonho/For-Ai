@@ -102,3 +102,50 @@ h2 {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+.registry-form {
+  display: grid;
+  gap: 16px;
+}
+
+.registry-form label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.registry-form input,
+.registry-form select,
+.registry-form textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--text);
+  font: inherit;
+  padding: 10px 12px;
+}
+
+.registry-form textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.registry-form button {
+  width: fit-content;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  padding: 10px 14px;
+}
+
+.success-box {
+  border-color: #9bc5a8;
+  background: #f0fbf3;
+}
