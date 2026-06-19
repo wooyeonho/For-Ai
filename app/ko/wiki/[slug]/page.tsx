@@ -1,6 +1,8 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getRegistryBundleBySlug } from "../../../../lib/data";
+import { buildDocumentMetadata, buildDocumentJsonLd } from "../../../../lib/seo";
 import { RegistryHeader } from "../../../components/RegistryHeader";
 import { DirectAnswerBox } from "../../../components/DirectAnswerBox";
 import { ClaimTable } from "../../../components/ClaimTable";
@@ -23,6 +25,13 @@ function getMachineReadableUrl(data: Record<string, unknown>, key: "api_url" | "
   return typeof value === "string" ? value : fallback;
 }
 
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug } = await params;
+  const bundle = getRegistryBundleBySlug(slug);
+  if (!bundle) return {};
+  return buildDocumentMetadata(bundle);
+}
+
 export default async function WikiDocumentPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const bundle = getRegistryBundleBySlug(slug);
@@ -37,25 +46,33 @@ export default async function WikiDocumentPage({ params }: { params: Promise<{ s
   const apiUrl = getMachineReadableUrl(document.data, "api_url", `/api/documents/${document.slug}`);
   const rawMarkdownUrl = getMachineReadableUrl(document.data, "raw_markdown_url", `/raw/${document.slug}.md`);
 
+  const jsonLd = buildDocumentJsonLd(bundle);
+
   return (
-    <article>
-      <RegistryHeader entity={entity} document={document} />
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <article>
+        <RegistryHeader entity={entity} document={document} />
 
-      <DirectAnswerBox answer={directAnswer} confidence={document.confidence} />
+        <DirectAnswerBox answer={directAnswer} confidence={document.confidence} />
 
-      <ClaimTable claims={claims} />
+        <ClaimTable claims={claims} />
 
-      <div className="cta-row">
-        <CorrectionCTA slug={document.slug} />
-        <HallucinationCTA slug={document.slug} />
-        <Link href={`/diagnostics/${document.slug}`} className="cta-link cta-diagnostics">
-          AI 진단
-        </Link>
-      </div>
+        <div className="cta-row">
+          <CorrectionCTA slug={document.slug} />
+          <HallucinationCTA slug={document.slug} />
+          <Link href={`/diagnostics/${document.slug}`} className="cta-link cta-diagnostics">
+            AI 진단
+          </Link>
+        </div>
 
-      <MachineReadablePanel apiUrl={apiUrl} rawMarkdownUrl={rawMarkdownUrl} />
+        <MachineReadablePanel apiUrl={apiUrl} rawMarkdownUrl={rawMarkdownUrl} />
 
-      <LicenseNotice licenseCode={document.license_code} licenseNotice={licenseNotice} />
-    </article>
+        <LicenseNotice licenseCode={document.license_code} licenseNotice={licenseNotice} />
+      </article>
+    </>
   );
 }

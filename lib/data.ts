@@ -12,3 +12,7 @@ export function getRegistryBundleBySlug(slug: string): RegistryDocumentBundle | 
 export function getDocumentBySlug(slug: string): Document | null {
   return getRegistryBundleBySlug(slug)?.document ?? null;
 }
+
+export function getAllRegistryBundles(): RegistryDocumentBundle[] {
+  return [seedRegistryBundle];
+}
