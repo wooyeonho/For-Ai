@@ -2,10 +2,7 @@ import { NextResponse } from "next/server";
 import { getRegistryBundleBySlug } from "../../../../lib/data";
 import { renderDocumentJson } from "../../../../lib/render";
 
-export async function GET(
-  _request: Request,
-  { params }: { params: Promise<{ slug: string }> },
-) {
+export async function GET(_request: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const bundle = getRegistryBundleBySlug(slug);
 

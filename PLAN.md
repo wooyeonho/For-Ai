@@ -11,6 +11,7 @@ Goal 5: correction/report/hallucination report UI
 Goal 6: minimal admin review UI
 Goal 7: AI-readiness diagnostics UI
 Goal 8: polish + deployment checklist
+Goal 9: admin content creation tools
 
 ## Execution Rules
 
@@ -18,3 +19,16 @@ Goal 8: polish + deployment checklist
 - After each implementation goal, run lint/build if available.
 - Do not remove required features just to make build pass.
 - Goal 3 must be visually reviewed to confirm the page looks like a fact registry, not a blog or wiki.
+
+
+## Goal 9 Scope
+
+Goal 9 is not implemented yet. When Goal 9 begins, it must cover admin content creation tools for:
+
+- `/admin/new-entity`
+- `/admin/new-document`
+- `/admin/import`
+- create new entities
+- create new documents
+- generate placeholder claims
+- support bulk import

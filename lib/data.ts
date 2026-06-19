@@ -1,22 +1,12 @@
-// GYEOL data access layer
-// Primary API: getRegistryBundleBySlug — returns entity + document together.
-// getDocumentBySlug is a convenience wrapper for page components.
-// Routes must use getRegistryBundleBySlug.
+import { seedRegistryBundle } from "./seed-data";
+import type { Document, RegistryDocumentBundle } from "./types";
 
-import type { Entity, Document } from "./types";
-import { seedEntity, seedDocument } from "./seed-data";
+export function getRegistryBundleBySlug(slug: string): RegistryDocumentBundle | null {
+  if (slug !== seedRegistryBundle.document.slug) {
+    return null;
+  }
 
-export type RegistryBundle = {
-  entity: Entity;
-  document: Document;
-};
-
-const registry: RegistryBundle[] = [
-  { entity: seedEntity, document: seedDocument },
-];
-
-export function getRegistryBundleBySlug(slug: string): RegistryBundle | null {
-  return registry.find((b) => b.document.slug === slug) ?? null;
+  return seedRegistryBundle;
 }
 
 export function getDocumentBySlug(slug: string): Document | null {
