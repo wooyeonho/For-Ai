@@ -1,9 +1,19 @@
 import type { Metadata } from "next";
+import { siteUrl } from "../lib/urls";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "GYEOL",
+  title: {
+    default: "GYEOL",
+    template: "%s — GYEOL",
+  },
   description: "Local fact registry for AI, search engines, and humans.",
+  metadataBase: new URL(siteUrl("/")),
+  openGraph: {
+    siteName: "GYEOL",
+    type: "website",
+    locale: "ko_KR",
+  },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
