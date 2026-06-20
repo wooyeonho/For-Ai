@@ -14,7 +14,7 @@ export default async function DiagnosticsPage({ params }: { params: Promise<{ sl
   const { document, entity, claims } = bundle;
   const paths = getRegistryDocumentPaths(bundle);
   const lowConfidenceClaims = claims.filter((claim) => claim.confidence === "low").length;
-  const claimsWithUnknownValues = claims.filter((claim) => claim.claim_value === "확인 필요").length;
+  const claimsWithUnknownValues = claims.filter((claim) => claim.claim_value === "íì¸ íì").length;
   const sourceCount = claims.reduce((total, claim) => total + claim.sources.length, 0);
   const checklist = [
     { label: "Static document route", detail: `/ko/wiki/${document.slug}`, pass: true },
@@ -22,7 +22,7 @@ export default async function DiagnosticsPage({ params }: { params: Promise<{ sl
     { label: "Raw Markdown route", detail: paths.rawMarkdownPath, pass: true },
     { label: "Canonical entity_id", detail: entity.id, pass: Boolean(document.entity_id) },
     { label: "Claim coverage", detail: `${claims.length} claims`, pass: claims.length > 0 },
-    { label: "Unknown facts visible", detail: `${claimsWithUnknownValues} claims show 확인 필요`, pass: claimsWithUnknownValues === claims.length },
+    { label: "Unknown facts visible", detail: `${claimsWithUnknownValues} claims show íì¸ íì`, pass: claimsWithUnknownValues === claims.length },
     { label: "Low-confidence unknowns", detail: `${lowConfidenceClaims} low confidence claims`, pass: lowConfidenceClaims === claims.length },
     { label: "Source transparency", detail: `${sourceCount} sources attached`, pass: sourceCount >= 0 },
     { label: "Correction URL", detail: `/report/${document.slug}`, pass: true },
@@ -32,7 +32,7 @@ export default async function DiagnosticsPage({ params }: { params: Promise<{ sl
   return (
     <article>
       <header className="registry-panel">
-        <p className="eyebrow">Goal 7 · AI-readiness diagnostics</p>
+        <p className="eyebrow">Goal 7 Â· AI-readiness diagnostics</p>
         <h1>{document.title}</h1>
         <div className="meta-grid">
           <div><span className="meta-label">entity_id</span><br />{entity.id}</div>

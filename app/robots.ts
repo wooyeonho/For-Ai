@@ -1,14 +1,14 @@
 import type { MetadataRoute } from "next";
-import { absoluteUrl } from "../lib/urls";
+import { siteUrl } from "../lib/urls";
 
 export default function robots(): MetadataRoute.Robots {
   return {
     rules: [
       {
         userAgent: "*",
-        allow: ["/", "/ko/wiki/", "/api/documents/", "/raw/"],
+        allow: "/",
       },
     ],
-    sitemap: absoluteUrl("/sitemap.xml"),
+    sitemap: siteUrl("/sitemap.xml"),
   };
 }

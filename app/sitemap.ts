@@ -1,26 +1,24 @@
 import type { MetadataRoute } from "next";
-import { seedRegistryBundle } from "../lib/seed-data";
-import { getRegistryDocumentPaths } from "../lib/seo";
-import { absoluteUrl } from "../lib/urls";
+import { getAllRegistryBundles } from "../lib/data";
+import { siteUrl, documentPageUrl } from "../lib/urls";
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const paths = getRegistryDocumentPaths(seedRegistryBundle);
+  const bundles = getAllRegistryBundles();
+
+  const documentPages = bundles.map((bundle) => ({
+    url: documentPageUrl(bundle.document.slug, bundle.document.lang),
+    lastModified: bundle.document.updated_at ?? new Date().toISOString(),
+    changeFrequency: "weekly" as const,
+    priority: 0.8,
+  }));
 
   return [
     {
-      url: absoluteUrl("/"),
+      url: siteUrl("/"),
+      lastModified: new Date().toISOString(),
       changeFrequency: "weekly",
-      priority: 0.7,
+      priority: 1.0,
     },
-    {
-      url: paths.canonicalUrl,
-      changeFrequency: "weekly",
-      priority: 1,
-    },
-    {
-      url: paths.rawMarkdownUrl,
-      changeFrequency: "weekly",
-      priority: 0.6,
-    },
+    ...documentPages,
   ];
 }

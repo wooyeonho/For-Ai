@@ -1,18 +1,18 @@
 import type { Metadata } from "next";
-import { SITE_ORIGIN } from "../lib/urls";
+import { siteUrl } from "../lib/urls";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  metadataBase: new URL(SITE_ORIGIN),
-  title: "GYEOL",
+  title: {
+    default: "GYEOL",
+    template: "%s â GYEOL",
+  },
   description: "Local fact registry for AI, search engines, and humans.",
-  alternates: { canonical: "/" },
+  metadataBase: new URL(siteUrl("/")),
   openGraph: {
-    title: "GYEOL",
-    description: "Local fact registry for AI, search engines, and humans.",
-    url: "/",
     siteName: "GYEOL",
     type: "website",
+    locale: "ko_KR",
   },
 };
 
