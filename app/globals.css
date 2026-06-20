@@ -149,3 +149,27 @@ h2 {
   border-color: #9bc5a8;
   background: #f0fbf3;
 }
+
+.diagnostics-list {
+  display: grid;
+  gap: 12px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.diagnostics-list li {
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 12px;
+}
+
+.diagnostics-list li:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.badge-pass {
+  border-color: #9bc5a8;
+  background: #f0fbf3;
+  color: #276738;
+}
