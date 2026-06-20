@@ -55,3 +55,31 @@ export function createHallucinationReportStub(input: {
     raw_ip_stored: false,
   };
 }
+
+// Aliases used by API routes (Goals 8-9)
+export function submitHallucinationReport(input: {
+    document_id: string;
+    entity_id: string;
+    ai_service: string;
+    prompt: string;
+    ai_answer: string;
+    expected_correction: string;
+    contributor_hash: string;
+}): HallucinationReport & SubmissionStubResult {
+    return createHallucinationReportStub(input);
+}
+
+export function submitCorrectionReport(input: {
+    document_id: string;
+    entity_id: string;
+    report_type: string;
+    message: string;
+    contributor_hash: string;
+}): ReportSubmission & SubmissionStubResult {
+    return createReportSubmissionStub({
+          document_id: input.document_id,
+          entity_id: input.entity_id,
+          field_path: null,
+          message: input.message,
+    });
+}
