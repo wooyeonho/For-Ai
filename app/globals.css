@@ -433,10 +433,78 @@ h2 {
   }
 
   .meta-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+}
 
-  .cta-row {
-    gap: 10px;
-  }
+.registry-form {
+  display: grid;
+  gap: 16px;
+}
+
+.registry-form label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.registry-form input,
+.registry-form select,
+.registry-form textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--text);
+  font: inherit;
+  padding: 10px 12px;
+}
+
+.registry-form textarea {
+  min-height: 120px;
+  resize: vertical;
+}
+
+.registry-form button {
+  width: fit-content;
+  border: 1px solid var(--accent);
+  border-radius: 8px;
+  background: var(--accent);
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  padding: 10px 14px;
+}
+
+.uccess-box
+{
+  border-color: #9bc5a8;
+  background: #f0fbf3;
+}
+
+.diagnostics-list {
+  display: grid;
+  gap: 12px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.diagnostics-list li {
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 12px;
+}
+
+.diagnostics-list li:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.badge-pass {
+  border-color: #9bc5a8;
+  background: #f0fbf3;
+  color: #276738;
 }

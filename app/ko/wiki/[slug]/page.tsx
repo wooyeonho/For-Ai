@@ -41,7 +41,7 @@ export default async function WikiDocumentPage({ params }: { params: Promise<{ s
   }
 
   const { entity, document, claims } = bundle;
-  const directAnswer = getStringDataValue(document.data, "direct_answer", "확인 필요");
+  const directAnswer = getStringDataValue(document.data, "direct_answer", "íì¸ íì");
   const licenseNotice = getStringDataValue(document.data, "license_notice", "GYEOL Data License v0.1 placeholder.");
   const apiUrl = getMachineReadableUrl(document.data, "api_url", `/api/documents/${document.slug}`);
   const rawMarkdownUrl = getMachineReadableUrl(document.data, "raw_markdown_url", `/raw/${document.slug}.md`);
@@ -65,7 +65,7 @@ export default async function WikiDocumentPage({ params }: { params: Promise<{ s
           <CorrectionCTA slug={document.slug} />
           <HallucinationCTA slug={document.slug} />
           <Link href={`/diagnostics/${document.slug}`} className="cta-link cta-diagnostics">
-            AI 진단
+            AI ì§ë¨
           </Link>
         </div>
 

@@ -1,51 +1,57 @@
-import type { ReportSubmission, HallucinationReport } from "./types";
+import type { HallucinationReport, ReportSubmission } from "./types";
 
-/**
- * In-memory stub for correction report submissions.
- * Will be replaced with Supabase insert in a future goal.
- */
-export function submitCorrectionReport(data: {
+export type SubmissionStubResult = {
+  accepted: true;
+  status: "new";
+  storage: "stub";
+  raw_ip_stored: false;
+  contributor_hash: string;
+};
+
+export const STUB_CONTRIBUTOR_HASH = "local-stub-contributor-hash";
+
+export function createReportSubmissionStub(input: {
   document_id: string;
   entity_id: string;
-  report_type: string;
+  field_path: string | null;
   message: string;
-  contributor_hash: string;
-}): ReportSubmission {
+}): ReportSubmission & SubmissionStubResult {
   return {
-    id: `report-${Date.now()}`,
-    document_id: data.document_id,
-    entity_id: data.entity_id,
-    report_type: data.report_type,
-    message: data.message,
-    contributor_hash: data.contributor_hash,
+    id: "stub-report-submission",
+    document_id: input.document_id,
+    entity_id: input.entity_id,
+    report_type: "correction",
+    message: input.message,
+    contributor_hash: STUB_CONTRIBUTOR_HASH,
     status: "new",
-    created_at: new Date().toISOString(),
+    created_at: null,
+    accepted: true,
+    storage: "stub",
+    raw_ip_stored: false,
   };
 }
 
-/**
- * In-memory stub for AI hallucination report submissions.
- * Will be replaced with Supabase insert in a future goal.
- */
-export function submitHallucinationReport(data: {
+export function createHallucinationReportStub(input: {
   document_id: string;
   entity_id: string;
   ai_service: string;
-  prompt: string;
-  ai_answer: string;
-  expected_correction: string;
-  contributor_hash: string;
-}): HallucinationReport {
+  prompt: string | null;
+  ai_answer: string | null;
+  expected_correction: string | null;
+}): HallucinationReport & SubmissionStubResult {
   return {
-    id: `hallucination-${Date.now()}`,
-    document_id: data.document_id,
-    entity_id: data.entity_id,
-    ai_service: data.ai_service,
-    prompt: data.prompt,
-    ai_answer: data.ai_answer,
-    expected_correction: data.expected_correction,
-    contributor_hash: data.contributor_hash,
+    id: "stub-hallucination-report",
+    document_id: input.document_id,
+    entity_id: input.entity_id,
+    ai_service: input.ai_service,
+    prompt: input.prompt,
+    ai_answer: input.ai_answer,
+    expected_correction: input.expected_correction,
+    contributor_hash: STUB_CONTRIBUTOR_HASH,
     status: "new",
-    created_at: new Date().toISOString(),
+    created_at: null,
+    accepted: true,
+    storage: "stub",
+    raw_ip_stored: false,
   };
 }

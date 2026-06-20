@@ -5,8 +5,8 @@ import { documentPageUrl, apiDocumentUrl, rawMarkdownUrl } from "./urls";
 export function buildDocumentMetadata(bundle: RegistryDocumentBundle): Metadata {
   const { entity, document } = bundle;
   const title = document.title;
-  const ogTitle = `${document.title} — GYEOL`;
-  const description = `${entity.canonical_name} ${document.template} 정보. 신뢰도: ${document.confidence}. GYEOL claim registry.`;
+  const ogTitle = `${document.title} â GYEOL`;
+  const description = `${entity.canonical_name} ${document.template} ì ë³´. ì ë¢°ë: ${document.confidence}. GYEOL claim registry.`;
   const url = documentPageUrl(document.slug, document.lang);
 
   return {
@@ -65,7 +65,7 @@ export function buildDocumentJsonLd(bundle: RegistryDocumentBundle): object {
         "@type": "DataDownload",
         encodingFormat: "application/json",
         contentUrl: apiDocumentUrl(document.slug),
-      },
+        },
       {
         "@type": "DataDownload",
         encodingFormat: "text/markdown",
