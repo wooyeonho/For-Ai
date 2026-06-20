@@ -352,6 +352,80 @@ h2 {
   padding-left: 18px;
 }
 
+/* Report Forms */
+.report-description {
+  color: var(--muted);
+  margin-bottom: 24px;
+}
+
+.report-form {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-field label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.form-field input,
+.form-field textarea,
+.form-field select {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+  font-size: 0.9rem;
+  color: var(--text);
+  font-family: inherit;
+  resize: vertical;
+}
+
+.form-field input:focus,
+.form-field textarea:focus,
+.form-field select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.form-submit {
+  align-self: flex-start;
+  padding: 10px 24px;
+  border: none;
+  border-radius: 6px;
+  background: var(--accent);
+  color: #fff;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.form-submit:hover {
+  opacity: 0.85;
+}
+
+.submission-success {
+  padding: 24px;
+  border: 1px solid var(--success);
+  border-radius: 8px;
+  background: var(--success-bg);
+  text-align: center;
+}
+
+.submission-success p {
+  margin-bottom: 16px;
+  font-weight: 500;
+}
+
 /* Responsive */
 @media (min-width: 720px) {
   .page-shell {
