@@ -82,3 +82,16 @@ export function buildDocumentJsonLd(bundle: RegistryDocumentBundle): object {
     inLanguage: document.lang,
   };
 }
+
+export function getRegistryDocumentPaths(bundle: RegistryDocumentBundle): {
+  canonicalPath: string;
+  apiPath: string;
+  rawMarkdownPath: string;
+} {
+  const { document } = bundle;
+  return {
+    canonicalPath: `/ko/wiki/${document.slug}`,
+    apiPath: `/api/document/${document.slug}`,
+    rawMarkdownPath: `/api/document/${document.slug}/raw`,
+  };
+}
