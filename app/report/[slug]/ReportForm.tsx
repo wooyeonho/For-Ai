@@ -58,6 +58,16 @@ export function ReportForm({
       </div>
 
       <div className="form-field">
+        <label htmlFor="field_path">관련 필드 (선택)</label>
+        <input
+          type="text"
+          id="field_path"
+          name="field_path"
+          placeholder="예: parking.availability, parking.free_parking_minutes"
+        />
+      </div>
+
+      <div className="form-field">
         <label htmlFor="message">상세 내용</label>
         <textarea
           id="message"

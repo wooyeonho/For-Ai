@@ -426,6 +426,26 @@ h2 {
   font-weight: 500;
 }
 
+.report-meta {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  margin-bottom: 20px;
+  padding: 12px;
+  background: var(--soft);
+  border-radius: 6px;
+  font-size: 0.82rem;
+}
+
+.privacy-notice {
+  margin-top: 24px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
 /* Responsive */
 @media (min-width: 720px) {
   .page-shell {
