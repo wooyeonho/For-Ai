@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { createServerClient, isSupabaseConfigured } from '@/lib/supabase-server';
-import { makeContributorHash, extractIp } from '@/lib/contributor-hash';
-import { getDocumentBySlug } from '@/lib/data';
+import { createServerClient, isSupabaseConfigured } from '../../../../lib/supabase-server';
+import { makeContributorHash, extractIp } from '../../../../lib/contributor-hash';
+import { getDocumentBySlug } from '../../../../lib/data';
 
 export async function POST(
   request: Request,
