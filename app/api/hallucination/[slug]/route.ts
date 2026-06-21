@@ -22,9 +22,9 @@ export async function POST(
   }
 
   // Resolve document + entity from slug (static seed data)
-  const bundle = getDocumentBySlug(slug);
-  const documentId = bundle?.document.id ?? null;
-  const entityId = bundle?.document.entity_id ?? null;
+  const doc = getDocumentBySlug(slug);
+  const documentId = doc?.id ?? null;
+  const entityId = doc?.entity_id ?? null;
 
   // Generate contributor hash — never store raw IP
   const ip = extractIp(request);
