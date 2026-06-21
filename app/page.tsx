@@ -1,18 +1,26 @@
 import Link from "next/link";
+import { getAllRegistryBundles } from "../lib/data";
 
 export default function HomePage() {
+  const bundles = getAllRegistryBundles();
+
   return (
     <section className="registry-panel">
       <p className="eyebrow">GYEOL</p>
-      <h1>ë¡ì»¬ í©í¸ ë ì§ì¤í¸ë¦¬</h1>
-      <p>GYEOLì ë¡ì»¬ í©í¸ ë ì§ì¤í¸ë¦¬ìëë¤. claim ë¨ìë¡ ì ë¢°ë, ì¶ì², ê²ì¦ì¼ì ê´ë¦¬í©ëë¤.</p>
+      <h1>로컬 팩트 레지스트리</h1>
       <p>
-        MVPë íêµ­ì´ ë¬¸ì íëë¡ ììíì§ë§, route, slug, entity_id, machine-readable outputì
-        ë¤êµ­ì´ ë¬¸ìì AI/search crawling íì¥ì ì ì ë¡ ê³ ì í©ëë¤.
+        GYEOL은 로컬 팩트 레지스트리입니다. claim 단위로 신뢰도, 출처,
+        검증일을 관리합니다.
       </p>
-      <p>
-        <Link href="/ko/wiki/myungdong-laluce-parking">MVP ë¬¸ì ë³´ê¸°</Link>
-      </p>
+      <h2>등록된 문서 ({bundles.length})</h2>
+      <ul className="document-list">
+        {bundles.map((b) => (
+          <li key={b.document.slug}>
+            <Link href={`/ko/wiki/${b.document.slug}`}>{b.document.title}</Link>
+            <span className="meta-label"> — {b.entity.canonical_name}</span>
+          </li>
+        ))}
+      </ul>
     </section>
   );
 }
