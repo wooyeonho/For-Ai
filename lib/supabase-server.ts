@@ -1,10 +1,12 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 /**
- * Creates a Supabase client using the SERVICE ROLE key.
+ * Creates a Supabase client for server-side Route Handlers.
  *
- * SERVER-SIDE ONLY - never import this in client components or pages.
- * The service role key bypasses RLS and must not be exposed to the browser.
+ * Prefers SUPABASE_SERVICE_ROLE_KEY (bypasses RLS, never expose to client).
+ * Falls back to NEXT_PUBLIC_SUPABASE_ANON_KEY when service role is not set.
+ * This is safe because our RLS already restricts anon to insert-only on
+ * submission tables (reports, hallucination_reports, edits).
  *
  * Usage in Route Handlers (app/api/[resource]/route.ts):
  *   const supabase = createServerClient();
@@ -12,30 +14,28 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
  */
 export function createServerClient(): SupabaseClient {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const key = serviceKey || anonKey;
 
   if (!url || !key) {
     throw new Error(
-      'Missing Supabase env vars: NEXT_PUBLIC_SUPABASE_URL and/or SUPABASE_SERVICE_ROLE_KEY'
+      'Missing Supabase env vars: NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY (or SUPABASE_SERVICE_ROLE_KEY)'
     );
   }
 
   return createClient(url, key, {
     auth: {
-      // Disable session persistence - this is a server-side client only
       persistSession: false,
       autoRefreshToken: false,
     },
   });
 }
 
-/**
- * Returns true if Supabase is configured (env vars are set).
- * Used to conditionally enable DB writes vs. stub fallback.
- */
 export function isSupabaseConfigured(): boolean {
   return (
     Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL) &&
-    Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY)
+    (Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY) ||
+      Boolean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY))
   );
 }
