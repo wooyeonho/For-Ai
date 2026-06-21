@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * GYEOL MVP route smoke test.
+ * GYEOL route smoke test.
  *
  * Usage:
  *   node scripts/smoke-test-routes.mjs [BASE_URL]
@@ -21,6 +21,32 @@ const SLUGS = [
   "skt-youth-plan-data",
   "kakaobank-overseas-transfer-fee",
   "baemin-minimum-order",
+  "er-night-visit-fee",
+  "nhis-copay-cap",
+  "seoul-metro-transfer-time",
+  "expressway-seoul-busan-toll",
+  "income-tax-filing-deadline",
+  "move-in-report-deadline",
+  "apartment-noise-standard",
+  "seoul-recycling-schedule",
+  "credit-card-overseas-fee",
+  "jeonse-deposit-return-deadline",
+  "csat-registration-period",
+  "university-tuition-deadline",
+  "kt-internet-cancellation-fee",
+  "mvno-number-porting-days",
+  "rental-report-requirement",
+  "real-estate-brokerage-fee",
+  "naverpay-refund-days",
+  "11st-return-deadline",
+  "nps-contribution-rate",
+  "vehicle-tax-deadline",
+  "taxi-night-surcharge",
+  "health-checkup-eligibility",
+  "resident-id-reissue",
+  "unmanned-kiosk-hours",
+  "mobile-micropayment-limit",
+  "minimum-wage-hourly",
 ];
 
 const ROUTES = [
