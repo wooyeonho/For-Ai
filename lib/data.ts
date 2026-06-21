@@ -1,12 +1,8 @@
-import { seedRegistryBundle } from "./seed-data";
+import { allRegistryBundles } from "./seed-data";
 import type { Document, RegistryDocumentBundle } from "./types";
 
 export function getRegistryBundleBySlug(slug: string): RegistryDocumentBundle | null {
-  if (slug !== seedRegistryBundle.document.slug) {
-    return null;
-  }
-
-  return seedRegistryBundle;
+  return allRegistryBundles.find((b) => b.document.slug === slug) ?? null;
 }
 
 export function getDocumentBySlug(slug: string): Document | null {
@@ -14,5 +10,5 @@ export function getDocumentBySlug(slug: string): Document | null {
 }
 
 export function getAllRegistryBundles(): RegistryDocumentBundle[] {
-  return [seedRegistryBundle];
+  return allRegistryBundles;
 }

@@ -13,14 +13,26 @@
 
 const BASE = (process.argv[2] || "http://localhost:3000").replace(/\/+$/, "");
 
+const SLUGS = [
+  "myungdong-laluce-parking",
+  "cj-logistics-jeju-delivery",
+  "coupang-rocket-food-refund",
+  "passport-reissue-fee",
+  "skt-youth-plan-data",
+  "kakaobank-overseas-transfer-fee",
+  "baemin-minimum-order",
+];
+
 const ROUTES = [
   "/",
-  "/ko/wiki/myungdong-laluce-parking",
-  "/api/documents/myungdong-laluce-parking",
-  "/raw/myungdong-laluce-parking.md",
-  "/report/myungdong-laluce-parking",
-  "/hallucination/myungdong-laluce-parking",
-  "/diagnostics/myungdong-laluce-parking",
+  ...SLUGS.flatMap((s) => [
+    `/ko/wiki/${s}`,
+    `/api/documents/${s}`,
+    `/raw/${s}.md`,
+    `/report/${s}`,
+    `/hallucination/${s}`,
+  ]),
+  `/diagnostics/${SLUGS[0]}`,
   "/admin/review",
   "/admin/new-entity",
   "/admin/new-document",
