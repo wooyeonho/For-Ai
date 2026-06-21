@@ -1,27 +1,67 @@
-import { NextResponse } from "next/server";
-import { submitHallucinationReport } from "../../../../lib/submission-stubs";
+import { NextResponse } from 'next/server';
+import { createServerClient, isSupabaseConfigured } from '@/lib/supabase-server';
+import { makeContributorHash, extractIp } from '@/lib/contributor-hash';
+import { getDocumentBySlug } from '@/lib/data';
 
-function generateContributorHash(): string {
-  return `anon-${Date.now().toString(36)}`;
-}
+export async function POST(
+  request: Request,
+  { params }: { params: Promise<{ slug: string }> }
+) {
+  const { slug } = await params;
 
-export async function POST(request: Request) {
-  const body = await request.json();
-  const { document_id, entity_id, ai_service, prompt, ai_answer, expected_correction } = body;
-
-  if (!document_id || !ai_service || !ai_answer) {
-    return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+  let body: Record<string, string>;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const report = submitHallucinationReport({
-    document_id,
-    entity_id: entity_id ?? "",
-    ai_service,
-    prompt: prompt ?? "",
-    ai_answer,
-    expected_correction: expected_correction ?? "",
-    contributor_hash: generateContributorHash(),
-  });
+  const aiService = body.ai_service?.trim();
+  if (!aiService) {
+    return NextResponse.json({ error: 'ai_service is required' }, { status: 400 });
+  }
 
-  return NextResponse.json({ success: true, report }, { status: 201 });
+  // Resolve document + entity from slug (static seed data)
+  const bundle = getDocumentBySlug(slug);
+  const documentId = bundle?.document.id ?? null;
+  const entityId = bundle?.document.entity_id ?? null;
+
+  // Generate contributor hash — never store raw IP
+  const ip = extractIp(request);
+  const contributorHash = makeContributorHash(
+    ip,
+    process.env.CONTRIBUTOR_SALT ?? ''
+  );
+
+  if (isSupabaseConfigured()) {
+    try {
+      const supabase = createServerClient();
+      const { error } = await supabase.from('hallucination_reports').insert({
+        document_id: documentId,
+        entity_id: entityId,
+        ai_service: aiService,
+        prompt: body.prompt ?? null,
+        ai_answer: body.ai_answer ?? null,
+        expected_correction: body.expected_correction ?? null,
+        contributor_hash: contributorHash,
+        status: 'new',
+      });
+
+      if (error) {
+        console.error('[hallucination] Supabase insert error:', error.message);
+        return NextResponse.json(
+          { error: 'Failed to save hallucination report' },
+          { status: 500 }
+        );
+      }
+    } catch (err) {
+      console.error('[hallucination] Unexpected error:', err);
+      return NextResponse.json({ error: 'Server error' }, { status: 500 });
+    }
+  } else {
+    // Supabase not configured — stub mode (logs only)
+    console.log('[hallucination] STUB mode — not persisted. slug:', slug, 'ai_service:', aiService);
+  }
+
+  return NextResponse.json({ success: true, slug });
 }
