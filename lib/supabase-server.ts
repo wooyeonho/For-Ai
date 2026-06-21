@@ -3,10 +3,10 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 /**
  * Creates a Supabase client using the SERVICE ROLE key.
  *
- * ⚠️  SERVER-SIDE ONLY — never import this in client components or pages.
- *     The service role key bypasses RLS and must not be exposed to the browser.
+ * SERVER-SIDE ONLY - never import this in client components or pages.
+ * The service role key bypasses RLS and must not be exposed to the browser.
  *
- * Usage in Route Handlers (app/api/**/route.ts):
+ * Usage in Route Handlers (app/api/[resource]/route.ts):
  *   const supabase = createServerClient();
  *   await supabase.from('reports').insert({ ... });
  */
@@ -22,7 +22,7 @@ export function createServerClient(): SupabaseClient {
 
   return createClient(url, key, {
     auth: {
-      // Disable session persistence — this is a server-side client only
+      // Disable session persistence - this is a server-side client only
       persistSession: false,
       autoRefreshToken: false,
     },
