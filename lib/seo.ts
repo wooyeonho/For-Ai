@@ -5,8 +5,8 @@ import { documentPageUrl, apiDocumentUrl, rawMarkdownUrl } from "./urls";
 export function buildDocumentMetadata(bundle: RegistryDocumentBundle): Metadata {
   const { entity, document } = bundle;
   const title = document.title;
-  const ogTitle = `${document.title} â GYEOL`;
-  const description = `${entity.canonical_name} ${document.template} ì ë³´. ì ë¢°ë: ${document.confidence}. GYEOL claim registry.`;
+  const ogTitle = `${document.title} — GYEOL`;
+  const description = `${entity.canonical_name} ${document.template} 정보. 신뢰도: ${document.confidence}. GYEOL claim registry.`;
   const url = documentPageUrl(document.slug, document.lang);
 
   return {
@@ -91,7 +91,7 @@ export function getRegistryDocumentPaths(bundle: RegistryDocumentBundle): {
   const { document } = bundle;
   return {
     canonicalPath: `/ko/wiki/${document.slug}`,
-    apiPath: `/api/document/${document.slug}`,
-    rawMarkdownPath: `/api/document/${document.slug}/raw`,
+    apiPath: `/api/documents/${document.slug}`,
+    rawMarkdownPath: `/raw/${document.slug}.md`,
   };
 }
