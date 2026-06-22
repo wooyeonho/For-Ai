@@ -100,7 +100,7 @@ export default async function WikiDocumentPage({
     <article>
       <header className="registry-panel">
         <p className="eyebrow">
-          {isPromoted ? "GYEOL Â· AI ìì± í ê²í ë¨" : "Claim registry document"}
+          {isPromoted ? "GYEOL · AI 생성 후 검토됨" : "Claim registry document"}
         </p>
         <h1>{document.title}</h1>
         <div className="meta-grid">
@@ -110,28 +110,28 @@ export default async function WikiDocumentPage({
           <div><span className="meta-label">confidence</span><br /><span className="badge badge-low">{document.confidence}</span></div>
         </div>
         {document.category && (
-          <p style={{ marginTop: 8, fontSize: 13, color: "#6b7280" }}>ì¹´íê³ ë¦¬: {document.category}</p>
+          <p style={{ marginTop: 8, fontSize: 13, color: "#6b7280" }}>카테고리: {document.category}</p>
         )}
       </header>
 
       {whyPeopleAsk && (
         <section className="registry-panel" style={{ background: "#fffbeb", borderLeft: "3px solid #f59e0b" }}>
-          <p className="eyebrow">ì ì¬ëë¤ì´ AIìê² ë¬»ëì?</p>
+          <p className="eyebrow">왜 사람들이 AI에게 묻나요?</p>
           <p>{whyPeopleAsk}</p>
         </section>
       )}
 
       {directAnswer && (
         <section className="registry-panel" aria-labelledby="direct-answer">
-          <h2 id="direct-answer">ì§ì  ëµë³</h2>
+          <h2 id="direct-answer">직접 답변</h2>
           <p><strong>{directAnswer}</strong></p>
         </section>
       )}
 
       <section className="registry-panel" aria-labelledby="claims">
-        <h2 id="claims">íì¸ íì í­ëª© ({claims.length}ê°)</h2>
+        <h2 id="claims">확인 필요 항목 ({claims.length}개)</h2>
         {claims.length === 0 ? (
-          <p style={{ color: "#9ca3af" }}>ë±ë¡ë claimì´ ììµëë¤.</p>
+          <p style={{ color: "#9ca3af" }}>등록된 claim이 없습니다.</p>
         ) : (
           claims.map((claim) => (
             <div className="claim-card" key={claim.field_path}>
