@@ -118,7 +118,8 @@ function validateSafetyRules(entry, line) {
     }
   }
 
-  if (type.startsWith("health.")) {
+  const medicalPrefixes = ["health.", "medical.", "clinical_pathology.", "radiology."];
+  if (medicalPrefixes.some((p) => type.startsWith(p))) {
     if (disclaimer !== "not_medical_advice" && disclaimer !== "check_official_source") {
       fail(line, `type "${type}" requires disclaimer_type "not_medical_advice" or "check_official_source", got "${disclaimer}"`);
     }
