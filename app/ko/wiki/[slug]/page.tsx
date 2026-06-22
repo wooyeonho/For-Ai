@@ -1,78 +1,75 @@
-import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getRegistryBundleBySlug } from "../../../../lib/data";
-import { buildDocumentMetadata, buildDocumentJsonLd } from "../../../../lib/seo";
-import { RegistryHeader } from "../../../components/RegistryHeader";
-import { DirectAnswerBox } from "../../../components/DirectAnswerBox";
-import { ClaimTable } from "../../../components/ClaimTable";
-import { MachineReadablePanel } from "../../../components/MachineReadablePanel";
-import { CorrectionCTA } from "../../../components/CorrectionCTA";
-import { HallucinationCTA } from "../../../components/HallucinationCTA";
-import { LicenseNotice } from "../../../components/LicenseNotice";
+import { getSeedDocumentBySlug, getAllSeedDocuments } from "../../../../lib/seed-data";
 
-function getStringDataValue(data: Record<string, unknown>, key: string, fallback: string): string {
-  const value = data[key];
-  return typeof value === "string" ? value : fallback;
-}
-
-function getMachineReadableUrl(data: Record<string, unknown>, key: "api_url" | "raw_markdown_url", fallback: string): string {
-  const machineReadable = data.machine_readable;
-  if (!machineReadable || typeof machineReadable !== "object") {
-    return fallback;
-  }
-  const value = (machineReadable as Record<string, unknown>)[key];
-  return typeof value === "string" ? value : fallback;
-}
-
-export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
-  const { slug } = await params;
-  const bundle = getRegistryBundleBySlug(slug);
-  if (!bundle) return {};
-  return buildDocumentMetadata(bundle);
+/** Pre-render all known slugs at build time → static HTML, no server rendering */
+export async function generateStaticParams() {
+  const docs = getAllSeedDocuments();
+  return docs.map((doc) => ({ slug: doc.slug }));
 }
 
 export default async function WikiDocumentPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const bundle = getRegistryBundleBySlug(slug);
+  const document = getSeedDocumentBySlug(slug);
 
-  if (!bundle) {
+  if (!document) {
     notFound();
   }
 
-  const { entity, document, claims } = bundle;
-  const directAnswer = getStringDataValue(document.data, "direct_answer", "íì¸ íì");
-  const licenseNotice = getStringDataValue(document.data, "license_notice", "GYEOL Data License v0.1 placeholder.");
-  const apiUrl = getMachineReadableUrl(document.data, "api_url", `/api/documents/${document.slug}`);
-  const rawMarkdownUrl = getMachineReadableUrl(document.data, "raw_markdown_url", `/raw/${document.slug}.md`);
-
-  const jsonLd = buildDocumentJsonLd(bundle);
-
   return (
-    <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
-      <article>
-        <RegistryHeader entity={entity} document={document} />
-
-        <DirectAnswerBox answer={directAnswer} confidence={document.confidence} />
-
-        <ClaimTable claims={claims} />
-
-        <div className="cta-row">
-          <CorrectionCTA slug={document.slug} />
-          <HallucinationCTA slug={document.slug} />
-          <Link href={`/diagnostics/${document.slug}`} className="cta-link cta-diagnostics">
-            AI ì§ë¨
-          </Link>
+    <article>
+      <header className="registry-panel">
+        <p className="eyebrow">Claim registry document</p>
+        <h1>{document.title}</h1>
+        <div className="meta-grid">
+          <div><span className="meta-label">entity_id</span><br />{document.entity_id}</div>
+          <div><span className="meta-label">document_id</span><br />{document.document_id}</div>
+          <div><span className="meta-label">language</span><br />{document.lang}</div>
+          <div><span className="meta-label">slug</span><br />{document.slug}</div>
+          <div><span className="meta-label">canonical path</span><br />{document.canonical_path}</div>
+          <div><span className="meta-label">status</span><br /><span className="badge badge-review">{document.status}</span></div>
+          <div><span className="meta-label">confidence</span><br /><span className="badge badge-low">{document.confidence}</span></div>
         </div>
+      </header>
 
-        <MachineReadablePanel apiUrl={apiUrl} rawMarkdownUrl={rawMarkdownUrl} />
+      <section className="registry-panel" aria-labelledby="direct-answer">
+        <h2 id="direct-answer">직접 답변</h2>
+        <p><strong>{document.direct_answer}</strong></p>
+      </section>
 
-        <LicenseNotice licenseCode={document.license_code} licenseNotice={licenseNotice} />
-      </article>
-    </>
+      <section className="registry-panel" aria-labelledby="claims">
+        <h2 id="claims">Claims</h2>
+        {document.claims.map((claim) => (
+          <div className="claim-card" key={claim.field_path}>
+            <p className="eyebrow">{claim.field_path}</p>
+            <p><strong>{claim.claim_value}</strong></p>
+            <p>{claim.claim_text}</p>
+            <p>
+              <span className="badge badge-low">confidence: {claim.confidence}</span>{" "}
+              <span className="badge badge-review">state: {claim.status}</span>{" "}
+              <span className="badge">sources: {claim.sources.length}</span>
+            </p>
+            <p className="meta-label">last_verified_at: {claim.last_verified_at ?? "확인 필요"}</p>
+          </div>
+        ))}
+      </section>
+
+      <nav className="registry-panel" aria-labelledby="machine-links">
+        <h2 id="machine-links">Machine-readable and submission links</h2>
+        <ul className="link-list">
+          <li><Link href={document.machine_readable.api_url}>JSON API</Link></li>
+          <li><Link href={document.machine_readable.raw_markdown_url}>Raw Markdown</Link></li>
+          <li><Link href={`/report/${document.slug}`}>Correction report</Link></li>
+          <li><Link href={`/hallucination/${document.slug}`}>AI hallucination report</Link></li>
+          <li><Link href={`/diagnostics/${document.slug}`}>AI-readiness diagnostics</Link></li>
+        </ul>
+      </nav>
+
+      <section className="registry-panel" aria-labelledby="licensing">
+        <h2 id="licensing">External data licensing placeholder</h2>
+        <p>{document.license_notice}</p>
+        <p className="meta-label">license label: {document.data_license.label}</p>
+      </section>
+    </article>
   );
 }
