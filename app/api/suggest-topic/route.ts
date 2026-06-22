@@ -1,39 +1,69 @@
 import { NextResponse } from "next/server";
-import { createTopicSuggestionStub } from "../../../lib/topic-suggestion-stubs";
+import { createClient } from "@supabase/supabase-js";
+import { createHash } from "crypto";
+
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
+const SUPABASE_ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
+
+function contributorHash(req: Request): string {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0] ?? "unknown";
+  const ua = req.headers.get("user-agent") ?? "";
+  return createHash("sha256").update(ip + ua).digest("hex").slice(0, 16);
+}
 
 export async function POST(request: Request) {
   const body = await request.json();
 
-  const question = String(body.question ?? "").trim();
-  const category = String(body.category ?? "").trim();
+  const question    = String(body.question    ?? "").trim();
+  const category    = String(body.category    ?? "").trim();
   const suggestedSlug = String(body.suggested_slug ?? "").trim() || null;
-  const reason = String(body.reason ?? "").trim();
-  const sourceUrl = String(body.source_url ?? "").trim() || null;
-  const aiContext = String(body.ai_context ?? "").trim() || null;
+  const reason      = String(body.reason      ?? "").trim();
+  const sourceUrl   = String(body.source_url  ?? "").trim() || null;
+  const aiContext   = String(body.ai_context  ?? "").trim() || null;
 
   if (!question || !category || !reason) {
     return NextResponse.json(
       { error: "question, category, and reason are required" },
-      { status: 400 },
+      { status: 400 }
     );
   }
 
-  const result = createTopicSuggestionStub({
-    question,
-    category,
-    suggested_slug: suggestedSlug,
-    reason,
-    source_url: sourceUrl,
-    ai_context: aiContext,
-  });
+  const hash = contributorHash(request);
 
-  return NextResponse.json(
-    {
-      accepted: result.accepted,
-      status: result.status,
-      storage: result.storage,
-      raw_ip_stored: result.raw_ip_stored,
-    },
-    { status: 200 },
-  );
+  // Try to save to topic_candidates
+  let storage: "db" | "stub" = "stub";
+  if (SUPABASE_URL && SUPABASE_ANON) {
+    try {
+      const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+      const { error } = await sb.from("topic_candidates").insert({
+        source: "user_suggested",
+        status: "new",
+        lang: "ko",
+        title: question,
+        slug: suggestedSlug ?? question.toLowerCase().replace(/[^a-z0-9가-힣]+/g, "-").slice(0, 80),
+        category,
+        risk_tier: "medium",
+        why_people_ask_ai: reason,
+        why_ai_gets_wrong: aiContext,
+        claims: [{
+          field_path: "claim.main",
+          question,
+          placeholder_value: "확인 필요",
+          required_source_type: sourceUrl ? "official" : "document",
+        }],
+        source_hints: sourceUrl ? [{ url: sourceUrl, title: "제보자 제출", hint_type: "official" }] : [],
+        contributor_hash: hash,
+      });
+      if (!error) storage = "db";
+    } catch {
+      // fallback to stub — don't fail the user
+    }
+  }
+
+  return NextResponse.json({
+    accepted: true,
+    status: "new",
+    storage,
+    raw_ip_stored: false,
+  });
 }
