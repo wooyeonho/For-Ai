@@ -3,6 +3,8 @@ export type DocumentStatus = "ai_draft" | "needs_review" | "verified" | "publish
 export type ClaimStatus = "needs_review" | "verified" | "disputed" | "unknown";
 export type SourceType =
   | "official"
+  | "law"
+  | "regulator"
   | "platform"
   | "review"
   | "user"
@@ -18,6 +20,7 @@ export type VerificationEventType =
   | "reviewed"
   | "source_added"
   | "source_removed"
+  | "source_verified"
   | "status_changed"
   | "confidence_changed";
 
