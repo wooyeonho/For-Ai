@@ -2,9 +2,10 @@ import { allRegistryBundles } from "./seed-data";
 import { verifiedBundles } from "./verified-claims";
 import type { Document, RegistryDocumentBundle } from "./types";
 
+const verifiedSlugs = new Set(verifiedBundles.map((b) => b.document.slug));
 const combinedBundles: RegistryDocumentBundle[] = [
   ...verifiedBundles,
-  ...allRegistryBundles,
+  ...allRegistryBundles.filter((b) => !verifiedSlugs.has(b.document.slug)),
 ];
 
 export function getRegistryBundleBySlug(slug: string): RegistryDocumentBundle | null {
