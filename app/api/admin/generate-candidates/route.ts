@@ -3,54 +3,57 @@ import { createClient } from "@supabase/supabase-js";
 import { TAXONOMY, type TopicCandidate, type ClaimStub } from "../../../../lib/topic-candidates";
 
 const ADMIN_SECRET = process.env.ADMIN_SECRET ?? "";
-const ANTHROPIC_KEY = process.env.ANTHROPIC_API_KEY ?? "";
+const PERPLEXITY_KEY = process.env.PERPLEXITY_API_KEY ?? "";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
+const SUPABASE_SERVICE_KEY =
+  process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
 
 function supabaseAdmin() {
   return createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 }
 
-const GENERATION_PROMPT = (category: string, label: string, subcategories: string[], count: number) => `
+const GENERATION_PROMPT = (
+  category: string,
+  label: string,
+  subcategories: string[],
+  count: number
+) => `
 당신은 GYEOL(검증 가능한 사실 레지스트리)의 콘텐츠 큐레이터입니다.
+사람들이 AI에게 자주 묻는 "${label}" 관련 토픽 ${count}개를 생성하세요.
 
-규칙:
-- 모든 claim_value는 반드시 "확인 필요"
-- confidence는 항상 "low"
-- status는 항상 "needs_review"
-- 가짜 숫자나 날짜를 절대 채우지 마세요
-- 실제로 AI가 자주 틀리는 정보를 선택하세요
+절대 규칙:
+- 모든 placeholder_value는 반드시 "확인 필요" (실제 숫자/날짜 입력 금지)
+- 실제로 AI가 자주 틀리는 정보 위주로 선택
+- 웹 검색으로 실제 공식 출처 URL을 source_hints에 포함
 
 카테고리: ${label} (${category})
 서브카테고리 힌트: ${subcategories.join(", ")}
-생성 개수: ${count}개
 
-각 토픽은 아래 JSON 형식으로 출력하세요:
+각 토픽을 아래 JSON 형식으로 출력:
 {
-  "title": "한국어 토픽 제목 (예: '서울 지하철 기본요금')",
-  "slug": "영문 slug (예: 'seoul-metro-base-fare')",
+  "title": "한국어 토픽 제목",
+  "slug": "ascii-only-slug",
   "subcategory": "서브카테고리",
   "risk_tier": "low|medium|high",
-  "why_people_ask_ai": "왜 사람들이 AI에게 이걸 물어보는가 (1문장)",
+  "why_people_ask_ai": "왜 사람들이 AI에게 묻는가 (1문장)",
   "why_ai_gets_wrong": "AI가 왜 자주 틀리는가 (1문장)",
   "claims": [
     {
       "field_path": "dot.notation.path",
-      "question": "구체적인 질문 (예: '성인 교통카드 기본요금은?')",
+      "question": "구체적인 질문",
       "placeholder_value": "확인 필요",
       "required_source_type": "official|law|platform|document|news"
     }
   ],
   "source_hints": [
-    { "url": "https://...", "title": "출처명", "hint_type": "official|news|wiki" }
+    { "url": "https://실제url", "title": "출처명", "hint_type": "official|news|wiki" }
   ]
 }
 
-${count}개의 토픽을 JSON 배열로만 출력하세요. 설명 없이 JSON만.
+${count}개를 JSON 배열로만 출력. 설명 없이 JSON만.
 `;
 
 export async function POST(request: Request) {
-  // Auth check
   const auth = request.headers.get("x-admin-secret");
   if (ADMIN_SECRET && auth !== ADMIN_SECRET) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -69,79 +72,98 @@ export async function POST(request: Request) {
     );
   }
 
-  if (!ANTHROPIC_KEY) {
-    return NextResponse.json({ error: "ANTHROPIC_API_KEY not set" }, { status: 500 });
+  if (!PERPLEXITY_KEY) {
+    return NextResponse.json({ error: "PERPLEXITY_API_KEY not set" }, { status: 500 });
   }
 
-  // Call Claude
-  const claudeRes = await fetch("https://api.anthropic.com/v1/messages", {
+  // Perplexity API — OpenAI-compatible + real-time web search + citations
+  const pplxRes = await fetch("https://api.perplexity.ai/chat/completions", {
     method: "POST",
     headers: {
-      "x-api-key": ANTHROPIC_KEY,
-      "anthropic-version": "2023-06-01",
-      "content-type": "application/json",
+      Authorization: `Bearer ${PERPLEXITY_KEY}`,
+      "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "claude-haiku-4-5-20251001",
-      max_tokens: 4096,
-      messages: [{
-        role: "user",
-        content: GENERATION_PROMPT(categoryKey, taxEntry.label, taxEntry.subcategories, count),
-      }],
+      model: "sonar-pro",
+      messages: [
+        {
+          role: "system",
+          content:
+            "You are a Korean fact-registry curator. Output only valid JSON arrays. Search the web for real official Korean government/platform URLs to include as source_hints.",
+        },
+        {
+          role: "user",
+          content: GENERATION_PROMPT(categoryKey, taxEntry.label, taxEntry.subcategories, count),
+        },
+      ],
+      temperature: 0.2,
+      return_citations: true,
+      return_images: false,
     }),
   });
 
-  if (!claudeRes.ok) {
-    const err = await claudeRes.text();
-    return NextResponse.json({ error: "Claude API error", detail: err }, { status: 502 });
+  if (!pplxRes.ok) {
+    const err = await pplxRes.text();
+    return NextResponse.json({ error: "Perplexity API error", detail: err }, { status: 502 });
   }
 
-  const claudeJson = await claudeRes.json();
-  const rawText: string = claudeJson.content?.[0]?.text ?? "";
+  const pplxJson = await pplxRes.json();
+  const rawText: string = pplxJson.choices?.[0]?.message?.content ?? "";
+  const webCitations: string[] = pplxJson.citations ?? [];
 
-  // Parse JSON from response
   let candidates: Partial<TopicCandidate>[] = [];
   try {
     const jsonMatch = rawText.match(/\[[\s\S]*\]/);
     if (!jsonMatch) throw new Error("No JSON array found");
     const parsed = JSON.parse(jsonMatch[0]);
-    candidates = parsed.map((c: Record<string, unknown>) => ({
-      source: "ai_generated" as const,
-      lang: "ko",
-      status: "new" as const,
-      category: categoryKey,
-      risk_tier: taxEntry.risk_tier,
-      generation_model: "claude-haiku-4-5",
-      ...c,
-      // Enforce safety: no real values
-      claims: ((c.claims ?? []) as ClaimStub[]).map((cl: ClaimStub) => ({
-        ...cl,
-        placeholder_value: "확인 필요" as const,
-      })),
-    }));
-  } catch (e) {
-    return NextResponse.json({ error: "Parse failed", raw: rawText.slice(0, 500) }, { status: 502 });
+
+    candidates = parsed.map((c: Record<string, unknown>, idx: number) => {
+      const existingHints = (c.source_hints as { url: string }[]) ?? [];
+      const existingUrls = new Set(existingHints.map((h) => h.url));
+      const extraHints = webCitations
+        .filter((url) => !existingUrls.has(url))
+        .slice(idx * 2, idx * 2 + 2)
+        .map((url) => {
+          try { return { url, title: new URL(url).hostname, hint_type: "web" as const }; }
+          catch { return { url, title: url, hint_type: "web" as const }; }
+        });
+
+      return {
+        source: "ai_generated" as const,
+        lang: "ko",
+        status: "new" as const,
+        category: categoryKey,
+        risk_tier: taxEntry.risk_tier,
+        generation_model: "perplexity-sonar-pro",
+        ...c,
+        claims: ((c.claims ?? []) as ClaimStub[]).map((cl: ClaimStub) => ({
+          ...cl,
+          placeholder_value: "확인 필요" as const,
+        })),
+        source_hints: [...existingHints, ...extraHints],
+      };
+    });
+  } catch {
+    return NextResponse.json(
+      { error: "Parse failed", raw: rawText.slice(0, 500) },
+      { status: 502 }
+    );
   }
 
-  // Save to DB
   let saved: unknown[] = [];
   if (saveToDb && SUPABASE_URL && SUPABASE_SERVICE_KEY) {
     const sb = supabaseAdmin();
-    const { data, error } = await sb
+    const { data } = await sb
       .from("topic_candidates")
       .insert(candidates)
       .select("id, title, slug, status");
-    if (error) {
-      // slug conflict → partial success is OK
-      saved = data ?? [];
-    } else {
-      saved = data ?? [];
-    }
+    saved = data ?? [];
   }
 
   return NextResponse.json({
     generated: candidates.length,
     saved: saved.length,
+    citations_used: webCitations.length,
     preview: candidates.slice(0, 3),
   });
 }
