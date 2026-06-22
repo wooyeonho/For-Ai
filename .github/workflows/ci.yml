@@ -1,0 +1,21 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install
+      - run: npm run validate:candidates
+      - run: npm run validate:routes
+      - run: npm run generate:question-candidates -- --count 25 --out /tmp/gyeol-question-candidates-ci.jsonl
+      - run: npm run lint
+      - run: npm run build
