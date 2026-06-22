@@ -22,24 +22,67 @@ async function getBundleFromSupabase(slug: string): Promise<RegistryDocumentBund
     .eq("status", "published")
     .maybeSingle();
   if (!doc || !doc.registry_entities) return null;
-  const entity = doc.registry_entities as { id:string;canonical_name:string;entity_type:string;lang:string };
-  const claims = ((doc.registry_claims ?? []) as { id:string;field_path:string;claim_value:string;claim_text:string;confidence:string;status:string;last_verified_at:string|null }[])
-    .map(cl => ({
-      id: cl.id, entity_id: entity.id, document_slug: slug,
-      field_path: cl.field_path, claim_value: cl.claim_value,
-      claim_text: cl.claim_text ?? "",
-      confidence: cl.confidence as "low"|"medium"|"high",
-      status: cl.status as "needs_review"|"verified"|"disputed"|"outdated",
-      sources: [], last_verified_at: cl.last_verified_at ?? null,
-    }));
+
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const ent = doc.registry_entities as any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const rawClaims = (doc.registry_claims ?? []) as any[];
+
+  const claims = rawClaims.map((cl) => ({
+    id: cl.id as string,
+    document_id: doc.id as string,
+    entity_id: ent.id as string,
+    field_path: cl.field_path as string,
+    claim_text: (cl.claim_text ?? "") as string,
+    claim_value: (cl.claim_value ?? "") as string,
+    confidence: (cl.confidence ?? "low") as "low" | "medium" | "high",
+    status: (["verified", "disputed", "unknown"].includes(cl.status)
+      ? cl.status
+      : "needs_review") as "needs_review" | "verified" | "disputed" | "unknown",
+    last_verified_at: (cl.last_verified_at ?? null) as string | null,
+    created_at: null,
+    updated_at: null,
+    sources: [],
+    verification_events: [],
+  }));
+
   return {
-    entity: { id: entity.id, canonical_name: entity.canonical_name, entity_type: entity.entity_type ?? "concept", lang: entity.lang ?? "ko", aliases: [] },
-    document: { slug: doc.slug, entity_id: entity.id, title: doc.title, template: doc.template ?? "fact-sheet", lang: doc.lang ?? "ko", status: doc.status, confidence: doc.confidence as "low"|"medium"|"high", license_code: doc.license_code ?? "CC-BY-4.0", data: doc.data ?? {} },
+    entity: {
+      id: ent.id as string,
+      type: (ent.entity_type ?? ent.type ?? "concept") as string,
+      canonical_name: ent.canonical_name as string,
+      country: (ent.country ?? "KR") as string,
+      region: (ent.region ?? null) as string | null,
+      city: (ent.city ?? null) as string | null,
+      created_at: null,
+      updated_at: null,
+    },
+    document: {
+      id: doc.id as string,
+      entity_id: ent.id as string,
+      slug: doc.slug as string,
+      lang: (doc.lang ?? "ko") as string,
+      title: doc.title as string,
+      category: (doc.category ?? "") as string,
+      template: (doc.template ?? "fact-sheet") as string,
+      status: doc.status,
+      confidence: (doc.confidence ?? "low") as "low" | "medium" | "high",
+      last_verified_at: null,
+      license_code: (doc.license_code ?? "CC-BY-4.0") as string,
+      data: (doc.data ?? {}) as Record<string, unknown>,
+      created_at: null,
+      updated_at: null,
+    },
     claims,
+    listing: null,
   };
 }
 
-export default async function WikiDocumentPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function WikiDocumentPage({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}) {
   const { slug } = await params;
   let bundle: RegistryDocumentBundle | null = getRegistryBundleBySlug(slug);
   if (!bundle) bundle = await getBundleFromSupabase(slug);
@@ -56,7 +99,9 @@ export default async function WikiDocumentPage({ params }: { params: Promise<{ s
   return (
     <article>
       <header className="registry-panel">
-        <p className="eyebrow">{isPromoted ? "GYEOL · AI 생성 후 검토됨" : "Claim registry document"}</p>
+        <p className="eyebrow">
+          {isPromoted ? "GYEOL Â· AI ìì± í ê²í ë¨" : "Claim registry document"}
+        </p>
         <h1>{document.title}</h1>
         <div className="meta-grid">
           <div><span className="meta-label">entity_id</span><br />{entity.id}</div>
@@ -64,38 +109,46 @@ export default async function WikiDocumentPage({ params }: { params: Promise<{ s
           <div><span className="meta-label">status</span><br /><span className="badge badge-review">{document.status}</span></div>
           <div><span className="meta-label">confidence</span><br /><span className="badge badge-low">{document.confidence}</span></div>
         </div>
+        {document.category && (
+          <p style={{ marginTop: 8, fontSize: 13, color: "#6b7280" }}>ì¹´íê³ ë¦¬: {document.category}</p>
+        )}
       </header>
 
       {whyPeopleAsk && (
-        <section className="registry-panel" style={{background:"#fffbeb",borderLeft:"3px solid #f59e0b"}}>
-          <p className="eyebrow">왜 사람들이 AI에게 묻나요?</p>
+        <section className="registry-panel" style={{ background: "#fffbeb", borderLeft: "3px solid #f59e0b" }}>
+          <p className="eyebrow">ì ì¬ëë¤ì´ AIìê² ë¬»ëì?</p>
           <p>{whyPeopleAsk}</p>
         </section>
       )}
 
       {directAnswer && (
         <section className="registry-panel" aria-labelledby="direct-answer">
-          <h2 id="direct-answer">직접 답변</h2>
+          <h2 id="direct-answer">ì§ì  ëµë³</h2>
           <p><strong>{directAnswer}</strong></p>
         </section>
       )}
 
       <section className="registry-panel" aria-labelledby="claims">
-        <h2 id="claims">확인 필요 항목 ({claims.length}개)</h2>
-        {claims.length === 0 ? <p style={{color:"#9ca3af"}}>등록된 claim이 없습니다.</p>
-        : claims.map((claim) => (
-          <div className="claim-card" key={claim.field_path}>
-            <p className="eyebrow">{claim.field_path}</p>
-            <p><strong>{claim.claim_value}</strong></p>
-            {claim.claim_text && <p>{claim.claim_text}</p>}
-            <p>
-              <span className="badge badge-low">confidence: {claim.confidence}</span>{" "}
-              <span className="badge badge-review">state: {claim.status}</span>{" "}
-              <span className="badge">sources: {claim.sources.length}</span>
-            </p>
-            {claim.last_verified_at && <p className="meta-label">last_verified_at: {claim.last_verified_at}</p>}
-          </div>
-        ))}
+        <h2 id="claims">íì¸ íì í­ëª© ({claims.length}ê°)</h2>
+        {claims.length === 0 ? (
+          <p style={{ color: "#9ca3af" }}>ë±ë¡ë claimì´ ììµëë¤.</p>
+        ) : (
+          claims.map((claim) => (
+            <div className="claim-card" key={claim.field_path}>
+              <p className="eyebrow">{claim.field_path}</p>
+              <p><strong>{claim.claim_value}</strong></p>
+              {claim.claim_text && <p>{claim.claim_text}</p>}
+              <p>
+                <span className="badge badge-low">confidence: {claim.confidence}</span>{" "}
+                <span className="badge badge-review">state: {claim.status}</span>{" "}
+                <span className="badge">sources: {claim.sources.length}</span>
+              </p>
+              {claim.last_verified_at && (
+                <p className="meta-label">last_verified_at: {claim.last_verified_at}</p>
+              )}
+            </div>
+          ))
+        )}
       </section>
 
       <nav className="registry-panel" aria-labelledby="machine-links">
