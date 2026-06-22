@@ -1,4 +1,4 @@
-import type { ClaimWithSources, RegistryDocumentBundle } from "./types";
+import type { ClaimWithSources, RegistryDocumentBundle, VerificationEventType } from "./types";
 
 import seoulMetroFare from "../data/verified-claims/seoul-metro-base-fare.json";
 import passportFee from "../data/verified-claims/passport-reissue-fee.json";
@@ -35,8 +35,16 @@ function toRegistryBundle(file: VerifiedClaimFile): RegistryDocumentBundle {
     status: "verified" as const,
     confidence: "high" as const,
     last_verified_at: file.last_verified_at,
-    license_code: "CC-BY-SA-4.0",
+    license_code: "gyeol-data-license-v0.1",
     data: {
+      direct_answer: file.claims[0]?.claim_value ?? "확인 필요",
+      locale_path: `/ko/wiki/${file.slug}`,
+      canonical_path: `/ko/wiki/${file.slug}`,
+      machine_readable: {
+        api_url: `/api/documents/${file.slug}`,
+        raw_markdown_url: `/raw/${file.slug}.md`,
+      },
+      license_notice: "GYEOL Data License v0.1 placeholder.",
       risk_tier: file.risk_tier,
       update_frequency: file.update_frequency,
       disclaimer_type: file.disclaimer_type,
@@ -72,7 +80,7 @@ function toRegistryBundle(file: VerifiedClaimFile): RegistryDocumentBundle {
       {
         id: `ve-${c.claim_id}`,
         claim_id: c.claim_id,
-        event_type: "status_changed" as const,
+        event_type: (c.verification_event.event_type ?? "source_verified") as VerificationEventType,
         previous_status: "needs_review" as const,
         new_status: "verified" as const,
         previous_confidence: "low" as const,
