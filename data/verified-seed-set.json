@@ -1,0 +1,2086 @@
+{
+  "schema_version": "verified-seed-set-v1",
+  "purpose": "Prioritized first 50 topics for source-backed verification. This file is a verification queue, not a source of verified facts.",
+  "invariants": [
+    "No item in this file is a verified fact.",
+    "Every claim starts with placeholder_value 확인 필요, confidence low, and status needs_review.",
+    "Only a source-backed verification workflow may promote a claim to verified.",
+    "High-risk medical, finance, tax, and legal-adjacent items require official/regulator/medical-institution sources and an appropriate disclaimer."
+  ],
+  "selection_criteria": [
+    "People commonly ask AI for the answer.",
+    "AI can easily hallucinate or mix outdated rules.",
+    "An official, platform, regulator, manufacturer, standard, medical institution, or legal source should be available.",
+    "The topic can become a concise claim-level page after verification."
+  ],
+  "category_counts": {
+    "administration_and_fees": 15,
+    "transport_rail_bus": 10,
+    "finance_and_tax": 8,
+    "health_and_medical": 7,
+    "everyday_structural_knowledge": 5,
+    "telecom_and_commerce": 5
+  },
+  "items": [
+    {
+      "id": "verified-seed-001",
+      "title": "여권 재발급 수수료",
+      "slug": "passport-reissue-fee",
+      "category": "administration.gov_document",
+      "risk_tier": "medium",
+      "disclaimer_type": "check_official_source",
+      "status": "verification_candidate",
+      "selection_reason": {
+        "why_people_ask_ai": "여권을 잃어버리거나 만료됐을 때 AI에게 비용과 준비물을 바로 묻는다.",
+        "why_ai_gets_wrong": "여권 종류, 유효기간, 면수, 긴급/일반 발급 조건이 바뀌거나 섞여 답하기 쉽다.",
+        "official_source_available": true
+      },
+      "claims": [
+        {
+          "field_path": "passport.reissue_fee",
+          "question": "여권 재발급 수수료는 무엇인가요?",
+          "placeholder_value": "확인 필요",
+          "confidence": "low",
+          "status": "needs_review",
+          "required_source_type": "official",
+          "source_policy": {
+            "preferred": [
+              "official"
+            ],
+            "allowed": [
+              "official",
+              "document",
+              "web"
+            ],
+            "disallowed": [
+              "forum",
+              "rumor",
+              "unsourced_blog",
+              "unverifiable_ai_text"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "verified-seed-002",
+      "title": "주민등록증 재발급 수수료",
+      "slug": "resident-id-reissue-fee",
+      "category": "administration.gov_document",
+      "risk_tier": "medium",
+      "disclaimer_type": "check_official_source",
+      "status": "verification_candidate",
+      "selection_reason": {
+        "why_people_ask_ai": "분실 시 수수료와 신청 방법을 바로 확인하려고 묻는다.",
+        "why_ai_gets_wrong": "온라인/방문 신청, 면제 조건, 지자체 안내가 섞여 부정확해질 수 있다.",
+        "official_source_available": true
+      },
+      "claims": [
+        {
+          "field_path": "resident_id.reissue_fee",
+          "question": "주민등록증 재발급 수수료는 무엇인가요?",
+          "placeholder_value": "확인 필요",
+          "confidence": "low",
+          "status": "needs_review",
+          "required_source_type": "official",
+          "source_policy": {
+            "preferred": [
+              "official"
+            ],
+            "allowed": [
+              "official",
+              "document",
+              "web"
+            ],
+            "disallowed": [
+              "forum",
+              "rumor",
+              "unsourced_blog",
+              "unverifiable_ai_text"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "verified-seed-003",
+      "title": "전입신고 기한",
+      "slug": "move-in-report-deadline",
+      "category": "administration.gov_document",
+      "risk_tier": "medium",
+      "disclaimer_type": "check_official_source",
+      "status": "verification_candidate",
+      "selection_reason": {
+        "why_people_ask_ai": "이사 후 언제까지 신고해야 하는지 자주 묻는다.",
+        "why_ai_gets_wrong": "전입신고, 확정일자, 임대차 신고 기한이 섞여 답변될 수 있다.",
+        "official_source_available": true
+      },
+      "claims": [
+        {
+          "field_path": "move_in.report_deadline",
+          "question": "전입신고 기한은 무엇인가요?",
+          "placeholder_value": "확인 필요",
+          "confidence": "low",
+          "status": "needs_review",
+          "required_source_type": "law",
+          "source_policy": {
+            "preferred": [
+              "official",
+              "law"
+            ],
+            "allowed": [
+              "official",
+              "law",
+              "document",
+              "web"
+            ],
+            "disallowed": [
+              "forum",
+              "rumor",
+              "unsourced_blog",
+              "unverifiable_ai_text"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "verified-seed-004",
+      "title": "가족관계증명서 발급 수수료",
+      "slug": "family-certificate-issuance-fee",
+      "category": "administration.gov_document",
+      "risk_tier": "medium",
+      "disclaimer_type": "check_official_source",
+      "status": "verification_candidate",
+      "selection_reason": {
+        "why_people_ask_ai": "온라인/무인발급기/방문 발급 비용을 비교하려고 묻는다.",
+        "why_ai_gets_wrong": "발급 채널별 수수료와 무료 조건이 혼동되기 쉽다.",
+        "official_source_available": true
+      },
+      "claims": [
+        {
+          "field_path": "certificate.family_relation_fee",
+          "question": "가족관계증명서 발급 수수료는 무엇인가요?",
+          "placeholder_value": "확인 필요",
+          "confidence": "low",
+          "status": "needs_review",
+          "required_source_type": "official",
+          "source_policy": {
+            "preferred": [
+              "official"
+            ],
+            "allowed": [
+              "official",
+              "document",
+              "web"
+            ],
+            "disallowed": [
+              "forum",
+              "rumor",
+              "unsourced_blog",
+              "unverifiable_ai_text"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "verified-seed-005",
+      "title": "운전면허증 재발급 수수료",
+      "slug": "driver-license-reissue-fee",
+      "category": "administration.license",
+      "risk_tier": "medium",
+      "disclaimer_type": "check_official_source",
+      "status": "verification_candidate",
+      "selection_reason": {
+        "why_people_ask_ai": "면허증 분실 시 재발급 비용과 절차를 빠르게 확인하려고 묻는다.",
+        "why_ai_gets_wrong": "모바일 면허증, 영문 면허증, IC 면허증 수수료가 섞일 수 있다.",
+        "official_source_available": true
+      },
+      "claims": [
+        {
+          "field_path": "driver_license.reissue_fee",
+          "question": "운전면허증 재발급 수수료는 무엇인가요?",
+          "placeholder_value": "확인 필요",
+          "confidence": "low",
+          "status": "needs_review",
+          "required_source_type": "official",
+          "source_policy": {
+            "preferred": [
+              "official"
+            ],
+            "allowed": [
+              "official",
+              "document",
+              "web"
+            ],
+            "disallowed": [
+              "forum",
+              "rumor",
+              "unsourced_blog",
+              "unverifiable_ai_text"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "verified-seed-006",
+      "title": "자동차 등록증 재발급 방법",
+      "slug": "car-registration-certificate-reissue",
+      "category": "administration.vehicle",
+      "risk_tier": "medium",
+      "disclaimer_type": "check_official_source",
+      "status": "verification_candidate",
+      "selection_reason": {
+        "why_people_ask_ai": "차량 서류를 잃어버렸을 때 어디서 재발급하는지 묻는다.",
+        "why_ai_gets_wrong": "정부24, 차량등록사업소, 수수료 안내가 지역별로 다를 수 있다.",
+        "official_source_available": true
+      },
+      "claims": [
+        {
+          "field_path": "vehicle.registration_certificate_reissue",
+          "question": "자동차 등록증 재발급 방법은 무엇인가요?",
+          "placeholder_value": "확인 필요",
+          "confidence": "low",
+          "status": "needs_review",
+          "required_source_type": "official",
+          "source_policy": {
+            "preferred": [
+              "official"
+            ],
+            "allowed": [
+              "official",
+              "document",
+              "web"
+            ],
+            "disallowed": [
+              "forum",
+              "rumor",
+              "unsourced_blog",
+              "unverifiable_ai_text"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "verified-seed-007",
+      "title": "인감증명서 발급 조건",
+      "slug": "seal-certificate-issuance-requirements",
+      "category": "administration.gov_document",
+      "risk_tier": "medium",
+      "disclaimer_type": "check_official_source",
+      "status": "verification_candidate",
+      "selection_reason": {
+        "why_people_ask_ai": "부동산/금융 거래 전 본인 방문 여부를 확인하려고 묻는다.",
+        "why_ai_gets_wrong": "본인/대리인, 전자본인서명확인서와 혼동되기 쉽다.",
+        "official_source_available": true
+      },
+      "claims": [
+        {
+          "field_path": "certificate.seal_issuance_requirements",
+          "question": "인감증명서 발급 조건은 무엇인가요?",
+          "placeholder_value": "확인 필요",
+          "confidence": "low",
+          "status": "needs_review",
+          "required_source_type": "official",
+          "source_policy": {
+            "preferred": [
+              "official"
+            ],
+            "allowed": [
+              "official",
+              "document",
+              "web"
+            ],
+            "disallowed": [
+              "forum",
+              "rumor",
+              "unsourced_blog",
+              "unverifiable_ai_text"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "verified-seed-008",
+      "title": "무인민원발급기 이용 가능 서류",
+      "slug": "kiosk-civil-documents",
+      "category": "administration.kiosk",
+      "risk_tier": "medium",
+      "disclaimer_type": "check_official_source",
+      "status": "verification_candidate",
+      "selection_reason": {
+        "why_people_ask_ai": "주말이나 야간에 어떤 서류를 뗄 수 있는지 확인하려고 묻는다.",
+        "why_ai_gets_wrong": "기기 위치와 발급 가능 서류가 지자체/기기별로 달라질 수 있다.",
+        "official_source_available": true
+      },
+      "claims": [
+        {
+          "field_path": "kiosk.available_documents",
+          "question": "무인민원발급기 이용 가능 서류는 무엇인가요?",
+          "placeholder_value": "확인 필요",
+          "confidence": "low",
+          "status": "needs_review",
+          "required_source_type": "official",
+          "source_policy": {
+            "preferred": [
+              "official"
+            ],
+            "allowed": [
+              "official",
+              "document",
+              "web"
+            ],
+            "disallowed": [
+              "forum",
+              "rumor",
+              "unsourced_blog",
+              "unverifiable_ai_text"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "verified-seed-009",
+      "title": "병적증명서 발급 방법",
+      "slug": "military-service-certificate-issuance",
+      "category": "administration.gov_document",
+      "risk_tier": "medium",
+      "disclaimer_type": "check_official_source",
+      "status": "verification_candidate",
+      "selection_reason": {
+        "why_people_ask_ai": "취업/유학/기관 제출용으로 발급 경로를 묻는다.",
+        "why_ai_gets_wrong": "정부24, 병무청, 주민센터 안내가 섞일 수 있다.",
+        "official_source_available": true
+      },
+      "claims": [
+        {
+          "field_path": "certificate.military_service_issuance",
+          "question": "병적증명서 발급 방법은 무엇인가요?",
+          "placeholder_value": "확인 필요",
+          "confidence": "low",
+          "status": "needs_review",
+          "required_source_type": "official",
+          "source_policy": {
+            "preferred": [
+              "official"
+            ],
+            "allowed": [
+              "official",
+              "document",
+              "web"
+            ],
+            "disallowed": [
+              "forum",
+              "rumor",
+              "unsourced_blog",
+              "unverifiable_ai_text"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "verified-seed-010",
+      "title": "출입국사실증명서 발급 수수료",
+      "slug": "immigration-fact-certificate-fee",
+      "category": "administration.gov_document",
+      "risk_tier": "medium",
+      "disclaimer_type": "check_official_source",
+      "status": "verification_candidate",
+      "selection_reason": {
+        "why_people_ask_ai": "비자/학교/회사 제출 시 비용과 발급 경로를 묻는다.",
+        "why_ai_gets_wrong": "온라인/방문/무인발급기 수수료와 무료 여부가 혼동될 수 있다.",
+        "official_source_available": true
+      },
+      "claims": [
+        {
+          "field_path": "certificate.immigration_fact_fee",
+          "question": "출입국사실증명서 발급 수수료는 무엇인가요?",
+          "placeholder_value": "확인 필요",
+          "confidence": "low",
+          "status": "needs_review",
+          "required_source_type": "official",
+          "source_policy": {
+            "preferred": [
+              "official"
+            ],
+            "allowed": [
+              "official",
+              "document",
+              "web"
+            ],
+            "disallowed": [
+              "forum",
+              "rumor",
+              "unsourced_blog",
+              "unverifiable_ai_text"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "verified-seed-011",
+      "title": "건축물대장 발급 방법",
+      "slug": "building-register-issuance",
+      "category": "administration.real_estate",
+      "risk_tier": "medium",
+      "disclaimer_type": "check_official_source",
+      "status": "verification_candidate",
+      "selection_reason": {
+        "why_people_ask_ai": "부동산 거래 전 건축물 정보를 확인하려고 묻는다.",
+        "why_ai_gets_wrong": "세움터, 정부24, 주민센터, 열람/발급 차이가 섞일 수 있다.",
+        "official_source_available": true
+      },
+      "claims": [
+        {
+          "field_path": "real_estate.building_register_issuance",
+          "question": "건축물대장 발급 방법은 무엇인가요?",
+          "placeholder_value": "확인 필요",
+          "confidence": "low",
+          "status": "needs_review",
+          "required_source_type": "official",
+          "source_policy": {
+            "preferred": [
+              "official"
+            ],
+            "allowed": [
+              "official",
+              "document",
+              "web"
+            ],
+            "disallowed": [
+              "forum",
+              "rumor",
+              "unsourced_blog",
+              "unverifiable_ai_text"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "verified-seed-012",
+      "title": "토지대장 발급 수수료",
+      "slug": "land-register-certificate-fee",
+      "category": "administration.real_estate",
+      "risk_tier": "medium",
+      "disclaimer_type": "check_official_source",
+      "status": "verification_candidate",
+      "selection_reason": {
+        "why_people_ask_ai": "토지 거래나 확인 시 발급 비용을 묻는다.",
+        "why_ai_gets_wrong": "열람/발급, 인터넷/방문, 지자체 안내가 다를 수 있다.",
+        "official_source_available": true
+      },
+      "claims": [
+        {
+          "field_path": "real_estate.land_register_fee",
+          "question": "토지대장 발급 수수료는 무엇인가요?",
+          "placeholder_value": "확인 필요",
+          "confidence": "low",
+          "status": "needs_review",
+          "required_source_type": "official",
+          "source_policy": {
+            "preferred": [
+              "official"
+            ],
+            "allowed": [
+              "official",
+              "document",
+              "web"
+            ],
+            "disallowed": [
+              "forum",
+              "rumor",
+              "unsourced_blog",
+              "unverifiable_ai_text"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "verified-seed-013",
+      "title": "혼인신고 처리 기간",
+      "slug": "marriage-registration-processing-time",
+      "category": "administration.family",
+      "risk_tier": "medium",
+      "disclaimer_type": "check_official_source",
+      "status": "verification_candidate",
+      "selection_reason": {
+        "why_people_ask_ai": "혼인신고 후 증명서 반영 시점을 묻는다.",
+        "why_ai_gets_wrong": "접수기관, 가족관계등록 반영, 해외 혼인신고가 섞일 수 있다.",
+        "official_source_available": true
+      },
+      "claims": [
+        {
+          "field_path": "family.marriage_registration_processing_time",
+          "question": "혼인신고 처리 기간은 무엇인가요?",
+          "placeholder_value": "확인 필요",
+          "confidence": "low",
+          "status": "needs_review",
+          "required_source_type": "official",
+          "source_policy": {
+            "preferred": [
+              "official"
+            ],
+            "allowed": [
+              "official",
+              "document",
+              "web"
+            ],
+            "disallowed": [
+              "forum",
+              "rumor",
+              "unsourced_blog",
+              "unverifiable_ai_text"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "verified-seed-014",
+      "title": "출생신고 기한",
+      "slug": "birth-registration-deadline",
+      "category": "administration.family",
+      "risk_tier": "medium",
+      "disclaimer_type": "check_official_source",
+      "status": "verification_candidate",
+      "selection_reason": {
+        "why_people_ask_ai": "출산 후 언제까지 신고해야 하는지 묻는다.",
+        "why_ai_gets_wrong": "출생신고, 양육수당/출산지원금 신청 기간이 섞일 수 있다.",
+        "official_source_available": true
+      },
+      "claims": [
+        {
+          "field_path": "family.birth_registration_deadline",
+          "question": "출생신고 기한은 무엇인가요?",
+          "placeholder_value": "확인 필요",
+          "confidence": "low",
+          "status": "needs_review",
+          "required_source_type": "law",
+          "source_policy": {
+            "preferred": [
+              "official",
+              "law"
+            ],
+            "allowed": [
+              "official",
+              "law",
+              "document",
+              "web"
+            ],
+            "disallowed": [
+              "forum",
+              "rumor",
+              "unsourced_blog",
+              "unverifiable_ai_text"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "verified-seed-015",
+      "title": "사망신고 기한",
+      "slug": "death-registration-deadline",
+      "category": "administration.family",
+      "risk_tier": "medium",
+      "disclaimer_type": "check_official_source",
+      "status": "verification_candidate",
+      "selection_reason": {
+        "why_people_ask_ai": "장례 후 행정 처리 기한을 확인하려고 묻는다.",
+        "why_ai_gets_wrong": "사망신고, 상속, 보험 청구 기한이 섞여 부정확해질 수 있다.",
+        "official_source_available": true
+      },
+      "claims": [
+        {
+          "field_path": "family.death_registration_deadline",
+          "question": "사망신고 기한은 무엇인가요?",
+          "placeholder_value": "확인 필요",
+          "confidence": "low",
+          "status": "needs_review",
+          "required_source_type": "law",
+          "source_policy": {
+            "preferred": [
+              "official",
+              "law"
+            ],
+            "allowed": [
+              "official",
+              "law",
+              "document",
+              "web"
+            ],
+            "disallowed": [
+              "forum",
+              "rumor",
+              "unsourced_blog",
+              "unverifiable_ai_text"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "verified-seed-016",
+      "title": "서울 지하철 기본요금",
+      "slug": "seoul-metro-base-fare",
+      "category": "transport.metro",
+      "risk_tier": "medium",
+      "disclaimer_type": "check_official_source",
+      "status": "verification_candidate",
+      "selection_reason": {
+        "why_people_ask_ai": "지하철 이용 전 현재 요금을 확인하려고 묻는다.",
+        "why_ai_gets_wrong": "요금 개편, 거리 추가요금, 청소년/어린이 요금이 섞일 수 있다.",
+        "official_source_available": true
+      },
+      "claims": [
+        {
+          "field_path": "metro.base_fare",
+          "question": "서울 지하철 기본요금은 무엇인가요?",
+          "placeholder_value": "확인 필요",
+          "confidence": "low",
+          "status": "needs_review",
+          "required_source_type": "official",
+          "source_policy": {
+            "preferred": [
+              "official"
+            ],
+            "allowed": [
+              "official",
+              "document",
+              "web"
+            ],
+            "disallowed": [
+              "forum",
+              "rumor",
+              "unsourced_blog",
+              "unverifiable_ai_text"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "verified-seed-017",
+      "title": "지하철 환승 시간 제한",
+      "slug": "metro-transfer-time-limit",
+      "category": "transport.metro",
+      "risk_tier": "medium",
+      "disclaimer_type": "check_official_source",
+      "status": "verification_candidate",
+      "selection_reason": {
+        "why_people_ask_ai": "버스/지하철 환승 가능 시간을 자주 묻는다.",
+        "why_ai_gets_wrong": "지역, 교통카드, 동일 노선 재승차, 심야 조건이 섞일 수 있다.",
+        "official_source_available": true
+      },
+      "claims": [
+        {
+          "field_path": "metro.transfer_time_limit",
+          "question": "지하철 환승 시간 제한은 무엇인가요?",
+          "placeholder_value": "확인 필요",
+          "confidence": "low",
+          "status": "needs_review",
+          "required_source_type": "official",
+          "source_policy": {
+            "preferred": [
+              "official"
+            ],
+            "allowed": [
+              "official",
+              "document",
+              "web"
+            ],
+            "disallowed": [
+              "forum",
+              "rumor",
+              "unsourced_blog",
+              "unverifiable_ai_text"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "verified-seed-018",
+      "title": "KTX 환불 위약금",
+      "slug": "ktx-refund-fee",
+      "category": "transport.rail",
+      "risk_tier": "medium",
+      "disclaimer_type": "check_official_source",
+      "status": "verification_candidate",
+      "selection_reason": {
+        "why_people_ask_ai": "기차표 취소 전 수수료를 확인하려고 묻는다.",
+        "why_ai_gets_wrong": "출발 전/후, 요일, 승차권 종류에 따라 수수료가 달라 혼동되기 쉽다.",
+        "official_source_available": true
+      },
+      "claims": [
+        {
+          "field_path": "rail.ktx_refund_fee",
+          "question": "KTX 환불 위약금은 무엇인가요?",
+          "placeholder_value": "확인 필요",
+          "confidence": "low",
+          "status": "needs_review",
+          "required_source_type": "platform",
+          "source_policy": {
+            "preferred": [
+              "platform",
+              "official"
+            ],
+            "allowed": [
+              "platform",
+              "official",
+              "document",
+              "web"
+            ],
+            "disallowed": [
+              "forum",
+              "rumor",
+              "unsourced_blog",
+              "unverifiable_ai_text"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "verified-seed-019",
+      "title": "SRT 환불 위약금",
+      "slug": "srt-refund-fee",
+      "category": "transport.rail",
+      "risk_tier": "medium",
+      "disclaimer_type": "check_official_source",
+      "status": "verification_candidate",
+      "selection_reason": {
+        "why_people_ask_ai": "SRT 승차권 취소 수수료를 확인하려고 묻는다.",
+        "why_ai_gets_wrong": "KTX 규정과 섞이거나 시간대별 기준이 틀릴 수 있다.",
+        "official_source_available": true
+      },
+      "claims": [
+        {
+          "field_path": "rail.srt_refund_fee",
+          "question": "SRT 환불 위약금은 무엇인가요?",
+          "placeholder_value": "확인 필요",
+          "confidence": "low",
+          "status": "needs_review",
+          "required_source_type": "platform",
+          "source_policy": {
+            "preferred": [
+              "platform",
+              "official"
+            ],
+            "allowed": [
+              "platform",
+              "official",
+              "document",
+              "web"
+            ],
+            "disallowed": [
+              "forum",
+              "rumor",
+              "unsourced_blog",
+              "unverifiable_ai_text"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "verified-seed-020",
+      "title": "고속버스 예매 취소 수수료",
+      "slug": "express-bus-cancellation-fee",
+      "category": "transport.bus",
+      "risk_tier": "medium",
+      "disclaimer_type": "check_official_source",
+      "status": "verification_candidate",
+      "selection_reason": {
+        "why_people_ask_ai": "고속버스 표를 취소하기 전에 수수료를 묻는다.",
+        "why_ai_gets_wrong": "출발 시간 기준, 예매처, 등급별 조건이 섞일 수 있다.",
+        "official_source_available": true
+      },
+      "claims": [
+        {
+          "field_path": "bus.express_cancellation_fee",
+          "question": "고속버스 예매 취소 수수료는 무엇인가요?",
+          "placeholder_value": "확인 필요",
+          "confidence": "low",
+          "status": "needs_review",
+          "required_source_type": "platform",
+          "source_policy": {
+            "preferred": [
+              "platform",
+              "official"
+            ],
+            "allowed": [
+              "platform",
+              "official",
+              "document",
+              "web"
+            ],
+            "disallowed": [
+              "forum",
+              "rumor",
+              "unsourced_blog",
+              "unverifiable_ai_text"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "verified-seed-021",
+      "title": "시외버스 예매 취소 수수료",
+      "slug": "intercity-bus-cancellation-fee",
+      "category": "transport.bus",
+      "risk_tier": "medium",
+      "disclaimer_type": "check_official_source",
+      "status": "verification_candidate",
+      "selection_reason": {
+        "why_people_ask_ai": "시외버스 표 취소 기준을 확인하려고 묻는다.",
+        "why_ai_gets_wrong": "고속버스 규정과 혼동되거나 플랫폼별 안내가 다를 수 있다.",
+        "official_source_available": true
+      },
+      "claims": [
+        {
+          "field_path": "bus.intercity_cancellation_fee",
+          "question": "시외버스 예매 취소 수수료는 무엇인가요?",
+          "placeholder_value": "확인 필요",
+          "confidence": "low",
+          "status": "needs_review",
+          "required_source_type": "platform",
+          "source_policy": {
+            "preferred": [
+              "platform",
+              "official"
+            ],
+            "allowed": [
+              "platform",
+              "official",
+              "document",
+              "web"
+            ],
+            "disallowed": [
+              "forum",
+              "rumor",
+              "unsourced_blog",
+              "unverifiable_ai_text"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "verified-seed-022",
+      "title": "공항철도 직통열차 요금",
+      "slug": "airport-railroad-express-fare",
+      "category": "transport.rail",
+      "risk_tier": "medium",
+      "disclaimer_type": "check_official_source",
+      "status": "verification_candidate",
+      "selection_reason": {
+        "why_people_ask_ai": "인천공항 이동 전 직통열차 비용을 묻는다.",
+        "why_ai_gets_wrong": "일반열차와 직통열차, 할인/제휴 요금이 섞일 수 있다.",
+        "official_source_available": true
+      },
+      "claims": [
+        {
+          "field_path": "rail.airport_express_fare",
+          "question": "공항철도 직통열차 요금은 무엇인가요?",
+          "placeholder_value": "확인 필요",
+          "confidence": "low",
+          "status": "needs_review",
+          "required_source_type": "official",
+          "source_policy": {
+            "preferred": [
+              "official"
+            ],
+            "allowed": [
+              "official",
+              "document",
+              "web"
+            ],
+            "disallowed": [
+              "forum",
+              "rumor",
+              "unsourced_blog",
+              "unverifiable_ai_text"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "verified-seed-023",
+      "title": "택시 심야 할증 시간",
+      "slug": "taxi-night-surcharge-time",
+      "category": "transport.taxi",
+      "risk_tier": "medium",
+      "disclaimer_type": "check_official_source",
+      "status": "verification_candidate",
+      "selection_reason": {
+        "why_people_ask_ai": "밤에 택시 탈 때 할증 시간과 요율을 묻는다.",
+        "why_ai_gets_wrong": "지역별, 시간대별, 택시 종류별 기준이 달라 AI가 틀리기 쉽다.",
+        "official_source_available": true
+      },
+      "claims": [
+        {
+          "field_path": "taxi.night_surcharge_time",
+          "question": "택시 심야 할증 시간은 무엇인가요?",
+          "placeholder_value": "확인 필요",
+          "confidence": "low",
+          "status": "needs_review",
+          "required_source_type": "official",
+          "source_policy": {
+            "preferred": [
+              "official"
+            ],
+            "allowed": [
+              "official",
+              "document",
+              "web"
+            ],
+            "disallowed": [
+              "forum",
+              "rumor",
+              "unsourced_blog",
+              "unverifiable_ai_text"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "verified-seed-024",
+      "title": "자동차 정기검사 유효기간",
+      "slug": "vehicle-inspection-validity-period",
+      "category": "transport.vehicle",
+      "risk_tier": "medium",
+      "disclaimer_type": "check_official_source",
+      "status": "verification_candidate",
+      "selection_reason": {
+        "why_people_ask_ai": "검사 만료 전 언제 받아야 하는지 묻는다.",
+        "why_ai_gets_wrong": "차종, 연식, 사업용 여부에 따라 주기가 달라 혼동될 수 있다.",
+        "official_source_available": true
+      },
+      "claims": [
+        {
+          "field_path": "vehicle.inspection_validity_period",
+          "question": "자동차 정기검사 유효기간은 무엇인가요?",
+          "placeholder_value": "확인 필요",
+          "confidence": "low",
+          "status": "needs_review",
+          "required_source_type": "official",
+          "source_policy": {
+            "preferred": [
+              "official"
+            ],
+            "allowed": [
+              "official",
+              "document",
+              "web"
+            ],
+            "disallowed": [
+              "forum",
+              "rumor",
+              "unsourced_blog",
+              "unverifiable_ai_text"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "verified-seed-025",
+      "title": "하이패스 미납 통행료 납부 방법",
+      "slug": "hipass-unpaid-toll-payment",
+      "category": "transport.expressway",
+      "risk_tier": "medium",
+      "disclaimer_type": "check_official_source",
+      "status": "verification_candidate",
+      "selection_reason": {
+        "why_people_ask_ai": "고속도로 미납요금이 생겼을 때 납부 방법을 묻는다.",
+        "why_ai_gets_wrong": "도로공사/민자도로/앱/편의점 납부 안내가 섞일 수 있다.",
+        "official_source_available": true
+      },
+      "claims": [
+        {
+          "field_path": "expressway.unpaid_toll_payment",
+          "question": "하이패스 미납 통행료 납부 방법은 무엇인가요?",
+          "placeholder_value": "확인 필요",
+          "confidence": "low",
+          "status": "needs_review",
+          "required_source_type": "official",
+          "source_policy": {
+            "preferred": [
+              "official"
+            ],
+            "allowed": [
+              "official",
+              "document",
+              "web"
+            ],
+            "disallowed": [
+              "forum",
+              "rumor",
+              "unsourced_blog",
+              "unverifiable_ai_text"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "verified-seed-026",
+      "title": "종합소득세 신고 기한",
+      "slug": "income-tax-filing-deadline",
+      "category": "tax.income",
+      "risk_tier": "high",
+      "disclaimer_type": "not_financial_or_tax_advice",
+      "status": "verification_candidate",
+      "selection_reason": {
+        "why_people_ask_ai": "프리랜서/사업자가 신고 마감일을 자주 묻는다.",
+        "why_ai_gets_wrong": "연도별 일정, 성실신고, 납부 연장, 지방소득세가 섞일 수 있다.",
+        "official_source_available": true
+      },
+      "claims": [
+        {
+          "field_path": "tax.income_filing_deadline",
+          "question": "종합소득세 신고 기한은 무엇인가요?",
+          "placeholder_value": "확인 필요",
+          "confidence": "low",
+          "status": "needs_review",
+          "required_source_type": "official",
+          "source_policy": {
+            "preferred": [
+              "official"
+            ],
+            "allowed": [
+              "official",
+              "document",
+              "web"
+            ],
+            "disallowed": [
+              "forum",
+              "rumor",
+              "unsourced_blog",
+              "unverifiable_ai_text"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "verified-seed-027",
+      "title": "부가가치세 신고 기한",
+      "slug": "vat-filing-deadline",
+      "category": "tax.vat",
+      "risk_tier": "high",
+      "disclaimer_type": "not_financial_or_tax_advice",
+      "status": "verification_candidate",
+      "selection_reason": {
+        "why_people_ask_ai": "사업자가 예정/확정 신고 시기를 확인하려고 묻는다.",
+        "why_ai_gets_wrong": "개인/법인, 예정/확정, 간이과세 기준이 섞일 수 있다.",
+        "official_source_available": true
+      },
+      "claims": [
+        {
+          "field_path": "tax.vat_filing_deadline",
+          "question": "부가가치세 신고 기한은 무엇인가요?",
+          "placeholder_value": "확인 필요",
+          "confidence": "low",
+          "status": "needs_review",
+          "required_source_type": "official",
+          "source_policy": {
+            "preferred": [
+              "official"
+            ],
+            "allowed": [
+              "official",
+              "document",
+              "web"
+            ],
+            "disallowed": [
+              "forum",
+              "rumor",
+              "unsourced_blog",
+              "unverifiable_ai_text"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "verified-seed-028",
+      "title": "자동차세 납부 기간",
+      "slug": "vehicle-tax-payment-period",
+      "category": "tax.local",
+      "risk_tier": "high",
+      "disclaimer_type": "not_financial_or_tax_advice",
+      "status": "verification_candidate",
+      "selection_reason": {
+        "why_people_ask_ai": "자동차세 고지 시기와 납부 기간을 확인하려고 묻는다.",
+        "why_ai_gets_wrong": "정기분, 연납, 지자체 고지 일정이 섞일 수 있다.",
+        "official_source_available": true
+      },
+      "claims": [
+        {
+          "field_path": "tax.vehicle_payment_period",
+          "question": "자동차세 납부 기간은 무엇인가요?",
+          "placeholder_value": "확인 필요",
+          "confidence": "low",
+          "status": "needs_review",
+          "required_source_type": "official",
+          "source_policy": {
+            "preferred": [
+              "official"
+            ],
+            "allowed": [
+              "official",
+              "document",
+              "web"
+            ],
+            "disallowed": [
+              "forum",
+              "rumor",
+              "unsourced_blog",
+              "unverifiable_ai_text"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "verified-seed-029",
+      "title": "재산세 납부 기간",
+      "slug": "property-tax-payment-period",
+      "category": "tax.local",
+      "risk_tier": "high",
+      "disclaimer_type": "not_financial_or_tax_advice",
+      "status": "verification_candidate",
+      "selection_reason": {
+        "why_people_ask_ai": "주택/토지 재산세 납부 시기를 묻는다.",
+        "why_ai_gets_wrong": "주택분 분할, 토지/건축물 과세 시기가 혼동될 수 있다.",
+        "official_source_available": true
+      },
+      "claims": [
+        {
+          "field_path": "tax.property_payment_period",
+          "question": "재산세 납부 기간은 무엇인가요?",
+          "placeholder_value": "확인 필요",
+          "confidence": "low",
+          "status": "needs_review",
+          "required_source_type": "official",
+          "source_policy": {
+            "preferred": [
+              "official"
+            ],
+            "allowed": [
+              "official",
+              "document",
+              "web"
+            ],
+            "disallowed": [
+              "forum",
+              "rumor",
+              "unsourced_blog",
+              "unverifiable_ai_text"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "verified-seed-030",
+      "title": "국내 주식 거래세",
+      "slug": "korea-stock-trading-tax",
+      "category": "finance.markets",
+      "risk_tier": "high",
+      "disclaimer_type": "not_financial_or_tax_advice",
+      "status": "verification_candidate",
+      "selection_reason": {
+        "why_people_ask_ai": "주식 매도 시 세금이 얼마인지 AI에게 묻는다.",
+        "why_ai_gets_wrong": "시장별 세율, 정책 변경, 수수료와 거래세가 섞일 수 있다.",
+        "official_source_available": true
+      },
+      "claims": [
+        {
+          "field_path": "finance.stock_transaction_tax",
+          "question": "국내 주식 거래세 기준은 무엇인가요?",
+          "placeholder_value": "확인 필요",
+          "confidence": "low",
+          "status": "needs_review",
+          "required_source_type": "official",
+          "source_policy": {
+            "preferred": [
+              "official"
+            ],
+            "allowed": [
+              "official",
+              "document",
+              "web"
+            ],
+            "disallowed": [
+              "forum",
+              "rumor",
+              "unsourced_blog",
+              "unverifiable_ai_text"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "verified-seed-031",
+      "title": "신용카드 해외 결제 수수료",
+      "slug": "credit-card-overseas-fee",
+      "category": "finance.card",
+      "risk_tier": "medium",
+      "disclaimer_type": "not_financial_or_tax_advice",
+      "status": "verification_candidate",
+      "selection_reason": {
+        "why_people_ask_ai": "해외 결제 전 카드 수수료를 확인하려고 묻는다.",
+        "why_ai_gets_wrong": "국제브랜드 수수료, 카드사 수수료, 환율 스프레드가 섞일 수 있다.",
+        "official_source_available": true
+      },
+      "claims": [
+        {
+          "field_path": "card.overseas_payment_fee",
+          "question": "신용카드 해외 결제 수수료는 무엇인가요?",
+          "placeholder_value": "확인 필요",
+          "confidence": "low",
+          "status": "needs_review",
+          "required_source_type": "platform",
+          "source_policy": {
+            "preferred": [
+              "platform",
+              "official"
+            ],
+            "allowed": [
+              "platform",
+              "official",
+              "document",
+              "web"
+            ],
+            "disallowed": [
+              "forum",
+              "rumor",
+              "unsourced_blog",
+              "unverifiable_ai_text"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "verified-seed-032",
+      "title": "예금자보호 한도",
+      "slug": "deposit-protection-limit",
+      "category": "finance.bank",
+      "risk_tier": "high",
+      "disclaimer_type": "not_financial_or_tax_advice",
+      "status": "verification_candidate",
+      "selection_reason": {
+        "why_people_ask_ai": "은행/저축은행 예금 안전성을 확인하려고 묻는다.",
+        "why_ai_gets_wrong": "기관별 보호 여부와 상품별 보호 대상이 혼동될 수 있다.",
+        "official_source_available": true
+      },
+      "claims": [
+        {
+          "field_path": "finance.deposit_protection_limit",
+          "question": "예금자보호 한도는 무엇인가요?",
+          "placeholder_value": "확인 필요",
+          "confidence": "low",
+          "status": "needs_review",
+          "required_source_type": "regulator",
+          "source_policy": {
+            "preferred": [
+              "regulator",
+              "official"
+            ],
+            "allowed": [
+              "regulator",
+              "official",
+              "document",
+              "web"
+            ],
+            "disallowed": [
+              "forum",
+              "rumor",
+              "unsourced_blog",
+              "unverifiable_ai_text"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "verified-seed-033",
+      "title": "전세보증금 반환보증 가입 조건",
+      "slug": "jeonse-deposit-guarantee-eligibility",
+      "category": "finance.real_estate",
+      "risk_tier": "high",
+      "disclaimer_type": "not_financial_or_tax_advice",
+      "status": "verification_candidate",
+      "selection_reason": {
+        "why_people_ask_ai": "전세 계약 전 보증 가입 가능 여부를 묻는다.",
+        "why_ai_gets_wrong": "기관별 조건, 주택가격 산정, 보증한도 기준이 자주 바뀌거나 복잡하다.",
+        "official_source_available": true
+      },
+      "claims": [
+        {
+          "field_path": "real_estate.jeonse_guarantee_eligibility",
+          "question": "전세보증금 반환보증 가입 조건은 무엇인가요?",
+          "placeholder_value": "확인 필요",
+          "confidence": "low",
+          "status": "needs_review",
+          "required_source_type": "official",
+          "source_policy": {
+            "preferred": [
+              "official"
+            ],
+            "allowed": [
+              "official",
+              "document",
+              "web"
+            ],
+            "disallowed": [
+              "forum",
+              "rumor",
+              "unsourced_blog",
+              "unverifiable_ai_text"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "verified-seed-034",
+      "title": "응급실 야간 진료비",
+      "slug": "er-night-visit-fee",
+      "category": "health.medical",
+      "risk_tier": "high",
+      "disclaimer_type": "not_medical_advice",
+      "status": "verification_candidate",
+      "selection_reason": {
+        "why_people_ask_ai": "야간 응급실 방문 전 비용 부담을 알고 싶어 한다.",
+        "why_ai_gets_wrong": "응급의료관리료, 야간가산, 본인부담, 병원 등급이 섞일 수 있다.",
+        "official_source_available": true
+      },
+      "claims": [
+        {
+          "field_path": "medical.er_night_fee",
+          "question": "응급실 야간 진료비와 가산 기준은 무엇인가요?",
+          "placeholder_value": "확인 필요",
+          "confidence": "low",
+          "status": "needs_review",
+          "required_source_type": "official",
+          "source_policy": {
+            "preferred": [
+              "official"
+            ],
+            "allowed": [
+              "official",
+              "document",
+              "web"
+            ],
+            "disallowed": [
+              "forum",
+              "rumor",
+              "unsourced_blog",
+              "unverifiable_ai_text"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "verified-seed-035",
+      "title": "건강보험 본인부담상한제",
+      "slug": "health-insurance-out-of-pocket-cap",
+      "category": "health.insurance",
+      "risk_tier": "high",
+      "disclaimer_type": "not_medical_advice",
+      "status": "verification_candidate",
+      "selection_reason": {
+        "why_people_ask_ai": "의료비가 많이 나왔을 때 환급 여부를 묻는다.",
+        "why_ai_gets_wrong": "소득분위, 연도별 상한액, 사전/사후 환급 기준이 복잡하다.",
+        "official_source_available": true
+      },
+      "claims": [
+        {
+          "field_path": "insurance.out_of_pocket_cap",
+          "question": "건강보험 본인부담상한제 기준은 무엇인가요?",
+          "placeholder_value": "확인 필요",
+          "confidence": "low",
+          "status": "needs_review",
+          "required_source_type": "official",
+          "source_policy": {
+            "preferred": [
+              "official"
+            ],
+            "allowed": [
+              "official",
+              "document",
+              "web"
+            ],
+            "disallowed": [
+              "forum",
+              "rumor",
+              "unsourced_blog",
+              "unverifiable_ai_text"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "verified-seed-036",
+      "title": "CBC 혈액검사 항목",
+      "slug": "cbc-blood-test-items",
+      "category": "health.clinical_pathology",
+      "risk_tier": "high",
+      "disclaimer_type": "not_medical_advice",
+      "status": "verification_candidate",
+      "selection_reason": {
+        "why_people_ask_ai": "검사 결과지를 보고 각 항목이 무엇인지 묻는다.",
+        "why_ai_gets_wrong": "수치 해석과 질병 진단으로 넘어가기 쉬워 안전 안내가 필요하다.",
+        "official_source_available": true
+      },
+      "claims": [
+        {
+          "field_path": "clinical_pathology.cbc_items",
+          "question": "CBC 혈액검사 항목은 무엇인가요?",
+          "placeholder_value": "확인 필요",
+          "confidence": "low",
+          "status": "needs_review",
+          "required_source_type": "medical_institution",
+          "source_policy": {
+            "preferred": [
+              "official",
+              "medical_institution",
+              "academic"
+            ],
+            "allowed": [
+              "official",
+              "medical_institution",
+              "academic",
+              "document",
+              "web"
+            ],
+            "disallowed": [
+              "forum",
+              "rumor",
+              "unsourced_blog",
+              "unverifiable_ai_text"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "verified-seed-037",
+      "title": "CRP 검사 의미",
+      "slug": "crp-test-meaning",
+      "category": "health.clinical_pathology",
+      "risk_tier": "high",
+      "disclaimer_type": "not_medical_advice",
+      "status": "verification_candidate",
+      "selection_reason": {
+        "why_people_ask_ai": "염증 수치라고 들은 CRP가 무엇인지 묻는다.",
+        "why_ai_gets_wrong": "수치별 질병 판단으로 과잉 해석될 수 있어 출처와 disclaimer가 필요하다.",
+        "official_source_available": true
+      },
+      "claims": [
+        {
+          "field_path": "clinical_pathology.crp_meaning",
+          "question": "CRP 검사 의미는 무엇인가요?",
+          "placeholder_value": "확인 필요",
+          "confidence": "low",
+          "status": "needs_review",
+          "required_source_type": "medical_institution",
+          "source_policy": {
+            "preferred": [
+              "official",
+              "medical_institution",
+              "academic"
+            ],
+            "allowed": [
+              "official",
+              "medical_institution",
+              "academic",
+              "document",
+              "web"
+            ],
+            "disallowed": [
+              "forum",
+              "rumor",
+              "unsourced_blog",
+              "unverifiable_ai_text"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "verified-seed-038",
+      "title": "CT와 MRI 차이",
+      "slug": "ct-mri-difference",
+      "category": "health.radiology",
+      "risk_tier": "high",
+      "disclaimer_type": "not_medical_advice",
+      "status": "verification_candidate",
+      "selection_reason": {
+        "why_people_ask_ai": "어떤 검사가 필요한지 이해하려고 차이를 묻는다.",
+        "why_ai_gets_wrong": "검사 선택 조언으로 오해될 수 있고 부위/질환별 차이가 복잡하다.",
+        "official_source_available": true
+      },
+      "claims": [
+        {
+          "field_path": "radiology.ct_mri_difference",
+          "question": "CT와 MRI 차이는 무엇인가요?",
+          "placeholder_value": "확인 필요",
+          "confidence": "low",
+          "status": "needs_review",
+          "required_source_type": "medical_institution",
+          "source_policy": {
+            "preferred": [
+              "official",
+              "medical_institution",
+              "academic"
+            ],
+            "allowed": [
+              "official",
+              "medical_institution",
+              "academic",
+              "document",
+              "web"
+            ],
+            "disallowed": [
+              "forum",
+              "rumor",
+              "unsourced_blog",
+              "unverifiable_ai_text"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "verified-seed-039",
+      "title": "X-ray와 CT 차이",
+      "slug": "xray-ct-difference",
+      "category": "health.radiology",
+      "risk_tier": "high",
+      "disclaimer_type": "not_medical_advice",
+      "status": "verification_candidate",
+      "selection_reason": {
+        "why_people_ask_ai": "영상검사 종류 차이를 알고 싶어 묻는다.",
+        "why_ai_gets_wrong": "방사선량, 해상도, 적응증을 단순화해 틀릴 수 있다.",
+        "official_source_available": true
+      },
+      "claims": [
+        {
+          "field_path": "radiology.xray_ct_difference",
+          "question": "X-ray와 CT 차이는 무엇인가요?",
+          "placeholder_value": "확인 필요",
+          "confidence": "low",
+          "status": "needs_review",
+          "required_source_type": "medical_institution",
+          "source_policy": {
+            "preferred": [
+              "official",
+              "medical_institution",
+              "academic"
+            ],
+            "allowed": [
+              "official",
+              "medical_institution",
+              "academic",
+              "document",
+              "web"
+            ],
+            "disallowed": [
+              "forum",
+              "rumor",
+              "unsourced_blog",
+              "unverifiable_ai_text"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "verified-seed-040",
+      "title": "독감 예방접종 시기",
+      "slug": "flu-vaccination-timing",
+      "category": "health.vaccine",
+      "risk_tier": "high",
+      "disclaimer_type": "not_medical_advice",
+      "status": "verification_candidate",
+      "selection_reason": {
+        "why_people_ask_ai": "계절마다 접종 시기와 대상자를 묻는다.",
+        "why_ai_gets_wrong": "연도별 권고, 무료 접종 대상, 백신 공급 일정이 달라질 수 있다.",
+        "official_source_available": true
+      },
+      "claims": [
+        {
+          "field_path": "vaccine.flu_timing",
+          "question": "독감 예방접종 시기는 무엇인가요?",
+          "placeholder_value": "확인 필요",
+          "confidence": "low",
+          "status": "needs_review",
+          "required_source_type": "official",
+          "source_policy": {
+            "preferred": [
+              "official"
+            ],
+            "allowed": [
+              "official",
+              "document",
+              "web"
+            ],
+            "disallowed": [
+              "forum",
+              "rumor",
+              "unsourced_blog",
+              "unverifiable_ai_text"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "verified-seed-041",
+      "title": "양변기 종류",
+      "slug": "toilet-types",
+      "category": "everyday.plumbing",
+      "risk_tier": "low",
+      "disclaimer_type": "none",
+      "status": "verification_candidate",
+      "selection_reason": {
+        "why_people_ask_ai": "제품 교체나 수리 전 양변기 형태를 AI에게 묻는다.",
+        "why_ai_gets_wrong": "국가/제조사 용어와 설치 방식이 섞여 부정확해질 수 있다.",
+        "official_source_available": true
+      },
+      "claims": [
+        {
+          "field_path": "plumbing.toilet_types",
+          "question": "양변기 종류는 무엇인가요?",
+          "placeholder_value": "확인 필요",
+          "confidence": "low",
+          "status": "needs_review",
+          "required_source_type": "manufacturer",
+          "source_policy": {
+            "preferred": [
+              "manufacturer",
+              "standard",
+              "official"
+            ],
+            "allowed": [
+              "manufacturer",
+              "standard",
+              "official",
+              "document",
+              "web"
+            ],
+            "disallowed": [
+              "forum",
+              "rumor",
+              "unsourced_blog",
+              "unverifiable_ai_text"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "verified-seed-042",
+      "title": "세면대 배수 구조",
+      "slug": "sink-drain-structure",
+      "category": "everyday.plumbing",
+      "risk_tier": "low",
+      "disclaimer_type": "none",
+      "status": "verification_candidate",
+      "selection_reason": {
+        "why_people_ask_ai": "막힘이나 부품 교체 전 구조를 알고 싶어 한다.",
+        "why_ai_gets_wrong": "트랩 종류, 팝업 배수, 벽배수/바닥배수가 혼동될 수 있다.",
+        "official_source_available": true
+      },
+      "claims": [
+        {
+          "field_path": "plumbing.sink_drain_structure",
+          "question": "세면대 배수 구조는 무엇인가요?",
+          "placeholder_value": "확인 필요",
+          "confidence": "low",
+          "status": "needs_review",
+          "required_source_type": "manufacturer",
+          "source_policy": {
+            "preferred": [
+              "manufacturer",
+              "standard",
+              "official"
+            ],
+            "allowed": [
+              "manufacturer",
+              "standard",
+              "official",
+              "document",
+              "web"
+            ],
+            "disallowed": [
+              "forum",
+              "rumor",
+              "unsourced_blog",
+              "unverifiable_ai_text"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "verified-seed-043",
+      "title": "전기 콘센트 접지 여부",
+      "slug": "power-outlet-grounding",
+      "category": "everyday.electricity",
+      "risk_tier": "medium",
+      "disclaimer_type": "check_official_source",
+      "status": "verification_candidate",
+      "selection_reason": {
+        "why_people_ask_ai": "가전제품 설치 전 접지 콘센트인지 확인하려고 묻는다.",
+        "why_ai_gets_wrong": "국가 규격, 접지형/비접지형, 안전 기준을 잘못 설명할 수 있다.",
+        "official_source_available": true
+      },
+      "claims": [
+        {
+          "field_path": "electricity.outlet_grounding",
+          "question": "전기 콘센트 접지 여부는 무엇인가요?",
+          "placeholder_value": "확인 필요",
+          "confidence": "low",
+          "status": "needs_review",
+          "required_source_type": "standard",
+          "source_policy": {
+            "preferred": [
+              "standard",
+              "official"
+            ],
+            "allowed": [
+              "standard",
+              "official",
+              "document",
+              "web"
+            ],
+            "disallowed": [
+              "forum",
+              "rumor",
+              "unsourced_blog",
+              "unverifiable_ai_text"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "verified-seed-044",
+      "title": "나사 머리 종류",
+      "slug": "screw-head-types",
+      "category": "everyday.hardware",
+      "risk_tier": "low",
+      "disclaimer_type": "none",
+      "status": "verification_candidate",
+      "selection_reason": {
+        "why_people_ask_ai": "공구 선택 전 나사 머리 모양 이름을 묻는다.",
+        "why_ai_gets_wrong": "제조사 명칭과 국제 표준, 일반 명칭이 섞일 수 있다.",
+        "official_source_available": true
+      },
+      "claims": [
+        {
+          "field_path": "hardware.screw_head_types",
+          "question": "나사 머리 종류는 무엇인가요?",
+          "placeholder_value": "확인 필요",
+          "confidence": "low",
+          "status": "needs_review",
+          "required_source_type": "standard",
+          "source_policy": {
+            "preferred": [
+              "standard",
+              "official"
+            ],
+            "allowed": [
+              "standard",
+              "official",
+              "document",
+              "web"
+            ],
+            "disallowed": [
+              "forum",
+              "rumor",
+              "unsourced_blog",
+              "unverifiable_ai_text"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "verified-seed-045",
+      "title": "자동차 차체 종류",
+      "slug": "car-body-types",
+      "category": "vehicle.car",
+      "risk_tier": "low",
+      "disclaimer_type": "none",
+      "status": "verification_candidate",
+      "selection_reason": {
+        "why_people_ask_ai": "세단/SUV/해치백 같은 차체 구분을 묻는다.",
+        "why_ai_gets_wrong": "마케팅 용어와 실제 차체 분류가 섞여 모호해질 수 있다.",
+        "official_source_available": true
+      },
+      "claims": [
+        {
+          "field_path": "vehicle.car_body_types",
+          "question": "자동차 차체 종류는 무엇인가요?",
+          "placeholder_value": "확인 필요",
+          "confidence": "low",
+          "status": "needs_review",
+          "required_source_type": "manufacturer",
+          "source_policy": {
+            "preferred": [
+              "manufacturer",
+              "standard",
+              "official"
+            ],
+            "allowed": [
+              "manufacturer",
+              "standard",
+              "official",
+              "document",
+              "web"
+            ],
+            "disallowed": [
+              "forum",
+              "rumor",
+              "unsourced_blog",
+              "unverifiable_ai_text"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "verified-seed-046",
+      "title": "알뜰폰 번호이동 소요일",
+      "slug": "mvno-number-porting-time",
+      "category": "telecom.mvno",
+      "risk_tier": "medium",
+      "disclaimer_type": "check_official_source",
+      "status": "verification_candidate",
+      "selection_reason": {
+        "why_people_ask_ai": "통신사 이동 전 개통 소요 시간을 묻는다.",
+        "why_ai_gets_wrong": "영업시간, 신분 확인, 유심/eSIM, 통신사 정책이 섞일 수 있다.",
+        "official_source_available": true
+      },
+      "claims": [
+        {
+          "field_path": "telecom.mvno_porting_time",
+          "question": "알뜰폰 번호이동 소요일은 무엇인가요?",
+          "placeholder_value": "확인 필요",
+          "confidence": "low",
+          "status": "needs_review",
+          "required_source_type": "platform",
+          "source_policy": {
+            "preferred": [
+              "platform",
+              "official"
+            ],
+            "allowed": [
+              "platform",
+              "official",
+              "document",
+              "web"
+            ],
+            "disallowed": [
+              "forum",
+              "rumor",
+              "unsourced_blog",
+              "unverifiable_ai_text"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "verified-seed-047",
+      "title": "KT 인터넷 해지 위약금",
+      "slug": "kt-internet-cancellation-penalty",
+      "category": "telecom.internet",
+      "risk_tier": "medium",
+      "disclaimer_type": "check_official_source",
+      "status": "verification_candidate",
+      "selection_reason": {
+        "why_people_ask_ai": "인터넷 해지 전 위약금 산정 방식을 묻는다.",
+        "why_ai_gets_wrong": "약정 기간, 할인반환금, 장비반환, 결합상품이 복잡하게 섞인다.",
+        "official_source_available": true
+      },
+      "claims": [
+        {
+          "field_path": "telecom.kt_cancellation_penalty",
+          "question": "KT 인터넷 해지 위약금은 무엇인가요?",
+          "placeholder_value": "확인 필요",
+          "confidence": "low",
+          "status": "needs_review",
+          "required_source_type": "platform",
+          "source_policy": {
+            "preferred": [
+              "platform",
+              "official"
+            ],
+            "allowed": [
+              "platform",
+              "official",
+              "document",
+              "web"
+            ],
+            "disallowed": [
+              "forum",
+              "rumor",
+              "unsourced_blog",
+              "unverifiable_ai_text"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "verified-seed-048",
+      "title": "네이버페이 환불 소요일",
+      "slug": "naverpay-refund-days",
+      "category": "commerce.refunds",
+      "risk_tier": "medium",
+      "disclaimer_type": "check_official_source",
+      "status": "verification_candidate",
+      "selection_reason": {
+        "why_people_ask_ai": "결제 취소 후 돈이 언제 돌아오는지 묻는다.",
+        "why_ai_gets_wrong": "결제수단, 가맹점 승인, 카드사 처리 기간이 섞일 수 있다.",
+        "official_source_available": true
+      },
+      "claims": [
+        {
+          "field_path": "commerce.naverpay_refund_days",
+          "question": "네이버페이 환불 소요일은 무엇인가요?",
+          "placeholder_value": "확인 필요",
+          "confidence": "low",
+          "status": "needs_review",
+          "required_source_type": "platform",
+          "source_policy": {
+            "preferred": [
+              "platform",
+              "official"
+            ],
+            "allowed": [
+              "platform",
+              "official",
+              "document",
+              "web"
+            ],
+            "disallowed": [
+              "forum",
+              "rumor",
+              "unsourced_blog",
+              "unverifiable_ai_text"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "verified-seed-049",
+      "title": "쿠팡 반품 가능 기간",
+      "slug": "coupang-return-period",
+      "category": "commerce.returns",
+      "risk_tier": "medium",
+      "disclaimer_type": "check_official_source",
+      "status": "verification_candidate",
+      "selection_reason": {
+        "why_people_ask_ai": "구매 후 반품 가능 기간을 확인하려고 묻는다.",
+        "why_ai_gets_wrong": "상품군, 판매자, 로켓배송/마켓플레이스, 단순변심 기준이 섞일 수 있다.",
+        "official_source_available": true
+      },
+      "claims": [
+        {
+          "field_path": "commerce.coupang_return_period",
+          "question": "쿠팡 반품 가능 기간은 무엇인가요?",
+          "placeholder_value": "확인 필요",
+          "confidence": "low",
+          "status": "needs_review",
+          "required_source_type": "platform",
+          "source_policy": {
+            "preferred": [
+              "platform",
+              "official"
+            ],
+            "allowed": [
+              "platform",
+              "official",
+              "document",
+              "web"
+            ],
+            "disallowed": [
+              "forum",
+              "rumor",
+              "unsourced_blog",
+              "unverifiable_ai_text"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "id": "verified-seed-050",
+      "title": "11번가 반품 기한",
+      "slug": "elevenst-return-deadline",
+      "category": "commerce.returns",
+      "risk_tier": "medium",
+      "disclaimer_type": "check_official_source",
+      "status": "verification_candidate",
+      "selection_reason": {
+        "why_people_ask_ai": "오픈마켓 구매 후 반품 가능한 날짜를 묻는다.",
+        "why_ai_gets_wrong": "판매자 정책, 상품군, 전자상거래법 기준이 혼동될 수 있다.",
+        "official_source_available": true
+      },
+      "claims": [
+        {
+          "field_path": "commerce.elevenst_return_deadline",
+          "question": "11번가 반품 기한은 무엇인가요?",
+          "placeholder_value": "확인 필요",
+          "confidence": "low",
+          "status": "needs_review",
+          "required_source_type": "platform",
+          "source_policy": {
+            "preferred": [
+              "platform",
+              "official"
+            ],
+            "allowed": [
+              "platform",
+              "official",
+              "document",
+              "web"
+            ],
+            "disallowed": [
+              "forum",
+              "rumor",
+              "unsourced_blog",
+              "unverifiable_ai_text"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
