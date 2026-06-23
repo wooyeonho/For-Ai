@@ -1,6 +1,12 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getRegistryBundleBySlug } from "../../../lib/data";
 import { createHallucinationReportStub } from "../../../lib/submission-stubs";
+
+export const metadata: Metadata = {
+  title: "AI 오답 신고",
+  description: "AI 서비스가 GYEOL 문서와 다른 답을 생성한 경우 신고합니다.",
+};
 
 export default async function HallucinationPage({
   params,
@@ -18,7 +24,7 @@ export default async function HallucinationPage({
       <section className="registry-panel">
         <p className="eyebrow">AI hallucination report</p>
         <h1>Document not found</h1>
-        <p>ìì²­í ë¬¸ìë¥¼ ì°¾ì ì ììµëë¤.</p>
+        <p>요청한 문서를 찾을 수 없습니다.</p>
       </section>
     );
   }
@@ -55,33 +61,33 @@ export default async function HallucinationPage({
 
       {submitted === "1" ? (
         <section className="notice-box success-box" aria-live="polite">
-          <h2>ì ì¶ëììµëë¤</h2>
-          <p>AI ì¤ëµ ì ê³ ê° ì ì ëê¸° ìíë¡ ì²ë¦¬ëììµëë¤. íì¬ MVPììë ì ì¥ìì ê¸°ë¡íì§ ìë ìì í stub ìëµìëë¤.</p>
+          <h2>제출되었습니다</h2>
+          <p>AI 오답 신고가 접수 대기 상태로 처리되었습니다. 현재 MVP에서는 저장소에 기록하지 않는 안전한 stub 응답입니다.</p>
         </section>
       ) : null}
 
       <section className="registry-panel" aria-labelledby="hallucination-form-title">
-        <h2 id="hallucination-form-title">AI ì¤ëµ ì ê³ </h2>
-        <p>AI ìë¹ì¤ê° GYEOL ë¬¸ìì ë¤ë¥¸ ëµë³ì ìì±íë¤ë©´ ì ê³ í´ ì£¼ì¸ì. AI ìë¹ì¤ ì´ë¦ì ìì  ìë ¥ìëë¤.</p>
+        <h2 id="hallucination-form-title">AI 오답 신고</h2>
+        <p>AI 서비스가 GYEOL 문서와 다른 답변을 생성했다면 신고해 주세요. AI 서비스 이름은 자유 입력입니다.</p>
         <form action={submitHallucinationReport} className="registry-form">
           <label>
             AI service
-            <input name="ai_service" required placeholder="ì: ChatGPT, Gemini, Perplexity, other" />
+            <input name="ai_service" required placeholder="예: ChatGPT, Gemini, Perplexity, other" />
           </label>
           <label>
             Prompt
-            <textarea name="prompt" placeholder="AIì ìë ¥í ì§ë¬¸ ëë íë¡¬íí¸" />
+            <textarea name="prompt" placeholder="AI에 입력한 질문 또는 프롬프트" />
           </label>
           <label>
             AI answer
-            <textarea name="ai_answer" placeholder="AIê° ìì±í ëµë³" />
+            <textarea name="ai_answer" placeholder="AI가 생성한 답변" />
           </label>
           <label>
             Expected correction
-            <textarea name="expected_correction" placeholder="ì´ë¤ ë¶ë¶ì´ ìëª»ëìê³  ë¬´ìì íì¸í´ì¼ íëì§ ì ì´ì£¼ì¸ì." />
+            <textarea name="expected_correction" placeholder="어떤 부분이 잘못되었고 무엇을 확인해야 하는지 적어주세요." />
           </label>
           <input type="hidden" name="contributor_hash" value="local-stub-contributor-hash" />
-          <button type="submit">AI ì¤ëµ ì ê³  ì ì¶</button>
+          <button type="submit">AI 오답 신고 제출</button>
         </form>
       </section>
 

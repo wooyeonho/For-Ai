@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+      - name: Guard - stale route path
+        run: node scripts/ci-guards.mjs route
+
+      - name: Guard - mojibake / broken encoding
+        run: node scripts/ci-guards.mjs mojibake
+
+      - name: Guard - generated artifacts
+        run: node scripts/ci-guards.mjs artifacts
+
+      - name: Guard - diff size
+        if: github.event_name == 'pull_request'
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: node scripts/ci-guards.mjs diff-size
+
+      - name: AI-readiness doctor
+        run: node scripts/ai-readiness-doctor.mjs
+
+      - name: Validate topic candidates
+        run: |
+          node scripts/validate-topic-candidates.mjs data/topic-candidates.sample.jsonl
+          node scripts/validate-topic-candidates.mjs data/topic-candidates/long-tail-combination-sample.jsonl
