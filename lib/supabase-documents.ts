@@ -28,7 +28,8 @@ export async function getRegistryBundleFromSupabase(slug: string): Promise<Regis
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !key) return null;
 
-  const sb = createClient(url, key);
+  try {
+    const sb = createClient(url, key);
 
   const { data: v3Doc } = await sb
     .from("documents")
@@ -144,4 +145,8 @@ export async function getRegistryBundleFromSupabase(slug: string): Promise<Regis
     claims,
     listing: null,
   };
+  } catch (error) {
+    console.warn("Failed to load registry bundle from Supabase", error);
+    return null;
+  }
 }

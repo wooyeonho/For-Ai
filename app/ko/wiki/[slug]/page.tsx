@@ -18,7 +18,8 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const bundle = getRegistryBundleBySlug(slug);
+  let bundle: RegistryDocumentBundle | null = getRegistryBundleBySlug(slug);
+  if (!bundle) bundle = await getRegistryBundleFromSupabase(slug);
   if (!bundle) return { title: "Document not found" };
   return buildDocumentMetadata(bundle);
 }
