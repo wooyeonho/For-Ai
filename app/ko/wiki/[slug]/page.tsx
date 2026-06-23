@@ -12,13 +12,20 @@ export async function generateStaticParams() {
   return getAllRegistryBundles().map((b) => ({ slug: b.document.slug }));
 }
 
+async function getMetadataBundle(slug: string): Promise<RegistryDocumentBundle | null> {
+  const staticBundle = getRegistryBundleBySlug(slug);
+  if (staticBundle) return staticBundle;
+
+  return getRegistryBundleFromSupabase(slug);
+}
+
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const bundle = getRegistryBundleBySlug(slug);
+  const bundle = await getMetadataBundle(slug);
   if (!bundle) return { title: "Document not found" };
   return buildDocumentMetadata(bundle);
 }

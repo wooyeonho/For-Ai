@@ -16,6 +16,13 @@ export async function generateStaticParams() {
   );
 }
 
+async function getMetadataBundle(slug: string): Promise<RegistryDocumentBundle | null> {
+  const staticBundle = getRegistryBundleBySlug(slug);
+  if (staticBundle) return staticBundle;
+
+  return getRegistryBundleFromSupabase(slug);
+}
+
 export async function generateMetadata({
   params,
 }: {
@@ -23,7 +30,7 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale, slug } = await params;
   if (!isValidLocale(locale)) return { title: "Not found" };
-  const bundle = getRegistryBundleBySlug(slug);
+  const bundle = await getMetadataBundle(slug);
   if (!bundle) return { title: "Document not found" };
   return buildDocumentMetadata(bundle);
 }
