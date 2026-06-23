@@ -2,7 +2,14 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 
-const PROVIDERS = [
+const PROVIDER_ICONS: Record<string, string> = {
+  perplexity: "🔍",
+  gemini: "✦",
+  gpt: "◎",
+  grok: "⚡",
+};
+
+const FALLBACK_PROVIDERS = [
   { key: "perplexity", label: "Perplexity (웹 검색)", icon: "🔍" },
   { key: "gemini", label: "Gemini 2.0", icon: "✦" },
   { key: "gpt", label: "GPT-4o", icon: "◎" },
@@ -25,6 +32,13 @@ interface ConsensusInfo {
   agreed_providers?: string[];
 }
 
+interface ProviderOption {
+  key: string;
+  label: string;
+  model?: string;
+  supports_web_search?: boolean;
+}
+
 interface GenerateResult {
   topic: string;
   lang: string;
@@ -41,13 +55,18 @@ interface GenerateResult {
     single: number;
   };
   error?: string;
+  save_status?: "saved" | "failed" | "skipped";
   save_error?: string;
+  save_error_details?: Record<string, unknown>;
 }
 
 export default function AdminGeneratePage() {
   const [topic, setTopic] = useState("");
   const [count, setCount] = useState(10);
   const [lang, setLang] = useState("ko");
+  const [availableProviders, setAvailableProviders] = useState<ProviderOption[]>([]);
+  const [providersLoading, setProvidersLoading] = useState(true);
+  const [providersError, setProvidersError] = useState("");
   const [selectedProviders, setSelectedProviders] = useState<string[]>(["perplexity"]);
   const [crossVerify, setCrossVerify] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -58,6 +77,23 @@ export default function AdminGeneratePage() {
   useEffect(() => {
     const saved = localStorage.getItem("gyeol_admin_secret");
     if (saved) setAdminSecret(saved);
+
+    async function loadProviders() {
+      try {
+        const res = await fetch("/api/admin/generate-candidates");
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+        const providers = (data.available_providers ?? []) as ProviderOption[];
+        setAvailableProviders(providers);
+        if (providers.length > 0) setSelectedProviders([providers[0].key]);
+      } catch (e) {
+        setProvidersError(String(e));
+      } finally {
+        setProvidersLoading(false);
+      }
+    }
+
+    loadProviders();
   }, []);
 
   function saveAdminSecret(value: string) {
@@ -192,23 +228,32 @@ export default function AdminGeneratePage() {
             AI 모델 선택
           </label>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {PROVIDERS.map((p) => (
+            {(availableProviders.length > 0 ? availableProviders : FALLBACK_PROVIDERS).map((p) => (
               <button
                 key={p.key}
-                onClick={() => toggleProvider(p.key)}
+                onClick={() => availableProviders.length > 0 && toggleProvider(p.key)}
+                disabled={availableProviders.length === 0}
                 style={{
                   padding: "8px 14px",
                   border: selectedProviders.includes(p.key) ? "2px solid #2563eb" : "1px solid #e5e7eb",
                   borderRadius: 8,
                   background: selectedProviders.includes(p.key) ? "#eff6ff" : "#fff",
-                  cursor: "pointer",
+                  cursor: availableProviders.length === 0 ? "not-allowed" : "pointer",
+                  opacity: availableProviders.length === 0 ? 0.55 : 1,
                   fontSize: 14,
                 }}
               >
-                {p.icon} {p.label}
+                {PROVIDER_ICONS[p.key] ?? "•"} {p.label}
               </button>
             ))}
           </div>
+          {providersLoading && <p style={{ marginTop: 8, fontSize: 12, color: "#6b7280" }}>사용 가능한 provider 확인 중...</p>}
+          {!providersLoading && availableProviders.length === 0 && (
+            <p style={{ marginTop: 8, fontSize: 12, color: "#b45309" }}>
+              사용 가능한 provider가 없습니다. 배포 환경변수에 PERPLEXITY_API_KEY 등 provider API key를 설정해야 합니다.
+              {providersError && ` (${providersError})`}
+            </p>
+          )}
         </div>
 
         {/* Options row */}
@@ -241,7 +286,7 @@ export default function AdminGeneratePage() {
         {/* Generate button */}
         <button
           onClick={handleGenerate}
-          disabled={loading || !topic.trim() || selectedProviders.length === 0}
+          disabled={loading || !topic.trim() || selectedProviders.length === 0 || availableProviders.length === 0}
           style={{
             padding: "12px 24px",
             background: loading ? "#9ca3af" : "#2563eb",
@@ -250,7 +295,7 @@ export default function AdminGeneratePage() {
             borderRadius: 8,
             fontSize: 16,
             fontWeight: 600,
-            cursor: loading ? "not-allowed" : "pointer",
+            cursor: loading || !topic.trim() || selectedProviders.length === 0 || availableProviders.length === 0 ? "not-allowed" : "pointer",
           }}
         >
           {loading ? "생성 중..." : `후보 ${count}개 생성`}
@@ -285,7 +330,12 @@ export default function AdminGeneratePage() {
 
           {result.save_error && (
             <div style={{ padding: 12, background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, marginBottom: 16, fontSize: 13, color: "#b91c1c" }}>
-              DB 저장 실패: {result.save_error}
+              <strong>DB 저장 실패:</strong> {result.save_error}
+              {result.save_error_details && (
+                <pre style={{ whiteSpace: "pre-wrap", marginTop: 8, fontSize: 12 }}>
+                  {JSON.stringify(result.save_error_details, null, 2)}
+                </pre>
+              )}
             </div>
           )}
 

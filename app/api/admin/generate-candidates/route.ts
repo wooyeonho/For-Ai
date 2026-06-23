@@ -217,6 +217,7 @@ export async function POST(request: Request) {
   // Save to DB if configured
   let saved: unknown[] = [];
   let saveError: string | null = null;
+  let saveErrorDetails: Record<string, unknown> | null = null;
   const client = supabaseAdmin();
 
   if (saveToDb && client) {
@@ -237,11 +238,29 @@ export async function POST(request: Request) {
 
     if (error) {
       saveError = error.message;
+      saveErrorDetails = {
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+      };
+      console.error("[admin/generate-candidates] Supabase insert failed", {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+        attempted_rows: dbRows.length,
+      });
     } else {
       saved = data ?? [];
     }
   } else if (saveToDb && !client) {
     saveError = "SUPABASE_SERVICE_ROLE_KEY not configured. AI candidates generated but cannot be saved. anon key is not accepted for ai_generated inserts due to RLS policy.";
+    saveErrorDetails = {
+      missing_env: [
+        ...(!SUPABASE_URL ? ["NEXT_PUBLIC_SUPABASE_URL"] : []),
+        ...(!SUPABASE_SERVICE_ROLE_KEY ? ["SUPABASE_SERVICE_ROLE_KEY"] : []),
+      ],
+    };
   }
 
   return NextResponse.json({
@@ -253,7 +272,11 @@ export async function POST(request: Request) {
     provider_results: providerResults,
     total_generated: allCandidates.length,
     saved: saved.length,
+    save_status: saveToDb
+      ? (saveError ? "failed" : "saved")
+      : "skipped",
     ...(saveError ? { save_error: saveError } : {}),
+    ...(saveErrorDetails ? { save_error_details: saveErrorDetails } : {}),
     ...(consensusResults ? {
       consensus_summary: {
         total_unique: consensusResults.length,
