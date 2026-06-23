@@ -1,11 +1,112 @@
+import { createClient } from "@supabase/supabase-js";
 import { getAllRegistryBundles } from "../../lib/data";
 import { siteUrl, documentPageUrl, apiDocumentUrl, rawMarkdownUrl } from "../../lib/urls";
+import type { Confidence, DocumentStatus, RegistryDocumentBundle } from "../../lib/types";
 
 // Static-first AI/RAG entry point. Served as text/plain at /llms.txt.
-export const dynamic = "force-static";
+// Revalidate periodically so the lightweight Supabase document index can be included
+// without making llms.txt depend on Supabase availability.
+export const revalidate = 60;
 
-export function GET() {
-  const bundles = getAllRegistryBundles();
+type DocumentIndexItem = {
+  slug: string;
+  lang: string;
+  title: string;
+  status: DocumentStatus;
+  confidence: Confidence;
+  source: "static" | "supabase";
+};
+
+type SupabaseDocumentRow = {
+  slug: string | null;
+  lang: string | null;
+  title: string | null;
+  status: string | null;
+  confidence: string | null;
+};
+
+function toConfidence(value: unknown): Confidence {
+  return value === "medium" || value === "high" ? value : "low";
+}
+
+function toDocumentStatus(value: unknown): DocumentStatus {
+  return ["ai_draft", "needs_review", "verified", "published", "archived"].includes(String(value))
+    ? (value as DocumentStatus)
+    : "needs_review";
+}
+
+function indexItemFromBundle(bundle: RegistryDocumentBundle): DocumentIndexItem {
+  const { document } = bundle;
+  return {
+    slug: document.slug,
+    lang: document.lang,
+    title: document.title,
+    status: document.status,
+    confidence: document.confidence,
+    source: "static",
+  };
+}
+
+function indexKey(item: Pick<DocumentIndexItem, "lang" | "slug">): string {
+  return `${item.lang}:${item.slug}`;
+}
+
+async function getSupabaseDocumentIndex(): Promise<DocumentIndexItem[]> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !key) return [];
+
+  try {
+    const supabase = createClient(url, key);
+    const { data, error } = await supabase
+      .from("documents")
+      .select("status,confidence,slug,lang,title")
+      .in("status", ["verified", "published", "needs_review"])
+      .order("lang", { ascending: true })
+      .order("slug", { ascending: true })
+      .limit(500);
+
+    if (error) return [];
+
+    return ((data ?? []) as SupabaseDocumentRow[])
+      .filter((row) => row.slug && row.lang && row.title)
+      .map((row) => ({
+        slug: String(row.slug),
+        lang: String(row.lang),
+        title: String(row.title),
+        status: toDocumentStatus(row.status),
+        confidence: toConfidence(row.confidence),
+        source: "supabase" as const,
+      }));
+  } catch {
+    return [];
+  }
+}
+
+function documentLine(item: DocumentIndexItem): string {
+  return (
+    `- [${item.title}](${documentPageUrl(item.slug, item.lang)}) — ` +
+    `status: ${item.status}, confidence: ${item.confidence}, source: ${item.source} ` +
+    `· JSON: ${apiDocumentUrl(item.slug)} · Markdown: ${rawMarkdownUrl(item.slug)}`
+  );
+}
+
+export async function GET() {
+  const staticIndex = getAllRegistryBundles().map(indexItemFromBundle);
+  const seen = new Set(staticIndex.map(indexKey));
+  const supabaseIndex = (await getSupabaseDocumentIndex()).filter((item) => {
+    const key = indexKey(item);
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  const documents = [...staticIndex, ...supabaseIndex].sort((a, b) =>
+    a.lang === b.lang ? a.title.localeCompare(b.title, a.lang) : a.lang.localeCompare(b.lang),
+  );
+  const verifiedDocuments = documents.filter(
+    (item) => item.status === "verified" || item.status === "published",
+  );
+  const needsReviewDocuments = documents.filter((item) => item.status === "needs_review");
 
   const lines: string[] = [];
   lines.push("# GYEOL — Local Fact Registry");
@@ -31,18 +132,19 @@ export function GET() {
   lines.push("");
   lines.push(`- [Sitemap](${siteUrl("/sitemap.xml")})`);
   lines.push(`- [Robots](${siteUrl("/robots.txt")})`);
+  lines.push(`- Per-document canonical page: \`${documentPageUrl("<slug>", "<lang>")}\``);
   lines.push(`- Per-document JSON: \`${apiDocumentUrl("<slug>")}\``);
   lines.push(`- Per-document Markdown: \`${rawMarkdownUrl("<slug>")}\``);
   lines.push("");
-  lines.push("## Documents");
+  lines.push("## Verified documents");
   lines.push("");
-  for (const b of bundles) {
-    const d = b.document;
-    lines.push(
-      `- [${d.title}](${documentPageUrl(d.slug, d.lang)}) — status: ${d.status}, confidence: ${d.confidence} ` +
-        `· JSON: ${apiDocumentUrl(d.slug)} · Markdown: ${rawMarkdownUrl(d.slug)}`,
-    );
-  }
+  if (verifiedDocuments.length === 0) lines.push("- None yet.");
+  for (const item of verifiedDocuments) lines.push(documentLine(item));
+  lines.push("");
+  lines.push("## Needs review documents");
+  lines.push("");
+  if (needsReviewDocuments.length === 0) lines.push("- None yet.");
+  for (const item of needsReviewDocuments) lines.push(documentLine(item));
   lines.push("");
 
   return new Response(lines.join("\n"), {
