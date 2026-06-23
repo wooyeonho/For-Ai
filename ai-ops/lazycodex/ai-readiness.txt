@@ -1,1 +1,36 @@
-$ulw-loop "Improve AI-readiness outputs for registry documents: JSON API, raw markdown, JSON-LD, sitemap, diagnostics. Do not change schema-v3. Ensure all links are consistent and all unknown facts remain low confidence."
+$ulw-plan "Split AI-readiness work into seven small PRs. Each PR must keep the listed file scope, run npm run lint, npm run build, and npm run ci:guards, and include in the PR description: (1) what becomes easier to discover and (2) how AI citation safety is guaranteed.
+
+PR 1: Supabase documents in sitemap
+- Goal: include Supabase-backed registry documents in sitemap output.
+- Suggested scope: app/sitemap.ts, lib/supabase-documents.ts, lib/urls.ts, small guard updates only if needed.
+- Acceptance: static seed documents and Supabase documents both produce canonical wiki URLs; failures fall back without breaking build.
+
+PR 2: Supabase fallback for metadata
+- Goal: metadata generation uses Supabase document fallback when static seed lookup misses.
+- Suggested scope: app/[locale]/wiki/[slug]/page.tsx, app/ko/wiki/[slug]/page.tsx, lib/seo.ts, lib/supabase-documents.ts.
+- Acceptance: title/description/canonical metadata remain stable and do not invent unknown facts.
+
+PR 3: Supabase fallback for raw markdown
+- Goal: raw markdown route can render Supabase-backed registry documents when static seed lookup misses.
+- Suggested scope: app/raw/[...path]/route.ts, lib/render.ts, lib/supabase-documents.ts.
+- Acceptance: raw Markdown remains claim-level, source-aware, and readable without client-side JavaScript.
+
+PR 4: Supabase fallback for diagnostics
+- Goal: diagnostics route reports Supabase-backed registry documents when static seed lookup misses.
+- Suggested scope: app/diagnostics/[slug]/page.tsx, lib/supabase-documents.ts, scripts/ci-guards.mjs only if adding a targeted guard.
+- Acceptance: diagnostics clearly identify missing/low-confidence facts as 확인 필요 and do not treat documents.data as canonical truth.
+
+PR 5: Supabase documents in llms.txt
+- Goal: llms.txt includes Supabase-backed registry document links as secondary discovery hints.
+- Suggested scope: app/llms.txt/route.ts, lib/supabase-documents.ts, lib/urls.ts.
+- Acceptance: llms.txt remains secondary, points to canonical pages/raw/API resources, and is not used as the citation engine.
+
+PR 6: homepage discoverability
+- Goal: strengthen homepage paths for humans, search engines, and AI crawlers to find registry documents.
+- Suggested scope: app/page.tsx, app/components/HomeSearch.tsx, app/components/SiteHeader.tsx, app/globals.css.
+- Acceptance: core links are visible in raw HTML, use canonical URLs, and do not add fake facts or chatbot-like UX.
+
+PR 7: admin audit log
+- Goal: add minimal admin audit logging for admin verification/promote/import actions without adding accounts or complex auth.
+- Suggested scope: schema-v3.sql, supabase/migrations/*audit*.sql, app/api/admin/*/route.ts, lib/admin-stubs.ts or a small lib/admin-audit.ts.
+- Acceptance: audit log follows schema-v3, stores actor/action metadata without raw IP addresses, uses contributor_hash where needed, and public read is not allowed."

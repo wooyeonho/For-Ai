@@ -1,0 +1,25 @@
+$ulw-loop "PR 4: diagnostics Supabase fallback.
+
+Product guardrails:
+- Diagnostics must support AI/readiness checks without becoming a factual source of truth.
+- schema-v3.sql remains the source of truth.
+- documents.data is rendering convenience only.
+- Unknown facts must show '확인 필요' and confidence low.
+
+Allowed file scope:
+- app/diagnostics/[slug]/page.tsx
+- lib/supabase-documents.ts
+- scripts/ci-guards.mjs only for a targeted diagnostics guard if needed
+
+Task:
+Apply Supabase fallback to diagnostics when static seed lookup misses.
+
+Acceptance criteria:
+- Diagnostics reports Supabase-backed document readiness without inventing facts.
+- Low-confidence and missing source states remain visible.
+- Diagnostics links use canonical wiki/raw/API URLs.
+- Run npm run lint, npm run build, and npm run ci:guards.
+
+PR description must include:
+- What is more discoverable: operational diagnostics can find Supabase-backed registry documents.
+- AI citation safety: diagnostics validates source/confidence status and does not replace canonical claim/source data."

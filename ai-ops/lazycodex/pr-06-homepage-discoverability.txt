@@ -1,0 +1,26 @@
+$ulw-loop "PR 6: homepage discoverability.
+
+Product guardrails:
+- Static-first rendering is mandatory; important links must be present in raw HTML.
+- GYEOL is not an AI wiki and must not become a chatbot UI.
+- Do not invent facts or venue details.
+- Public submissions do not require login.
+
+Allowed file scope:
+- app/page.tsx
+- app/components/HomeSearch.tsx
+- app/components/SiteHeader.tsx
+- app/globals.css
+
+Task:
+Strengthen homepage discoverability for humans, search engines, and AI crawlers.
+
+Acceptance criteria:
+- Canonical registry, raw Markdown, JSON API, sitemap, diagnostics, and submission paths are easier to find where appropriate.
+- Critical links are visible in server-rendered HTML.
+- UX remains a local fact registry, not an AI wiki or chatbot.
+- Run npm run lint, npm run build, and npm run ci:guards.
+
+PR description must include:
+- What is more discoverable: homepage entry points to registry documents and machine-readable resources.
+- AI citation safety: homepage directs crawlers to canonical claim/source resources rather than unsourced summaries."

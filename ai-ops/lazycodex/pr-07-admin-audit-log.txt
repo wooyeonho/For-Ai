@@ -1,0 +1,29 @@
+$ulw-loop "PR 7: admin audit log.
+
+Product guardrails:
+- schema-v3.sql is the source of truth.
+- Canonical structure remains entities -> documents -> claims -> claim_sources -> verification_events.
+- Do not add user accounts, complex auth, payments, or a large admin system.
+- Public read is not allowed for edits, reports, or hallucination_reports.
+- Never store raw IP addresses; store contributor_hash only when request attribution is needed.
+
+Allowed file scope:
+- schema-v3.sql
+- supabase/migrations/*audit*.sql
+- app/api/admin/*/route.ts only for touched admin actions
+- lib/admin-stubs.ts or a small lib/admin-audit.ts
+- scripts/ci-guards.mjs only for a targeted audit/privacy guard if needed
+
+Task:
+Add minimal admin audit logging for admin verification, promotion, import, or generation actions without expanding auth scope.
+
+Acceptance criteria:
+- Audit rows capture action, target identifiers, timestamps, and safe actor metadata only.
+- No raw IP addresses are stored.
+- RLS/public-read rules prevent public reading of audit data.
+- Existing claim-level verification flow remains canonical.
+- Run npm run lint, npm run build, and npm run ci:guards.
+
+PR description must include:
+- What is more discoverable: admin changes become internally traceable for maintainers without exposing private audit data.
+- AI citation safety: audit history helps verify provenance while canonical claim/source tables remain the citation basis."

@@ -1,0 +1,25 @@
+$ulw-loop "PR 5: Supabase documents in llms.txt.
+
+Product guardrails:
+- llms.txt is secondary.
+- llms.txt is not the legal basis and not the citation engine.
+- Canonical pages, raw Markdown, and JSON API remain the authoritative discovery/citation targets.
+- No fake facts; unknown facts remain '확인 필요' with low confidence.
+
+Allowed file scope:
+- app/llms.txt/route.ts
+- lib/supabase-documents.ts
+- lib/urls.ts
+
+Task:
+Include Supabase-backed registry document links in llms.txt as secondary discovery hints.
+
+Acceptance criteria:
+- llms.txt lists canonical page, raw Markdown, and/or API links for Supabase-backed documents.
+- The route degrades gracefully if Supabase is unavailable.
+- Text clearly avoids treating llms.txt as a citation engine.
+- Run npm run lint, npm run build, and npm run ci:guards.
+
+PR description must include:
+- What is more discoverable: Supabase-backed document endpoints are listed for AI crawlers.
+- AI citation safety: llms.txt only points to canonical resources and remains secondary to claim/source pages."

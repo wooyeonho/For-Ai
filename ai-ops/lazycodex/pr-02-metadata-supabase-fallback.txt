@@ -1,0 +1,26 @@
+$ulw-loop "PR 2: metadata Supabase fallback.
+
+Product guardrails:
+- Static-first rendering is mandatory and raw HTML must remain useful without client-side JavaScript.
+- schema-v3.sql is the source of truth.
+- Display titles are language-specific; English slug is stable.
+- Do not invent facts; unknown facts remain '확인 필요' with low confidence.
+
+Allowed file scope:
+- app/[locale]/wiki/[slug]/page.tsx
+- app/ko/wiki/[slug]/page.tsx
+- lib/seo.ts
+- lib/supabase-documents.ts
+
+Task:
+Apply Supabase fallback in metadata generation when static seed lookup misses, without changing canonical claim data rules.
+
+Acceptance criteria:
+- Metadata title, description, canonical URL, and JSON-LD references remain stable.
+- Supabase fallback does not promote documents.data into canonical truth.
+- Missing facts are not converted into confident metadata claims.
+- Run npm run lint, npm run build, and npm run ci:guards.
+
+PR description must include:
+- What is more discoverable: Supabase-backed pages receive useful metadata for search and AI crawlers.
+- AI citation safety: metadata points to canonical registry pages and never invents claim/source content."

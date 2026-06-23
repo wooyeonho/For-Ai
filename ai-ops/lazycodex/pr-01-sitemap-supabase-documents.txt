@@ -1,0 +1,27 @@
+$ulw-loop "PR 1: Supabase documents in sitemap.
+
+Product guardrails:
+- GYEOL is a local fact registry, not an AI wiki.
+- Static-first rendering is mandatory.
+- schema-v3.sql is the source of truth; do not use schema-v2.sql or invent a different model.
+- Do not invent facts or venue details. Unknown facts remain '확인 필요' with low confidence.
+- llms.txt is secondary and is not the citation engine.
+
+Allowed file scope:
+- app/sitemap.ts
+- lib/supabase-documents.ts
+- lib/urls.ts
+- scripts/ci-guards.mjs only for a targeted sitemap guard if needed
+
+Task:
+Include Supabase-backed registry documents in sitemap output while preserving existing static seed sitemap entries. If Supabase is unavailable, fail gracefully so builds do not break.
+
+Acceptance criteria:
+- Static seed documents and Supabase documents both produce canonical wiki URLs.
+- Sitemap entries use stable English slugs and locale-aware display routes.
+- No factual claims are added in sitemap code.
+- Run npm run lint, npm run build, and npm run ci:guards.
+
+PR description must include:
+- What is more discoverable: Supabase-backed registry document URLs in sitemap.
+- AI citation safety: sitemap only exposes canonical document URLs and does not create citation content or facts."
