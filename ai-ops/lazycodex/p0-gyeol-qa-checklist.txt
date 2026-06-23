@@ -1,0 +1,88 @@
+# P0 GYEOL QA Checklist
+
+목적: Supabase에서 promoted 상태가 된 동일 문서가 공개 표면 전반에서 정적으로, 일관되게, 검증 상태에 맞게 노출되는지 확인한다.
+
+기준 테스트 문서:
+- entity_id: kr-weddinghall-laluce-001
+- slug: myungdong-laluce-parking
+- page: /ko/wiki/myungdong-laluce-parking
+
+## 실패 등급
+
+- P0: 배포 차단. 공개 문서 접근, 검색/AI 색인 표면, 메타데이터, verified claim 인용 안전성에 직접 영향을 주는 실패.
+- P1: 다음 배포 전 수정. 핵심 공개 동작은 가능하지만 일관성, 진단 가능성, QA 신뢰도를 떨어뜨리는 실패.
+- P2: backlog. 사용자/AI가 사실로 오인할 가능성은 낮지만 품질 개선이 필요한 실패.
+
+## 필수 QA 항목
+
+각 항목은 같은 Supabase promoted 문서와 같은 slug로 검사한다.
+
+1. `/ko/wiki/{slug}` 공개 문서 페이지
+   - 확인: Supabase promoted 문서가 `/ko/wiki/{slug}`에서 열린다.
+   - 통과 조건: HTTP 200이며, 핵심 문서 내용이 raw HTML에서 읽힌다. 클라이언트 JavaScript 실행이 없어도 본문 claim 요약이 보인다.
+   - 실패 등급: 열리지 않거나 raw HTML에 핵심 내용이 없으면 P0. 일부 보조 UI만 누락되면 P2.
+
+2. `/api/documents/{slug}` 문서 API
+   - 확인: 같은 문서가 `/api/documents/{slug}`에서 열린다.
+   - 통과 조건: HTTP 200이며, slug, entity_id, promoted 문서 식별 정보, claims 데이터가 같은 문서를 가리킨다.
+   - 실패 등급: 404/500 또는 다른 문서를 반환하면 P0. 선택적 진단 필드 누락은 P1.
+
+3. `/raw/{slug}.md` raw Markdown
+   - 확인: 같은 문서가 `/raw/{slug}.md`에서 열린다.
+   - 통과 조건: HTTP 200이며, 사람이 읽을 수 있는 Markdown으로 동일 문서의 핵심 내용과 claim 상태가 표시된다.
+   - 실패 등급: 열리지 않거나 다른 문서를 반환하면 P0. formatting 문제만 있으면 P2.
+
+4. `/diagnostics/{slug}` 진단 페이지
+   - 확인: 같은 문서가 `/diagnostics/{slug}`에서 열린다.
+   - 통과 조건: HTTP 200이며, 문서의 promoted 상태, slug, entity_id, claim/source/verification 상태를 QA가 판별할 수 있다.
+   - 실패 등급: 열리지 않으면 P1. 잘못된 문서 또는 상태를 보여 배포 판단을 오도하면 P0.
+
+5. `/sitemap.xml` 포함 여부
+   - 확인: 같은 문서가 `/sitemap.xml`에 들어간다.
+   - 통과 조건: `/ko/wiki/{slug}` canonical URL이 sitemap에 포함된다.
+   - 실패 등급: promoted 공개 문서가 누락되면 P0. lastmod 등 부가 메타만 부정확하면 P2.
+
+6. `/llms.txt` 포함 여부
+   - 확인: 같은 문서가 `/llms.txt`에 들어간다.
+   - 통과 조건: promoted 문서의 공개 URL 또는 raw/summary 엔트리가 포함된다. 단, `llms.txt`는 보조 표면이며 법적 근거 또는 citation engine으로 취급하지 않는다.
+   - 실패 등급: promoted 공개 문서가 누락되면 P1. 설명 문구만 개선 필요하면 P2.
+
+7. metadata title/description/canonical
+   - 확인: metadata title, description, canonical이 `Document not found`가 아니다.
+   - 통과 조건: HTML `<title>`, description meta, canonical link가 실제 문서 title/description/URL을 반영한다.
+   - 실패 등급: `Document not found` 또는 잘못된 canonical이면 P0. description 품질만 낮으면 P2.
+
+8. verified claim 인용 가능성
+   - 확인: verified claim만 인용 가능하게 보인다.
+   - 통과 조건: 인용 버튼, citation block, source-backed quote UI는 verified claim에만 노출된다.
+   - 실패 등급: unverified/needs_review/low confidence claim이 인용 가능하게 보이면 P0. 라벨 문구가 모호하면 P1.
+
+9. 미검증 claim 오인 방지
+   - 확인: `확인 필요`, `low`, `needs_review`, `sources: 0` claim이 사실값처럼 보이지 않는다.
+   - 통과 조건: 해당 claim은 미검증/낮은 신뢰/검토 필요로 명확히 표시되고, verified fact와 시각적으로 구분된다.
+   - 실패 등급: 사실값처럼 표시되거나 AI/사용자가 verified fact로 오인할 수 있으면 P0. 구분은 되지만 강조가 약하면 P1. copy 개선만 필요하면 P2.
+
+## QA 기록 형식
+
+각 실행마다 아래 형식으로 기록한다.
+
+```text
+Date:
+Environment:
+Slug:
+
+[ ] /ko/wiki/{slug} - Pass/Fail - Severity(P0/P1/P2 if fail) - Notes:
+[ ] /api/documents/{slug} - Pass/Fail - Severity(P0/P1/P2 if fail) - Notes:
+[ ] /raw/{slug}.md - Pass/Fail - Severity(P0/P1/P2 if fail) - Notes:
+[ ] /diagnostics/{slug} - Pass/Fail - Severity(P0/P1/P2 if fail) - Notes:
+[ ] /sitemap.xml - Pass/Fail - Severity(P0/P1/P2 if fail) - Notes:
+[ ] /llms.txt - Pass/Fail - Severity(P0/P1/P2 if fail) - Notes:
+[ ] metadata title/description/canonical - Pass/Fail - Severity(P0/P1/P2 if fail) - Notes:
+[ ] verified claim citation gating - Pass/Fail - Severity(P0/P1/P2 if fail) - Notes:
+[ ] unverified/low/needs_review/sources:0 claim presentation - Pass/Fail - Severity(P0/P1/P2 if fail) - Notes:
+
+Deployment decision:
+- If any P0 exists: BLOCK deployment.
+- If any P1 exists and no P0 exists: fix before next deployment.
+- P2 only: add to backlog.
+```
