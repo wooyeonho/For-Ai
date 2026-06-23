@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 
 const PROVIDERS = [
@@ -39,6 +39,17 @@ export default function AdminGeneratePage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<GenerateResult | null>(null);
   const [error, setError] = useState("");
+  const [adminSecret, setAdminSecret] = useState("");
+
+  useEffect(() => {
+    const saved = localStorage.getItem("gyeol_admin_secret");
+    if (saved) setAdminSecret(saved);
+  }, []);
+
+  function saveAdminSecret(value: string) {
+    setAdminSecret(value);
+    localStorage.setItem("gyeol_admin_secret", value);
+  }
 
   function toggleProvider(key: string) {
     setSelectedProviders((prev) =>
@@ -55,7 +66,10 @@ export default function AdminGeneratePage() {
     try {
       const res = await fetch("/api/admin/generate-candidates", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-secret": adminSecret,
+        },
         body: JSON.stringify({
           topic: topic.trim(),
           count,
@@ -66,7 +80,12 @@ export default function AdminGeneratePage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || `HTTP ${res.status}`);
+        const msg = data.error || `HTTP ${res.status}`;
+        setError(msg);
+        if (res.status === 401) {
+          setAdminSecret("");
+          localStorage.removeItem("gyeol_admin_secret");
+        }
       } else {
         setResult(data);
       }
@@ -89,6 +108,31 @@ export default function AdminGeneratePage() {
       </p>
 
       <div style={{ display: "grid", gap: 20 }}>
+        {/* Admin secret */}
+        <div style={{ padding: 12, background: adminSecret ? "#f0fdf4" : "#fef3c7", borderRadius: 8, border: `1px solid ${adminSecret ? "#86efac" : "#f59e0b"}` }}>
+          <label style={{ fontWeight: 600, fontSize: 14, display: "block", marginBottom: 6 }}>
+            관리자 인증키 {adminSecret && "✓"}
+          </label>
+          <div style={{ display: "flex", gap: 8 }}>
+            <input
+              type="password"
+              value={adminSecret}
+              onChange={(e) => setAdminSecret(e.target.value)}
+              onBlur={(e) => { if (e.target.value) saveAdminSecret(e.target.value); }}
+              placeholder="ADMIN_SECRET 입력"
+              style={{ flex: 1, padding: "8px 12px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 }}
+            />
+            {adminSecret && (
+              <button
+                onClick={() => { setAdminSecret(""); localStorage.removeItem("gyeol_admin_secret"); }}
+                style={{ padding: "8px 12px", border: "1px solid #fca5a5", borderRadius: 6, background: "#fff", color: "#dc2626", fontSize: 12, cursor: "pointer" }}
+              >
+                초기화
+              </button>
+            )}
+          </div>
+        </div>
+
         {/* Topic input */}
         <div>
           <label style={{ fontWeight: 600, fontSize: 14, display: "block", marginBottom: 6 }}>
