@@ -1,6 +1,13 @@
 import { createClient } from "@supabase/supabase-js";
 import type { ClaimSource, ClaimStatus, Confidence, RegistryDocumentBundle } from "./types";
 
+export interface SupabaseDocumentIndexItem {
+  slug: string;
+  lang: string;
+  updated_at: string | null;
+  last_verified_at: string | null;
+}
+
 function isClaimStatus(value: unknown): value is ClaimStatus {
   return ["needs_review", "verified", "disputed", "unknown"].includes(String(value));
 }
@@ -21,6 +28,33 @@ function sourceFromRow(row: Record<string, unknown>): ClaimSource {
     contributor_hash: (row.contributor_hash ?? null) as string | null,
     created_at: (row.created_at ?? null) as string | null,
   };
+}
+
+export async function getSupabaseDocumentIndex(): Promise<SupabaseDocumentIndexItem[]> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !key) return [];
+
+  try {
+    const sb = createClient(url, key);
+    const { data, error } = await sb
+      .from("documents")
+      .select("slug, lang, updated_at, last_verified_at")
+      .in("status", ["published", "verified"]);
+
+    if (error || !data) return [];
+
+    return data
+      .filter((row) => row.slug)
+      .map((row) => ({
+        slug: String(row.slug),
+        lang: String(row.lang ?? "ko"),
+        updated_at: (row.updated_at ?? null) as string | null,
+        last_verified_at: (row.last_verified_at ?? null) as string | null,
+      }));
+  } catch {
+    return [];
+  }
 }
 
 export async function getRegistryBundleFromSupabase(slug: string): Promise<RegistryDocumentBundle | null> {
