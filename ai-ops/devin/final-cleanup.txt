@@ -1,0 +1,30 @@
+Audit and clean up this repository after multiple AI-assisted development passes.
+
+Goals:
+1. Preserve the product identity:
+   - GYEOL is not an AI wiki.
+   - GYEOL is a local fact registry for AI, search engines, and humans.
+   - schema-v3.sql is the source of truth.
+   - Do not invent a new database model.
+   - Keep canonical structure: entities -> documents -> claims -> claim_sources -> verification_events.
+
+2. Clean up implementation drift:
+   - Remove route mismatches.
+   - Fix stale docs.
+   - Ensure machine-readable outputs match actual routes.
+   - Ensure unknown facts show "확인 필요" and low confidence.
+   - Ensure no fake facts were introduced.
+   - Ensure public submissions do not store raw IP addresses.
+
+3. Production readiness:
+   - Run lint/build/tests.
+   - Add missing smoke tests if needed.
+   - Check static-first rendering for core registry pages.
+   - Verify JSON API and raw markdown outputs.
+   - Update deployment checklist.
+
+4. Deliverables:
+   - Summary of changed files.
+   - Risk notes.
+   - Remaining TODOs.
+   - Final commit-ready state.

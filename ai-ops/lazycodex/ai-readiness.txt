@@ -1,0 +1,1 @@
+$ulw-loop "Improve AI-readiness outputs for registry documents: JSON API, raw markdown, JSON-LD, sitemap, diagnostics. Do not change schema-v3. Ensure all links are consistent and all unknown facts remain low confidence."

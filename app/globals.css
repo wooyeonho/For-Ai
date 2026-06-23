@@ -533,9 +533,7 @@ h2 {
 .document-list li a:hover {
   text-decoration: underline;
 }
-
-/* ==========================================================================
-   World-class shell: header, footer, landing
+/* World-class shell: header, footer, landing
    ========================================================================== */
 
 :root {

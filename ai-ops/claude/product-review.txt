@@ -1,0 +1,14 @@
+You are reviewing GYEOL as a Silicon Valley product strategist, senior infrastructure engineer, and seed-stage investor.
+
+GYEOL is a local fact registry for AI, search engines, and humans. It is not an AI wiki. Its canonical model is entities -> documents -> claims -> claim_sources -> verification_events. Static-first rendering is mandatory. Unknown facts must show "확인 필요" with low confidence.
+
+Review:
+1. Is this a real AI-era product opportunity?
+2. What is the narrowest wedge market?
+3. What should the MVP prove in 30 days?
+4. What would make this investable?
+5. What should not be built yet?
+6. What data-quality rules are missing?
+7. What should Devin clean up later?
+
+Be brutally honest. Do not propose user accounts, payments, or complex admin systems for MVP.

@@ -30,11 +30,11 @@ const SLUGS = [
   "apartment-noise-standard",
   "seoul-recycling-schedule",
   "credit-card-overseas-fee",
-  "jeonse-deposit-return-deadline",
+  "jeonse-deposit-return",
   "csat-registration-period",
   "university-tuition-deadline",
   "kt-internet-cancellation-fee",
-  "mvno-number-porting-days",
+  "mvno-number-porting",
   "rental-report-requirement",
   "real-estate-brokerage-fee",
   "naverpay-refund-days",
@@ -65,6 +65,7 @@ const ROUTES = [
   "/admin/import",
   "/sitemap.xml",
   "/robots.txt",
+  "/llms.txt",
 ];
 
 let failures = 0;

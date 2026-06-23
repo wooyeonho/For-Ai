@@ -1,10 +1,21 @@
 import type { ClaimSource, RegistryDocumentBundle } from "./types";
+import { apiDocumentUrl, documentPageUrl, rawMarkdownUrl } from "./urls";
 
 export type RenderedDocumentJson = {
   entity: RegistryDocumentBundle["entity"];
   document: RegistryDocumentBundle["document"];
   claims: RegistryDocumentBundle["claims"];
   listing: RegistryDocumentBundle["listing"];
+  machine_readable: {
+    canonical_url: string;
+    json_url: string;
+    raw_markdown_url: string;
+  };
+  update_status: {
+    last_verified_at: string;
+    updated_at: string;
+    rule: string;
+  };
 };
 
 const UNKNOWN_TEXT = "확인 필요";
@@ -39,11 +50,23 @@ function renderTopLevelSources(claims: RegistryDocumentBundle["claims"]): string
 }
 
 export function renderDocumentJson(bundle: RegistryDocumentBundle): RenderedDocumentJson {
+  const { document } = bundle;
+
   return {
     entity: bundle.entity,
-    document: bundle.document,
+    document,
     claims: bundle.claims,
     listing: bundle.listing,
+    machine_readable: {
+      canonical_url: documentPageUrl(document.slug, document.lang),
+      json_url: apiDocumentUrl(document.slug),
+      raw_markdown_url: rawMarkdownUrl(document.slug),
+    },
+    update_status: {
+      last_verified_at: document.last_verified_at ?? UNKNOWN_TEXT,
+      updated_at: document.updated_at ?? UNKNOWN_TEXT,
+      rule: "Unsourced or unknown facts must remain 확인 필요 with low confidence.",
+    },
   };
 }
 
