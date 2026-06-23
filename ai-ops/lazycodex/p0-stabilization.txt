@@ -1,3 +1,5 @@
+$ulw-loop "$(cat ai-ops/lazycodex/prompts/discovery-and-citation-review.txt)"
+
 $ulw-plan "Create a P0 stabilization plan for GYEOL. Focus only on Korean mojibake, route mismatch, static-first gaps, lint/build stability, and preserving schema-v3 claim-level model. Do not edit code."
 
 $ulw-loop "Fix Korean mojibake in visible UI/SEO/diagnostics strings. Run lint and build. Stop when both pass."
