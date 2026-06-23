@@ -1,7 +1,13 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getRegistryBundleBySlug } from "../../../lib/data";
 import { getRegistryDocumentPaths } from "../../../lib/seo";
+
+export const metadata: Metadata = {
+  title: "AI-readiness 진단",
+  description: "GYEOL 문서의 정적 라우트·구조화 데이터·인용 준비 상태를 점검합니다.",
+};
 
 export default async function DiagnosticsPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;

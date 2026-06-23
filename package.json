@@ -6,7 +6,10 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "ci:guards": "node scripts/ci-guards.mjs all",
+    "ai:doctor": "node scripts/ai-readiness-doctor.mjs",
+    "ai:lazycodex:doctor": "node scripts/ai-readiness-doctor.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.8",
