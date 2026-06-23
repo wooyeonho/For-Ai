@@ -1,0 +1,45 @@
+$ulw-plan "Run a continuous QA review for GYEOL. Treat GYEOL as a local fact registry for AI, search engines, and humans, not an AI wiki. Do not change the schema model. `schema-v3.sql` is the source of truth, and the canonical chain is entities -> documents -> claims -> claim_sources -> verification_events. Static-first rendering is mandatory: core document content must be readable from raw HTML without client-side JavaScript. No fake facts; unknown facts must stay `확인 필요` with low confidence."
+
+$ulw-loop "Perform the GYEOL continuous QA checklist below. Prefer reading code, route handlers, generated metadata, and rendered/static outputs before editing. If edits are needed, keep them minimal and aligned with schema-v3 claim-level truth.
+
+Required checks:
+1. Sitemap coverage
+   - Verify Supabase promoted documents are included in the generated sitemap.
+   - Confirm static/seed documents and Supabase documents use the same canonical URL conventions.
+
+2. `/llms.txt` coverage
+   - Verify Supabase promoted documents are included in `/llms.txt`.
+   - Confirm `/llms.txt` remains secondary and is not treated as the legal basis or citation engine.
+
+3. Raw markdown route
+   - Verify `/raw/{slug}.md` supports Supabase-backed documents as well as static/seed documents.
+   - Confirm raw markdown exposes only claim-level, source-aware content and does not invent missing facts.
+
+4. Diagnostics route
+   - Verify `/diagnostics/{slug}` supports Supabase-backed documents as well as static/seed documents.
+   - Confirm diagnostics make machine-readable readiness, citation/source state, and missing verification visible.
+
+5. Wiki page metadata fallback
+   - Verify wiki page metadata generation can use Supabase fallback data when a slug is not present in static/seed data.
+   - Confirm metadata uses stable English slugs while display titles remain language-specific.
+
+6. Claim citation safety
+   - Verify claims without verified status or without sources cannot appear citation-ready, citation-approved, or source-backed.
+   - Confirm unknown/unsupported claims display `확인 필요` and low confidence.
+
+7. Admin flow continuity
+   - Verify the admin generate -> candidates -> promote -> verify flow is not broken.
+   - Check route handlers and UI entry points for `/api/admin/generate-candidates`, `/admin/candidates`, `/api/admin/promote-candidate`, `/admin/verify-claim`, and `/api/admin/verify-claim`.
+   - Confirm public read is not opened for edits, reports, or hallucination_reports, and raw IP addresses are not stored.
+
+Operational reporting rules:
+- Save every LazyCodex run result to `ai-ops/lazycodex/reports/YYYY-MM-DD.md` using the execution date in UTC.
+- Each report must include: scope, commands run, files inspected, pass/fail status for each required check, discovered issues, and follow-up PR links or branch names when available.
+- Classify every issue as P0, P1, or P2:
+  - P0: Breaks static-first public document access, promoted Supabase document discoverability, citation safety, or the admin generate/candidates/promote/verify path. P0 findings must become immediate fix PR targets.
+  - P1: Important correctness, metadata, diagnostics, or AI-readiness gap that does not fully block public access or citation safety.
+  - P2: Cleanup, documentation, developer-experience, copy, or observability improvement.
+- If any P0 is found, stop broad cleanup work and create or update a focused fix PR for the P0 before continuing lower-priority work.
+- Do not create fake facts, venue details, user accounts, payments, complex auth, or a different database model while fixing findings.
+
+After the review, run the strongest available checks for this repo (at minimum lint/build if configured), then write or update today's report under `ai-ops/lazycodex/reports/`."
