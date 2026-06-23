@@ -82,7 +82,7 @@ export default async function ReportPage({
           </label>
           <label>
             정정 요청 내용
-            <textarea name="message" required minLength={5} placeholder="어떤 claim이 왜 수정되어야 하는지 적어주세요." />
+            <textarea name="message" required minLength={5} placeholder="어떤 claim이 정정되어야 하는지 적어주세요." />
           </label>
           <input type="hidden" name="contributor_hash" value="local-stub-contributor-hash" />
           <button type="submit">정정 요청 제출</button>

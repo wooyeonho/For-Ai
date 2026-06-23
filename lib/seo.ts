@@ -2,6 +2,16 @@ import type { Metadata } from "next";
 import type { RegistryDocumentBundle } from "./types";
 import { documentPageUrl, apiDocumentUrl, rawMarkdownUrl } from "./urls";
 
+/** Returns canonical URL paths for a registry document — used by diagnostics and machine-readable panels. */
+export function getRegistryDocumentPaths(bundle: RegistryDocumentBundle) {
+  const { document } = bundle;
+  return {
+    canonicalPath: `/ko/wiki/${document.slug}`,
+    apiPath: `/api/documents/${document.slug}`,
+    rawMarkdownPath: `/raw/${document.slug}.md`,
+  };
+}
+
 export function buildDocumentMetadata(bundle: RegistryDocumentBundle): Metadata {
   const { entity, document } = bundle;
   const title = document.title;
@@ -65,7 +75,7 @@ export function buildDocumentJsonLd(bundle: RegistryDocumentBundle): object {
         "@type": "DataDownload",
         encodingFormat: "application/json",
         contentUrl: apiDocumentUrl(document.slug),
-        },
+      },
       {
         "@type": "DataDownload",
         encodingFormat: "text/markdown",
@@ -80,18 +90,5 @@ export function buildDocumentJsonLd(bundle: RegistryDocumentBundle): object {
     })),
     dateModified: document.updated_at ?? undefined,
     inLanguage: document.lang,
-  };
-}
-
-export function getRegistryDocumentPaths(bundle: RegistryDocumentBundle): {
-  canonicalPath: string;
-  apiPath: string;
-  rawMarkdownPath: string;
-} {
-  const { document } = bundle;
-  return {
-    canonicalPath: `/ko/wiki/${document.slug}`,
-    apiPath: `/api/documents/${document.slug}`,
-    rawMarkdownPath: `/raw/${document.slug}.md`,
   };
 }

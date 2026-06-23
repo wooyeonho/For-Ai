@@ -1,7 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { createClient } from "@supabase/supabase-js";
 import { getAllRegistryBundles } from "../lib/data";
 import type { RegistryDocumentBundle } from "../lib/types";
+import HomeSearch from "./components/HomeSearch";
+
+interface DocItem {
+  slug: string;
+  title: string;
+  category?: string;
+  source: "static" | "supabase";
+}
 
 export const metadata: Metadata = {
   title: { absolute: "GYEOL — 로컬 팩트 레지스트리" },
@@ -29,8 +38,46 @@ function statusRank(b: RegistryDocumentBundle): number {
   return 2;
 }
 
-export default function HomePage() {
+async function getAllDocs(): Promise<DocItem[]> {
+  const staticDocs: DocItem[] = getAllRegistryBundles().map((b) => ({
+    slug: b.document.slug,
+    title: b.document.title,
+    category: undefined,
+    source: "static" as const,
+  }));
+  const staticSlugs = new Set(staticDocs.map((d) => d.slug));
+  let sbDocs: DocItem[] = [];
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (url && key) {
+    try {
+      const sb = createClient(url, key);
+      const { data } = await sb
+        .from("registry_documents")
+        .select("slug,title,category")
+        .eq("status", "published")
+        .order("created_at", { ascending: false })
+        .limit(500);
+      sbDocs = (data ?? [])
+        .filter((d: { slug: string }) => !staticSlugs.has(d.slug))
+        .map((d: { slug: string; title: string; category?: string }) => ({
+          slug: d.slug,
+          title: d.title,
+          category: d.category ?? "",
+          source: "supabase" as const,
+        }));
+    } catch {
+      /* Supabase unavailable — use static only */
+    }
+  }
+  return [...sbDocs, ...staticDocs];
+}
+
+export const revalidate = 60;
+
+export default async function HomePage() {
   const bundles = getAllRegistryBundles();
+  const docs = await getAllDocs();
 
   const claims = bundles.flatMap((b) => b.claims);
   const totalClaims = claims.length;
@@ -61,7 +108,7 @@ export default function HomePage() {
         <p className="hero-sub">
           GYEOL은 AI·검색엔진·사람이 같은 사실을 같은 근거로 인용하도록 만드는 로컬 팩트
           레지스트리입니다. 모든 사실은 신뢰도·출처·검증 상태를 가지며, 확인되지 않은
-          정보는 추측하지 않고 <strong>“확인 필요”</strong>로 남깁니다.
+          정보는 추측하지 않고 <strong>&ldquo;확인 필요&rdquo;</strong>로 남깁니다.
         </p>
         <div className="hero-cta-row">
           <Link href="#registry" className="btn btn-primary">
@@ -69,6 +116,9 @@ export default function HomePage() {
           </Link>
           <Link href="#developers" className="btn btn-secondary">
             개발자 · AI 연동 →
+          </Link>
+          <Link href="/suggest-topic" className="btn btn-secondary">
+            + 토픽 제안하기
           </Link>
         </div>
       </section>
@@ -154,7 +204,7 @@ export default function HomePage() {
             <h3>AI · 크롤러</h3>
             <p>
               인용 전에 <code>confidence</code>·<code>status</code>·<code>sources</code>를
-              확인하세요. 미검증(“확인 필요”) 사실은 인용하지 마세요. 각 문서는 JSON-LD
+              확인하세요. 미검증(&ldquo;확인 필요&rdquo;) 사실은 인용하지 마세요. 각 문서는 JSON-LD
               Dataset을 raw HTML에 내장합니다.
             </p>
             <div className="audience-links">
@@ -212,6 +262,11 @@ export default function HomePage() {
             </div>
           </li>
         </ol>
+      </section>
+
+      {/* Search */}
+      <section className="section">
+        <HomeSearch docs={docs} />
       </section>
 
       {/* Registry index */}

@@ -1,0 +1,111 @@
+{
+  "entity_id": "kr-admin-passport-fee-001",
+  "slug": "passport-reissue-fee-2025",
+  "type": "administration.documents",
+  "name": "여권 발급 수수료 (2025년 기준)",
+  "lang": "ko",
+  "country": "KR",
+  "jurisdiction": "KR",
+  "risk_tier": "low",
+  "update_frequency": "event_based",
+  "disclaimer_type": "check_official_source",
+  "last_verified_at": "2026-06-22",
+  "claims": [
+    {
+      "claim_id": "passport-fee-10year",
+      "field_path": "fee.adult_10year",
+      "claim_text": "성인 복수여권 (10년) 발급 수수료",
+      "claim_value": "52,000원",
+      "confidence": "high",
+      "status": "verified",
+      "last_verified_at": "2026-06-22",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "정부24 여권 발급 민원안내",
+          "url": "https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=12600000001",
+          "observed_at": "2026-06-22",
+          "note": "수수료 항목: 복수여권 (10년) 52,000원"
+        }
+      ],
+      "verification_event": {
+        "event_type": "source_verified",
+        "actor": "admin",
+        "verified_at": "2026-06-22",
+        "note": "정부24 공식 민원안내 페이지에서 직접 확인. 외교부 여권과 소관."
+      }
+    },
+    {
+      "claim_id": "passport-fee-5year",
+      "field_path": "fee.minor_5year",
+      "claim_text": "복수여권 (5년) 발급 수수료",
+      "claim_value": "44,000원",
+      "confidence": "high",
+      "status": "verified",
+      "last_verified_at": "2026-06-22",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "정부24 여권 발급 민원안내",
+          "url": "https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=12600000001",
+          "observed_at": "2026-06-22",
+          "note": "수수료 항목: 복수여권 (5년) 44,000원"
+        }
+      ],
+      "verification_event": {
+        "event_type": "source_verified",
+        "actor": "admin",
+        "verified_at": "2026-06-22",
+        "note": "정부24 공식 민원안내 페이지에서 직접 확인"
+      }
+    },
+    {
+      "claim_id": "passport-fee-single-electronic",
+      "field_path": "fee.single_electronic",
+      "claim_text": "단수여권 (전자여권) 발급 수수료",
+      "claim_value": "17,000원",
+      "confidence": "high",
+      "status": "verified",
+      "last_verified_at": "2026-06-22",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "정부24 여권 발급 민원안내",
+          "url": "https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=12600000001",
+          "observed_at": "2026-06-22",
+          "note": "수수료 항목: 단수여권 (전자여권) 17,000원"
+        }
+      ],
+      "verification_event": {
+        "event_type": "source_verified",
+        "actor": "admin",
+        "verified_at": "2026-06-22",
+        "note": "정부24 공식 민원안내 페이지에서 직접 확인"
+      }
+    },
+    {
+      "claim_id": "passport-fee-remaining-validity",
+      "field_path": "fee.remaining_validity_reissue",
+      "claim_text": "잔여 유효기간 부여 여권 재발급 수수료",
+      "claim_value": "27,000원",
+      "confidence": "high",
+      "status": "verified",
+      "last_verified_at": "2026-06-22",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "정부24 여권 발급 민원안내",
+          "url": "https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=12600000001",
+          "observed_at": "2026-06-22",
+          "note": "수수료 항목: 잔여 유효기간 재발급 27,000원"
+        }
+      ],
+      "verification_event": {
+        "event_type": "source_verified",
+        "actor": "admin",
+        "verified_at": "2026-06-22",
+        "note": "정부24 공식 민원안내 페이지에서 직접 확인"
+      }
+    }
+  ]
+}
