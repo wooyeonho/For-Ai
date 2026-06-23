@@ -1,0 +1,87 @@
+{
+  "entity_id": "kr-transport-seoul-metro-fare-001",
+  "slug": "seoul-metro-base-fare",
+  "type": "transport.metro",
+  "name": "서울 지하철 기본요금 (2025년)",
+  "lang": "ko",
+  "country": "KR",
+  "jurisdiction": "KR",
+  "risk_tier": "low",
+  "update_frequency": "event_based",
+  "disclaimer_type": "check_official_source",
+  "last_verified_at": "2026-06-22",
+  "claims": [
+    {
+      "claim_id": "seoul-metro-fare-adult-card",
+      "field_path": "fare.base_adult_card",
+      "claim_text": "서울 지하철 성인 교통카드 기본요금 (10km 이내)",
+      "claim_value": "1,550원",
+      "confidence": "high",
+      "status": "verified",
+      "last_verified_at": "2026-06-22",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "서울교통공사 운임안내",
+          "url": "https://www.seoulmetro.co.kr/en/page.do?menuIdx=354",
+          "observed_at": "2026-06-22",
+          "note": "이용거리별 운임표 '10Km까지' 성인 교통카드 기본요금"
+        }
+      ],
+      "verification_event": {
+        "event_type": "source_verified",
+        "actor": "admin",
+        "verified_at": "2026-06-22",
+        "note": "서울교통공사 공식 운임안내 페이지에서 직접 확인. 2025.6.28 요금 인상 반영."
+      }
+    },
+    {
+      "claim_id": "seoul-metro-fare-youth-card",
+      "field_path": "fare.base_youth_card",
+      "claim_text": "서울 지하철 청소년 교통카드 기본요금 (10km 이내)",
+      "claim_value": "900원",
+      "confidence": "high",
+      "status": "verified",
+      "last_verified_at": "2026-06-22",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "서울교통공사 운임안내",
+          "url": "https://www.seoulmetro.co.kr/en/page.do?menuIdx=354",
+          "observed_at": "2026-06-22",
+          "note": "이용거리별 운임표 '10Km까지' 청소년 교통카드 기본요금"
+        }
+      ],
+      "verification_event": {
+        "event_type": "source_verified",
+        "actor": "admin",
+        "verified_at": "2026-06-22",
+        "note": "서울교통공사 공식 운임안내 페이지에서 직접 확인"
+      }
+    },
+    {
+      "claim_id": "seoul-metro-fare-child-card",
+      "field_path": "fare.base_child_card",
+      "claim_text": "서울 지하철 어린이 교통카드 기본요금 (10km 이내)",
+      "claim_value": "550원",
+      "confidence": "high",
+      "status": "verified",
+      "last_verified_at": "2026-06-22",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "서울교통공사 운임안내",
+          "url": "https://www.seoulmetro.co.kr/en/page.do?menuIdx=354",
+          "observed_at": "2026-06-22",
+          "note": "이용거리별 운임표 '10Km까지' 어린이 교통카드 기본요금"
+        }
+      ],
+      "verification_event": {
+        "event_type": "source_verified",
+        "actor": "admin",
+        "verified_at": "2026-06-22",
+        "note": "서울교통공사 공식 운임안내 페이지에서 직접 확인"
+      }
+    }
+  ]
+}

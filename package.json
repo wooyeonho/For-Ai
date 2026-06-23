@@ -7,7 +7,10 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "generate:question-candidates": "node scripts/generate-question-candidates.mjs"
+    "generate:question-candidates": "node scripts/generate-question-candidates.mjs",
+    "ci:guards": "node scripts/ci-guards.mjs all",
+    "ai:doctor": "node scripts/ai-readiness-doctor.mjs",
+    "ai:lazycodex:doctor": "node scripts/ai-readiness-doctor.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.8",

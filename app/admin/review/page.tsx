@@ -37,6 +37,9 @@ export default function AdminReviewPage() {
       <nav className="registry-panel" aria-labelledby="admin-tools">
         <h2 id="admin-tools">Admin content tools</h2>
         <ul className="link-list">
+          <li><Link href="/admin/verify-claim">Claim 검증 대시보드</Link></li>
+          <li><Link href="/admin/candidates">후보 검토 큐</Link></li>
+          <li><Link href="/admin/generate">후보 자동 생성</Link></li>
           <li><Link href="/admin/new-entity">Create new entity draft</Link></li>
           <li><Link href="/admin/new-document">Create new document draft</Link></li>
           <li><Link href="/admin/import">Bulk import stub</Link></li>

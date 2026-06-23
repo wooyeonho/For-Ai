@@ -1,7 +1,13 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getRegistryBundleBySlug } from "../../../lib/data";
 import { getRegistryDocumentPaths } from "../../../lib/seo";
+
+export const metadata: Metadata = {
+  title: "AI-readiness 진단",
+  description: "GYEOL 문서의 정적 라우트·구조화 데이터·인용 준비 상태를 점검합니다.",
+};
 
 export default async function DiagnosticsPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -14,15 +20,16 @@ export default async function DiagnosticsPage({ params }: { params: Promise<{ sl
   const { document, entity, claims } = bundle;
   const paths = getRegistryDocumentPaths(bundle);
   const lowConfidenceClaims = claims.filter((claim) => claim.confidence === "low").length;
-  const claimsWithUnknownValues = claims.filter((claim) => claim.claim_value === "íì¸ íì").length;
+  const claimsWithUnknownValues = claims.filter((claim) => claim.claim_value === "확인 필요").length;
   const sourceCount = claims.reduce((total, claim) => total + claim.sources.length, 0);
+
   const checklist = [
     { label: "Static document route", detail: `/ko/wiki/${document.slug}`, pass: true },
     { label: "JSON API route", detail: paths.apiPath, pass: true },
     { label: "Raw Markdown route", detail: paths.rawMarkdownPath, pass: true },
     { label: "Canonical entity_id", detail: entity.id, pass: Boolean(document.entity_id) },
     { label: "Claim coverage", detail: `${claims.length} claims`, pass: claims.length > 0 },
-    { label: "Unknown facts visible", detail: `${claimsWithUnknownValues} claims show íì¸ íì`, pass: claimsWithUnknownValues === claims.length },
+    { label: "Unknown facts visible", detail: `${claimsWithUnknownValues}개 확인 필요 표시`, pass: claimsWithUnknownValues === claims.length },
     { label: "Low-confidence unknowns", detail: `${lowConfidenceClaims} low confidence claims`, pass: lowConfidenceClaims === claims.length },
     { label: "Source transparency", detail: `${sourceCount} sources attached`, pass: sourceCount >= 0 },
     { label: "Correction URL", detail: `/report/${document.slug}`, pass: true },
@@ -32,7 +39,7 @@ export default async function DiagnosticsPage({ params }: { params: Promise<{ sl
   return (
     <article>
       <header className="registry-panel">
-        <p className="eyebrow">Goal 7 Â· AI-readiness diagnostics</p>
+        <p className="eyebrow">Goal 7 · AI-readiness diagnostics</p>
         <h1>{document.title}</h1>
         <div className="meta-grid">
           <div><span className="meta-label">entity_id</span><br />{entity.id}</div>
@@ -59,12 +66,12 @@ export default async function DiagnosticsPage({ params }: { params: Promise<{ sl
         <h2 id="machine-readable-panel">Machine-readable outputs</h2>
         <ul className="link-list">
           <li><Link href={paths.canonicalPath}>Canonical page</Link></li>
-          <li><Link href={paths.apiPath}>JSON API</Link></li>
-          <li><Link href={paths.rawMarkdownPath}>Raw Markdown</Link></li>
+          <li><Link href={paths.apiPath}>JSON API ({paths.apiPath})</Link></li>
+          <li><Link href={paths.rawMarkdownPath}>Raw Markdown ({paths.rawMarkdownPath})</Link></li>
           <li><Link href="/sitemap.xml">Sitemap</Link></li>
           <li><Link href="/robots.txt">Robots</Link></li>
         </ul>
       </section>
     </article>
   );
-}
+          }

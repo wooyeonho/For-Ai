@@ -1,6 +1,12 @@
+import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getRegistryBundleBySlug } from "../../../lib/data";
 import { createReportSubmissionStub } from "../../../lib/submission-stubs";
+
+export const metadata: Metadata = {
+  title: "정정 제보",
+  description: "GYEOL 레지스트리 문서의 claim에 대한 정정을 제보합니다.",
+};
 
 export default async function ReportPage({
   params,
@@ -18,7 +24,7 @@ export default async function ReportPage({
       <section className="registry-panel">
         <p className="eyebrow">Correction report</p>
         <h1>Document not found</h1>
-        <p>ìì²­í ë¬¸ìë¥¼ ì°¾ì ì ììµëë¤.</p>
+        <p>요청한 문서를 찾을 수 없습니다.</p>
       </section>
     );
   }
@@ -56,30 +62,30 @@ export default async function ReportPage({
 
       {submitted === "1" ? (
         <section className="notice-box success-box" aria-live="polite">
-          <h2>ì ì¶ëììµëë¤</h2>
-          <p>ì ì  ìì²­ì´ ì ì ëê¸° ìíë¡ ì²ë¦¬ëììµëë¤. íì¬ MVPììë ì ì¥ìì ê¸°ë¡íì§ ìë ìì í stub ìëµìëë¤.</p>
+          <h2>제출되었습니다</h2>
+          <p>정정 요청이 접수 대기 상태로 처리되었습니다. 현재 MVP에서는 저장소에 기록하지 않는 안전한 stub 응답입니다.</p>
         </section>
       ) : null}
 
       <section className="registry-panel" aria-labelledby="report-form-title">
-        <h2 id="report-form-title">ì ì  ìì²­</h2>
-        <p>íì¸ì´ íìí claimì ëí´ ì ì  ìì²­ì ë¨ê²¨ì£¼ì¸ì. ë¡ê·¸ì¸ì íìíì§ ììµëë¤.</p>
+        <h2 id="report-form-title">정정 요청</h2>
+        <p>확인이 필요한 claim에 대해 정정 요청을 남겨주세요. 로그인은 필요하지 않습니다.</p>
         <form action={submitReport} className="registry-form">
           <label>
-            Field path ì í ëë ìë ¥
+            Field path 선택 또는 입력
             <select name="field_path" defaultValue="">
-              <option value="">ì ì²´ ë¬¸ì ëë ì§ì  ì¤ëª</option>
+              <option value="">전체 문서 또는 직접 설명</option>
               {claims.map((claim) => (
                 <option value={claim.field_path} key={claim.id}>{claim.field_path}</option>
               ))}
             </select>
           </label>
           <label>
-            ì ì  ìì²­ ë´ì©
-            <textarea name="message" required minLength={5} placeholder="ì´ë¤ claimì´ ì ìì ëì´ì¼ íëì§ ì ì´ì£¼ì¸ì." />
+            정정 요청 내용
+            <textarea name="message" required minLength={5} placeholder="어떤 claim이 정정되어야 하는지 적어주세요." />
           </label>
           <input type="hidden" name="contributor_hash" value="local-stub-contributor-hash" />
-          <button type="submit">ì ì  ìì²­ ì ì¶</button>
+          <button type="submit">정정 요청 제출</button>
         </form>
       </section>
 
