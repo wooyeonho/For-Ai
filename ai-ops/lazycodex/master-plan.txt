@@ -1,0 +1,30 @@
+$ulw-plan "You are improving GYEOL, a local fact registry for AI, search engines, and humans. GYEOL is not an AI wiki.
+
+Non-negotiable rules:
+- Static-first rendering is mandatory.
+- Core document content must be readable from raw HTML without client-side JavaScript.
+- schema-v3.sql is the source of truth.
+- Do not invent a different database model.
+- entity_id is mandatory from MVP.
+- English slug is stable.
+- Display titles are language-specific.
+- GYEOL is claim-level.
+- Canonical structure: entities -> documents -> claims -> claim_sources -> verification_events.
+- documents.data is rendering convenience only.
+- No fake facts.
+- Unknown facts must show '확인 필요' and confidence low.
+- Do not add payments, user accounts, complex auth, or large admin systems in MVP.
+
+Task:
+Create a prioritized technical stabilization plan for this repo.
+Focus on:
+1. Korean mojibake/encoding issues.
+2. Machine-readable route mismatches.
+3. Static-first rendering gaps.
+4. JSON API/raw markdown/JSON-LD consistency.
+5. Claim/source trust consistency.
+6. Lint/build stability.
+7. Minimal tests or smoke checks.
+
+Do not edit code yet.
+Write acceptance criteria for each item."

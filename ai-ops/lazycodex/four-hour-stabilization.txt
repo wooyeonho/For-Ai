@@ -1,0 +1,29 @@
+$ulw-loop "Run a bounded 4-hour GYEOL stabilization session.
+
+Product guardrails:
+- GYEOL is not an AI wiki.
+- GYEOL is a local fact registry for AI, search engines, and humans.
+- schema-v3.sql is the source of truth.
+- Do not invent facts or venue details.
+- Unknown facts must remain '확인 필요' with low confidence.
+- Do not add login, payments, complex auth, large admin systems, or a chatbot UI.
+
+Scope for this session:
+1. Fix visible Korean mojibake.
+2. Fix machine-readable route mismatches.
+3. Improve static-first readability of core registry pages.
+4. Improve JSON API, raw Markdown, JSON-LD, sitemap, robots, and llms.txt consistency.
+5. Preserve claim-level structure and source/confidence policy.
+6. Add or update small verification scripts only when they directly catch regressions.
+
+Completion checks:
+- npm run check:mojibake
+- npm run lint
+- npm run build
+- node scripts/smoke-test-routes.mjs http://localhost:3000 against a running local server
+
+Stop conditions:
+- Stop immediately if a requested change would require inventing facts.
+- Stop before changing schema-v3.sql unless the plan explicitly requires it and explains why.
+- Stop if tests fail in a way that requires product-scope decisions.
+- At the end, summarize changed files, risks, remaining TODOs, and exact commands run."

@@ -15,3 +15,7 @@ export function apiDocumentUrl(slug: string): string {
 export function rawMarkdownUrl(slug: string): string {
   return siteUrl(`/raw/${slug}.md`);
 }
+
+export function llmsTxtUrl(): string {
+  return siteUrl("/llms.txt");
+}

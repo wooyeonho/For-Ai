@@ -1,9 +1,21 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getRegistryBundleBySlug, getAllRegistryBundles } from "../../../../lib/data";
+import { buildDocumentJsonLd, buildDocumentMetadata } from "../../../../lib/seo";
 
 export async function generateStaticParams() {
   return getAllRegistryBundles().map((b) => ({ slug: b.document.slug }));
+}
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  const bundle = getRegistryBundleBySlug(slug);
+
+  if (!bundle) {
+    return {};
+  }
+
+  return buildDocumentMetadata(bundle);
 }
 
 export default async function WikiDocumentPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -16,9 +28,17 @@ export default async function WikiDocumentPage({ params }: { params: Promise<{ s
   const directAnswer = (docData?.direct_answer as string) ?? null;
   const apiUrl = `/api/documents/${document.slug}`;
   const rawUrl = `/raw/${document.slug}.md`;
+  const jsonLd = buildDocumentJsonLd(bundle);
+  const lastVerifiedAt = document.last_verified_at ?? "확인 필요";
+  const lastUpdatedAt = document.updated_at ?? "확인 필요";
 
   return (
     <article>
+      <script
+        type="application/ld+json"
+        suppressHydrationWarning
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <header className="registry-panel">
         <p className="eyebrow">Claim registry document</p>
         <h1>{document.title}</h1>
@@ -29,6 +49,17 @@ export default async function WikiDocumentPage({ params }: { params: Promise<{ s
           <div><span className="meta-label">confidence</span><br /><span className="badge badge-low">{document.confidence}</span></div>
         </div>
       </header>
+
+      <section className="registry-panel" aria-labelledby="update-status">
+        <h2 id="update-status">업데이트 상태</h2>
+        <div className="meta-grid">
+          <div><span className="meta-label">last_verified_at</span><br />{lastVerifiedAt}</div>
+          <div><span className="meta-label">updated_at</span><br />{lastUpdatedAt}</div>
+          <div><span className="meta-label">source policy</span><br />출처가 없으면 확인 필요 / low confidence 유지</div>
+          <div><span className="meta-label">update request</span><br /><Link href={`/report/${document.slug}`}>정정 요청</Link></div>
+        </div>
+        <p className="meta-label">정보가 바뀌었거나 AI가 다르게 답했다면 정정 요청 또는 AI 오답 신고로 업데이트를 요청할 수 있습니다.</p>
+      </section>
 
       {directAnswer && (
         <section className="registry-panel" aria-labelledby="direct-answer">
