@@ -1,0 +1,99 @@
+$ulw-loop "Run a continuous GYEOL review every day or before every deployment. Save the LazyCodex output to ai-ops/lazycodex/reports/YYYY-MM-DD.md, using the actual run date.
+
+Product guardrails:
+- GYEOL is not an AI wiki.
+- GYEOL is a local fact registry for AI, search engines, and humans.
+- Static-first rendering is mandatory.
+- Core document content must be readable from raw HTML without client-side JavaScript.
+- schema-v3.sql is the source of truth. Do not use schema-v2.sql or invent a different database model.
+- entity_id is mandatory from MVP.
+- English slug is stable; display titles are language-specific.
+- GYEOL is claim-level. The canonical structure is entities -> documents -> claims -> claim_sources -> verification_events.
+- documents.data is only rendering convenience and must not become the canonical source of factual truth.
+- No fake facts. Unknown facts must show '확인 필요' and confidence low.
+- Do not invent venue details.
+- llms.txt is secondary. It is not the legal basis and not the citation engine.
+- Public read is not allowed for edits, reports, or hallucination_reports.
+- Public submissions do not require login.
+- Never store raw IP addresses; store contributor_hash only.
+- Do not add payment, user accounts, complex auth, or large admin systems in the MVP.
+
+MVP target to include in checks:
+- entity_id: kr-weddinghall-laluce-001
+- slug: myungdong-laluce-parking
+- page: /ko/wiki/myungdong-laluce-parking
+
+Run the following roles in order. Do not skip a role unless the app cannot build or start; if blocked, record the blocker in the same required output format.
+
+1. Discovery Agent
+   Goal: Confirm that every newly added or changed registry document is discoverable by sitemap, llms.txt, raw markdown, and diagnostics.
+   Check at minimum:
+   - /sitemap.xml includes canonical wiki URLs for new documents.
+   - /llms.txt references the expected registry surfaces without being treated as the legal basis or citation engine.
+   - /raw/<locale>/wiki/<slug>.md or the repo's current raw markdown route exposes document content.
+   - /diagnostics/<slug> reports the document and its machine-readable endpoints.
+   - Core document content remains visible in raw HTML without relying on client-side JavaScript.
+
+2. Citation Agent
+   Goal: Verify that claims without verified/source evidence do not appear citation-ready.
+   Check at minimum:
+   - Any claim with missing source, missing verification, or unknown fact status is visibly marked as '확인 필요' and confidence low.
+   - Unverified claims are not presented with source pills, citation affordances, JSON-LD verified semantics, or copy that implies they are verified.
+   - Claim-level source and verification data comes from claims, claim_sources, and verification_events, not from documents.data as canonical truth.
+
+3. Admin Agent
+   Goal: Find breaks in the /admin/generate -> /admin/candidates -> promote -> /admin/verify-claim workflow.
+   Check at minimum:
+   - /admin/generate can produce or queue candidates without requiring public write access to protected tables.
+   - /admin/candidates displays candidate state clearly.
+   - Promote action preserves entity_id, stable English slug, locale-specific display title, claim boundaries, confidence, and source state.
+   - /admin/verify-claim can verify or reject claims at claim level and records verification events.
+   - Public submissions do not require login, but protected edit/report/hallucination data is not publicly readable.
+
+4. SEO Agent
+   Goal: Check metadata, canonical URL, OpenGraph, JSON-LD, and sitemap coverage.
+   Check at minimum:
+   - Document pages include title, description, canonical URL, OpenGraph metadata, and language-aware URLs where implemented.
+   - JSON-LD is present, valid, and does not claim verification for unverified facts.
+   - Sitemap contains document routes and other intended public routes.
+   - Robots policy does not accidentally block intended registry discovery.
+
+5. Security Agent
+   Goal: Check admin API, service role key, and public read/write risks.
+   Check at minimum:
+   - Service role keys are server-only and never shipped to client components, static output, logs, or public route responses.
+   - Admin APIs and admin pages do not expose mutation operations to unauthenticated public callers unless explicitly stubbed and safe.
+   - Public read is not allowed for edits, reports, or hallucination_reports.
+   - Public write paths hash contributors and never store raw IP addresses.
+   - Supabase policies and server helpers align with schema-v3.sql and the product guardrails.
+
+Required output format for every issue found by every agent:
+
+## <Agent Name>
+
+### Issue <number>: <short title>
+- 문제: <what is broken or risky>
+- 영향: <user, AI-readiness, SEO, data integrity, or security impact>
+- 수정 대상 파일: <exact file paths likely needing edits>
+- 재현 방법: <commands, URLs, or steps to reproduce>
+- 기대 동작: <clear expected behavior>
+
+If an agent finds no issues, still write:
+
+## <Agent Name>
+
+### No issues found
+- 문제: 없음
+- 영향: 없음
+- 수정 대상 파일: 없음
+- 재현 방법: <commands or URLs checked>
+- 기대 동작: 현재 동작 유지
+
+Execution notes:
+- Prefer programmatic checks over visual inspection when possible.
+- Record exact commands run and whether they passed or failed.
+- Do not invent facts to make tests pass.
+- Do not change schema-v3.sql during review unless a separate implementation task explicitly authorizes it.
+- Stop and report if a fix would require a product decision outside the MVP guardrails.
+- At the end, include a short summary, top risks, and prioritized next actions.
+- Save the full review report to ai-ops/lazycodex/reports/YYYY-MM-DD.md before finishing."
