@@ -27,6 +27,12 @@ interface GenerateResult {
   saved: number;
   preview: Record<string, unknown>[];
   provider_results?: Record<string, { generated: number; error?: string }>;
+  consensus_summary?: {
+    provider_count: number;
+    candidate_count: number;
+    consensus_group_count: number;
+    levels?: Record<string, number>;
+  };
   error?: string;
   save_error?: string;
 }
@@ -276,6 +282,21 @@ export default function AdminGeneratePage() {
             </div>
           )}
 
+          {result.consensus_summary && (
+            <div style={{ padding: 12, background: "#ecfeff", border: "1px solid #67e8f9", borderRadius: 8, marginBottom: 16 }}>
+              <div style={{ fontSize: 13, fontWeight: 700, marginBottom: 6 }}>교차검증 합의 결과</div>
+              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", fontSize: 12 }}>
+                <span style={{ padding: "3px 8px", borderRadius: 999, background: "#cffafe" }}>프로바이더 {result.consensus_summary.provider_count}</span>
+                <span style={{ padding: "3px 8px", borderRadius: 999, background: "#cffafe" }}>그룹 {result.consensus_summary.consensus_group_count}</span>
+                {Object.entries(result.consensus_summary.levels ?? {}).map(([level, value]) => (
+                  <span key={level} style={{ padding: "3px 8px", borderRadius: 999, background: level === "high" ? "#dcfce7" : level === "medium" ? "#fef3c7" : "#fee2e2" }}>
+                    {level} {value}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
           {result.provider_results && (
             <div style={{ marginBottom: 20, fontSize: 13 }}>
               {Object.entries(result.provider_results).map(([provider, r]) => (
@@ -296,6 +317,13 @@ export default function AdminGeneratePage() {
                   <p style={{ fontSize: 12, color: "#6b7280" }}>
                     {String(c.slug)} · {String(c.category)} · {String(c.generation_model)}
                   </p>
+                  {c.consensus_score !== undefined && (
+                    <p style={{ marginTop: 6, fontSize: 12 }}>
+                      <span style={{ padding: "2px 7px", borderRadius: 999, background: c.consensus_level === "high" ? "#dcfce7" : c.consensus_level === "medium" ? "#fef3c7" : "#fee2e2", fontWeight: 600 }}>
+                        consensus {String(c.consensus_level)} · {String(c.consensus_score)}
+                      </span>
+                    </p>
+                  )}
                 </div>
               ))}
             </div>
