@@ -1,0 +1,46 @@
+$ulw-plan "Run a discovery-only pass for GYEOL. Do not modify code, configuration, data, scripts, or documentation files. Find problems only.
+
+Product guardrails:
+- GYEOL is not an AI wiki.
+- GYEOL is a local fact registry for AI, search engines, and humans.
+- Static-first rendering is mandatory.
+- Core document content must be readable from raw HTML without client-side JavaScript.
+- schema-v3.sql is the source of truth; do not use schema-v2.sql or invent a different database model.
+- entity_id is mandatory from MVP.
+- English slug is stable; display titles are language-specific.
+- GYEOL is claim-level.
+- Canonical structure: entities -> documents -> claims -> claim_sources -> verification_events.
+- documents.data is rendering convenience only and must not become the canonical source of factual truth.
+- No fake facts. Unknown facts must show '확인 필요' and confidence low.
+- Do not invent venue details.
+- llms.txt is secondary, not the legal basis, and not the citation engine.
+- Public read is not allowed for edits, reports, or hallucination_reports.
+- Public submissions do not require login.
+- Never store raw IP addresses; store contributor_hash only.
+- Do not add payment, user accounts, complex auth, or large admin systems in the MVP.
+
+MVP target:
+- entity_id: kr-weddinghall-laluce-001
+- slug: myungdong-laluce-parking
+- page: /ko/wiki/myungdong-laluce-parking
+
+Discovery scope:
+- Identify P0/P1/P2 issues in route coverage, static-first rendering, raw HTML readability, machine-readable outputs, schema-v3 alignment, claim/source/confidence handling, privacy/public-read rules, Korean mojibake, lint/build/guard stability, and tests.
+- Prefer concrete, independently fixable findings.
+- Do not propose broad rewrites when a small targeted fix is possible.
+- Do not make patches in this pass.
+
+Output format is fixed. For every finding, use exactly these fields:
+- severity
+- issue
+- affected files
+- why it matters
+- suggested fix
+- test plan
+
+Severity guidance:
+- P0: breaks MVP availability, static-first core content, route coverage, schema-v3 truth model, privacy guardrails, or build/CI guard reliability.
+- P1: important correctness, SEO/AI-readiness, diagnostics, or maintainability issue that does not block MVP.
+- P2: polish, minor consistency, or future hardening.
+
+End with a short prioritized list of the top P0 candidates, but do not fix anything."
