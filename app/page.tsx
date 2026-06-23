@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
 import { getAllRegistryBundles } from "../lib/data";
@@ -10,6 +11,12 @@ interface DocItem {
   category?: string;
   source: "static" | "supabase";
 }
+
+export const metadata: Metadata = {
+  title: { absolute: "GYEOL — 로컬 팩트 레지스트리" },
+  description:
+    "AI·검색·사람이 같은 사실을 같은 근거로 인용하는 로컬 팩트 레지스트리. claim 단위로 신뢰도·출처·검증일을 관리합니다.",
+};
 
 function statusBadge(status: string): { className: string; label: string } {
   switch (status) {

@@ -43,6 +43,9 @@ jobs:
           BASE_SHA: ${{ github.event.pull_request.base.sha }}
         run: node scripts/ci-guards.mjs diff-size
 
+      - name: AI-readiness doctor
+        run: node scripts/ai-readiness-doctor.mjs
+
       - name: Validate topic candidates
         run: |
           node scripts/validate-topic-candidates.mjs data/topic-candidates.sample.jsonl
