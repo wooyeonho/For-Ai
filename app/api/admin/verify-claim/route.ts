@@ -1,22 +1,17 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-
-const ADMIN_SECRET = process.env.ADMIN_SECRET ?? "";
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
-
-function supabaseAdmin() {
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) return null;
-  return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-}
-
-function authorized(request: Request): boolean {
-  const auth = request.headers.get("x-admin-secret");
-  return !ADMIN_SECRET || auth === ADMIN_SECRET;
-}
+import {
+  authorized,
+  enforceAdminCsrf,
+  enforceAdminRateLimit,
+  enforceAdminReadRateLimit,
+  recordAdminAuditEvent,
+  supabaseAdmin,
+} from "../../../../lib/admin-api";
 
 export async function GET(request: Request) {
   if (!authorized(request)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const rateLimited = enforceAdminReadRateLimit(request);
+  if (rateLimited) return rateLimited;
   const sb = supabaseAdmin();
   if (!sb) return NextResponse.json({ error: "SUPABASE_SERVICE_ROLE_KEY not configured" }, { status: 500 });
 
@@ -32,6 +27,10 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   if (!authorized(request)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const csrfError = enforceAdminCsrf(request);
+  if (csrfError) return csrfError;
+  const rateLimited = enforceAdminRateLimit(request);
+  if (rateLimited) return rateLimited;
   const sb = supabaseAdmin();
   if (!sb) return NextResponse.json({ error: "SUPABASE_SERVICE_ROLE_KEY not configured" }, { status: 500 });
 
@@ -53,7 +52,7 @@ export async function POST(request: Request) {
 
   const { data: existingClaim, error: fetchError } = await sb
     .from("claims")
-    .select("id, document_id, entity_id, status, confidence")
+    .select("id, document_id, entity_id, claim_value, status, confidence, last_verified_at")
     .eq("id", claimId)
     .single();
   if (fetchError || !existingClaim) return NextResponse.json({ error: "claim not found", detail: fetchError?.message }, { status: 404 });
@@ -90,6 +89,15 @@ export async function POST(request: Request) {
     previous_confidence: existingClaim.confidence,
     new_confidence: confidence,
     note: citation ?? title ?? url,
+  });
+
+  await recordAdminAuditEvent(sb, {
+    actionType: "claim_verified",
+    targetTable: "claims",
+    targetId: claimId,
+    previousState: existingClaim,
+    newState: { claim: updatedClaim, source_id: sourceId },
+    request,
   });
 
   const { data: siblingClaims } = await sb.from("claims").select("status").eq("document_id", existingClaim.document_id);

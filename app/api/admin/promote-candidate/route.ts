@@ -1,24 +1,22 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-
-const ADMIN_SECRET = process.env.ADMIN_SECRET ?? "";
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
-
-function supabaseAdmin() {
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) return null;
-  return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-}
+import {
+  authorized,
+  enforceAdminCsrf,
+  enforceAdminRateLimit,
+  recordAdminAuditEvent,
+  supabaseAdmin,
+} from "../../../../lib/admin-api";
 
 function stableId(prefix: string, slug: string): string {
   return `${prefix}-${slug}`.replace(/[^a-zA-Z0-9_-]+/g, "-").slice(0, 120);
 }
 
 export async function POST(request: Request) {
-  const auth = request.headers.get("x-admin-secret");
-  if (ADMIN_SECRET && auth !== ADMIN_SECRET) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  }
+  if (!authorized(request)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const csrfError = enforceAdminCsrf(request);
+  if (csrfError) return csrfError;
+  const rateLimited = enforceAdminRateLimit(request);
+  if (rateLimited) return rateLimited;
 
   const body = await request.json();
   const { candidateId } = body;
@@ -115,7 +113,16 @@ export async function POST(request: Request) {
     confidence: "low",
   });
 
-  await sb.from("topic_candidates").update({ status: "promoted", promoted_at: new Date().toISOString() }).eq("id", candidateId);
+  const { data: promotedCandidate } = await sb.from("topic_candidates").update({ status: "promoted", promoted_at: new Date().toISOString() }).eq("id", candidateId).select("*").single();
+
+  await recordAdminAuditEvent(sb, {
+    actionType: "candidate_promoted",
+    targetTable: "topic_candidates",
+    targetId: String(candidateId),
+    previousState: candidate,
+    newState: { candidate: promotedCandidate, entity_id: entityId, document_id: documentId, listing_id: listingId },
+    request,
+  });
 
   return NextResponse.json({
     success: true,

@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import {
   type AIProviderKey,
   AI_PROVIDERS,
@@ -9,15 +8,15 @@ import {
   type AIGenerateResponse,
 } from "../../../../lib/ai-providers";
 import { buildConsensus, type ConsensusCandidate } from "../../../../lib/consensus";
-
-const ADMIN_SECRET = process.env.ADMIN_SECRET ?? "";
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
-
-function supabaseAdmin() {
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) return null;
-  return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-}
+import {
+  authorized,
+  enforceAdminCsrf,
+  enforceAdminRateLimit,
+  enforceAdminReadRateLimit,
+  missingSupabaseAdminEnv,
+  recordAdminAuditEvent,
+  supabaseAdmin,
+} from "../../../../lib/admin-api";
 
 function buildPrompt(topic: string, count: number, lang: string) {
   const langInstructions: Record<string, string> = {
@@ -124,10 +123,11 @@ function parseCandidatesFromResponse(
 }
 
 export async function POST(request: Request) {
-  const auth = request.headers.get("x-admin-secret");
-  if (ADMIN_SECRET && auth !== ADMIN_SECRET) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  }
+  if (!authorized(request)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const csrfError = enforceAdminCsrf(request);
+  if (csrfError) return csrfError;
+  const rateLimited = enforceAdminRateLimit(request, 10);
+  if (rateLimited) return rateLimited;
 
   const body = await request.json();
   const topic = String(body.topic ?? body.category ?? "").trim();
@@ -256,11 +256,19 @@ export async function POST(request: Request) {
   } else if (saveToDb && !client) {
     saveError = "SUPABASE_SERVICE_ROLE_KEY not configured. AI candidates generated but cannot be saved. anon key is not accepted for ai_generated inserts due to RLS policy.";
     saveErrorDetails = {
-      missing_env: [
-        ...(!SUPABASE_URL ? ["NEXT_PUBLIC_SUPABASE_URL"] : []),
-        ...(!SUPABASE_SERVICE_ROLE_KEY ? ["SUPABASE_SERVICE_ROLE_KEY"] : []),
-      ],
+      missing_env: missingSupabaseAdminEnv(),
     };
+  }
+
+  if (client && saved.length > 0) {
+    await recordAdminAuditEvent(client, {
+      actionType: "candidates_generated",
+      targetTable: "topic_candidates",
+      targetId: saved.map((row) => (row as { id?: string }).id).filter(Boolean).join(","),
+      previousState: null,
+      newState: { topic, lang, count: saved.length, saved },
+      request,
+    });
   }
 
   return NextResponse.json({
@@ -300,7 +308,10 @@ export async function POST(request: Request) {
   });
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  if (!authorized(request)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const rateLimited = enforceAdminReadRateLimit(request);
+  if (rateLimited) return rateLimited;
   const available = getAvailableProviders();
   return NextResponse.json({
     available_providers: available.map((p) => ({
