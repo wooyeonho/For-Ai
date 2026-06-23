@@ -1,0 +1,98 @@
+# P0 GYEOL QA Checklist
+
+## Purpose
+
+This checklist verifies that a Supabase promoted GYEOL document is visible through every required public surface without exposing unverified or low-confidence claims as factual values.
+
+Default MVP test document:
+
+- entity_id: `kr-weddinghall-laluce-001`
+- slug: `myungdong-laluce-parking`
+- page: `/ko/wiki/myungdong-laluce-parking`
+
+## Failure severity rules
+
+- `P0`: Deployment blocker. The release must not be deployed until this item is fixed.
+- `P1`: Must be fixed before the next deployment after the current release.
+- `P2`: Backlog item. Track and prioritize, but it does not block deployment.
+
+For every failed check, record:
+
+- Severity: `P0`, `P1`, or `P2`
+- URL or surface tested
+- Expected result
+- Actual result
+- Evidence, such as screenshot, response snippet, HTTP status, or logs
+- Owner and target fix date
+
+## Required checks
+
+Use the same promoted Supabase document slug for every check.
+
+### 1. Public document page
+
+- Check: The Supabase promoted document opens at `/ko/wiki/{slug}`.
+- Expected: The page returns success and the core document content is readable from raw HTML without client-side JavaScript.
+- Failure severity: `P0` if the page is missing, blocked, not statically readable, or shows the wrong document.
+
+### 2. Document API
+
+- Check: The same document opens at `/api/documents/{slug}`.
+- Expected: The API returns the promoted document for the same slug and entity.
+- Failure severity: `P0` if the endpoint fails, returns the wrong document, or omits mandatory document identity fields.
+
+### 3. Raw Markdown
+
+- Check: The same document opens at `/raw/{slug}.md`.
+- Expected: The raw Markdown is available for the promoted document and does not invent facts.
+- Failure severity: `P0` if the raw page is missing or returns the wrong document; `P1` if formatting is degraded but factual content is intact.
+
+### 4. Diagnostics page
+
+- Check: The same document opens at `/diagnostics/{slug}`.
+- Expected: Diagnostics are available for the promoted document and make claim/source status auditable.
+- Failure severity: `P0` if diagnostics are missing or cannot identify claim/source status for the promoted document.
+
+### 5. Sitemap inclusion
+
+- Check: The same document is included in `/sitemap.xml`.
+- Expected: `/ko/wiki/{slug}` appears in the sitemap for the promoted document.
+- Failure severity: `P1` if missing from the sitemap; `P0` if sitemap generation fails globally.
+
+### 6. llms.txt inclusion
+
+- Check: The same document is included in `/llms.txt`.
+- Expected: `/ko/wiki/{slug}` or the corresponding promoted document entry appears in `llms.txt`.
+- Failure severity: `P1` if missing from `llms.txt`; `P0` if `llms.txt` causes incorrect citation behavior or replaces canonical claim/source logic.
+
+### 7. Metadata correctness
+
+- Check: Metadata title, description, and canonical URL are not `Document not found`.
+- Expected: The promoted document has a document-specific title, description, and canonical URL.
+- Failure severity: `P0` if metadata says `Document not found` or points to a wrong canonical document; `P1` if metadata exists but is incomplete.
+
+### 8. Verified-claim citation behavior
+
+- Check: Only verified claims appear citeable.
+- Expected: Claims that are not verified must not look citeable as confirmed facts.
+- Failure severity: `P0` if unverified claims are exposed as citeable factual claims.
+
+### 9. Unknown and low-confidence claim display
+
+- Check: Claims marked `확인 필요`, `low`, `needs_review`, or `sources: 0` do not appear as factual values.
+- Expected: Unknown or low-confidence claims are clearly labeled as needing verification and are visually/textually distinct from verified facts.
+- Failure severity: `P0` if these claims appear as confirmed facts; `P1` if the warning exists but is easy to miss; `P2` for minor copy or styling improvements that do not affect meaning.
+
+## Suggested result table
+
+| Check | Surface | Result | Severity if failed | Evidence | Owner | Fix target |
+| --- | --- | --- | --- | --- | --- | --- |
+| Public document page | `/ko/wiki/{slug}` | Pass/Fail | P0 |  |  |  |
+| Document API | `/api/documents/{slug}` | Pass/Fail | P0 |  |  |  |
+| Raw Markdown | `/raw/{slug}.md` | Pass/Fail | P0/P1 |  |  |  |
+| Diagnostics page | `/diagnostics/{slug}` | Pass/Fail | P0 |  |  |  |
+| Sitemap inclusion | `/sitemap.xml` | Pass/Fail | P1/P0 |  |  |  |
+| llms.txt inclusion | `/llms.txt` | Pass/Fail | P1/P0 |  |  |  |
+| Metadata correctness | metadata | Pass/Fail | P0/P1 |  |  |  |
+| Verified-only citations | claims | Pass/Fail | P0 |  |  |  |
+| Unknown/low-confidence display | claims | Pass/Fail | P0/P1/P2 |  |  |  |
