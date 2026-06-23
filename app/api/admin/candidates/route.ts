@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { validateAdminRequest, writeAdminAuditLog } from "../../../../lib/admin-security";
 
-const ADMIN_SECRET = process.env.ADMIN_SECRET ?? "";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
 
@@ -10,13 +10,10 @@ function supabaseAdmin() {
   return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 }
 
-function authorized(request: Request): boolean {
-  const auth = request.headers.get("x-admin-secret");
-  return !ADMIN_SECRET || auth === ADMIN_SECRET;
-}
 
 export async function GET(request: Request) {
-  if (!authorized(request)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const guard = validateAdminRequest(request);
+  if (guard) return guard;
   const sb = supabaseAdmin();
   if (!sb) return NextResponse.json({ error: "SUPABASE_SERVICE_ROLE_KEY not configured" }, { status: 500 });
 
@@ -26,11 +23,19 @@ export async function GET(request: Request) {
   if (status !== "all") query = query.eq("status", status);
   const { data, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  await writeAdminAuditLog(sb, {
+    actionType: "candidates.list",
+    targetTable: "topic_candidates",
+    targetId: status,
+    newState: { status, count: data?.length ?? 0 },
+    request,
+  });
   return NextResponse.json({ candidates: data ?? [] });
 }
 
 export async function PATCH(request: Request) {
-  if (!authorized(request)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const guard = validateAdminRequest(request, { mutation: true });
+  if (guard) return guard;
   const sb = supabaseAdmin();
   if (!sb) return NextResponse.json({ error: "SUPABASE_SERVICE_ROLE_KEY not configured" }, { status: 500 });
 
@@ -40,6 +45,13 @@ export async function PATCH(request: Request) {
   const allowed = new Set(["new", "reviewing", "approved", "rejected", "promoted", "spam"]);
   if (!id || !allowed.has(status)) return NextResponse.json({ error: "valid id and status are required" }, { status: 400 });
 
+  const { data: previousCandidate, error: fetchError } = await sb
+    .from("topic_candidates")
+    .select("*")
+    .eq("id", id)
+    .single();
+  if (fetchError || !previousCandidate) return NextResponse.json({ error: "candidate not found", detail: fetchError?.message }, { status: 404 });
+
   const { data, error } = await sb
     .from("topic_candidates")
     .update({ status, reviewed_at: new Date().toISOString() })
@@ -48,5 +60,13 @@ export async function PATCH(request: Request) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  await writeAdminAuditLog(sb, {
+    actionType: "candidates.update_status",
+    targetTable: "topic_candidates",
+    targetId: id,
+    previousState: previousCandidate,
+    newState: data,
+    request,
+  });
   return NextResponse.json({ candidate: data });
 }

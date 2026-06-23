@@ -214,3 +214,22 @@ create policy topic_candidates_public_update
   on topic_candidates for update to anon
   using (true)
   with check (true);
+
+-- Admin audit log: short-term x-admin-secret hardening for admin API actions.
+-- Captures action type, target id, previous/new state, and timestamp for rollback review.
+create table admin_audit_logs (
+  id uuid primary key default gen_random_uuid(),
+  action_type text not null,
+  target_table text,
+  target_id text,
+  previous_state jsonb,
+  new_state jsonb,
+  created_at timestamptz not null default now()
+);
+
+create index admin_audit_logs_action_type_idx on admin_audit_logs(action_type);
+create index admin_audit_logs_target_idx on admin_audit_logs(target_table, target_id);
+create index admin_audit_logs_created_idx on admin_audit_logs(created_at desc);
+
+alter table admin_audit_logs enable row level security;
+-- No public policies: admin audit reads/writes must go through service_role-backed admin APIs only.

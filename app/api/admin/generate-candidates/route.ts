@@ -9,8 +9,8 @@ import {
   type AIGenerateResponse,
 } from "../../../../lib/ai-providers";
 import { buildConsensus, type ConsensusCandidate } from "../../../../lib/consensus";
+import { validateAdminRequest, writeAdminAuditLog } from "../../../../lib/admin-security";
 
-const ADMIN_SECRET = process.env.ADMIN_SECRET ?? "";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
 
@@ -124,10 +124,8 @@ function parseCandidatesFromResponse(
 }
 
 export async function POST(request: Request) {
-  const auth = request.headers.get("x-admin-secret");
-  if (ADMIN_SECRET && auth !== ADMIN_SECRET) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  }
+  const guard = validateAdminRequest(request, { mutation: true });
+  if (guard) return guard;
 
   const body = await request.json();
   const topic = String(body.topic ?? body.category ?? "").trim();
@@ -252,6 +250,13 @@ export async function POST(request: Request) {
       });
     } else {
       saved = data ?? [];
+      await writeAdminAuditLog(client, {
+        actionType: "generate_candidates.create",
+        targetTable: "topic_candidates",
+        targetId: topic,
+        newState: { topic, lang, saved, total_generated: allCandidates.length, providers: Object.keys(providerResults) },
+        request,
+      });
     }
   } else if (saveToDb && !client) {
     saveError = "SUPABASE_SERVICE_ROLE_KEY not configured. AI candidates generated but cannot be saved. anon key is not accepted for ai_generated inserts due to RLS policy.";
@@ -300,7 +305,9 @@ export async function POST(request: Request) {
   });
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const guard = validateAdminRequest(request);
+  if (guard) return guard;
   const available = getAvailableProviders();
   return NextResponse.json({
     available_providers: available.map((p) => ({

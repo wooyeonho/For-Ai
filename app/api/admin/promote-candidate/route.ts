@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { validateAdminRequest, writeAdminAuditLog } from "../../../../lib/admin-security";
 
-const ADMIN_SECRET = process.env.ADMIN_SECRET ?? "";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
 
@@ -15,10 +15,8 @@ function stableId(prefix: string, slug: string): string {
 }
 
 export async function POST(request: Request) {
-  const auth = request.headers.get("x-admin-secret");
-  if (ADMIN_SECRET && auth !== ADMIN_SECRET) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  }
+  const guard = validateAdminRequest(request, { mutation: true });
+  if (guard) return guard;
 
   const body = await request.json();
   const { candidateId } = body;
@@ -115,7 +113,21 @@ export async function POST(request: Request) {
     confidence: "low",
   });
 
-  await sb.from("topic_candidates").update({ status: "promoted", promoted_at: new Date().toISOString() }).eq("id", candidateId);
+  const { data: promotedCandidate } = await sb
+    .from("topic_candidates")
+    .update({ status: "promoted", promoted_at: new Date().toISOString() })
+    .eq("id", candidateId)
+    .select("*")
+    .single();
+
+  await writeAdminAuditLog(sb, {
+    actionType: "promote_candidate.create_document",
+    targetTable: "topic_candidates",
+    targetId: candidateId,
+    previousState: candidate,
+    newState: { candidate: promotedCandidate, entity_id: entityId, document_id: documentId, listing_id: listingId, claims_created: claims.length },
+    request,
+  });
 
   return NextResponse.json({
     success: true,

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { validateAdminRequest, writeAdminAuditLog } from "../../../../lib/admin-security";
 
-const ADMIN_SECRET = process.env.ADMIN_SECRET ?? "";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
 
@@ -10,13 +10,10 @@ function supabaseAdmin() {
   return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 }
 
-function authorized(request: Request): boolean {
-  const auth = request.headers.get("x-admin-secret");
-  return !ADMIN_SECRET || auth === ADMIN_SECRET;
-}
 
 export async function GET(request: Request) {
-  if (!authorized(request)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const guard = validateAdminRequest(request);
+  if (guard) return guard;
   const sb = supabaseAdmin();
   if (!sb) return NextResponse.json({ error: "SUPABASE_SERVICE_ROLE_KEY not configured" }, { status: 500 });
 
@@ -31,7 +28,8 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  if (!authorized(request)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const guard = validateAdminRequest(request, { mutation: true });
+  if (guard) return guard;
   const sb = supabaseAdmin();
   if (!sb) return NextResponse.json({ error: "SUPABASE_SERVICE_ROLE_KEY not configured" }, { status: 500 });
 
@@ -53,7 +51,7 @@ export async function POST(request: Request) {
 
   const { data: existingClaim, error: fetchError } = await sb
     .from("claims")
-    .select("id, document_id, entity_id, status, confidence")
+    .select("*")
     .eq("id", claimId)
     .single();
   if (fetchError || !existingClaim) return NextResponse.json({ error: "claim not found", detail: fetchError?.message }, { status: 404 });
@@ -90,6 +88,15 @@ export async function POST(request: Request) {
     previous_confidence: existingClaim.confidence,
     new_confidence: confidence,
     note: citation ?? title ?? url,
+  });
+
+  await writeAdminAuditLog(sb, {
+    actionType: "verify_claim.verify",
+    targetTable: "claims",
+    targetId: claimId,
+    previousState: existingClaim,
+    newState: { claim: updatedClaim, source_id: sourceId },
+    request,
   });
 
   const { data: siblingClaims } = await sb.from("claims").select("status").eq("document_id", existingClaim.document_id);
