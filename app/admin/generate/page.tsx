@@ -19,14 +19,27 @@ const LANGUAGES = [
   { code: "zh", label: "中文", flag: "🇨🇳" },
 ];
 
+interface ConsensusInfo {
+  consensus_score?: number;
+  consensus_level?: "unanimous" | "majority" | "minority" | "single";
+  agreed_providers?: string[];
+}
+
 interface GenerateResult {
   topic: string;
   lang: string;
   providers_used: string[];
   total_generated: number;
   saved: number;
-  preview: Record<string, unknown>[];
+  preview: (Record<string, unknown> & ConsensusInfo)[];
   provider_results?: Record<string, { generated: number; error?: string }>;
+  consensus_summary?: {
+    total_unique: number;
+    unanimous: number;
+    majority: number;
+    minority: number;
+    single: number;
+  };
   error?: string;
   save_error?: string;
 }
@@ -287,17 +300,65 @@ export default function AdminGeneratePage() {
             </div>
           )}
 
+          {result.consensus_summary && (
+            <div style={{ marginBottom: 20, padding: 16, background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: 8 }}>
+              <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>교차검증 합의 결과</h3>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: 8, fontSize: 13 }}>
+                <div style={{ textAlign: "center", padding: 8, background: "#dcfce7", borderRadius: 6 }}>
+                  <div style={{ fontSize: 20, fontWeight: 700 }}>{result.consensus_summary.unanimous}</div>
+                  <div style={{ color: "#15803d" }}>만장일치</div>
+                </div>
+                <div style={{ textAlign: "center", padding: 8, background: "#dbeafe", borderRadius: 6 }}>
+                  <div style={{ fontSize: 20, fontWeight: 700 }}>{result.consensus_summary.majority}</div>
+                  <div style={{ color: "#1d4ed8" }}>다수 동의</div>
+                </div>
+                <div style={{ textAlign: "center", padding: 8, background: "#fef9c3", borderRadius: 6 }}>
+                  <div style={{ fontSize: 20, fontWeight: 700 }}>{result.consensus_summary.minority}</div>
+                  <div style={{ color: "#a16207" }}>소수 동의</div>
+                </div>
+                <div style={{ textAlign: "center", padding: 8, background: "#f3f4f6", borderRadius: 6 }}>
+                  <div style={{ fontSize: 20, fontWeight: 700 }}>{result.consensus_summary.single}</div>
+                  <div style={{ color: "#6b7280" }}>단독 생성</div>
+                </div>
+              </div>
+              <p style={{ fontSize: 12, color: "#6b7280", marginTop: 8 }}>
+                중복 제거 후 고유 토픽: {result.consensus_summary.total_unique}개
+              </p>
+            </div>
+          )}
+
           {result.preview && result.preview.length > 0 && (
             <div>
-              <h3 style={{ fontSize: 14, marginBottom: 8 }}>미리보기 (상위 3개)</h3>
-              {result.preview.map((c, i) => (
-                <div key={i} style={{ padding: 12, border: "1px solid #e5e7eb", borderRadius: 8, marginBottom: 8 }}>
-                  <p style={{ fontWeight: 600 }}>{String(c.title)}</p>
-                  <p style={{ fontSize: 12, color: "#6b7280" }}>
-                    {String(c.slug)} · {String(c.category)} · {String(c.generation_model)}
-                  </p>
-                </div>
-              ))}
+              <h3 style={{ fontSize: 14, marginBottom: 8 }}>미리보기 (상위 {result.preview.length}개)</h3>
+              {result.preview.map((c, i) => {
+                const levelColors: Record<string, string> = {
+                  unanimous: "#16a34a", majority: "#2563eb", minority: "#ca8a04", single: "#9ca3af",
+                };
+                const levelLabels: Record<string, string> = {
+                  unanimous: "만장일치", majority: "다수 동의", minority: "소수", single: "단독",
+                };
+                return (
+                  <div key={i} style={{ padding: 12, border: "1px solid #e5e7eb", borderRadius: 8, marginBottom: 8 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <p style={{ fontWeight: 600 }}>{String(c.title)}</p>
+                      {c.consensus_level && (
+                        <span style={{
+                          fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 12,
+                          color: levelColors[c.consensus_level] ?? "#9ca3af",
+                          background: `${levelColors[c.consensus_level] ?? "#9ca3af"}18`,
+                        }}>
+                          {levelLabels[c.consensus_level] ?? c.consensus_level}
+                          {c.consensus_score !== undefined && ` ${Math.round(c.consensus_score * 100)}%`}
+                        </span>
+                      )}
+                    </div>
+                    <p style={{ fontSize: 12, color: "#6b7280" }}>
+                      {String(c.slug)} · {String(c.category)} · {String(c.generation_model)}
+                      {c.agreed_providers && ` · ${(c.agreed_providers as string[]).join(", ")}`}
+                    </p>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
