@@ -183,6 +183,9 @@ create table topic_candidates (
   source_hints   jsonb default '[]',
   contributor_hash text,
   generation_model text,
+  consensus_score  numeric(3,2),
+  consensus_level  text check (consensus_level in ('unanimous','majority','minority','single')),
+  agreed_providers text[],
   created_at     timestamptz default now(),
   reviewed_at    timestamptz,
   promoted_at    timestamptz

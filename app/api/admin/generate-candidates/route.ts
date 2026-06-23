@@ -8,6 +8,7 @@ import {
   generateWithAll,
   type AIGenerateResponse,
 } from "../../../../lib/ai-providers";
+import { buildConsensus, type ConsensusCandidate } from "../../../../lib/consensus";
 
 const ADMIN_SECRET = process.env.ADMIN_SECRET ?? "";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
@@ -167,17 +168,32 @@ export async function POST(request: Request) {
 
   let allCandidates: Record<string, unknown>[] = [];
   const providerResults: Record<string, { generated: number; error?: string }> = {};
+  let consensusResults: ConsensusCandidate[] | null = null;
 
   if (crossVerify && providers.length >= 2) {
-    // Cross-verification: run all providers, merge results
+    // Cross-verification: run all providers, build consensus
     const responses = await generateWithAll(providers, aiRequest);
+    const candidatesByProvider = new Map<string, Record<string, unknown>[]>();
+
     for (const resp of responses) {
       const candidates = parseCandidatesFromResponse(resp, lang);
       providerResults[resp.provider] = {
         generated: candidates.length,
         error: resp.error || undefined,
       };
-      allCandidates.push(...candidates);
+      if (candidates.length > 0) {
+        candidatesByProvider.set(resp.provider, candidates);
+      }
+    }
+
+    if (candidatesByProvider.size >= 2) {
+      consensusResults = buildConsensus(candidatesByProvider, providers.length);
+      allCandidates = consensusResults;
+    } else {
+      // Only one provider returned results — no consensus possible
+      for (const candidates of candidatesByProvider.values()) {
+        allCandidates.push(...candidates);
+      }
     }
   } else {
     // Single provider (or sequential)
@@ -204,9 +220,19 @@ export async function POST(request: Request) {
   const client = supabaseAdmin();
 
   if (saveToDb && client) {
+    // Strip non-DB fields before insert; keep only schema-compatible columns
+    const dbRows = allCandidates.map((c) => {
+      const row = { ...c } as Record<string, unknown>;
+      // Remove consensus metadata that isn't in the DB table columns
+      delete row.merged_source_hints;
+      delete row.merged_claims;
+      delete row.total_providers;
+      return row;
+    });
+
     const { data, error } = await client
       .from("topic_candidates")
-      .insert(allCandidates)
+      .insert(dbRows)
       .select("id, title, slug");
 
     if (error) {
@@ -228,7 +254,26 @@ export async function POST(request: Request) {
     total_generated: allCandidates.length,
     saved: saved.length,
     ...(saveError ? { save_error: saveError } : {}),
-    preview: allCandidates.slice(0, 3),
+    ...(consensusResults ? {
+      consensus_summary: {
+        total_unique: consensusResults.length,
+        unanimous: consensusResults.filter((c) => c.consensus_level === "unanimous").length,
+        majority: consensusResults.filter((c) => c.consensus_level === "majority").length,
+        minority: consensusResults.filter((c) => c.consensus_level === "minority").length,
+        single: consensusResults.filter((c) => c.consensus_level === "single").length,
+      },
+    } : {}),
+    preview: allCandidates.slice(0, 5).map((c) => {
+      const consensus = c as Record<string, unknown>;
+      return {
+        ...c,
+        ...(consensus.consensus_score !== undefined ? {
+          consensus_score: consensus.consensus_score,
+          consensus_level: consensus.consensus_level,
+          agreed_providers: consensus.agreed_providers,
+        } : {}),
+      };
+    }),
   });
 }
 
