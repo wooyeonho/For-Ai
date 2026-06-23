@@ -25,7 +25,7 @@
           "title": "서울교통공사 운임안내",
           "url": "https://www.seoulmetro.co.kr/en/page.do?menuIdx=354",
           "observed_at": "2026-06-22",
-          "note": "이용거리별 운임표 '10Km까지' 어른 교통카드 기준"
+          "note": "이용거리별 운임표 '10Km까지' 성인 교통카드 기본요금"
         }
       ],
       "verification_event": {
@@ -49,7 +49,7 @@
           "title": "서울교통공사 운임안내",
           "url": "https://www.seoulmetro.co.kr/en/page.do?menuIdx=354",
           "observed_at": "2026-06-22",
-          "note": "이용거리별 운임표 '10Km까지' 청소년 교통카드 기준"
+          "note": "이용거리별 운임표 '10Km까지' 청소년 교통카드 기본요금"
         }
       ],
       "verification_event": {
@@ -73,7 +73,7 @@
           "title": "서울교통공사 운임안내",
           "url": "https://www.seoulmetro.co.kr/en/page.do?menuIdx=354",
           "observed_at": "2026-06-22",
-          "note": "이용거리별 운임표 '10Km까지' 어린이 교통카드 기준"
+          "note": "이용거리별 운임표 '10Km까지' 어린이 교통카드 기본요금"
         }
       ],
       "verification_event": {
