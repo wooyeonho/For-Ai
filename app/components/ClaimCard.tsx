@@ -18,7 +18,9 @@ export function ClaimCard({ claim }: { claim: ClaimWithSources }) {
       <p className="claim-value">{claim.claim_value}</p>
       <p className="claim-text">{claim.claim_text}</p>
 
-      {claim.sources.length > 0 && (
+      {claim.sources.length === 0 ? (
+        <p className="source-warning" role="alert">출처 0개 — 사실값 인용 금지 / 확인 필요</p>
+      ) : (
         <div className="claim-sources">
           {claim.sources.map((source) => (
             <SourcePill key={source.id} source={source} />
