@@ -199,3 +199,15 @@ alter table topic_candidates enable row level security;
 create policy topic_candidates_public_insert
   on topic_candidates for insert to anon
   with check (source = 'user_suggested' and status = 'new');
+
+-- Admin review pipeline: allow anon SELECT (candidate metadata is not sensitive)
+-- and UPDATE (admin auth is enforced at the application layer via x-admin-secret).
+-- Future: refactor admin candidates page to use server API routes with service_role.
+create policy topic_candidates_public_select
+  on topic_candidates for select to anon
+  using (true);
+
+create policy topic_candidates_public_update
+  on topic_candidates for update to anon
+  using (true)
+  with check (true);

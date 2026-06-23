@@ -28,6 +28,7 @@ interface GenerateResult {
   preview: Record<string, unknown>[];
   provider_results?: Record<string, { generated: number; error?: string }>;
   error?: string;
+  save_error?: string;
 }
 
 export default function AdminGeneratePage() {
@@ -268,6 +269,12 @@ export default function AdminGeneratePage() {
               <div style={{ fontSize: 12, color: "#6b7280" }}>AI 사용</div>
             </div>
           </div>
+
+          {result.save_error && (
+            <div style={{ padding: 12, background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, marginBottom: 16, fontSize: 13, color: "#b91c1c" }}>
+              DB 저장 실패: {result.save_error}
+            </div>
+          )}
 
           {result.provider_results && (
             <div style={{ marginBottom: 20, fontSize: 13 }}>
