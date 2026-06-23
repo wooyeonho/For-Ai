@@ -1077,3 +1077,40 @@ h2 {
   font-size: 0.78rem;
   font-family: ui-monospace, SFMono-Regular, monospace;
 }
+
+/* Citation Status */
+.citation-status-banner {
+  display: grid;
+  gap: 8px;
+  margin: 14px 0 18px;
+  padding: 14px;
+  border: 2px solid var(--danger);
+  border-radius: 8px;
+  background: var(--danger-bg);
+}
+
+.citation-status-banner[data-citation-status="citable"] {
+  border-color: var(--success);
+  background: var(--success-bg);
+}
+
+.citation-badge {
+  width: fit-content;
+  font-size: 0.92rem;
+  font-weight: 800;
+}
+
+.citation-warning-panel {
+  border-left: 4px solid var(--danger);
+  background: var(--danger-bg);
+}
+
+.claim-source-warning {
+  margin: 10px 0 0;
+  padding: 8px 10px;
+  border: 1px solid var(--danger);
+  border-radius: 6px;
+  background: var(--danger-bg);
+  color: var(--danger);
+  font-weight: 700;
+}

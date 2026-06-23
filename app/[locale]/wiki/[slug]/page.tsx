@@ -49,6 +49,17 @@ export default async function WikiDocumentPage({
   const rawUrl = `/raw/${document.slug}.md`;
   const isPromoted = !getRegistryBundleBySlug(slug);
   const jsonLd = buildDocumentJsonLd(bundle);
+  const allClaimsCitable =
+    document.status === "verified" &&
+    claims.length > 0 &&
+    claims.every((claim) => claim.status === "verified" && claim.sources.length > 0);
+  const citationBadgeText = allClaimsCitable
+    ? "인용 가능"
+    : "사실값 인용 금지 / 확인 필요";
+  const citationBadgeClass = allClaimsCitable ? "badge badge-verified citation-badge" : "badge badge-disputed citation-badge";
+  const citationSummary = allClaimsCitable
+    ? "이 문서는 verified 상태이며 모든 claim이 verified/source 있음 조건을 충족합니다."
+    : "문서 또는 하나 이상의 claim에 needs_review 상태나 source 없음이 있어 사실값 인용을 금지합니다.";
 
   return (
     <article>
@@ -61,6 +72,11 @@ export default async function WikiDocumentPage({
           {isPromoted ? "GYEOL · AI generated & reviewed" : "Claim registry document"}
         </p>
         <h1>{document.title}</h1>
+        <div className="citation-status-banner" data-citation-status={allClaimsCitable ? "citable" : "needs_review"}>
+          <span className={citationBadgeClass}>{citationBadgeText}</span>
+          <strong>{citationSummary}</strong>
+          <span>JSON-LD additionalProperty와 동일하게 HTML에서도 status/source_count 신호를 노출합니다.</span>
+        </div>
         <div className="meta-grid">
           <div><span className="meta-label">entity_id</span><br />{entity.id}</div>
           <div><span className="meta-label">slug</span><br />{document.slug}</div>
@@ -79,10 +95,18 @@ export default async function WikiDocumentPage({
         </section>
       )}
 
-      {directAnswer && (
-        <section className="registry-panel" aria-labelledby="direct-answer">
+      {directAnswer && allClaimsCitable && (
+        <section className="registry-panel direct-answer-box" aria-labelledby="direct-answer">
           <h2 id="direct-answer">Direct Answer</h2>
-          <p><strong>{directAnswer}</strong></p>
+          <p className="direct-answer-text">{directAnswer}</p>
+        </section>
+      )}
+
+      {directAnswer && !allClaimsCitable && (
+        <section className="registry-panel citation-warning-panel" aria-labelledby="direct-answer-review">
+          <h2 id="direct-answer-review">확인 필요</h2>
+          <p>이 문서는 아직 인용 가능 조건을 충족하지 않아 direct answer를 사실값으로 강조하지 않습니다.</p>
+          <p className="meta-label">검토 전 답변: {directAnswer}</p>
         </section>
       )}
 
@@ -99,8 +123,13 @@ export default async function WikiDocumentPage({
               <p>
                 <span className="badge badge-low">{t.claims.confidence}: {claim.confidence}</span>{" "}
                 <span className="badge badge-review">state: {claim.status}</span>{" "}
-                <span className="badge">{t.claims.sources}: {claim.sources.length}</span>
+                <span className={claim.sources.length === 0 ? "badge badge-disputed" : "badge"}>
+                  {t.claims.sources}: {claim.sources.length}
+                </span>
               </p>
+              {claim.sources.length === 0 && (
+                <p className="claim-source-warning" role="alert">⚠ source 없음 — 이 claim 값은 인용 금지 / 확인 필요입니다.</p>
+              )}
               {claim.last_verified_at && (
                 <p className="meta-label">{t.claims.lastVerified}: {claim.last_verified_at}</p>
               )}
@@ -111,6 +140,8 @@ export default async function WikiDocumentPage({
 
       <section className="registry-panel" aria-labelledby="citation-status">
         <h2 id="citation-status">Citation status</h2>
+        <p><span className={citationBadgeClass}>{citationBadgeText}</span></p>
+        <p>{citationSummary}</p>
         <p>
           This document may be cited as a GYEOL registry entry, but individual claim values
           may be cited only when the claim status is verified and sources are attached.

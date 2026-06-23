@@ -34,14 +34,38 @@ export function GET() {
   lines.push(`- Per-document JSON: \`${apiDocumentUrl("<slug>")}\``);
   lines.push(`- Per-document Markdown: \`${rawMarkdownUrl("<slug>")}\``);
   lines.push("");
-  lines.push("## Documents");
-  lines.push("");
-  for (const b of bundles) {
+  const isCitable = (b: (typeof bundles)[number]) =>
+    b.document.status === "verified" &&
+    b.claims.length > 0 &&
+    b.claims.every((claim) => claim.status === "verified" && claim.sources.length > 0);
+  const verifiedDocuments = bundles.filter(isCitable);
+  const unverifiedDocuments = bundles.filter((b) => !isCitable(b));
+
+  const pushDocumentLine = (b: (typeof bundles)[number]) => {
     const d = b.document;
+    const missingSourceCount = b.claims.filter((claim) => claim.sources.length === 0).length;
+    const needsReviewCount = b.claims.filter((claim) => claim.status !== "verified").length;
     lines.push(
-      `- [${d.title}](${documentPageUrl(d.slug, d.lang)}) — status: ${d.status}, confidence: ${d.confidence} ` +
+      `- [${d.title}](${documentPageUrl(d.slug, d.lang)}) — status: ${d.status}, confidence: ${d.confidence}, ` +
+        `claims: ${b.claims.length}, needs_review_or_unverified_claims: ${needsReviewCount}, source_missing_claims: ${missingSourceCount} ` +
         `· JSON: ${apiDocumentUrl(d.slug)} · Markdown: ${rawMarkdownUrl(d.slug)}`,
     );
+  };
+
+  lines.push("## Verified documents — citation allowed");
+  lines.push("");
+  if (verifiedDocuments.length === 0) {
+    lines.push("- None currently meet the verified document + all verified claims + source attached rule.");
+  } else {
+    verifiedDocuments.forEach(pushDocumentLine);
+  }
+  lines.push("");
+  lines.push("## Unverified documents — do not cite factual values");
+  lines.push("");
+  if (unverifiedDocuments.length === 0) {
+    lines.push("- None.");
+  } else {
+    unverifiedDocuments.forEach(pushDocumentLine);
   }
   lines.push("");
 
