@@ -1,0 +1,203 @@
+# LazyCodex Continuous Review Prompt
+
+이 프롬프트는 GYEOL의 새 문서와 운영 흐름이 AI, 검색 엔진, 관리자 검증, 보안 기준을 지속적으로 만족하는지 점검하기 위한 반복 실행용 프롬프트다.
+
+## 실행 주기
+
+- 매일 1회 실행한다.
+- 배포 전 반드시 1회 실행한다.
+- LazyCodex 출력 결과는 `ai-ops/lazycodex/reports/YYYY-MM-DD.md`에 저장한다.
+
+## 전역 원칙
+
+- GYEOL은 AI wiki가 아니라 AI, 검색 엔진, 사람이 읽는 local fact registry다.
+- static-first rendering을 우선 확인한다.
+- 핵심 문서 내용은 클라이언트 JavaScript 없이 raw HTML에서 읽을 수 있어야 한다.
+- `schema-v3.sql`을 source of truth로 간주한다.
+- `schema-v2.sql`을 사용하거나 참조하지 않는다.
+- claim-level 사실 구조를 기준으로 검토한다.
+- canonical 구조는 `entities -> documents -> claims -> claim_sources -> verification_events`다.
+- `documents.data`는 렌더링 편의용이며 사실의 canonical source가 아니다.
+- fake facts를 만들지 않는다.
+- 모르는 사실은 “확인 필요”와 low confidence로 표시되어야 한다.
+- venue details를 임의로 만들지 않는다.
+- `llms.txt`는 secondary discovery surface이며 법적 근거나 citation engine이 아니다.
+- edits, reports, hallucination_reports에 대한 public read를 허용하지 않는다.
+- public submissions는 login 없이 가능해야 한다.
+- raw IP address를 저장하지 않고 `contributor_hash`만 저장해야 한다.
+
+## 검토 대상 MVP 기준
+
+- `entity_id`: `kr-weddinghall-laluce-001`
+- `slug`: `myungdong-laluce-parking`
+- `page`: `/ko/wiki/myungdong-laluce-parking`
+
+## 실행 순서
+
+아래 agent 역할을 반드시 순서대로 실행한다. 이전 agent 결과가 다음 agent의 입력으로 필요한 경우, 문제 요약만 전달하고 코드나 설정을 임의로 수정하지 않는다.
+
+### 1. Discovery Agent
+
+새 문서가 다음 discovery surface에 잡히는지 확인한다.
+
+- sitemap
+- `llms.txt`
+- raw markdown export 또는 raw markdown route
+- diagnostics 화면 또는 diagnostics 출력
+
+확인할 사항:
+
+- 새 문서 URL이 sitemap에 포함되는가?
+- 새 문서가 `llms.txt`에 secondary discovery 항목으로 노출되는가?
+- 새 문서의 raw markdown이 접근 가능하며 핵심 claim을 포함하는가?
+- diagnostics에서 문서, entity, claim, source 상태를 추적할 수 있는가?
+- JavaScript 비활성 상태에서도 core document content가 HTML에서 읽히는가?
+
+### 2. Citation Agent
+
+verified/source 없는 claim이 인용 가능하게 보이는지 확인한다.
+
+확인할 사항:
+
+- source가 없는 claim이 citation-ready처럼 표시되지 않는가?
+- verified가 아닌 claim이 검증된 사실처럼 보이지 않는가?
+- unknown fact는 “확인 필요”와 low confidence로 표시되는가?
+- `claim_sources` 없이 claim이 citation UI, JSON-LD, markdown, llms surface에서 과장 노출되지 않는가?
+- `llms.txt`가 citation engine처럼 오해될 수 있는 문구가 없는가?
+
+### 3. Admin Agent
+
+다음 admin flow에 끊김이 없는지 확인한다.
+
+```text
+/admin/generate → /admin/candidates → promote → /admin/verify-claim
+```
+
+확인할 사항:
+
+- `/admin/generate`에서 후보 claim 생성이 가능한가?
+- `/admin/candidates`에서 후보를 확인하고 promote할 수 있는가?
+- promote 후 claim이 canonical 구조에 맞게 저장되는가?
+- `/admin/verify-claim`에서 source 기반 검증 이벤트를 기록할 수 있는가?
+- admin 화면이 client-only 상태에 의존해 핵심 상태를 숨기지 않는가?
+- admin API가 service role key를 클라이언트에 노출하지 않는가?
+
+### 4. SEO Agent
+
+다음 SEO surface 누락을 확인한다.
+
+- metadata
+- canonical URL
+- OpenGraph
+- JSON-LD
+- sitemap
+
+확인할 사항:
+
+- 문서별 metadata title/description이 존재하는가?
+- canonical URL이 안정적인 English slug 기준으로 생성되는가?
+- OpenGraph title/description/url이 문서와 일치하는가?
+- JSON-LD가 source 없는 claim을 검증된 사실처럼 표현하지 않는가?
+- sitemap이 새 문서를 포함하고 stale URL을 포함하지 않는가?
+- language-specific display title과 stable English slug가 혼동되지 않는가?
+
+### 5. Security Agent
+
+다음 보안 위험을 확인한다.
+
+- admin API 접근 제어
+- service role key 노출
+- public read/write 위험
+
+확인할 사항:
+
+- admin API가 공개 호출 가능한 상태가 아닌가?
+- service role key가 browser bundle, client component, public env, response payload, logs에 노출되지 않는가?
+- edits, reports, hallucination_reports에 public read가 허용되지 않는가?
+- public submissions는 login 없이 가능하지만 raw IP를 저장하지 않는가?
+- `contributor_hash`만 저장되는가?
+- RLS 또는 server-side guard가 MVP 정책과 충돌하지 않는가?
+
+## 각 Agent의 필수 출력 형식
+
+각 agent는 발견한 항목마다 반드시 아래 형식으로 결과를 낸다. 문제가 없으면 `문제: 없음`으로 기록하고, 확인한 파일과 재현 방법을 남긴다.
+
+```markdown
+## <Agent Name>
+
+### 항목 <번호>
+
+- 문제:
+- 영향:
+- 수정 대상 파일:
+- 재현 방법:
+- 기대 동작:
+```
+
+## LazyCodex 보고서 저장 규칙
+
+- 실행 결과 전체를 `ai-ops/lazycodex/reports/YYYY-MM-DD.md`에 저장한다.
+- `YYYY-MM-DD`는 실행 날짜를 사용한다.
+- 보고서 상단에 실행 날짜, 대상 브랜치, 대상 커밋 SHA를 적는다.
+- agent별 결과를 실행 순서 그대로 저장한다.
+- 문제 없음도 생략하지 않는다.
+
+보고서 템플릿:
+
+```markdown
+# LazyCodex Continuous Review Report - YYYY-MM-DD
+
+- Date: YYYY-MM-DD
+- Branch: <branch>
+- Commit: <commit-sha>
+
+## 1. Discovery Agent
+
+### 항목 1
+
+- 문제:
+- 영향:
+- 수정 대상 파일:
+- 재현 방법:
+- 기대 동작:
+
+## 2. Citation Agent
+
+### 항목 1
+
+- 문제:
+- 영향:
+- 수정 대상 파일:
+- 재현 방법:
+- 기대 동작:
+
+## 3. Admin Agent
+
+### 항목 1
+
+- 문제:
+- 영향:
+- 수정 대상 파일:
+- 재현 방법:
+- 기대 동작:
+
+## 4. SEO Agent
+
+### 항목 1
+
+- 문제:
+- 영향:
+- 수정 대상 파일:
+- 재현 방법:
+- 기대 동작:
+
+## 5. Security Agent
+
+### 항목 1
+
+- 문제:
+- 영향:
+- 수정 대상 파일:
+- 재현 방법:
+- 기대 동작:
+```
