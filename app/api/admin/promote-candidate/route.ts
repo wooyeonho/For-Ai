@@ -3,13 +3,11 @@ import { createClient } from "@supabase/supabase-js";
 
 const ADMIN_SECRET = process.env.ADMIN_SECRET ?? "";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-const SUPABASE_KEY =
-  process.env.SUPABASE_SERVICE_ROLE_KEY ??
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ??
-  "";
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
 
 function supabaseAdmin() {
-  return createClient(SUPABASE_URL, SUPABASE_KEY);
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) return null;
+  return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 }
 
 export async function POST(request: Request) {
@@ -25,6 +23,12 @@ export async function POST(request: Request) {
   }
 
   const sb = supabaseAdmin();
+  if (!sb) {
+    return NextResponse.json(
+      { error: "SUPABASE_SERVICE_ROLE_KEY not configured" },
+      { status: 500 }
+    );
+  }
 
   const { data: candidate, error: fetchErr } = await sb
     .from("topic_candidates")

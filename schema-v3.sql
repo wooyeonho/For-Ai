@@ -161,3 +161,41 @@ create policy hallucination_reports_public_insert_only on hallucination_reports 
 
 -- No public SELECT policies are defined for edits, reports, or hallucination_reports.
 -- Never store raw IP addresses. Store contributor_hash only for submissions/events.
+
+-- topic_candidates: AI/user-generated knowledge candidates (NOT verified facts)
+-- These are intake items that go through review before being promoted to real documents/claims.
+create table topic_candidates (
+  id             uuid primary key default gen_random_uuid(),
+  status         text not null default 'new'
+                 check (status in ('new','reviewing','approved','rejected','promoted','spam')),
+  source         text not null default 'ai_generated'
+                 check (source in ('ai_generated','user_suggested','admin_created')),
+  lang           text not null default 'ko',
+  title          text not null,
+  slug           text not null unique,
+  category       text not null,
+  subcategory    text,
+  risk_tier      text not null default 'medium'
+                 check (risk_tier in ('low','medium','high','forbidden')),
+  why_people_ask_ai  text,
+  why_ai_gets_wrong  text,
+  claims         jsonb not null default '[]',
+  source_hints   jsonb default '[]',
+  contributor_hash text,
+  generation_model text,
+  created_at     timestamptz default now(),
+  reviewed_at    timestamptz,
+  promoted_at    timestamptz
+);
+
+create index topic_candidates_status_idx   on topic_candidates(status);
+create index topic_candidates_category_idx on topic_candidates(category);
+create index topic_candidates_created_idx  on topic_candidates(created_at desc);
+
+alter table topic_candidates enable row level security;
+
+-- Only allow public anon insert for user_suggested candidates with status 'new'.
+-- AI-generated candidates require service_role key (not anon).
+create policy topic_candidates_public_insert
+  on topic_candidates for insert to anon
+  with check (source = 'user_suggested' and status = 'new');

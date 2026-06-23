@@ -11,10 +11,11 @@ import {
 
 const ADMIN_SECRET = process.env.ADMIN_SECRET ?? "";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-const SUPABASE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
 
 function supabaseAdmin() {
-  return createClient(SUPABASE_URL, SUPABASE_KEY);
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) return null;
+  return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 }
 
 function buildPrompt(topic: string, count: number, lang: string) {
@@ -199,12 +200,22 @@ export async function POST(request: Request) {
 
   // Save to DB if configured
   let saved: unknown[] = [];
-  if (saveToDb && SUPABASE_URL && SUPABASE_KEY) {
-    const { data } = await supabaseAdmin()
+  let saveError: string | null = null;
+  const client = supabaseAdmin();
+
+  if (saveToDb && client) {
+    const { data, error } = await client
       .from("topic_candidates")
       .insert(allCandidates)
       .select("id, title, slug");
-    saved = data ?? [];
+
+    if (error) {
+      saveError = error.message;
+    } else {
+      saved = data ?? [];
+    }
+  } else if (saveToDb && !client) {
+    saveError = "SUPABASE_SERVICE_ROLE_KEY not configured. AI candidates generated but cannot be saved. anon key is not accepted for ai_generated inserts due to RLS policy.";
   }
 
   return NextResponse.json({
@@ -216,6 +227,7 @@ export async function POST(request: Request) {
     provider_results: providerResults,
     total_generated: allCandidates.length,
     saved: saved.length,
+    ...(saveError ? { save_error: saveError } : {}),
     preview: allCandidates.slice(0, 3),
   });
 }
