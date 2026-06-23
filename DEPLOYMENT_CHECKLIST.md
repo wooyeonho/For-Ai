@@ -6,6 +6,8 @@ Goal 8 deployment checklist for the static-first GYEOL MVP.
 
 - `npm run lint`
 - `npm run build`
+- `npm run ci:guards`
+- `npm run ai:discovery-check` when a patch adds a document/slug or changes discovery output
 - `/`
 - `/ko/wiki/myungdong-laluce-parking`
 - `/api/documents/myungdong-laluce-parking`
@@ -19,6 +21,29 @@ Goal 8 deployment checklist for the static-first GYEOL MVP.
 - `/admin/import`
 - `/sitemap.xml`
 - `/robots.txt`
+
+## LazyCodex patch review gate
+
+Before merging or deploying a LazyCodex-generated patch, a human must inspect these AI-discovery and document-rendering files:
+
+- `app/sitemap.ts`
+- `app/llms.txt/route.ts`
+- `app/raw/[...path]/route.ts`
+- `app/diagnostics/[slug]/page.tsx`
+- `app/ko/wiki/[slug]/page.tsx`
+- `app/[locale]/wiki/[slug]/page.tsx`
+- `lib/supabase-documents.ts`
+
+After deployment, verify the real deployed URLs for each new or changed slug:
+
+- `/sitemap.xml`
+- `/llms.txt`
+- `/ko/wiki/{new-slug}`
+- `/api/documents/{new-slug}`
+- `/raw/{new-slug}.md`
+- `/diagnostics/{new-slug}`
+
+Always test one `verified` document and one `needs_review` document so both citation-ready and non-citable states are exercised.
 
 ## Privacy and scope checks
 

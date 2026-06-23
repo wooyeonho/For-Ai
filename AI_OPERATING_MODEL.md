@@ -92,6 +92,39 @@ Or execute a named plan:
 $start-work <plan-name>
 ```
 
+Mandatory human review after every LazyCodex patch:
+
+- Inspect each AI-discovery and document-rendering surface before merge:
+  - `app/sitemap.ts`
+  - `app/llms.txt/route.ts`
+  - `app/raw/[...path]/route.ts`
+  - `app/diagnostics/[slug]/page.tsx`
+  - `app/ko/wiki/[slug]/page.tsx`
+  - `app/[locale]/wiki/[slug]/page.tsx`
+  - `lib/supabase-documents.ts`
+- Run the required local checks:
+
+  ```bash
+  npm run lint
+  npm run build
+  npm run ci:guards
+  ```
+
+- If the patch adds a new document/slug or changes discovery output, also run:
+
+  ```bash
+  npm run ai:discovery-check
+  ```
+
+- After deployment, verify the real production URLs for the new or changed slug:
+  - `/sitemap.xml`
+  - `/llms.txt`
+  - `/ko/wiki/{new-slug}`
+  - `/api/documents/{new-slug}`
+  - `/raw/{new-slug}.md`
+  - `/diagnostics/{new-slug}`
+- Test at least one `verified` document and one `needs_review` document so citation-ready and non-citable states are both covered.
+
 ### Claude
 
 Use Claude for big-picture review rather than direct implementation:

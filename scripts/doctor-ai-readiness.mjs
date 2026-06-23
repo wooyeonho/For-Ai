@@ -39,9 +39,9 @@ add("no stale /api/document singular path in core source", !sourceText.includes(
 add("llms.txt route exists with citation policy", existsSync(join(root, "app/llms.txt/route.ts")) && contains("app/llms.txt/route.ts", ["Citation policy", "확인 필요", "content-type"]));
 add("sitemap includes llms.txt", contains("app/sitemap.ts", ["/llms.txt"]));
 add("robots declares sitemap and host", contains("app/robots.ts", ["sitemap", "host"]));
-add("raw markdown includes citation guidance", contains("lib/render.ts", ["Citation guidance", "Unknown facts remain"]));
+add("raw markdown includes citation guidance", contains("lib/render.ts", ["Citation guidance", "확인 필요"]));
 add("wiki page has JSON-LD Dataset and metadata", contains("app/ko/wiki/[slug]/page.tsx", ["buildDocumentJsonLd", "buildDocumentMetadata", "application/ld+json"]));
-add("layout has Korean lang, title template, header, and footer", contains("app/layout.tsx", ["lang=\"ko\"", "template", "site-header", "site-footer"]));
+add("layout has Korean lang, title template, header, and footer", contains("app/layout.tsx", ["lang=\"ko\"", "template", "SiteHeader", "SiteFooter"]));
 add("public pages have SEO metadata baseline", contains("app/layout.tsx", ["description", "openGraph", "metadataBase"]));
 add("custom 404 exists", existsSync(join(root, "app/not-found.tsx")) && contains("app/not-found.tsx", ["문서를 찾을 수 없습니다"]));
 add("gitignore excludes build artifacts", existsSync(join(root, ".gitignore")) && contains(".gitignore", [".next/", "node_modules/"]));
