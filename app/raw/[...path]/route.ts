@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { getRegistryBundleBySlug } from "../../../lib/data";
 import { renderDocumentMarkdown } from "../../../lib/render";
+import { getRegistryBundleFromSupabase } from "../../../lib/supabase-documents";
 
 export async function GET(_request: Request, { params }: { params: Promise<{ path: string[] }> }) {
   const { path } = await params;
@@ -11,7 +12,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ pat
   }
 
   const slug = fileName.slice(0, -3);
-  const bundle = getRegistryBundleBySlug(slug);
+  const bundle = getRegistryBundleBySlug(slug) ?? (await getRegistryBundleFromSupabase(slug));
 
   if (!bundle) {
     return new NextResponse("Not found", { status: 404 });
