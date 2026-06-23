@@ -22,7 +22,8 @@ const WITH_BUILD = process.argv.includes("--with-build");
 const SCAN_ROOTS = ["app", "lib"];
 const SOURCE_EXT = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".css", ".md"]);
 // Legitimate non-ASCII chars in U+0080-U+00FF (mirror of ci-guards allowlist).
-const MOJIBAKE_ALLOWLIST = new Set(["·", "×", "©"]);
+// Includes i18n characters for multilingual support (Spanish accents, etc.)
+const MOJIBAKE_ALLOWLIST = new Set(["·", "×", "©", "ñ", "é", "á", "í", "ó", "ú", "ü", "Ñ", "É", "Á", "Í", "Ó", "Ú", "Ü"]);
 const DUMP_EXT = new Set([".jsonl", ".ndjson", ".csv"]);
 const DUMP_MAX_LINES = 2000;
 const DUMP_MAX_BYTES = 1_000_000;
