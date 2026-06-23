@@ -31,3 +31,12 @@ ALTER TABLE topic_candidates ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "public_insert_topic_candidates"
   ON topic_candidates FOR INSERT TO anon
   WITH CHECK (source = 'user_suggested' AND status = 'new');
+
+CREATE POLICY "public_select_topic_candidates"
+  ON topic_candidates FOR SELECT TO anon
+  USING (true);
+
+CREATE POLICY "public_update_topic_candidates"
+  ON topic_candidates FOR UPDATE TO anon
+  USING (true)
+  WITH CHECK (true);
