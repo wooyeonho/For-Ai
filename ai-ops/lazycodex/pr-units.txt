@@ -1,0 +1,176 @@
+# LazyCodex PR units for Supabase-backed discoverability
+
+Use these as separate LazyCodex runs. Each PR must keep its file changes inside the listed scope, run the required checks, and describe both discoverability and AI citation safety.
+
+## Shared requirements for every PR
+
+- Run `npm run lint`, `npm run build`, and `npm run ci:guards` before opening the PR.
+- Keep static-first behavior: core document content must remain readable from raw HTML without client-side JavaScript.
+- Use `schema-v3.sql` as the source of truth; do not use `schema-v2.sql` or invent another database model.
+- Preserve claim-level safety: unknown facts must remain `확인 필요` with low confidence.
+- PR description must include:
+  - `What is more discoverable`: specify the exact public route or machine-readable output improved.
+  - `AI citation safety`: explain that only published/verified claim-level documents are exposed and low-confidence unknown facts remain non-citable.
+
+## PR 1: Include Supabase documents in sitemap
+
+LazyCodex prompt:
+
+```text
+Update sitemap generation so published/verified Supabase documents can be included as a fallback alongside static registry bundles. Keep the change limited to sitemap discovery code and any tiny helper needed for listing Supabase document bundles. Do not alter page rendering, metadata, raw markdown, diagnostics, llms.txt, homepage, or admin code.
+
+Acceptance criteria:
+- /sitemap.xml still includes /llms.txt and static document pages.
+- When Supabase is configured, published/verified schema-v3 documents are eligible for sitemap entries.
+- Sitemap failures must fall back to static documents instead of breaking the route.
+- Entries must use the existing stable English slug and language-specific document URL helper.
+- Run npm run lint, npm run build, and npm run ci:guards.
+
+PR description sections:
+- What is more discoverable: Supabase-backed published/verified document pages become discoverable through /sitemap.xml.
+- AI citation safety: sitemap exposure does not make low-confidence or needs-review claims citable; citation safety remains enforced by claim status, confidence, sources, and verification metadata.
+```
+
+Suggested file scope:
+- `app/sitemap.ts`
+- `lib/supabase-documents.ts` only if a minimal list helper is necessary
+
+## PR 2: Apply Supabase fallback to metadata
+
+LazyCodex prompt:
+
+```text
+Update document metadata generation so page metadata can fall back to a published/verified Supabase document when the slug is not present in static seed data. Keep this PR limited to metadata/page lookup paths. Do not change sitemap, raw markdown, diagnostics, llms.txt, homepage, or admin code.
+
+Acceptance criteria:
+- Existing static metadata remains unchanged for static registry bundles.
+- Supabase fallback metadata uses document title, canonical URL, and existing SEO helpers where possible.
+- Missing Supabase configuration or query failure does not break static pages.
+- No fake facts or venue details are introduced.
+- Run npm run lint, npm run build, and npm run ci:guards.
+
+PR description sections:
+- What is more discoverable: Supabase-backed document pages get accurate title/description/canonical metadata for search and AI crawlers.
+- AI citation safety: metadata improves discovery only and does not replace claim-level citation rules; low-confidence unknown facts stay marked `확인 필요`.
+```
+
+Suggested file scope:
+- `app/ko/wiki/[slug]/page.tsx`
+- `app/[locale]/wiki/[slug]/page.tsx`
+- `lib/seo.ts` only if metadata helper changes are required
+
+## PR 3: Apply Supabase fallback to raw markdown
+
+LazyCodex prompt:
+
+```text
+Update the raw markdown route so /raw/<slug>.md falls back to a published/verified Supabase document when the slug is not present in static registry bundles. Keep this PR limited to raw markdown retrieval/rendering integration. Do not change sitemap, metadata, diagnostics, llms.txt, homepage, or admin code.
+
+Acceptance criteria:
+- Static raw markdown output is unchanged for static registry bundles.
+- Supabase fallback renders through the existing markdown renderer.
+- Missing Supabase configuration or query failure returns the existing static behavior/404 as appropriate.
+- Markdown citation guidance remains present and low-confidence unknown claims are non-citable.
+- Run npm run lint, npm run build, and npm run ci:guards.
+
+PR description sections:
+- What is more discoverable: Supabase-backed documents become available to crawlers and RAG systems at /raw/<slug>.md.
+- AI citation safety: raw markdown keeps citation guidance and exposes claim status, confidence, sources, and `확인 필요` values without upgrading them.
+```
+
+Suggested file scope:
+- `app/raw/[...path]/route.ts`
+
+## PR 4: Apply Supabase fallback to diagnostics
+
+LazyCodex prompt:
+
+```text
+Update diagnostics so /diagnostics/<slug> falls back to a published/verified Supabase document when the slug is not present in static registry bundles. Keep this PR limited to diagnostics lookup/display. Do not change sitemap, metadata, raw markdown, llms.txt, homepage, or admin code.
+
+Acceptance criteria:
+- Static diagnostics remain unchanged for static registry bundles.
+- Supabase-backed diagnostics show entity_id, slug, status, confidence, claim count, unknown facts, low-confidence checks, and source transparency.
+- Missing Supabase configuration or query failure preserves existing 404 behavior for unknown slugs.
+- Diagnostics must not treat sitemap/llms.txt as the legal basis or citation engine.
+- Run npm run lint, npm run build, and npm run ci:guards.
+
+PR description sections:
+- What is more discoverable: Supabase-backed documents gain a diagnostics page that exposes machine-readable route readiness.
+- AI citation safety: diagnostics explicitly reports claim-level confidence, unknown values, and source transparency instead of implying all discovered data is citable.
+```
+
+Suggested file scope:
+- `app/diagnostics/[slug]/page.tsx`
+
+## PR 5: Include Supabase documents in llms.txt
+
+LazyCodex prompt:
+
+```text
+Update /llms.txt so it can include published/verified Supabase documents as a fallback alongside static registry bundles. Keep this PR limited to llms.txt and any tiny Supabase listing helper needed. Do not change sitemap, metadata, raw markdown, diagnostics, homepage, or admin code.
+
+Acceptance criteria:
+- Existing citation policy remains in /llms.txt.
+- Static document listings remain present.
+- Supabase-backed published/verified documents are listed when Supabase is configured.
+- Missing Supabase configuration or query failure falls back to static listings.
+- The route remains secondary discovery only, not a legal basis or citation engine.
+- Run npm run lint, npm run build, and npm run ci:guards.
+
+PR description sections:
+- What is more discoverable: Supabase-backed published/verified documents are exposed in the secondary AI entry point /llms.txt.
+- AI citation safety: /llms.txt retains explicit non-citation rules for low-confidence, needs-review, and `확인 필요` claims.
+```
+
+Suggested file scope:
+- `app/llms.txt/route.ts`
+- `lib/supabase-documents.ts` only if a minimal list helper is necessary
+
+## PR 6: Strengthen homepage discoverability
+
+LazyCodex prompt:
+
+```text
+Improve homepage links/copy so users, search engines, and AI crawlers can more easily find canonical wiki pages, sitemap, raw markdown, JSON API, diagnostics, and llms.txt. Keep this PR limited to homepage presentation. Do not change data access, sitemap, metadata, raw markdown, diagnostics route behavior, llms.txt route behavior, or admin code.
+
+Acceptance criteria:
+- Homepage remains static-first and readable in raw HTML.
+- Homepage clearly links to sitemap, llms.txt, canonical example document, JSON API, raw markdown, and diagnostics.
+- Copy identifies GYEOL as a local fact registry, not an AI wiki.
+- No new facts or venue details are introduced.
+- Run npm run lint, npm run build, and npm run ci:guards.
+
+PR description sections:
+- What is more discoverable: canonical pages and machine-readable outputs are easier to find from the homepage.
+- AI citation safety: homepage copy points crawlers to claim-level outputs and citation policy without presenting secondary discovery surfaces as citation authority.
+```
+
+Suggested file scope:
+- `app/page.tsx`
+- `app/globals.css` only if needed for homepage styling
+
+## PR 7: Add admin audit log
+
+LazyCodex prompt:
+
+```text
+Add a minimal admin audit log for admin-side actions, using schema-v3.sql as the source of truth. Keep this PR limited to the admin route/action being audited, the schema-v3 audit table/policy if missing, and a small server helper if needed. Do not add user accounts, payments, complex auth, public read access, or large admin systems.
+
+Acceptance criteria:
+- Admin action writes a minimal audit event with action name, target table/record when available, created_at, and non-sensitive metadata.
+- Never store raw IP addresses; if contributor/user network identity is needed, store only a hash.
+- Public read is not allowed for audit logs.
+- The implementation follows schema-v3.sql and does not introduce schema-v2 or an alternate model.
+- Admin action behavior remains functional if audit insert fails, with safe server-side logging only.
+- Run npm run lint, npm run build, and npm run ci:guards.
+
+PR description sections:
+- What is more discoverable: admin provenance for generated/imported records becomes discoverable to authorized operators, not to the public web.
+- AI citation safety: audit provenance supports reviewability while public citation still depends on verified claim-level sources and confidence, not audit presence.
+```
+
+Suggested file scope:
+- `schema-v3.sql`
+- `app/api/admin/generate-candidates/route.ts` or the single admin route being audited
+- `lib/admin-audit.ts` only if a helper is necessary
