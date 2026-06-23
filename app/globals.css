@@ -149,6 +149,71 @@ h2 {
   color: var(--danger);
 }
 
+
+/* Citation status */
+.citation-hero {
+  border-width: 2px;
+}
+
+.citation-hero-citable {
+  border-color: #7bc47f;
+}
+
+.citation-hero-blocked {
+  border-color: #e07b7b;
+  background: #fffafa;
+}
+
+.citation-status-banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin: 12px 0 16px;
+}
+
+.citation-status-badge {
+  display: inline-flex;
+  border-radius: 999px;
+  padding: 6px 12px;
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.citation-status-badge-citable {
+  background: var(--success-bg);
+  border: 1px solid #7bc47f;
+  color: var(--success);
+}
+
+.citation-status-badge-blocked {
+  background: var(--danger-bg);
+  border: 1px solid #e07b7b;
+  color: var(--danger);
+}
+
+.citation-status-summary,
+.muted-text {
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.citation-warning-panel {
+  border-left: 4px solid var(--danger);
+  background: var(--danger-bg);
+}
+
+.source-warning {
+  border: 1px solid #e07b7b;
+  border-radius: 6px;
+  background: var(--danger-bg);
+  color: var(--danger);
+  font-size: 0.88rem;
+  font-weight: 700;
+  margin: 0 0 12px;
+  padding: 8px 10px;
+}
+
 /* Direct Answer Box */
 .direct-answer-box {
   border-left: 4px solid var(--accent);
