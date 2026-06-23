@@ -10,7 +10,8 @@
     "ai:lazycodex:install": "npx lazycodex-ai install",
     "ai:lazycodex:doctor": "npx lazycodex-ai doctor",
     "ai:prompt": "node scripts/print-ai-prompt.mjs",
-    "check:mojibake": "node scripts/check-mojibake.mjs"
+    "check:mojibake": "node scripts/check-mojibake.mjs",
+    "doctor:ai-readiness": "node scripts/doctor-ai-readiness.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.8",
