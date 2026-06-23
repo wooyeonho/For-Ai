@@ -1,289 +1,150 @@
-import type { Metadata } from "next";
+"use client";
+
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { getAllRegistryBundles } from "../../../lib/data";
-import type { ClaimWithSources, RegistryDocumentBundle } from "../../../lib/types";
 
-export const metadata: Metadata = {
-  title: "Claim 검증 관리",
-  description: "GYEOL 레지스트리의 claim을 검증 상태별로 관리합니다.",
+type SourceRow = { id: string; title?: string | null; url?: string | null; source_type?: string | null };
+type ClaimRow = {
+  id: string;
+  field_path: string;
+  claim_text: string;
+  claim_value: string;
+  confidence: string;
+  status: string;
+  last_verified_at?: string | null;
+  claim_sources?: SourceRow[];
+};
+type DocumentRow = {
+  id: string;
+  slug: string;
+  title: string;
+  status: string;
+  confidence: string;
+  claims?: ClaimRow[];
 };
 
-function confidenceBadgeClass(c: string): string {
-  if (c === "high") return "badge badge-high";
-  if (c === "medium") return "badge badge-medium";
-  return "badge badge-low";
-}
-
-function statusBadgeClass(s: string): string {
-  if (s === "verified") return "badge badge-verified";
-  if (s === "disputed") return "badge badge-disputed";
-  if (s === "needs_review") return "badge badge-review";
-  return "badge badge-low";
-}
-
-function statusLabel(s: string): string {
-  if (s === "verified") return "검증됨";
-  if (s === "disputed") return "이의 제기";
-  if (s === "needs_review") return "확인 필요";
-  return s;
-}
-
-function confidenceLabel(c: string): string {
-  if (c === "high") return "높음";
-  if (c === "medium") return "보통";
-  return "낮음";
-}
-
-type ClaimRow = ClaimWithSources & {
-  documentSlug: string;
-  documentTitle: string;
-  entityName: string;
-};
+const SOURCE_TYPES = ["official", "platform", "document", "web", "review", "other"];
 
 export default function VerifyClaimPage() {
-  const bundles = getAllRegistryBundles();
+  const [secret, setSecret] = useState("");
+  const [documents, setDocuments] = useState<DocumentRow[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [selectedClaim, setSelectedClaim] = useState<ClaimRow | null>(null);
+  const [claimValue, setClaimValue] = useState("");
+  const [sourceType, setSourceType] = useState("official");
+  const [title, setTitle] = useState("");
+  const [url, setUrl] = useState("");
+  const [citation, setCitation] = useState("");
+  const [confidence, setConfidence] = useState("high");
+  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
 
-  const allClaims: ClaimRow[] = bundles.flatMap((b: RegistryDocumentBundle) =>
-    b.claims.map((c: ClaimWithSources) => ({
-      ...c,
-      documentSlug: b.document.slug,
-      documentTitle: b.document.title,
-      entityName: b.entity.canonical_name,
-    })),
-  );
+  const load = useCallback(async () => {
+    if (!secret) return;
+    setLoading(true);
+    const res = await fetch("/api/admin/verify-claim", { headers: { "x-admin-secret": secret } });
+    const data = await res.json();
+    setLoading(false);
+    if (res.ok) setDocuments(Array.isArray(data.documents) ? data.documents : []);
+    else setMessage({ ok: false, text: data.error ?? "claim 목록 조회 실패" });
+  }, [secret]);
 
-  const needsReview = allClaims.filter((c) => c.status === "needs_review");
-  const verified = allClaims.filter((c) => c.status === "verified");
-  const disputed = allClaims.filter((c) => c.status === "disputed");
+  useEffect(() => { load(); }, [load]);
 
-  const totalCount = allClaims.length;
-  const verifiedCount = verified.length;
-  const reviewCount = needsReview.length;
-  const disputedCount = disputed.length;
-  const verifiedPct = totalCount ? Math.round((verifiedCount / totalCount) * 100) : 0;
+  function openVerify(claim: ClaimRow) {
+    setSelectedClaim(claim);
+    setClaimValue(claim.claim_value === "확인 필요" ? "" : claim.claim_value);
+    setTitle("");
+    setUrl("");
+    setCitation("");
+    setSourceType("official");
+    setConfidence("high");
+  }
 
-  const groupByDocument = (claims: ClaimRow[]): Map<string, ClaimRow[]> => {
-    const map = new Map<string, ClaimRow[]>();
-    for (const c of claims) {
-      const key = c.documentSlug;
-      if (!map.has(key)) map.set(key, []);
-      map.get(key)!.push(c);
+  async function submitVerify() {
+    if (!selectedClaim) return;
+    const res = await fetch("/api/admin/verify-claim", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-admin-secret": secret },
+      body: JSON.stringify({
+        claim_id: selectedClaim.id,
+        claim_value: claimValue,
+        source_type: sourceType,
+        title,
+        url,
+        citation,
+        confidence,
+        observed_at: new Date().toISOString(),
+      }),
+    });
+    const data = await res.json();
+    if (res.ok) {
+      setMessage({ ok: true, text: "검증 저장 완료" });
+      setSelectedClaim(null);
+      await load();
+    } else {
+      setMessage({ ok: false, text: data.error ?? "검증 저장 실패" });
     }
-    return map;
-  };
+  }
 
-  const reviewGroups = groupByDocument(needsReview);
-  const verifiedGroups = groupByDocument(verified);
+  const allClaims = documents.flatMap((doc) => (doc.claims ?? []).map((claim) => ({ doc, claim })));
+  const reviewCount = allClaims.filter(({ claim }) => claim.status !== "verified").length;
+  const verifiedCount = allClaims.filter(({ claim }) => claim.status === "verified").length;
 
   return (
-    <article>
-      <header className="registry-panel">
-        <p className="eyebrow">Admin / Claim 검증 관리</p>
-        <h1>Claim 검증 대시보드</h1>
-        <p style={{ color: "var(--muted)", fontSize: "0.9rem", margin: "0 0 16px" }}>
-          전체 claim의 검증 상태를 한눈에 파악하고, 확인 필요 claim을 우선 처리합니다.
-        </p>
+    <main style={{ maxWidth: 960, margin: "0 auto", padding: "40px 20px" }}>
+      <nav style={{ marginBottom: 24, fontSize: 13 }}><Link href="/admin/review">← Admin</Link></nav>
+      <h1>Claim 검증 관리</h1>
+      <p style={{ color: "#6b7280" }}>Promoted 문서의 claim에 출처를 붙이고 verified 상태로 승격합니다.</p>
 
-        <div className="stat-strip" style={{ marginBottom: 0 }}>
-          <div className="stat">
-            <span className="stat-num">{totalCount}</span>
-            <span className="stat-label">전체 claim</span>
-          </div>
-          <div className="stat">
-            <span className="stat-num" style={{ color: "var(--success)" }}>{verifiedCount}</span>
-            <span className="stat-label">검증됨</span>
-          </div>
-          <div className="stat">
-            <span className="stat-num" style={{ color: "var(--warning)" }}>{reviewCount}</span>
-            <span className="stat-label">확인 필요</span>
-          </div>
-          <div className="stat">
-            <span className="stat-num" style={{ color: "var(--danger)" }}>{disputedCount}</span>
-            <span className="stat-label">이의 제기</span>
-          </div>
-          <p className="stat-note">
-            검증률 {verifiedPct}% — 검증된 claim만 AI 인용이 허용됩니다.
-          </p>
+      <section className="registry-panel">
+        <label style={{ fontWeight: 600 }}>Admin secret</label>
+        <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+          <input type="password" value={secret} onChange={(e) => setSecret(e.target.value)} placeholder="ADMIN_SECRET" style={{ flex: 1, padding: 8 }} />
+          <button onClick={load} disabled={!secret || loading}>{loading ? "불러오는 중..." : "불러오기"}</button>
         </div>
-      </header>
+      </section>
 
-      {reviewCount > 0 && (
-        <section className="registry-panel" aria-labelledby="needs-review-section">
-          <h2 id="needs-review-section" style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            확인 필요
-            <span className="claim-count" style={{ background: "var(--warning-bg)", color: "var(--warning)", borderColor: "#e4c36b" }}>
-              {reviewCount}
-            </span>
-          </h2>
-          <p style={{ color: "var(--muted)", fontSize: "0.85rem", margin: "0 0 16px" }}>
-            아래 claim들은 출처 확인 후 검증 상태로 전환이 필요합니다.
-          </p>
+      {message && <div style={{ padding: 12, marginBottom: 16, borderRadius: 8, background: message.ok ? "#f0fdf4" : "#fef2f2", color: message.ok ? "#166534" : "#991b1b" }}>{message.text}</div>}
 
-          {Array.from(reviewGroups.entries()).map(([slug, claims]) => (
-            <div key={slug} style={{ marginBottom: 20 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-                <Link
-                  href={`/ko/wiki/${slug}`}
-                  style={{ fontWeight: 600, fontSize: "0.95rem", color: "var(--accent)" }}
-                >
-                  {claims[0].documentTitle}
-                </Link>
-                <span className="badge" style={{ fontSize: "0.7rem" }}>{claims[0].entityName}</span>
-              </div>
+      <div className="stat-strip">
+        <div className="stat"><span className="stat-num">{allClaims.length}</span><span className="stat-label">전체 claim</span></div>
+        <div className="stat"><span className="stat-num">{reviewCount}</span><span className="stat-label">확인 필요</span></div>
+        <div className="stat"><span className="stat-num">{verifiedCount}</span><span className="stat-label">검증됨</span></div>
+      </div>
 
-              <div className="claim-list">
-                {claims.map((claim) => (
-                  <div className="claim-card" key={claim.id}>
-                    <div className="claim-card-header">
-                      <div>
-                        <p className="eyebrow" style={{ margin: "0 0 4px" }}>{claim.field_path}</p>
-                        <p className="claim-value">{claim.claim_value}</p>
-                      </div>
-                      <div className="claim-badges">
-                        <span className={statusBadgeClass(claim.status)}>
-                          {statusLabel(claim.status)}
-                        </span>
-                        <span className={confidenceBadgeClass(claim.confidence)}>
-                          {confidenceLabel(claim.confidence)}
-                        </span>
-                      </div>
-                    </div>
-                    <p className="claim-text">{claim.claim_text}</p>
-
-                    {claim.sources.length > 0 ? (
-                      <div className="claim-sources">
-                        {claim.sources.map((src) => (
-                          <a
-                            key={src.id}
-                            href={src.url ?? "#"}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="source-pill"
-                          >
-                            <span className="source-type">{src.source_type}</span>
-                            {src.title ?? src.url ?? "출처"}
-                          </a>
-                        ))}
-                      </div>
-                    ) : (
-                      <p style={{ fontSize: "0.82rem", color: "var(--danger)", margin: "0 0 8px" }}>
-                        출처 없음 — 검증하려면 먼저 출처를 추가하세요
-                      </p>
-                    )}
-
-                    <div className="cta-row" style={{ marginTop: 8 }}>
-                      <Link
-                        href={`/ko/wiki/${claim.documentSlug}`}
-                        className="cta-link"
-                        style={{ fontSize: "0.8rem" }}
-                      >
-                        문서 보기
-                      </Link>
-                      <Link
-                        href={`/report/${claim.documentSlug}`}
-                        className="cta-link cta-correction"
-                        style={{ fontSize: "0.8rem" }}
-                      >
-                        정정 제보
-                      </Link>
-                      <Link
-                        href={`/diagnostics/${claim.documentSlug}`}
-                        className="cta-link"
-                        style={{ fontSize: "0.8rem" }}
-                      >
-                        진단
-                      </Link>
-                    </div>
-                  </div>
-                ))}
-              </div>
+      {documents.map((doc) => (
+        <section className="registry-panel" key={doc.id}>
+          <h2><Link href={`/ko/wiki/${doc.slug}`}>{doc.title}</Link></h2>
+          <p className="meta-label">{doc.slug} · {doc.status} · {doc.confidence}</p>
+          {(doc.claims ?? []).map((claim) => (
+            <div className="claim-card" key={claim.id}>
+              <p className="eyebrow">{claim.field_path}</p>
+              <p><strong>{claim.claim_value}</strong></p>
+              <p>{claim.claim_text}</p>
+              <p><span className="badge">status: {claim.status}</span> <span className="badge">confidence: {claim.confidence}</span> <span className="badge">sources: {claim.claim_sources?.length ?? 0}</span></p>
+              {(claim.claim_sources?.length ?? 0) > 0 && <ul>{claim.claim_sources?.map((source) => <li key={source.id}><a href={source.url ?? "#"}>{source.title ?? source.url ?? source.source_type}</a></li>)}</ul>}
+              {claim.status !== "verified" && <button onClick={() => openVerify(claim)}>출처 추가 + verified 승격</button>}
             </div>
           ))}
         </section>
-      )}
+      ))}
 
-      {verifiedCount > 0 && (
-        <section className="registry-panel" aria-labelledby="verified-section">
-          <h2 id="verified-section" style={{ display: "flex", alignItems: "center", gap: 8 }}>
-            검증 완료
-            <span className="claim-count" style={{ background: "var(--success-bg)", color: "var(--success)", borderColor: "#7bc47f" }}>
-              {verifiedCount}
-            </span>
-          </h2>
-
-          {Array.from(verifiedGroups.entries()).map(([slug, claims]) => (
-            <div key={slug} style={{ marginBottom: 20 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-                <Link
-                  href={`/ko/wiki/${slug}`}
-                  style={{ fontWeight: 600, fontSize: "0.95rem", color: "var(--accent)" }}
-                >
-                  {claims[0].documentTitle}
-                </Link>
-                <span className="badge" style={{ fontSize: "0.7rem" }}>{claims[0].entityName}</span>
-              </div>
-
-              <div className="claim-list">
-                {claims.map((claim) => (
-                  <div className="claim-card" key={claim.id} style={{ borderColor: "#7bc47f" }}>
-                    <div className="claim-card-header">
-                      <div>
-                        <p className="eyebrow" style={{ margin: "0 0 4px" }}>{claim.field_path}</p>
-                        <p className="claim-value">{claim.claim_value}</p>
-                      </div>
-                      <div className="claim-badges">
-                        <span className={statusBadgeClass(claim.status)}>
-                          {statusLabel(claim.status)}
-                        </span>
-                        <span className={confidenceBadgeClass(claim.confidence)}>
-                          {confidenceLabel(claim.confidence)}
-                        </span>
-                      </div>
-                    </div>
-                    <p className="claim-text">{claim.claim_text}</p>
-
-                    {claim.sources.length > 0 && (
-                      <div className="claim-sources">
-                        {claim.sources.map((src) => (
-                          <a
-                            key={src.id}
-                            href={src.url ?? "#"}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="source-pill"
-                          >
-                            <span className="source-type">{src.source_type}</span>
-                            {src.title ?? src.url ?? "출처"}
-                          </a>
-                        ))}
-                      </div>
-                    )}
-
-                    {claim.last_verified_at && (
-                      <div className="verification-meta">
-                        <span className="meta-label">최종 검증</span>
-                        <span className="verification-value">{claim.last_verified_at}</span>
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          ))}
+      {selectedClaim && (
+        <section className="registry-panel" style={{ borderColor: "#2563eb" }}>
+          <h2>Claim 검증</h2>
+          <p className="meta-label">{selectedClaim.field_path}</p>
+          <label>검증된 값<input value={claimValue} onChange={(e) => setClaimValue(e.target.value)} placeholder="확인된 값" /></label>
+          <label>source_type<select value={sourceType} onChange={(e) => setSourceType(e.target.value)}>{SOURCE_TYPES.map((type) => <option key={type} value={type}>{type}</option>)}</select></label>
+          <label>출처 제목<input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="공식 페이지명" /></label>
+          <label>출처 URL<input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://..." /></label>
+          <label>citation / 메모<textarea value={citation} onChange={(e) => setCitation(e.target.value)} placeholder="어떤 문구/근거를 확인했는지" /></label>
+          <label>confidence<select value={confidence} onChange={(e) => setConfidence(e.target.value)}><option value="high">high</option><option value="medium">medium</option></select></label>
+          <div style={{ display: "flex", gap: 8 }}>
+            <button onClick={submitVerify}>저장하고 verified로 승격</button>
+            <button onClick={() => setSelectedClaim(null)} type="button">취소</button>
+          </div>
         </section>
       )}
-
-      <nav className="registry-panel" aria-labelledby="admin-links">
-        <h2 id="admin-links">관리 도구</h2>
-        <ul className="link-list">
-          <li><Link href="/admin/review">전체 리뷰 큐</Link></li>
-          <li><Link href="/admin/candidates">후보 검토 큐</Link></li>
-          <li><Link href="/admin/generate">후보 자동 생성</Link></li>
-          <li><Link href="/admin/new-entity">새 엔티티 생성</Link></li>
-          <li><Link href="/admin/new-document">새 문서 생성</Link></li>
-          <li><Link href="/admin/import">대량 가져오기</Link></li>
-        </ul>
-      </nav>
-    </article>
+    </main>
   );
 }

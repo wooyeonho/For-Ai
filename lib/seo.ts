@@ -87,6 +87,11 @@ export function buildDocumentJsonLd(bundle: RegistryDocumentBundle): object {
       name: claim.field_path,
       value: claim.claim_value,
       description: claim.claim_text,
+      additionalProperty: [
+        { "@type": "PropertyValue", name: "confidence", value: claim.confidence },
+        { "@type": "PropertyValue", name: "status", value: claim.status },
+        { "@type": "PropertyValue", name: "source_count", value: claim.sources.length },
+      ],
     })),
     dateModified: document.updated_at ?? undefined,
     inLanguage: document.lang,
