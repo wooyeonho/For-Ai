@@ -1,53 +1,75 @@
 "use client";
 import { useState } from "react";
+import Link from "next/link";
 
-const TOPIC_SUGGESTIONS = [
-  // 스포츠
-  "축구 스코어 및 일정", "KBO 야구 선수 스탯", "프리미어리그 순위", "NBA 경기 결과",
-  // 생활/소비
-  "쿠팡 반품 정책", "카카오페이 한도 및 수수료", "네이버 스마트스토어 수수료",
-  "배달의민족 수수료", "편의점 알바 최저시급",
-  // IT/전자
-  "아이폰 AS 기간", "삼성 갤럭시 보증기간", "LG TV 종류 및 가격",
-  "갤럭시 S25 스펙", "맥북 에어 배터리 교체 비용",
-  // 금융/부동산
-  "국민연금 수령 나이", "실업급여 조건", "자동차 취득세율",
-  "부동산 취득세", "양도소득세 계산",
-  // 정부/복지
-  "육아휴직 급여", "임산부 혜택", "전기차 보조금",
-  "태양광 설치 보조금", "여권 갱신 비용",
-  // 연예/문화
-  "멜론 차트 기준", "유튜브 수익화 조건", "넷플릭스 요금제",
+const PROVIDERS = [
+  { key: "perplexity", label: "Perplexity (웹 검색)", icon: "🔍" },
+  { key: "gemini", label: "Gemini 2.0", icon: "✦" },
+  { key: "gpt", label: "GPT-4o", icon: "◎" },
+  { key: "grok", label: "Grok", icon: "⚡" },
 ];
 
-export default function GeneratePage() {
+const LANGUAGES = [
+  { code: "ko", label: "한국어", flag: "🇰🇷" },
+  { code: "en", label: "English", flag: "🇺🇸" },
+  { code: "hi", label: "हिन्दी", flag: "🇮🇳" },
+  { code: "ar", label: "العربية", flag: "🇸🇦" },
+  { code: "es", label: "Español", flag: "🇪🇸" },
+  { code: "ja", label: "日本語", flag: "🇯🇵" },
+  { code: "zh", label: "中文", flag: "🇨🇳" },
+];
+
+interface GenerateResult {
+  topic: string;
+  lang: string;
+  providers_used: string[];
+  total_generated: number;
+  saved: number;
+  preview: Record<string, unknown>[];
+  provider_results?: Record<string, { generated: number; error?: string }>;
+  error?: string;
+}
+
+export default function AdminGeneratePage() {
   const [topic, setTopic] = useState("");
   const [count, setCount] = useState(10);
-  const [secret, setSecret] = useState("");
+  const [lang, setLang] = useState("ko");
+  const [selectedProviders, setSelectedProviders] = useState<string[]>(["perplexity"]);
+  const [crossVerify, setCrossVerify] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<{
-    topic: string;
-    generated: number;
-    saved: number;
-    citations_found: number;
-    preview: { title: string; category: string }[];
-  } | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<GenerateResult | null>(null);
+  const [error, setError] = useState("");
 
-  async function generate() {
-    if (!topic.trim()) { setError("토픽을 입력하세요"); return; }
+  function toggleProvider(key: string) {
+    setSelectedProviders((prev) =>
+      prev.includes(key) ? prev.filter((p) => p !== key) : [...prev, key]
+    );
+  }
+
+  async function handleGenerate() {
+    if (!topic.trim()) return;
     setLoading(true);
-    setError(null);
+    setError("");
     setResult(null);
+
     try {
       const res = await fetch("/api/admin/generate-candidates", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "x-admin-secret": secret },
-        body: JSON.stringify({ topic: topic.trim(), count }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          topic: topic.trim(),
+          count,
+          lang,
+          providers: selectedProviders,
+          cross_verify: crossVerify,
+        }),
       });
-      const json = await res.json();
-      if (!res.ok) { setError(json.error ?? "오류 발생"); return; }
-      setResult(json);
+      const data = await res.json();
+      if (!res.ok) {
+        setError(data.error || `HTTP ${res.status}`);
+      } else {
+        setResult(data);
+      }
     } catch (e) {
       setError(String(e));
     } finally {
@@ -56,129 +78,179 @@ export default function GeneratePage() {
   }
 
   return (
-    <div style={{ maxWidth: 720, margin: "40px auto", padding: "0 20px", fontFamily: "system-ui, -apple-system, sans-serif" }}>
-      <div style={{ marginBottom: 32 }}>
-        <h1 style={{ fontSize: 26, fontWeight: 800, margin: "0 0 6px" }}>🔮 GYEOL 후보 자동 생성</h1>
-        <p style={{ color: "#64748b", fontSize: 14, margin: 0 }}>
-          어떤 토픽이든 입력하세요. 스포츠 스코어, 연예인 정보, TV 종류, 디지털 제품, 부동산, 복지 — 제한 없음.
-          Perplexity가 웹을 검색해 검증 후보를 생성합니다.
-        </p>
-      </div>
+    <main style={{ maxWidth: 800, margin: "0 auto", padding: "40px 20px" }}>
+      <nav style={{ marginBottom: 24, fontSize: 13 }}>
+        <Link href="/admin/review" style={{ color: "#6b7280" }}>← Admin</Link>
+      </nav>
 
-      <div style={{ marginBottom: 20 }}>
-        <label style={{ display: "block", fontWeight: 700, marginBottom: 8, fontSize: 14 }}>
-          토픽 (자유 입력 — 무엇이든)
-        </label>
-        <input
-          type="text"
-          value={topic}
-          onChange={e => setTopic(e.target.value)}
-          onKeyDown={e => e.key === "Enter" && !loading && generate()}
-          placeholder="예: 손흥민 커리어 골, 갤럭시 S25 가격, 쿠팡 반품 기간..."
-          style={{
-            width: "100%", padding: "13px 16px", fontSize: 16,
-            border: "2px solid #e2e8f0", borderRadius: 10,
-            outline: "none", boxSizing: "border-box",
-            transition: "border-color 0.2s",
-          }}
-          onFocus={e => (e.target.style.borderColor = "#6366f1")}
-          onBlur={e => (e.target.style.borderColor = "#e2e8f0")}
-        />
+      <h1 style={{ fontSize: 24, marginBottom: 8 }}>AI Candidate Generator</h1>
+      <p style={{ color: "#6b7280", marginBottom: 32 }}>
+        멀티 AI로 토픽 후보를 자동 생성합니다. 생성된 후보는 topic_candidates 테이블에 저장됩니다.
+      </p>
 
-        <div style={{ marginTop: 10, display: "flex", flexWrap: "wrap", gap: 5 }}>
-          {TOPIC_SUGGESTIONS.map(s => (
-            <button
-              key={s}
-              onClick={() => setTopic(s)}
-              style={{
-                padding: "4px 10px", fontSize: 11, borderRadius: 20,
-                border: "1px solid #cbd5e1",
-                background: topic === s ? "#6366f1" : "#f8fafc",
-                color: topic === s ? "#fff" : "#475569",
-                cursor: "pointer", transition: "all 0.15s",
-              }}
-            >
-              {s}
-            </button>
-          ))}
+      <div style={{ display: "grid", gap: 20 }}>
+        {/* Topic input */}
+        <div>
+          <label style={{ fontWeight: 600, fontSize: 14, display: "block", marginBottom: 6 }}>
+            토픽 / 주제
+          </label>
+          <input
+            type="text"
+            value={topic}
+            onChange={(e) => setTopic(e.target.value)}
+            placeholder="예: 서울 지하철, Indian railways, 日本の電車料金..."
+            style={{ width: "100%", padding: "10px 14px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 15 }}
+          />
         </div>
-      </div>
 
-      <div style={{ marginBottom: 20 }}>
-        <label style={{ display: "block", fontWeight: 700, marginBottom: 8, fontSize: 14 }}>
-          생성 개수: <span style={{ color: "#6366f1", fontWeight: 800 }}>{count}개</span>
-        </label>
-        <input type="range" min={5} max={50} step={5} value={count}
-          onChange={e => setCount(parseInt(e.target.value))}
-          style={{ width: "100%", accentColor: "#6366f1" }}
-        />
-        <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#94a3b8", marginTop: 4 }}>
-          <span>5</span><span>25</span><span>50</span>
-        </div>
-      </div>
-
-      <div style={{ marginBottom: 24 }}>
-        <label style={{ display: "block", fontWeight: 700, marginBottom: 8, fontSize: 14 }}>Admin Secret</label>
-        <input
-          type="password" value={secret}
-          onChange={e => setSecret(e.target.value)}
-          placeholder="••••••••"
-          style={{
-            width: "100%", padding: "10px 14px", fontSize: 14,
-            border: "2px solid #e2e8f0", borderRadius: 8, boxSizing: "border-box",
-          }}
-        />
-      </div>
-
-      <button
-        onClick={generate}
-        disabled={loading || !topic.trim()}
-        style={{
-          width: "100%", padding: "15px", fontSize: 16, fontWeight: 800,
-          background: loading ? "#94a3b8" : (topic.trim() ? "#6366f1" : "#c7d2fe"),
-          color: "#fff", border: "none", borderRadius: 12,
-          cursor: loading || !topic.trim() ? "default" : "pointer",
-          transition: "background 0.2s",
-        }}
-      >
-        {loading ? "⏳ Perplexity 웹 검색 중..." : `✨ "${topic || "토픽"}" 관련 ${count}개 생성`}
-      </button>
-
-      {error && (
-        <div style={{ marginTop: 20, padding: 16, background: "#fef2f2", borderRadius: 10, color: "#dc2626", fontSize: 14, border: "1px solid #fca5a5" }}>
-          ❌ {error}
-        </div>
-      )}
-
-      {result && (
-        <div style={{ marginTop: 24, padding: 20, background: "#f0fdf4", borderRadius: 12, border: "1px solid #86efac" }}>
-          <div style={{ fontWeight: 800, fontSize: 16, color: "#15803d", marginBottom: 12 }}>
-            ✅ &quot;{result.topic}&quot; — {result.generated}개 생성 / {result.saved}개 저장 / 출처 {result.citations_found}개
-          </div>
-          <div style={{ fontSize: 13, color: "#166534" }}>
-            {result.preview?.map((p, i) => (
-              <div key={i} style={{ marginTop: 6, padding: "8px 12px", background: "#dcfce7", borderRadius: 8, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span>{p.title}</span>
-                <span style={{ fontSize: 11, color: "#4ade80", background: "#166534", padding: "2px 8px", borderRadius: 10 }}>{p.category}</span>
-              </div>
+        {/* Language selection */}
+        <div>
+          <label style={{ fontWeight: 600, fontSize: 14, display: "block", marginBottom: 6 }}>
+            언어 (Language)
+          </label>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {LANGUAGES.map((l) => (
+              <button
+                key={l.code}
+                onClick={() => setLang(l.code)}
+                style={{
+                  padding: "6px 12px",
+                  border: lang === l.code ? "2px solid #2563eb" : "1px solid #e5e7eb",
+                  borderRadius: 6,
+                  background: lang === l.code ? "#eff6ff" : "#fff",
+                  cursor: "pointer",
+                  fontSize: 13,
+                }}
+              >
+                {l.flag} {l.label}
+              </button>
             ))}
           </div>
-          <div style={{ marginTop: 14, display: "flex", gap: 12 }}>
-            <a href="/admin/candidates" style={{ color: "#15803d", fontWeight: 700, fontSize: 13, textDecoration: "underline" }}>
-              → 검토 큐 보기
-            </a>
-            <button onClick={() => { setResult(null); setTopic(""); }} style={{ background: "none", border: "none", color: "#4ade80", fontSize: 13, cursor: "pointer", textDecoration: "underline" }}>
-              + 다른 토픽 생성
-            </button>
+        </div>
+
+        {/* AI Providers */}
+        <div>
+          <label style={{ fontWeight: 600, fontSize: 14, display: "block", marginBottom: 6 }}>
+            AI 모델 선택
+          </label>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {PROVIDERS.map((p) => (
+              <button
+                key={p.key}
+                onClick={() => toggleProvider(p.key)}
+                style={{
+                  padding: "8px 14px",
+                  border: selectedProviders.includes(p.key) ? "2px solid #2563eb" : "1px solid #e5e7eb",
+                  borderRadius: 8,
+                  background: selectedProviders.includes(p.key) ? "#eff6ff" : "#fff",
+                  cursor: "pointer",
+                  fontSize: 14,
+                }}
+              >
+                {p.icon} {p.label}
+              </button>
+            ))}
           </div>
+        </div>
+
+        {/* Options row */}
+        <div style={{ display: "flex", gap: 20, alignItems: "center" }}>
+          <div>
+            <label style={{ fontWeight: 600, fontSize: 14, display: "block", marginBottom: 6 }}>
+              생성 개수
+            </label>
+            <input
+              type="number"
+              value={count}
+              onChange={(e) => setCount(Math.min(50, Math.max(1, parseInt(e.target.value) || 1)))}
+              min={1} max={50}
+              style={{ width: 80, padding: "8px 12px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 }}
+            />
+          </div>
+          <div style={{ marginTop: 20 }}>
+            <label style={{ fontSize: 14, cursor: "pointer" }}>
+              <input
+                type="checkbox"
+                checked={crossVerify}
+                onChange={(e) => setCrossVerify(e.target.checked)}
+                style={{ marginRight: 6 }}
+              />
+              교차검증 (선택된 AI 전부 동시 호출)
+            </label>
+          </div>
+        </div>
+
+        {/* Generate button */}
+        <button
+          onClick={handleGenerate}
+          disabled={loading || !topic.trim() || selectedProviders.length === 0}
+          style={{
+            padding: "12px 24px",
+            background: loading ? "#9ca3af" : "#2563eb",
+            color: "#fff",
+            border: "none",
+            borderRadius: 8,
+            fontSize: 16,
+            fontWeight: 600,
+            cursor: loading ? "not-allowed" : "pointer",
+          }}
+        >
+          {loading ? "생성 중..." : `후보 ${count}개 생성`}
+        </button>
+      </div>
+
+      {/* Error */}
+      {error && (
+        <div style={{ marginTop: 24, padding: 16, background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8 }}>
+          <p style={{ color: "#dc2626", fontWeight: 600 }}>Error: {error}</p>
         </div>
       )}
 
-      <div style={{ marginTop: 40, padding: 16, background: "#f1f5f9", borderRadius: 10, fontSize: 13, color: "#64748b" }}>
-        <strong>💡 생성 원칙</strong><br/>
-        모든 생성 값은 <code>확인 필요</code>로 고정. 실제 값은 관리자 검토 후 입력.
-        AI가 틀리기 쉬운 정보 위주로 선별됩니다.
-      </div>
-    </div>
+      {/* Results */}
+      {result && (
+        <div style={{ marginTop: 32 }}>
+          <h2 style={{ fontSize: 18, marginBottom: 12 }}>생성 결과</h2>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 12, marginBottom: 20 }}>
+            <div style={{ padding: 12, background: "#f0fdf4", borderRadius: 8, textAlign: "center" }}>
+              <div style={{ fontSize: 24, fontWeight: 700 }}>{result.total_generated}</div>
+              <div style={{ fontSize: 12, color: "#6b7280" }}>생성됨</div>
+            </div>
+            <div style={{ padding: 12, background: "#eff6ff", borderRadius: 8, textAlign: "center" }}>
+              <div style={{ fontSize: 24, fontWeight: 700 }}>{result.saved}</div>
+              <div style={{ fontSize: 12, color: "#6b7280" }}>DB 저장</div>
+            </div>
+            <div style={{ padding: 12, background: "#faf5ff", borderRadius: 8, textAlign: "center" }}>
+              <div style={{ fontSize: 24, fontWeight: 700 }}>{result.providers_used?.length ?? 0}</div>
+              <div style={{ fontSize: 12, color: "#6b7280" }}>AI 사용</div>
+            </div>
+          </div>
+
+          {result.provider_results && (
+            <div style={{ marginBottom: 20, fontSize: 13 }}>
+              {Object.entries(result.provider_results).map(([provider, r]) => (
+                <div key={provider} style={{ padding: "4px 0" }}>
+                  <strong>{provider}</strong>: {r.generated}개 생성
+                  {r.error && <span style={{ color: "#dc2626" }}> — {r.error}</span>}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {result.preview && result.preview.length > 0 && (
+            <div>
+              <h3 style={{ fontSize: 14, marginBottom: 8 }}>미리보기 (상위 3개)</h3>
+              {result.preview.map((c, i) => (
+                <div key={i} style={{ padding: 12, border: "1px solid #e5e7eb", borderRadius: 8, marginBottom: 8 }}>
+                  <p style={{ fontWeight: 600 }}>{String(c.title)}</p>
+                  <p style={{ fontSize: 12, color: "#6b7280" }}>
+                    {String(c.slug)} · {String(c.category)} · {String(c.generation_model)}
+                  </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </main>
   );
-    }
+}

@@ -1,5 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 interface Candidate {
   id:string;title:string;slug:string;category:string;subcategory?:string;
   risk_tier:string;why_people_ask_ai?:string;why_ai_gets_wrong?:string;
@@ -53,7 +54,7 @@ export default function CandidatesPage(){
           <div style={{display:"flex",gap:8,alignItems:"center"}}>
             <input type="password" placeholder="admin secret" value={secret} onChange={e=>setSecret(e.target.value)}
               style={{border:"1px solid #d1d5db",borderRadius:6,padding:"6px 10px",fontSize:13,width:160}}/>
-            <a href="/admin/generate" style={{fontSize:13,color:"#2563eb"}}>→ 생성</a>
+            <Link href="/admin/generate" style={{fontSize:13,color:"#2563eb"}}>→ 생성</Link>
           </div>
         </div>
         {msg&&<div style={{marginBottom:12,padding:"10px 14px",background:msg.ok?"#f0fdf4":"#fef2f2",border:`1px solid ${msg.ok?"#bbf7d0":"#fecaca"}`,borderRadius:8,fontSize:13}}>{msg.text}</div>}

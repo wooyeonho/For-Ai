@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { LanguageSelector } from "./LanguageSelector";
 
 export function SiteHeader() {
   return (
@@ -6,15 +7,16 @@ export function SiteHeader() {
       <div className="site-header-inner">
         <Link href="/" className="brand" aria-label="GYEOL home">
           <span className="brand-mark">GYEOL</span>
-          <span className="brand-sub">결 · 로컬 팩트 레지스트리</span>
+          <span className="brand-sub">결 · Global Fact Registry</span>
         </Link>
-        <nav className="site-nav" aria-label="주요 메뉴">
-          <Link href="/#registry">레지스트리</Link>
-          <Link href="/#developers">개발자</Link>
-          <Link href="/#ai-systems">AI 연동</Link>
+        <nav className="site-nav" aria-label="Main menu">
+          <Link href="/#registry">Registry</Link>
+          <Link href="/#developers">Developers</Link>
+          <Link href="/#ai-systems">AI</Link>
           <Link href="/suggest-topic" className="site-nav-cta">
-            토픽 제안
+            Suggest
           </Link>
+          <LanguageSelector />
         </nav>
       </div>
     </header>

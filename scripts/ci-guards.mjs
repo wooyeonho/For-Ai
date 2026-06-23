@@ -29,7 +29,7 @@ const SOURCE_EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".css",
 //   U+00B7 MIDDLE DOT  (·)  used as a separator in headings/admin labels
 //   U+00D7 MULTIPLICATION SIGN (×) used in seed-data dimensions
 //   U+00A9 COPYRIGHT SIGN (©) used in the site footer
-const MOJIBAKE_ALLOWLIST = new Set(["·", "×", "©"]);
+const MOJIBAKE_ALLOWLIST = new Set(["·", "×", "©", "ñ", "é", "á", "í", "ó", "ú", "ü", "Ñ", "É", "Á", "Í", "Ó", "Ú", "Ü"]);
 
 // A full-repo-rewrite PR touches most of the tree. The repo currently tracks
 // ~67 files, so a legitimate scoped change stays well under this limit. Override
