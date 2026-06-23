@@ -1,13 +1,26 @@
 import Link from "next/link";
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { createClient } from "@supabase/supabase-js";
 import { getRegistryBundleBySlug, getAllRegistryBundles } from "../../../../lib/data";
+import { buildDocumentMetadata, buildDocumentJsonLd } from "../../../../lib/seo";
 import type { RegistryDocumentBundle } from "../../../../lib/types";
 
 export const revalidate = 60;
 
 export async function generateStaticParams() {
   return getAllRegistryBundles().map((b) => ({ slug: b.document.slug }));
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const bundle = getRegistryBundleBySlug(slug);
+  if (!bundle) return { title: "Document not found" };
+  return buildDocumentMetadata(bundle);
 }
 
 async function getBundleFromSupabase(slug: string): Promise<RegistryDocumentBundle | null> {
@@ -95,9 +108,14 @@ export default async function WikiDocumentPage({
   const apiUrl = `/api/documents/${document.slug}`;
   const rawUrl = `/raw/${document.slug}.md`;
   const isPromoted = !getRegistryBundleBySlug(slug);
+  const jsonLd = buildDocumentJsonLd(bundle);
 
   return (
     <article>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <header className="registry-panel">
         <p className="eyebrow">
           {isPromoted ? "GYEOL · AI 생성 후 검토됨" : "Claim registry document"}

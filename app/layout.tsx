@@ -7,7 +7,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: {
     default: "GYEOL",
-    template: "%s â GYEOL",
+    template: "%s — GYEOL",
   },
   description: "Local fact registry for AI, search engines, and humans.",
   metadataBase: new URL(siteUrl("/")),
