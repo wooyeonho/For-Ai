@@ -1,0 +1,39 @@
+You are reviewing the GYEOL repository.
+
+GYEOL is a local fact registry for AI, search engines, and humans.
+It is not an AI wiki.
+
+Non-negotiable:
+- Static-first rendering is mandatory.
+- Core document content must be readable from raw HTML without client-side JS.
+- schema-v3.sql is the source of truth.
+- The canonical structure is entities -> documents -> claims -> claim_sources -> verification_events.
+- documents.data is rendering convenience only.
+- No fake facts.
+- Unknown facts must remain "확인 필요", low confidence, and not citable.
+- Verified claims must have sources and last_verified_at.
+- Public submissions do not require login.
+- Never store raw IP addresses.
+
+Task:
+Find issues that prevent Supabase-promoted documents from being discoverable or safely citable.
+
+Check:
+1. sitemap.xml includes static and Supabase promoted documents.
+2. llms.txt includes static and Supabase promoted documents.
+3. /raw/{slug}.md works for Supabase promoted documents.
+4. /diagnostics/{slug} works for Supabase promoted documents.
+5. generateMetadata uses Supabase fallback.
+6. JSON API and HTML pages agree.
+7. Verified claims show source count > 0.
+8. Unverified claims are not presented as facts.
+9. Admin candidate review does not expose service role or allow public mutation.
+10. Admin verify flow records source, status, confidence, and verification event.
+
+Output:
+For each issue:
+- Severity: P0/P1/P2
+- File(s)
+- Why it matters
+- Exact fix
+- Test command

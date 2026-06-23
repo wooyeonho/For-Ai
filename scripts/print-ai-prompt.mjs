@@ -5,6 +5,7 @@ const prompts = {
   "lazycodex:master": "ai-ops/lazycodex/master-plan.txt",
   "lazycodex:p0": "ai-ops/lazycodex/p0-stabilization.txt",
   "lazycodex:ai-readiness": "ai-ops/lazycodex/ai-readiness.txt",
+  "lazycodex:discovery-citation-review": "ai-ops/lazycodex/prompts/discovery-and-citation-review.txt",
   "lazycodex:four-hour": "ai-ops/lazycodex/four-hour-stabilization.txt",
   "claude:product-review": "ai-ops/claude/product-review.txt",
   "claude:source-trust": "ai-ops/claude/source-trust-policy.txt",

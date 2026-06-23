@@ -26,12 +26,13 @@
 ```
 1) 최신 main에서 브랜치를 딴다.
 2) `npm install`
-3) `npm run ai:lazycodex:doctor` 를 실행해 실패한 P0 체크를 확인한다.
-4) 실패 항목 "하나"를 고른다 (한 PR = 한 관심사).
-5) 가장 작은 수정으로 그 항목을 고친다.
-6) 아래 게이트를 모두 통과시킨다 (섹션 3).
-7) 좁은 범위의 커밋 + 좁은 범위의 PR을 만든다.
-8) 다음 실패 항목으로 반복. 더 이상 실패가 없으면 멈춘다.
+3) 첫 번째 반복 루프는 `npm run ai:prompt -- lazycodex:discovery-citation-review` 프롬프트로 Supabase-promoted 문서의 discoverability/citation 안전성을 검토한다.
+4) `npm run ai:lazycodex:doctor` 를 실행해 실패한 P0 체크를 확인한다.
+5) 실패 항목 또는 discovery/citation 리뷰 이슈 "하나"를 고른다 (한 PR = 한 관심사).
+6) 가장 작은 수정으로 그 항목을 고친다.
+7) 아래 게이트를 모두 통과시킨다 (섹션 3).
+8) 좁은 범위의 커밋 + 좁은 범위의 PR을 만든다.
+9) 다음 실패 항목으로 반복. 더 이상 실패가 없으면 멈춘다.
 ```
 
 모호하면 추측하지 말고 PR 설명에 질문을 남기거나 사람 검토를 요청하세요.
