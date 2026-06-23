@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 
 const PROVIDERS = [
@@ -39,6 +39,17 @@ export default function AdminGeneratePage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<GenerateResult | null>(null);
   const [error, setError] = useState("");
+  const [adminSecret, setAdminSecret] = useState("");
+
+  useEffect(() => {
+    const saved = localStorage.getItem("gyeol_admin_secret");
+    if (saved) setAdminSecret(saved);
+  }, []);
+
+  function saveAdminSecret(value: string) {
+    setAdminSecret(value);
+    localStorage.setItem("gyeol_admin_secret", value);
+  }
 
   function toggleProvider(key: string) {
     setSelectedProviders((prev) =>
@@ -55,7 +66,10 @@ export default function AdminGeneratePage() {
     try {
       const res = await fetch("/api/admin/generate-candidates", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-secret": adminSecret,
+        },
         body: JSON.stringify({
           topic: topic.trim(),
           count,
@@ -89,6 +103,27 @@ export default function AdminGeneratePage() {
       </p>
 
       <div style={{ display: "grid", gap: 20 }}>
+        {/* Admin secret */}
+        {!adminSecret && (
+          <div style={{ padding: 16, background: "#fef3c7", borderRadius: 8, border: "1px solid #f59e0b" }}>
+            <label style={{ fontWeight: 600, fontSize: 14, display: "block", marginBottom: 6 }}>
+              관리자 인증키
+            </label>
+            <input
+              type="password"
+              placeholder="ADMIN_SECRET 입력"
+              onKeyDown={(e) => {
+                if (e.key === "Enter") saveAdminSecret(e.currentTarget.value);
+              }}
+              onBlur={(e) => { if (e.target.value) saveAdminSecret(e.target.value); }}
+              style={{ width: "100%", padding: "10px 14px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 15 }}
+            />
+            <p style={{ fontSize: 12, color: "#92400e", marginTop: 4 }}>
+              한 번 입력하면 브라우저에 저장됩니다.
+            </p>
+          </div>
+        )}
+
         {/* Topic input */}
         <div>
           <label style={{ fontWeight: 600, fontSize: 14, display: "block", marginBottom: 6 }}>
