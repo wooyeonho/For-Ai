@@ -28,7 +28,8 @@ const SOURCE_EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".css",
 // in that range is treated as mojibake. Add here only after a conscious review.
 //   U+00B7 MIDDLE DOT  (·)  used as a separator in headings/admin labels
 //   U+00D7 MULTIPLICATION SIGN (×) used in seed-data dimensions
-const MOJIBAKE_ALLOWLIST = new Set(["·", "×"]);
+//   U+00A9 COPYRIGHT SIGN (©) used in the site footer
+const MOJIBAKE_ALLOWLIST = new Set(["·", "×", "©"]);
 
 // A full-repo-rewrite PR touches most of the tree. The repo currently tracks
 // ~67 files, so a legitimate scoped change stays well under this limit. Override
