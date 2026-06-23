@@ -16,6 +16,18 @@ const FALLBACK_PROVIDERS = [
   { key: "grok", label: "Grok", icon: "⚡" },
 ];
 
+const CATEGORY_PRESETS = [
+  { label: "교통 요금", example: "서울 대중교통 요금 공식 출처" },
+  { label: "여권/민원 수수료", example: "여권 재발급 수수료 공식 안내" },
+  { label: "전입신고/과태료", example: "전입신고 기한 과태료 공식 안내" },
+  { label: "공항 주차 요금", example: "인천공항 주차 요금 공식 안내" },
+  { label: "택배 추가 요금", example: "국내 택배 도서산간 추가 요금 공식 안내" },
+  { label: "은행 수수료", example: "은행 타행 이체 수수료 공식 안내" },
+  { label: "통신사 요금제 조건", example: "통신사 5G 요금제 약정 조건 공식 안내" },
+  { label: "환불 규정", example: "공연 티켓 환불 규정 공식 안내" },
+  { label: "공공기관 신청 기한", example: "공공기관 지원금 신청 기한 공식 안내" },
+];
+
 const LANGUAGES = [
   { code: "ko", label: "한국어", flag: "🇰🇷" },
   { code: "en", label: "English", flag: "🇺🇸" },
@@ -183,6 +195,38 @@ export default function AdminGeneratePage() {
           </div>
         </div>
 
+        {/* Topic presets */}
+        <div>
+          <label style={{ fontWeight: 600, fontSize: 14, display: "block", marginBottom: 8 }}>
+            추천 카테고리 프리셋
+          </label>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {CATEGORY_PRESETS.map((preset) => (
+              <button
+                key={preset.label}
+                type="button"
+                onClick={() => setTopic(preset.example)}
+                title={`${preset.label}: ${preset.example}`}
+                style={{
+                  padding: "7px 11px",
+                  border: topic === preset.example ? "2px solid #2563eb" : "1px solid #d1d5db",
+                  borderRadius: 999,
+                  background: topic === preset.example ? "#eff6ff" : "#fff",
+                  color: topic === preset.example ? "#1d4ed8" : "#374151",
+                  cursor: "pointer",
+                  fontSize: 12,
+                  fontWeight: 600,
+                }}
+              >
+                {preset.label}
+              </button>
+            ))}
+          </div>
+          <p style={{ margin: "8px 0 0", fontSize: 12, color: "#6b7280" }}>
+            프리셋을 선택하면 공식 출처 검증에 적합한 예시 주제가 아래 입력창에 자동 입력됩니다.
+          </p>
+        </div>
+
         {/* Topic input */}
         <div>
           <label style={{ fontWeight: 600, fontSize: 14, display: "block", marginBottom: 6 }}>
@@ -192,7 +236,7 @@ export default function AdminGeneratePage() {
             type="text"
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
-            placeholder="예: 서울 지하철, Indian railways, 日本の電車料金..."
+            placeholder="예: 여권 재발급 수수료 공식 안내, 공항 주차 요금 공식 안내..."
             style={{ width: "100%", padding: "10px 14px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 15 }}
           />
         </div>
@@ -387,10 +431,17 @@ export default function AdminGeneratePage() {
                 const levelLabels: Record<string, string> = {
                   unanimous: "만장일치", majority: "다수 동의", minority: "소수", single: "단독",
                 };
+                const sourceHints = Array.isArray(c.source_hints) ? c.source_hints : [];
+                const hasSourceHints = sourceHints.length > 0;
                 return (
-                  <div key={i} style={{ padding: 12, border: "1px solid #e5e7eb", borderRadius: 8, marginBottom: 8 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div key={i} style={{ padding: 12, border: hasSourceHints ? "1px solid #e5e7eb" : "1px solid #f59e0b", borderRadius: 8, marginBottom: 8, background: hasSourceHints ? "#fff" : "#fffbeb" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
                       <p style={{ fontWeight: 600 }}>{String(c.title)}</p>
+                      {!hasSourceHints && (
+                        <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 12, color: "#92400e", background: "#fef3c7", whiteSpace: "nowrap" }}>
+                          ⚠ source_hints 없음
+                        </span>
+                      )}
                       {c.consensus_level && (
                         <span style={{
                           fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 12,

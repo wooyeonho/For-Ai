@@ -39,9 +39,11 @@ ${instruction}
 규칙:
 - placeholder_value는 반드시 "확인 필요" (절대 실제 숫자/날짜 쓰지 말 것)
 - AI가 실제로 자주 틀리는 정보 위주
+- 공식 출처가 존재하는 주제 우선
 - 최대한 구체적이고 검색 가능한 토픽
 - category는 토픽에 맞게 자유롭게 설정
 - title과 why_people_ask_ai는 ${lang} 언어로 작성
+- source_hints는 official/platform/law/document 성격의 출처를 우선 포함
 
 각 토픽을 JSON으로:
 {
@@ -60,7 +62,7 @@ ${instruction}
     }
   ],
   "source_hints": [
-    { "url": "https://실제url", "title": "출처명" }
+    { "url": "https://실제url", "title": "official/platform/law/document 우선 출처명" }
   ]
 }
 
@@ -79,7 +81,7 @@ function buildSystemPrompt(lang: string): string {
     zh: "Chinese",
   };
   const language = langMap[lang] ?? "English";
-  return `You are a global fact-registry curator for GYEOL. Search the web and output only valid JSON arrays. Find real official/platform URLs for source_hints. Accept ANY topic: sports, entertainment, life, IT, finance, government, etc. Output in ${language}.`;
+  return `You are a global fact-registry curator for GYEOL. Search the web and output only valid JSON arrays. Prioritize topics with official sources. Find real official/platform/law/document URLs for source_hints before other source types. Accept ANY topic: sports, entertainment, life, IT, finance, government, etc. Output in ${language}.`;
 }
 
 function parseCandidatesFromResponse(

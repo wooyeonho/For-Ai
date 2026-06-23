@@ -13,16 +13,18 @@ export default function CandidatesPage(){
   const [items,setItems]=useState<Candidate[]>([]);
   const [loading,setLoading]=useState(true);
   const [filter,setFilter]=useState("new");
+  const [sourceHintFilter,setSourceHintFilter]=useState("all");
   const [selected,setSelected]=useState<string|null>(null);
   const [secret,setSecret]=useState("");
   const [msg,setMsg]=useState<{text:string;ok:boolean}|null>(null);
   const [promoting,setPromoting]=useState<string|null>(null);
   const load=useCallback(async()=>{
     setLoading(true);
-    const r=await fetch(`/api/admin/candidates?status=${filter}`,{headers:{"x-admin-secret":secret}});
+    const params = new URLSearchParams({ status: filter, source_hint: sourceHintFilter });
+    const r=await fetch(`/api/admin/candidates?${params.toString()}`,{headers:{"x-admin-secret":secret}});
     const d=await r.json();setItems(Array.isArray(d.candidates)?d.candidates:[]);setLoading(false);
     if(!r.ok) flash(`❌ ${d.error??"후보 조회 실패"}`,false);
-  },[filter,secret]);
+  },[filter,sourceHintFilter,secret]);
   useEffect(()=>{load();},[load]);
   function flash(text:string,ok=true){setMsg({text,ok});setTimeout(()=>setMsg(null),4000);}
   async function act(id:string,st:string){
@@ -55,11 +57,17 @@ export default function CandidatesPage(){
           </div>
         </div>
         {msg&&<div style={{marginBottom:12,padding:"10px 14px",background:msg.ok?"#f0fdf4":"#fef2f2",border:`1px solid ${msg.ok?"#bbf7d0":"#fecaca"}`,borderRadius:8,fontSize:13}}>{msg.text}</div>}
-        <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap"}}>
+        <div style={{display:"flex",gap:8,marginBottom:10,flexWrap:"wrap"}}>
           {["new","reviewing","approved","promoted","rejected","all"].map(s=>(
             <button key={s} onClick={()=>setFilter(s)} style={{padding:"6px 16px",borderRadius:20,fontSize:13,fontWeight:500,cursor:"pointer",border:filter===s?"none":"1px solid #d1d5db",background:filter===s?"#111827":"#fff",color:filter===s?"#fff":"#374151"}}>{s==="all"?"전체":s}</button>
           ))}
           <button onClick={load} style={{marginLeft:"auto",fontSize:12,color:"#9ca3af",background:"none",border:"none",cursor:"pointer"}}>↻</button>
+        </div>
+        <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap",alignItems:"center"}}>
+          <span style={{fontSize:12,fontWeight:600,color:"#6b7280"}}>출처 힌트</span>
+          {[{key:"all",label:"전체"},{key:"with",label:"source hint 있음"},{key:"without",label:"source hint 없음"}].map(f=>(
+            <button key={f.key} onClick={()=>setSourceHintFilter(f.key)} style={{padding:"5px 12px",borderRadius:20,fontSize:12,fontWeight:600,cursor:"pointer",border:sourceHintFilter===f.key?"none":"1px solid #d1d5db",background:sourceHintFilter===f.key?"#2563eb":"#fff",color:sourceHintFilter===f.key?"#fff":"#374151"}}>{f.label}</button>
+          ))}
         </div>
         {loading?<div style={{textAlign:"center",padding:"60px 0",color:"#9ca3af"}}>로딩 중...</div>
         :items.length===0?<div style={{textAlign:"center",padding:"60px 0",color:"#9ca3af"}}>후보 없음</div>
@@ -70,6 +78,7 @@ export default function CandidatesPage(){
                 <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:6}}>
                   <span style={{fontSize:11,padding:"2px 8px",borderRadius:12,fontWeight:600,...Object.fromEntries((SC[c.status]||"").split(";").filter(Boolean).map(s=>s.trim().split(":").map(x=>x.trim())).filter(a=>a.length===2))}}>{c.status}</span>
                   <span style={{fontSize:11,color:"#9ca3af"}}>{c.category}{c.subcategory?` / ${c.subcategory}`:""}</span>
+                  {(!c.source_hints||c.source_hints.length===0)&&<span style={{fontSize:11,padding:"2px 8px",borderRadius:12,fontWeight:700,background:"#fef3c7",color:"#92400e"}}>⚠ source hint 없음</span>}
                 </div>
                 <div style={{fontWeight:600,fontSize:15,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.title}</div>
                 {c.why_people_ask_ai&&<div style={{fontSize:12,color:"#6b7280",marginTop:3}}>{c.why_people_ask_ai}</div>}
@@ -81,9 +90,10 @@ export default function CandidatesPage(){
                 {c.claims?.length>0&&<div style={{marginBottom:12}}>
                   <div style={{fontSize:12,fontWeight:600,color:"#6b7280",marginBottom:6}}>확인 필요 ({c.claims.length}개)</div>
                   {c.claims.map((cl,i)=><div key={i} style={{fontSize:13,display:"flex",gap:8,marginBottom:4}}><span style={{color:"#9ca3af"}}>Q.</span><span>{cl.question}</span><span style={{marginLeft:"auto",color:"#f97316",fontWeight:600}}>확인 필요</span></div>)}</div>}
-                {c.source_hints?.length>0&&<div style={{marginBottom:16}}>
+                {c.source_hints?.length>0?<div style={{marginBottom:16}}>
                   <div style={{fontSize:12,fontWeight:600,color:"#6b7280",marginBottom:4}}>출처 힌트</div>
-                  <div style={{display:"flex",flexWrap:"wrap",gap:8}}>{c.source_hints.map((h,i)=><a key={i} href={h.url} target="_blank" rel="noopener" style={{fontSize:12,color:"#2563eb"}} onClick={e=>e.stopPropagation()}>{h.title||h.url}</a>)}</div></div>}
+                  <div style={{display:"flex",flexWrap:"wrap",gap:8}}>{c.source_hints.map((h,i)=><a key={i} href={h.url} target="_blank" rel="noopener" style={{fontSize:12,color:"#2563eb"}} onClick={e=>e.stopPropagation()}>{h.title||h.url}</a>)}</div></div>
+                  :<div style={{marginBottom:16,padding:"10px 12px",background:"#fffbeb",border:"1px solid #fde68a",borderRadius:8,fontSize:12,color:"#92400e",fontWeight:600}}>⚠ source_hints가 없습니다. 공식/platform/law/document 출처 확인 후 승인하세요.</div>}
                 <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
                   {c.status==="new"&&<button onClick={()=>act(c.id,"reviewing")} style={{padding:"8px 16px",background:"#f59e0b",color:"#fff",border:"none",borderRadius:8,fontSize:13,fontWeight:600,cursor:"pointer"}}>검토중</button>}
                   {(c.status==="new"||c.status==="reviewing")&&<button onClick={()=>act(c.id,"approved")} style={{padding:"8px 16px",background:"#16a34a",color:"#fff",border:"none",borderRadius:8,fontSize:13,fontWeight:600,cursor:"pointer"}}>✅ 승인</button>}
