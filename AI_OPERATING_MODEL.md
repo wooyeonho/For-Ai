@@ -211,6 +211,35 @@ npm run build
 node scripts/smoke-test-routes.mjs http://localhost:3000
 ```
 
+After LazyCodex creates a patch, a human reviewer must inspect these files before merge because they define the AI/search discovery surface and static-first registry output:
+
+- `app/sitemap.ts`
+- `app/llms.txt/route.ts`
+- `app/raw/[...path]/route.ts`
+- `app/diagnostics/[slug]/page.tsx`
+- `app/ko/wiki/[slug]/page.tsx`
+- `app/[locale]/wiki/[slug]/page.tsx`
+- `lib/supabase-documents.ts`
+
+The reviewer must run these commands after the patch:
+
+```bash
+npm run lint
+npm run build
+npm run ci:guards
+```
+
+If the patch adds a discovery-check script, also run `npm run ai:discovery-check`.
+
+After deployment, verify the real production URLs for both one `verified` document and one `needs_review` document:
+
+- `/sitemap.xml`
+- `/llms.txt`
+- `/ko/wiki/{new-slug}`
+- `/api/documents/{new-slug}`
+- `/raw/{new-slug}.md`
+- `/diagnostics/{new-slug}`
+
 ## LazyCodex task patterns
 
 Good bounded prompts:
