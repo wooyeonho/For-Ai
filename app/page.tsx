@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { createClient } from "@supabase/supabase-js";
 import { getAllRegistryBundles } from "../lib/data";
-import type { RegistryDocumentBundle } from "../lib/types";
+import type { Confidence, DocumentStatus, RegistryDocumentBundle } from "../lib/types";
+import { getSupabaseDocumentIndex } from "../lib/supabase-documents";
 import HomeSearch from "./components/HomeSearch";
 
 interface DocItem {
@@ -10,6 +10,10 @@ interface DocItem {
   title: string;
   category?: string;
   source: "static" | "supabase";
+  status: DocumentStatus;
+  confidence: Confidence;
+  sourceCount: number;
+  lang?: string;
 }
 
 export const metadata: Metadata = {
@@ -33,44 +37,42 @@ function statusBadge(status: string): { className: string; label: string } {
 }
 
 function statusRank(b: RegistryDocumentBundle): number {
-  if (b.document.status === "verified" || b.document.status === "published") return 0;
-  if (b.document.status === "needs_review") return 1;
-  return 2;
+  return statusRankValue(b.document.status);
 }
 
 async function getAllDocs(): Promise<DocItem[]> {
   const staticDocs: DocItem[] = getAllRegistryBundles().map((b) => ({
     slug: b.document.slug,
     title: b.document.title,
-    category: undefined,
+    category: b.document.category || b.entity.type,
     source: "static" as const,
+    status: b.document.status,
+    confidence: b.document.confidence,
+    sourceCount: b.claims.reduce((count, claim) => count + claim.sources.length, 0),
+    lang: b.document.lang,
   }));
   const staticSlugs = new Set(staticDocs.map((d) => d.slug));
-  let sbDocs: DocItem[] = [];
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (url && key) {
-    try {
-      const sb = createClient(url, key);
-      const { data } = await sb
-        .from("registry_documents")
-        .select("slug,title,category")
-        .eq("status", "published")
-        .order("created_at", { ascending: false })
-        .limit(500);
-      sbDocs = (data ?? [])
-        .filter((d: { slug: string }) => !staticSlugs.has(d.slug))
-        .map((d: { slug: string; title: string; category?: string }) => ({
-          slug: d.slug,
-          title: d.title,
-          category: d.category ?? "",
-          source: "supabase" as const,
-        }));
-    } catch {
-      /* Supabase unavailable — use static only */
-    }
+  const sbDocs: DocItem[] = (await getSupabaseDocumentIndex())
+    .filter((d) => !staticSlugs.has(d.slug))
+    .map((d) => ({ ...d, source: "supabase" as const }));
+
+  return [...sbDocs, ...staticDocs].sort((a, b) => {
+    const statusDelta = statusRankValue(a.status) - statusRankValue(b.status);
+    return statusDelta !== 0 ? statusDelta : a.title.localeCompare(b.title, "ko");
+  });
+}
+
+function statusRankValue(status: DocumentStatus): number {
+  if (status === "verified" || status === "published") return 0;
+  if (status === "needs_review") return 1;
+  return 2;
+}
+
+function citationBadge(doc: Pick<DocItem, "status" | "confidence">): { className: string; label: string } {
+  if ((doc.status === "verified" || doc.status === "published") && doc.confidence !== "low") {
+    return { className: "badge badge-verified", label: "인용 가능" };
   }
-  return [...sbDocs, ...staticDocs];
+  return { className: "badge badge-review", label: "사실값 인용 금지" };
 }
 
 export const revalidate = 60;
@@ -94,6 +96,13 @@ export default async function HomePage() {
     const r = statusRank(a) - statusRank(b);
     return r !== 0 ? r : a.document.title.localeCompare(b.document.title, "ko");
   });
+  const verifiedDocs = docs.filter(
+    (doc) => (doc.status === "verified" || doc.status === "published") && doc.confidence !== "low",
+  );
+  const reviewDocs = docs.filter(
+    (doc) => doc.status === "needs_review" || doc.confidence === "low",
+  );
+  const categoryLinks = ["교통", "민원", "수수료", "환불", "배송", "금융", "통신"];
 
   return (
     <div className="home">
@@ -265,17 +274,108 @@ export default async function HomePage() {
       </section>
 
       {/* Search */}
-      <section className="section">
+      <section className="section" id="registry">
+        <p className="section-eyebrow">레지스트리 탐색</p>
+        <h2 className="section-title">문서 검색 · 카테고리별 진입</h2>
+        <p className="section-subtitle">
+          홈 검색은 정적 문서와 Supabase document index helper로 가져온 새 문서를 함께 보여줍니다.
+          결과에는 title, slug, confidence, status, source count가 표시됩니다.
+        </p>
+        <nav className="category-links" aria-label="카테고리별 링크">
+          {categoryLinks.map((category) => (
+            <Link key={category} href={`#category-${encodeURIComponent(category)}`} className="category-link">
+              {category}
+            </Link>
+          ))}
+        </nav>
         <HomeSearch docs={docs} />
+        <div className="category-index-grid" aria-label="카테고리별 문서 바로가기">
+          {categoryLinks.map((category) => {
+            const categoryDocs = docs.filter((doc) => doc.category?.includes(category));
+            return (
+              <article key={category} id={`category-${encodeURIComponent(category)}`} className="category-index-card">
+                <h3>{category}</h3>
+                {categoryDocs.length ? (
+                  <ul>
+                    {categoryDocs.slice(0, 4).map((doc) => (
+                      <li key={doc.slug}>
+                        <Link href={`/ko/wiki/${doc.slug}`}>{doc.title}</Link>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="meta-label">해당 카테고리 문서 준비 중</p>
+                )}
+              </article>
+            );
+          })}
+        </div>
+      </section>
+
+      <section className="section" aria-labelledby="verified-documents">
+        <p className="section-eyebrow">검증 우선</p>
+        <h2 className="section-title" id="verified-documents">
+          검증 완료 문서 ({verifiedDocs.length})
+        </h2>
+        <ul className="registry-index">
+          {verifiedDocs.map((doc) => {
+            const badge = statusBadge(doc.status);
+            const cite = citationBadge(doc);
+            return (
+              <li key={doc.slug} className="registry-row">
+                <div className="registry-row-main">
+                  <Link href={`/ko/wiki/${doc.slug}`} className="registry-row-title">
+                    {doc.title}
+                  </Link>
+                  <span className="registry-row-entity">/{doc.slug} · 출처 {doc.sourceCount}개</span>
+                </div>
+                <div className="registry-row-meta">
+                  <span className={cite.className}>{cite.label}</span>
+                  <span className={badge.className}>{badge.label}</span>
+                  <span className="badge">{doc.confidence}</span>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+
+      <section className="section" aria-labelledby="review-documents">
+        <p className="section-eyebrow">인용 제한</p>
+        <h2 className="section-title" id="review-documents">
+          확인 필요 후보/문서 ({reviewDocs.length})
+        </h2>
+        <ul className="registry-index">
+          {reviewDocs.map((doc) => {
+            const badge = statusBadge(doc.status);
+            const cite = citationBadge(doc);
+            return (
+              <li key={doc.slug} className="registry-row">
+                <div className="registry-row-main">
+                  <Link href={`/ko/wiki/${doc.slug}`} className="registry-row-title">
+                    {doc.title}
+                  </Link>
+                  <span className="registry-row-entity">/{doc.slug} · 출처 {doc.sourceCount}개</span>
+                </div>
+                <div className="registry-row-meta">
+                  <span className={cite.className}>{cite.label}</span>
+                  <span className={badge.className}>{badge.label}</span>
+                  <span className="badge">{doc.confidence}</span>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
       </section>
 
       {/* Registry index */}
-      <section className="section" id="registry">
+      <section className="section">
         <p className="section-eyebrow">레지스트리</p>
-        <h2 className="section-title">등록된 문서 ({bundles.length})</h2>
+        <h2 className="section-title">정적 등록 문서 ({bundles.length})</h2>
         <ul className="registry-index">
           {sorted.map((b) => {
             const badge = statusBadge(b.document.status);
+            const cite = citationBadge({ status: b.document.status, confidence: b.document.confidence });
             return (
               <li key={b.document.slug} className="registry-row">
                 <div className="registry-row-main">
@@ -285,6 +385,7 @@ export default async function HomePage() {
                   <span className="registry-row-entity">{b.entity.canonical_name}</span>
                 </div>
                 <div className="registry-row-meta">
+                  <span className={cite.className}>{cite.label}</span>
                   <span className={badge.className}>{badge.label}</span>
                   <span className="badge">{b.entity.type}</span>
                 </div>

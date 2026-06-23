@@ -1,5 +1,15 @@
 import { createClient } from "@supabase/supabase-js";
-import type { ClaimSource, ClaimStatus, Confidence, RegistryDocumentBundle } from "./types";
+import type { ClaimSource, ClaimStatus, Confidence, DocumentStatus, RegistryDocumentBundle } from "./types";
+
+export interface SupabaseDocumentIndexItem {
+  slug: string;
+  title: string;
+  category: string;
+  status: DocumentStatus;
+  confidence: Confidence;
+  sourceCount: number;
+  lang: string;
+}
 
 function isClaimStatus(value: unknown): value is ClaimStatus {
   return ["needs_review", "verified", "disputed", "unknown"].includes(String(value));
@@ -7,6 +17,12 @@ function isClaimStatus(value: unknown): value is ClaimStatus {
 
 function toConfidence(value: unknown): Confidence {
   return value === "medium" || value === "high" ? value : "low";
+}
+
+function toDocumentStatus(value: unknown): DocumentStatus {
+  return ["ai_draft", "needs_review", "verified", "published", "archived"].includes(String(value))
+    ? (value as DocumentStatus)
+    : "needs_review";
 }
 
 function sourceFromRow(row: Record<string, unknown>): ClaimSource {
@@ -21,6 +37,37 @@ function sourceFromRow(row: Record<string, unknown>): ClaimSource {
     contributor_hash: (row.contributor_hash ?? null) as string | null,
     created_at: (row.created_at ?? null) as string | null,
   };
+}
+
+export async function getSupabaseDocumentIndex(): Promise<SupabaseDocumentIndexItem[]> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !key) return [];
+
+  try {
+    const sb = createClient(url, key);
+    const { data } = await sb
+      .from("documents")
+      .select("slug,title,category,status,confidence,lang,claims(claim_sources(id))")
+      .in("status", ["published", "verified", "needs_review"])
+      .order("created_at", { ascending: false })
+      .limit(500);
+
+    return ((data ?? []) as Record<string, unknown>[]).map((doc) => {
+      const claims = (doc.claims ?? []) as { claim_sources?: unknown[] }[];
+      return {
+        slug: String(doc.slug),
+        title: String(doc.title ?? ""),
+        category: String(doc.category ?? ""),
+        status: toDocumentStatus(doc.status),
+        confidence: toConfidence(doc.confidence),
+        lang: String(doc.lang ?? "ko"),
+        sourceCount: claims.reduce((count, claim) => count + (claim.claim_sources?.length ?? 0), 0),
+      };
+    });
+  } catch {
+    return [];
+  }
 }
 
 export async function getRegistryBundleFromSupabase(slug: string): Promise<RegistryDocumentBundle | null> {
