@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getRegistryBundleBySlug } from "../../../lib/data";
 import { getRegistryDocumentPaths } from "../../../lib/seo";
+import { getRegistryBundleFromSupabase } from "../../../lib/supabase-documents";
 
 export const metadata: Metadata = {
   title: "AI-readiness 진단",
@@ -11,7 +12,7 @@ export const metadata: Metadata = {
 
 export default async function DiagnosticsPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const bundle = getRegistryBundleBySlug(slug);
+  const bundle = getRegistryBundleBySlug(slug) ?? await getRegistryBundleFromSupabase(slug);
 
   if (!bundle) {
     notFound();
@@ -21,7 +22,17 @@ export default async function DiagnosticsPage({ params }: { params: Promise<{ sl
   const paths = getRegistryDocumentPaths(bundle);
   const lowConfidenceClaims = claims.filter((claim) => claim.confidence === "low").length;
   const claimsWithUnknownValues = claims.filter((claim) => claim.claim_value === "확인 필요").length;
+  const verifiedClaims = claims.filter((claim) => claim.status === "verified").length;
+  const needsReviewClaims = claims.filter((claim) => claim.status === "needs_review").length;
   const sourceCount = claims.reduce((total, claim) => total + claim.sources.length, 0);
+  const unknownFactsPass = document.status === "verified"
+    ? claimsWithUnknownValues === 0 && sourceCount > 0 && verifiedClaims > 0
+    : document.status === "needs_review"
+      ? claimsWithUnknownValues > 0
+      : claimsWithUnknownValues === claims.length;
+  const lowConfidenceUnknownsPass = claims
+    .filter((claim) => claim.claim_value === "확인 필요")
+    .every((claim) => claim.confidence === "low");
 
   const checklist = [
     { label: "Static document route", detail: `/ko/wiki/${document.slug}`, pass: true },
@@ -29,9 +40,11 @@ export default async function DiagnosticsPage({ params }: { params: Promise<{ sl
     { label: "Raw Markdown route", detail: paths.rawMarkdownPath, pass: true },
     { label: "Canonical entity_id", detail: entity.id, pass: Boolean(document.entity_id) },
     { label: "Claim coverage", detail: `${claims.length} claims`, pass: claims.length > 0 },
-    { label: "Unknown facts visible", detail: `${claimsWithUnknownValues}개 확인 필요 표시`, pass: claimsWithUnknownValues === claims.length },
-    { label: "Low-confidence unknowns", detail: `${lowConfidenceClaims} low confidence claims`, pass: lowConfidenceClaims === claims.length },
-    { label: "Source transparency", detail: `${sourceCount} sources attached`, pass: sourceCount >= 0 },
+    { label: "Unknown facts visible", detail: document.status === "verified" ? `${claimsWithUnknownValues} unknown values · verified requires 0` : `${claimsWithUnknownValues}개 확인 필요 표시`, pass: unknownFactsPass },
+    { label: "Low-confidence unknowns", detail: `${lowConfidenceClaims} low confidence claims`, pass: lowConfidenceUnknownsPass },
+    { label: "Verified claims", detail: `verified_claims: ${verifiedClaims}`, pass: document.status === "verified" ? verifiedClaims > 0 : true },
+    { label: "Needs-review claims", detail: `needs_review_claims: ${needsReviewClaims}`, pass: document.status === "needs_review" ? needsReviewClaims > 0 : true },
+    { label: "Source transparency", detail: `source_count: ${sourceCount}`, pass: document.status === "verified" ? sourceCount > 0 : sourceCount >= 0 },
     { label: "Correction URL", detail: `/report/${document.slug}`, pass: true },
     { label: "Hallucination URL", detail: `/hallucination/${document.slug}`, pass: true },
   ];
@@ -46,6 +59,9 @@ export default async function DiagnosticsPage({ params }: { params: Promise<{ sl
           <div><span className="meta-label">slug</span><br />{document.slug}</div>
           <div><span className="meta-label">status</span><br />{document.status}</div>
           <div><span className="meta-label">confidence</span><br />{document.confidence}</div>
+          <div><span className="meta-label">verified_claims</span><br />{verifiedClaims}</div>
+          <div><span className="meta-label">needs_review_claims</span><br />{needsReviewClaims}</div>
+          <div><span className="meta-label">source_count</span><br />{sourceCount}</div>
         </div>
       </header>
 
