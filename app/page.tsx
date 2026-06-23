@@ -3,14 +3,7 @@ import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
 import { getAllRegistryBundles } from "../lib/data";
 import type { RegistryDocumentBundle } from "../lib/types";
-import HomeSearch from "./components/HomeSearch";
-
-interface DocItem {
-  slug: string;
-  title: string;
-  category?: string;
-  source: "static" | "supabase";
-}
+import HomeSearch, { type HomeSearchDoc } from "./components/HomeSearch";
 
 export const metadata: Metadata = {
   title: { absolute: "GYEOL — 로컬 팩트 레지스트리" },
@@ -38,15 +31,31 @@ function statusRank(b: RegistryDocumentBundle): number {
   return 2;
 }
 
-async function getAllDocs(): Promise<DocItem[]> {
-  const staticDocs: DocItem[] = getAllRegistryBundles().map((b) => ({
-    slug: b.document.slug,
-    title: b.document.title,
-    category: undefined,
-    source: "static" as const,
-  }));
+function sourceCount(bundle: RegistryDocumentBundle): number {
+  return bundle.claims.reduce((total, claim) => total + claim.sources.length, 0);
+}
+
+function categoryDomId(category: string): string {
+  return `category-${category.toLowerCase().replace(/[^a-z0-9가-힣_-]+/gi, "-")}`;
+}
+
+function toHomeSearchDoc(bundle: RegistryDocumentBundle): HomeSearchDoc {
+  return {
+    slug: bundle.document.slug,
+    title: bundle.document.title,
+    category: bundle.document.category || bundle.entity.type,
+    status: bundle.document.status,
+    confidence: bundle.document.confidence,
+    sourceCount: sourceCount(bundle),
+    source: "static",
+    lang: bundle.document.lang,
+  };
+}
+
+async function getAllDocs(): Promise<HomeSearchDoc[]> {
+  const staticDocs: HomeSearchDoc[] = getAllRegistryBundles().map(toHomeSearchDoc);
   const staticSlugs = new Set(staticDocs.map((d) => d.slug));
-  let sbDocs: DocItem[] = [];
+  let sbDocs: HomeSearchDoc[] = [];
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (url && key) {
@@ -54,18 +63,29 @@ async function getAllDocs(): Promise<DocItem[]> {
       const sb = createClient(url, key);
       const { data } = await sb
         .from("registry_documents")
-        .select("slug,title,category")
-        .eq("status", "published")
+        .select("slug,title,category,status,confidence")
+        .in("status", ["published", "verified", "needs_review"])
         .order("created_at", { ascending: false })
         .limit(500);
       sbDocs = (data ?? [])
         .filter((d: { slug: string }) => !staticSlugs.has(d.slug))
-        .map((d: { slug: string; title: string; category?: string }) => ({
-          slug: d.slug,
-          title: d.title,
-          category: d.category ?? "",
-          source: "supabase" as const,
-        }));
+        .map(
+          (d: {
+            slug: string;
+            title: string;
+            category?: string;
+            status?: HomeSearchDoc["status"];
+            confidence?: HomeSearchDoc["confidence"];
+          }) => ({
+            slug: d.slug,
+            title: d.title,
+            category: d.category ?? "",
+            status: d.status ?? "published",
+            confidence: d.confidence ?? "low",
+            sourceCount: 0,
+            source: "supabase" as const,
+          }),
+        );
     } catch {
       /* Supabase unavailable — use static only */
     }
@@ -94,6 +114,26 @@ export default async function HomePage() {
     const r = statusRank(a) - statusRank(b);
     return r !== 0 ? r : a.document.title.localeCompare(b.document.title, "ko");
   });
+  const verifiedDocs = sorted.filter(
+    (b) => b.document.status === "verified" || b.document.status === "published",
+  );
+  const needsReviewDocs = sorted.filter((b) => b.document.status === "needs_review");
+  const recentVerifiedDocs = [...verifiedDocs]
+    .sort((a, b) => {
+      const aTime = Date.parse(a.document.last_verified_at ?? a.document.updated_at ?? "");
+      const bTime = Date.parse(b.document.last_verified_at ?? b.document.updated_at ?? "");
+      return (Number.isNaN(bTime) ? 0 : bTime) - (Number.isNaN(aTime) ? 0 : aTime);
+    })
+    .slice(0, 5);
+  const docsByCategory = Array.from(
+    sorted.reduce((map, bundle) => {
+      const category = bundle.document.category || bundle.entity.type || "uncategorized";
+      const current = map.get(category) ?? [];
+      current.push(bundle);
+      map.set(category, current);
+      return map;
+    }, new Map<string, RegistryDocumentBundle[]>()),
+  ).sort(([a], [b]) => a.localeCompare(b, "ko"));
 
   return (
     <div className="home">
@@ -265,7 +305,11 @@ export default async function HomePage() {
       </section>
 
       {/* Search */}
-      <section className="section">
+      <section className="section" aria-labelledby="home-search-title">
+        <p className="section-eyebrow">문서 찾기</p>
+        <h2 className="section-title" id="home-search-title">
+          일반 사용자를 위한 레지스트리 검색
+        </h2>
         <HomeSearch docs={docs} />
       </section>
 
@@ -273,20 +317,95 @@ export default async function HomePage() {
       <section className="section" id="registry">
         <p className="section-eyebrow">레지스트리</p>
         <h2 className="section-title">등록된 문서 ({bundles.length})</h2>
-        <ul className="registry-index">
+
+        <div className="registry-split-grid" aria-label="검증 상태별 문서">
+          <section className="registry-panel-lite" aria-labelledby="verified-documents-title">
+            <h3 id="verified-documents-title">검증 완료 문서</h3>
+            <p>출처가 부착되어 문서 단위로 인용 가능한 항목입니다.</p>
+            <ul className="compact-doc-list">
+              {verifiedDocs.map((b) => (
+                <li key={b.document.slug}>
+                  <Link href={`/ko/wiki/${b.document.slug}`}>{b.document.title}</Link>
+                  <span className="badge badge-verified">인용 가능</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+          <section className="registry-panel-lite" aria-labelledby="needs-review-documents-title">
+            <h3 id="needs-review-documents-title">확인 필요 문서</h3>
+            <p>사실값을 인용하지 말고 출처 검증을 먼저 진행해야 하는 항목입니다.</p>
+            <ul className="compact-doc-list">
+              {needsReviewDocs.map((b) => (
+                <li key={b.document.slug}>
+                  <Link href={`/ko/wiki/${b.document.slug}`}>{b.document.title}</Link>
+                  <span className="badge badge-review">확인 필요 / 사실값 인용 금지</span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        </div>
+
+        <section className="registry-panel-lite" aria-labelledby="recent-verified-title">
+          <h3 id="recent-verified-title">최근 검증된 문서</h3>
+          <ul className="compact-doc-list">
+            {recentVerifiedDocs.map((b) => (
+              <li key={b.document.slug}>
+                <Link href={`/ko/wiki/${b.document.slug}`}>{b.document.title}</Link>
+                <span className="meta-label">
+                  {b.document.last_verified_at ?? b.document.updated_at ?? "검증일 확인 필요"}
+                </span>
+                <span className="badge badge-verified">인용 가능</span>
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section className="registry-panel-lite" aria-labelledby="category-documents-title">
+          <h3 id="category-documents-title">카테고리별 문서</h3>
+          <div className="category-doc-grid">
+            {docsByCategory.map(([category, categoryDocs]) => {
+              const categoryId = categoryDomId(category);
+              return (
+                <section key={category} className="category-doc-group" aria-labelledby={categoryId}>
+                  <h4 id={categoryId}>{category}</h4>
+                <ul>
+                  {categoryDocs.map((b) => (
+                    <li key={b.document.slug}>
+                      <Link href={`/ko/wiki/${b.document.slug}`}>{b.document.title}</Link>
+                    </li>
+                  ))}
+                </ul>
+                </section>
+              );
+            })}
+          </div>
+        </section>
+
+        <ul className="registry-index" aria-label="전체 등록 문서">
           {sorted.map((b) => {
             const badge = statusBadge(b.document.status);
+            const citeBadge =
+              b.document.status === "verified" || b.document.status === "published" ? (
+                <span className="badge badge-verified">인용 가능</span>
+              ) : b.document.status === "needs_review" ? (
+                <span className="badge badge-review">확인 필요 / 사실값 인용 금지</span>
+              ) : null;
             return (
               <li key={b.document.slug} className="registry-row">
                 <div className="registry-row-main">
                   <Link href={`/ko/wiki/${b.document.slug}`} className="registry-row-title">
                     {b.document.title}
                   </Link>
-                  <span className="registry-row-entity">{b.entity.canonical_name}</span>
+                  <span className="registry-row-entity">
+                    {b.entity.canonical_name} · slug: {b.document.slug}
+                  </span>
                 </div>
                 <div className="registry-row-meta">
                   <span className={badge.className}>{badge.label}</span>
-                  <span className="badge">{b.entity.type}</span>
+                  <span className="badge">confidence: {b.document.confidence}</span>
+                  <span className="badge">sources: {sourceCount(b)}</span>
+                  <span className="badge">{b.document.category || b.entity.type}</span>
+                  {citeBadge}
                 </div>
               </li>
             );
