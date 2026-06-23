@@ -91,4 +91,4 @@ export function buildDocumentJsonLd(bundle: RegistryDocumentBundle): object {
     dateModified: document.updated_at ?? undefined,
     inLanguage: document.lang,
   };
-    }
+}
