@@ -22,8 +22,11 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const status = searchParams.get("status") ?? "new";
+  const sourceHints = searchParams.get("source_hints") ?? "all";
   let query = sb.from("topic_candidates").select("*").order("created_at", { ascending: false }).limit(100);
   if (status !== "all") query = query.eq("status", status);
+  if (sourceHints === "with") query = query.not("source_hints", "eq", "[]").not("source_hints", "is", null);
+  if (sourceHints === "without") query = query.or("source_hints.eq.[],source_hints.is.null");
   const { data, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ candidates: data ?? [] });
