@@ -80,7 +80,12 @@ export default function AdminGeneratePage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || `HTTP ${res.status}`);
+        const msg = data.error || `HTTP ${res.status}`;
+        setError(msg);
+        if (res.status === 401) {
+          setAdminSecret("");
+          localStorage.removeItem("gyeol_admin_secret");
+        }
       } else {
         setResult(data);
       }
@@ -104,25 +109,29 @@ export default function AdminGeneratePage() {
 
       <div style={{ display: "grid", gap: 20 }}>
         {/* Admin secret */}
-        {!adminSecret && (
-          <div style={{ padding: 16, background: "#fef3c7", borderRadius: 8, border: "1px solid #f59e0b" }}>
-            <label style={{ fontWeight: 600, fontSize: 14, display: "block", marginBottom: 6 }}>
-              관리자 인증키
-            </label>
+        <div style={{ padding: 12, background: adminSecret ? "#f0fdf4" : "#fef3c7", borderRadius: 8, border: `1px solid ${adminSecret ? "#86efac" : "#f59e0b"}` }}>
+          <label style={{ fontWeight: 600, fontSize: 14, display: "block", marginBottom: 6 }}>
+            관리자 인증키 {adminSecret && "✓"}
+          </label>
+          <div style={{ display: "flex", gap: 8 }}>
             <input
               type="password"
-              placeholder="ADMIN_SECRET 입력"
-              onKeyDown={(e) => {
-                if (e.key === "Enter") saveAdminSecret(e.currentTarget.value);
-              }}
+              value={adminSecret}
+              onChange={(e) => setAdminSecret(e.target.value)}
               onBlur={(e) => { if (e.target.value) saveAdminSecret(e.target.value); }}
-              style={{ width: "100%", padding: "10px 14px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 15 }}
+              placeholder="ADMIN_SECRET 입력"
+              style={{ flex: 1, padding: "8px 12px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 }}
             />
-            <p style={{ fontSize: 12, color: "#92400e", marginTop: 4 }}>
-              한 번 입력하면 브라우저에 저장됩니다.
-            </p>
+            {adminSecret && (
+              <button
+                onClick={() => { setAdminSecret(""); localStorage.removeItem("gyeol_admin_secret"); }}
+                style={{ padding: "8px 12px", border: "1px solid #fca5a5", borderRadius: 6, background: "#fff", color: "#dc2626", fontSize: 12, cursor: "pointer" }}
+              >
+                초기화
+              </button>
+            )}
           </div>
-        )}
+        </div>
 
         {/* Topic input */}
         <div>
