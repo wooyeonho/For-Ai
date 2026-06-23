@@ -1,5 +1,21 @@
 import { createClient } from "@supabase/supabase-js";
-import type { ClaimSource, ClaimStatus, Confidence, RegistryDocumentBundle } from "./types";
+import type {
+  ClaimSource,
+  ClaimStatus,
+  Confidence,
+  DocumentStatus,
+  RegistryDocumentBundle,
+} from "./types";
+
+export interface SupabaseDocumentIndexItem {
+  slug: string;
+  title: string;
+  category: string;
+  status: DocumentStatus;
+  confidence: Confidence;
+  sourceCount: number;
+  lang: string;
+}
 
 function isClaimStatus(value: unknown): value is ClaimStatus {
   return ["needs_review", "verified", "disputed", "unknown"].includes(String(value));
@@ -21,6 +37,60 @@ function sourceFromRow(row: Record<string, unknown>): ClaimSource {
     contributor_hash: (row.contributor_hash ?? null) as string | null,
     created_at: (row.created_at ?? null) as string | null,
   };
+}
+
+function countClaimSources(claims: unknown): number {
+  if (!Array.isArray(claims)) return 0;
+
+  return claims.reduce((total, claim) => {
+    const claimRow = claim as Record<string, unknown>;
+    const sources = claimRow.claim_sources;
+    return total + (Array.isArray(sources) ? sources.length : 0);
+  }, 0);
+}
+
+export async function getSupabaseDocumentIndex(): Promise<SupabaseDocumentIndexItem[]> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !key) return [];
+
+  const sb = createClient(url, key);
+
+  const { data: v3Docs } = await sb
+    .from("documents")
+    .select("slug,title,category,status,confidence,lang,created_at,claims(claim_sources(id))")
+    .in("status", ["published", "verified", "needs_review"])
+    .order("created_at", { ascending: false })
+    .limit(500);
+
+  if (v3Docs?.length) {
+    return v3Docs.map((doc) => ({
+      slug: String(doc.slug),
+      title: String(doc.title ?? ""),
+      category: String(doc.category ?? ""),
+      status: doc.status as DocumentStatus,
+      confidence: toConfidence(doc.confidence),
+      sourceCount: countClaimSources(doc.claims),
+      lang: String(doc.lang ?? "ko"),
+    }));
+  }
+
+  const { data: legacyDocs } = await sb
+    .from("registry_documents")
+    .select("slug,title,category,status,confidence,lang,created_at")
+    .eq("status", "published")
+    .order("created_at", { ascending: false })
+    .limit(500);
+
+  return (legacyDocs ?? []).map((doc) => ({
+    slug: String(doc.slug),
+    title: String(doc.title ?? ""),
+    category: String(doc.category ?? ""),
+    status: "published",
+    confidence: toConfidence(doc.confidence),
+    sourceCount: 0,
+    lang: String(doc.lang ?? "ko"),
+  }));
 }
 
 export async function getRegistryBundleFromSupabase(slug: string): Promise<RegistryDocumentBundle | null> {

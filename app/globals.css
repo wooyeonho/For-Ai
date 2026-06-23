@@ -524,6 +524,21 @@ h2 {
   font-size: 0.9rem;
 }
 
+.document-list-main {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: baseline;
+  margin-bottom: 8px;
+}
+
+.document-list-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
 .document-list li a {
   font-weight: 600;
   color: var(--accent);
@@ -646,6 +661,40 @@ h2 {
   font-weight: 700;
   margin: 0 0 20px;
   color: var(--text);
+}
+
+.section-copy {
+  max-width: 680px;
+  margin: -10px 0 20px;
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.category-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: -6px 0 0;
+}
+
+.category-links a {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: var(--panel);
+  color: var(--text);
+  font-size: 0.86rem;
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: var(--shadow);
+}
+
+.category-links a:hover {
+  color: var(--accent);
+  border-color: #b7c8db;
+  background: var(--soft);
 }
 
 /* Hero -------------------------------------------------------------------- */
