@@ -14,7 +14,7 @@
     {
       "claim_id": "passport-fee-10year",
       "field_path": "fee.adult_10year",
-      "claim_text": "성인 복수여권(10년) 발급 수수료",
+      "claim_text": "성인 복수여권 (10년) 발급 수수료",
       "claim_value": "52,000원",
       "confidence": "high",
       "status": "verified",
@@ -25,7 +25,7 @@
           "title": "정부24 여권 발급 민원안내",
           "url": "https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=12600000001",
           "observed_at": "2026-06-22",
-          "note": "수수료 항목: 복수(10년:52,000원)"
+          "note": "수수료 항목: 복수여권 (10년) 52,000원"
         }
       ],
       "verification_event": {
@@ -38,7 +38,7 @@
     {
       "claim_id": "passport-fee-5year",
       "field_path": "fee.minor_5year",
-      "claim_text": "복수여권(5년) 발급 수수료",
+      "claim_text": "복수여권 (5년) 발급 수수료",
       "claim_value": "44,000원",
       "confidence": "high",
       "status": "verified",
@@ -49,7 +49,7 @@
           "title": "정부24 여권 발급 민원안내",
           "url": "https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=12600000001",
           "observed_at": "2026-06-22",
-          "note": "수수료 항목: 복수(5년:44,000원)"
+          "note": "수수료 항목: 복수여권 (5년) 44,000원"
         }
       ],
       "verification_event": {
@@ -62,7 +62,7 @@
     {
       "claim_id": "passport-fee-single-electronic",
       "field_path": "fee.single_electronic",
-      "claim_text": "단수여권(전자여권) 발급 수수료",
+      "claim_text": "단수여권 (전자여권) 발급 수수료",
       "claim_value": "17,000원",
       "confidence": "high",
       "status": "verified",
@@ -73,7 +73,7 @@
           "title": "정부24 여권 발급 민원안내",
           "url": "https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=12600000001",
           "observed_at": "2026-06-22",
-          "note": "수수료 항목: 단수(전자여권:17,000원)"
+          "note": "수수료 항목: 단수여권 (전자여권) 17,000원"
         }
       ],
       "verification_event": {
@@ -86,7 +86,7 @@
     {
       "claim_id": "passport-fee-remaining-validity",
       "field_path": "fee.remaining_validity_reissue",
-      "claim_text": "잔여유효기간 부여 여권 재발급 수수료",
+      "claim_text": "잔여 유효기간 부여 여권 재발급 수수료",
       "claim_value": "27,000원",
       "confidence": "high",
       "status": "verified",
@@ -97,7 +97,7 @@
           "title": "정부24 여권 발급 민원안내",
           "url": "https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=12600000001",
           "observed_at": "2026-06-22",
-          "note": "수수료 항목: 잔여유효기간 재발급 27,000원"
+          "note": "수수료 항목: 잔여 유효기간 재발급 27,000원"
         }
       ],
       "verification_event": {

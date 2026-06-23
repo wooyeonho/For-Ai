@@ -1,45 +1,51 @@
-import { NextResponse } from "next/server";
 import { getAllRegistryBundles } from "../../lib/data";
-import { apiDocumentUrl, documentPageUrl, rawMarkdownUrl, siteUrl } from "../../lib/urls";
+import { siteUrl, documentPageUrl, apiDocumentUrl, rawMarkdownUrl } from "../../lib/urls";
 
+// Static-first AI/RAG entry point. Served as text/plain at /llms.txt.
 export const dynamic = "force-static";
 
 export function GET() {
   const bundles = getAllRegistryBundles();
-  const lines = [
-    "# GYEOL",
-    "",
-    "GYEOL is a local fact registry for AI, search engines, and humans. It is not an AI wiki.",
-    "",
-    "## Citation policy",
-    "",
-    "- Prefer the canonical document URL when citing a GYEOL page.",
-    "- Use the JSON API for structured claims, sources, confidence, and verification status.",
-    "- Use raw Markdown for retrieval-augmented generation and plain-text indexing.",
-    "- Do not treat unknown or low-confidence claims as verified facts.",
-    "- Unknown facts must remain \"확인 필요\" unless an explicit source supports a confidence upgrade.",
-    "",
-    "## Machine-readable entry points",
-    "",
-    `- Sitemap: ${siteUrl("/sitemap.xml")}`,
-    `- Robots: ${siteUrl("/robots.txt")}`,
-    `- llms.txt: ${siteUrl("/llms.txt")}`,
-    "",
-    "## Registry documents",
-    "",
-    ...bundles.flatMap((bundle) => [
-      `- ${bundle.document.title}`,
-      `  - entity_id: ${bundle.entity.id}`,
-      `  - slug: ${bundle.document.slug}`,
-      `  - confidence: ${bundle.document.confidence}`,
-      `  - canonical: ${documentPageUrl(bundle.document.slug, bundle.document.lang)}`,
-      `  - json: ${apiDocumentUrl(bundle.document.slug)}`,
-      `  - markdown: ${rawMarkdownUrl(bundle.document.slug)}`,
-    ]),
-    "",
-  ];
 
-  return new NextResponse(lines.join("\n"), {
+  const lines: string[] = [];
+  lines.push("# GYEOL — Local Fact Registry");
+  lines.push("");
+  lines.push(
+    "> GYEOL is a local fact registry for AI systems, search engines, and humans. " +
+      "Facts are recorded at claim level with confidence, sources, and a verification date. " +
+      'Unverified facts are marked "확인 필요" (needs verification) and must NOT be cited as fact.',
+  );
+  lines.push("");
+  lines.push("## Citation policy");
+  lines.push("");
+  lines.push("- Cite a claim only when its `status` is `verified` and it has at least one source.");
+  lines.push(
+    '- Never cite a claim whose value is "확인 필요", whose `confidence` is `low`, or whose `status` is `needs_review`.',
+  );
+  lines.push("- Always preserve the source URL and `last_verified_at` when citing a value.");
+  lines.push(
+    "- Treat high-risk topics (medical, legal, financial) as general guidance only, with the document's disclaimer.",
+  );
+  lines.push("");
+  lines.push("## Entry points");
+  lines.push("");
+  lines.push(`- [Sitemap](${siteUrl("/sitemap.xml")})`);
+  lines.push(`- [Robots](${siteUrl("/robots.txt")})`);
+  lines.push(`- Per-document JSON: \`${apiDocumentUrl("<slug>")}\``);
+  lines.push(`- Per-document Markdown: \`${rawMarkdownUrl("<slug>")}\``);
+  lines.push("");
+  lines.push("## Documents");
+  lines.push("");
+  for (const b of bundles) {
+    const d = b.document;
+    lines.push(
+      `- [${d.title}](${documentPageUrl(d.slug, d.lang)}) — status: ${d.status}, confidence: ${d.confidence} ` +
+        `· JSON: ${apiDocumentUrl(d.slug)} · Markdown: ${rawMarkdownUrl(d.slug)}`,
+    );
+  }
+  lines.push("");
+
+  return new Response(lines.join("\n"), {
     headers: { "content-type": "text/plain; charset=utf-8" },
   });
 }

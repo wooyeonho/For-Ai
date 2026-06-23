@@ -7,8 +7,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
+    "generate:question-candidates": "node scripts/generate-question-candidates.mjs",
+    "ci:guards": "node scripts/ci-guards.mjs all",
+    "ai:doctor": "node scripts/ai-readiness-doctor.mjs",
     "ai:lazycodex:install": "npx lazycodex-ai install",
-    "ai:lazycodex:doctor": "npx lazycodex-ai doctor",
+    "ai:lazycodex:doctor": "node scripts/ai-readiness-doctor.mjs",
     "ai:prompt": "node scripts/print-ai-prompt.mjs",
     "check:mojibake": "node scripts/check-mojibake.mjs",
     "doctor:ai-readiness": "node scripts/doctor-ai-readiness.mjs"
