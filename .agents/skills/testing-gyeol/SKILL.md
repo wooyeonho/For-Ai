@@ -97,4 +97,11 @@ Should return `available_providers` (4 items) and `supported_languages` (7 items
 - The site uses static generation (361 pages = 7 locales x ~49 docs). Build with `npm run build` to verify all pages generate.
 - Doctor score must stay 100/100: run `npm run ai:doctor` to verify.
 - CI guards: run `npm run ci:guards` to verify encoding/stale-API checks pass.
-- Arabic pages should eventually have `dir="rtl"` for proper RTL layout (not yet implemented at page level).
+- Arabic pages have `dir="rtl"` via `app/[locale]/layout.tsx` wrapper (`<div lang={locale} dir={dir}>`). Verify RTL text alignment visually.
+- Port 3000 may already be in use from a previous session. Use `fuser -k 3000/tcp` or run on a different port (`npx next dev -p 3001`).
+- Vercel preview returns RSC streaming payload — curl-based text verification is unreliable. Use browser-based testing instead.
+- The root `<html lang="ko">` is hardcoded and not locale-aware. This is a known pre-existing limitation — don't report it as a bug.
+- SiteFooter is a `"use client"` component that detects locale from `usePathname()`. It renders correct translations in SSR but verify in browser to confirm hydration works.
+- When testing i18n, verify both the DOM attributes (`lang`, `dir`) via console AND the visual rendering via screenshots. Console verification catches wrapper issues; visual verification catches CSS/layout issues.
+- Available seed slugs for testing: `myungdong-laluce-parking`, `passport-reissue-fee`, `ryu-hyun-jin-current-team`, `son-heung-min-current-team`, `bts-members-agency`.
+- Screen recording may fail on some VMs due to FFmpeg issues. Fall back to screenshot-based evidence if `recording_start` fails.
