@@ -183,8 +183,10 @@ function guardDiffSize() {
     (f) => CORE_PREFIXES.some((p) => f.startsWith(p)) || CORE_FILES.includes(f),
   );
 
-  const headMsg = git(["log", "-1", "--format=%B", "HEAD"]);
-  const overridden = headMsg.includes(LARGE_DIFF_OVERRIDE);
+  // In GitHub Actions PR context, HEAD is a merge commit whose message won't
+  // contain the override flag. Check all commits in the range instead.
+  const allMsgs = git(["log", "--format=%B", range]);
+  const overridden = allMsgs.includes(LARGE_DIFF_OVERRIDE);
 
   console.log(`diff-size guard: ${changedFiles.length} files changed in ${range}`);
 
