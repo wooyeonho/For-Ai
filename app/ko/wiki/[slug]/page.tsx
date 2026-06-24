@@ -28,7 +28,7 @@ export async function generateMetadata({
   const { slug } = await params;
   const bundle = await getMetadataBundle(slug);
   if (!bundle) return { title: "Document not found" };
-  return buildDocumentMetadata(bundle);
+  return buildDocumentMetadata(bundle, "ko");
 }
 
 export default async function WikiDocumentPage({

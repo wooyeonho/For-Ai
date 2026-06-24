@@ -1,4 +1,7 @@
 import { ConfidenceBadge } from "./ConfidenceBadge";
+import { CopyCitationButton } from "./CopyCitationButton";
+import { getTranslations } from "../../lib/i18n";
+import type { SupportedLocale } from "../../lib/i18n";
 import type { Confidence } from "../../lib/types";
 
 export function DirectAnswerBox({
@@ -7,27 +10,49 @@ export function DirectAnswerBox({
   lastVerifiedAt,
   sourceCount,
   canCite,
+  canonicalUrl,
+  docTitle,
+  locale,
 }: {
   answer: string;
   confidence: Confidence;
   lastVerifiedAt?: string | null;
   sourceCount?: number;
   canCite?: boolean;
+  canonicalUrl?: string;
+  docTitle?: string;
+  locale?: string;
 }) {
+  const lang = (locale ?? "ko") as SupportedLocale;
+  const t = getTranslations(lang);
+
+  const citationText = canCite && canonicalUrl && docTitle
+    ? `GYEOL Registry. "${docTitle}". Last verified: ${lastVerifiedAt ?? "unknown"}. ${canonicalUrl}`
+    : null;
+
   return (
     <section className="registry-panel direct-answer-box" aria-labelledby="direct-answer">
-      <h2 id="direct-answer">직접 답변</h2>
+      <h2 id="direct-answer">{t.claims.directAnswer}</h2>
       {canCite === true && (
-        <div className="can-cite-banner">✓ AI 인용 가능 — 출처와 검증일이 있는 claim</div>
+        <div className="can-cite-banner">
+          <span>{t.claims.canCite}</span>
+          {citationText && (
+            <CopyCitationButton
+              citationText={citationText}
+              labelCopy={t.claims.copyCitation}
+              labelCopied={t.claims.copied}
+            />
+          )}
+        </div>
       )}
       <p className="direct-answer-text">{answer}</p>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginTop: 8 }}>
-        <ConfidenceBadge level={confidence} />
+        <ConfidenceBadge level={confidence} locale={locale} />
         {sourceCount != null && sourceCount > 0 && (
-          <span className="badge">{sourceCount}개 출처</span>
+          <span className="badge">{sourceCount} {t.claims.sources}</span>
         )}
         <span className="meta-label" style={{ marginLeft: "auto" }}>
-          최종 검증: {lastVerifiedAt ?? "확인 필요"}
+          {t.claims.lastVerified}: {lastVerifiedAt ?? t.claims.needsReview}
         </span>
       </div>
     </section>

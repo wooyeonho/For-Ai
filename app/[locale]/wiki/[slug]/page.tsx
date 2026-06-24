@@ -34,7 +34,7 @@ export async function generateMetadata({
   if (!isValidLocale(locale)) return { title: "Not found" };
   const bundle = await getMetadataBundle(slug);
   if (!bundle) return { title: "Document not found" };
-  return buildDocumentMetadata(bundle);
+  return buildDocumentMetadata(bundle, locale);
 }
 
 export default async function WikiDocumentPage({
@@ -97,6 +97,9 @@ export default async function WikiDocumentPage({
         lastVerifiedAt={document.last_verified_at ?? null}
         sourceCount={totalSources}
         canCite={citationStatus.isVerifiedDocument}
+        canonicalUrl={`https://gyeol.com/${locale}/wiki/${document.slug}`}
+        docTitle={document.title}
+        locale={locale}
       />
 
       {/* Claims — uses ClaimCard internally */}

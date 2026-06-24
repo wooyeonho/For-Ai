@@ -312,18 +312,50 @@ export async function POST(request: Request) {
   let saved: unknown[] = [];
   let saveError: string | null = null;
   let saveErrorDetails: Record<string, unknown> | null = null;
+  let skippedDuplicates = 0;
   const client = supabaseAdmin();
 
   if (saveToDb && client) {
-    // Strip non-DB fields before insert; keep only schema-compatible columns
-    const dbRows = allCandidates.map((c) => {
+    // Deduplicate: skip slugs already in topic_candidates
+    const candidateSlugs = allCandidates.map((c) => String(c.slug ?? "")).filter(Boolean);
+    const { data: existingRows } = await client
+      .from("topic_candidates")
+      .select("slug")
+      .in("slug", candidateSlugs);
+    const existingSlugs = new Set(existingRows?.map((r) => r.slug) ?? []);
+    const deduped = allCandidates.filter((c) => !existingSlugs.has(String(c.slug ?? "")));
+    skippedDuplicates = allCandidates.length - deduped.length;
+
+    // Strip non-DB fields; keep only schema-compatible columns including consensus
+    const dbRows = deduped.map((c) => {
       const row = { ...c } as Record<string, unknown>;
-      // Remove consensus metadata that isn't in the DB table columns
       delete row.merged_source_hints;
       delete row.merged_claims;
       delete row.total_providers;
+      delete row.consensus_sources;
+      delete row.agreed_providers;
       return row;
     });
+
+    if (dbRows.length === 0) {
+      saved = [];
+      await logAdminAuditEvent(client, request, "admin.generate_candidates", {
+        topic, lang, saved_count: 0, skipped_duplicates: skippedDuplicates,
+        providers_used: Object.keys(providerResults), cross_verify: crossVerify,
+      });
+      return NextResponse.json({
+        topic, lang,
+        providers_used: Object.keys(providerResults),
+        available_providers: available.map((p) => ({ key: p, label: AI_PROVIDERS[p].label })),
+        cross_verify: crossVerify,
+        provider_results: providerResults,
+        total_generated: allCandidates.length,
+        saved: 0,
+        skipped_duplicates: skippedDuplicates,
+        save_status: "skipped_all_duplicates",
+        preview: [],
+      });
+    }
 
     const { data, error } = await client
       .from("topic_candidates")
@@ -350,6 +382,7 @@ export async function POST(request: Request) {
         topic,
         lang,
         saved_count: saved.length,
+        skipped_duplicates: skippedDuplicates,
         providers_used: Object.keys(providerResults),
         cross_verify: crossVerify,
       });
@@ -371,6 +404,7 @@ export async function POST(request: Request) {
     ...(consensusSummary ? { consensus_summary: consensusSummary } : {}),
     total_generated: allCandidates.length,
     saved: saved.length,
+    ...(saveToDb ? { skipped_duplicates: skippedDuplicates } : {}),
     save_status: saveToDb
       ? (saveError ? "failed" : "saved")
       : "skipped",

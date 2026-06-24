@@ -7,7 +7,14 @@ interface Candidate {
   claims:{question:string;placeholder_value:string}[];
   source_hints:{url:string;title:string}[];
   status:string;source:string;generation_model?:string;created_at:string;
+  consensus_score?:number;consensus_level?:string;
 }
+const CONSENSUS_STYLE:Record<string,{bg:string;color:string}> = {
+  unanimous:{bg:"#dcfce7",color:"#15803d"},
+  majority:{bg:"#dbeafe",color:"#1d4ed8"},
+  minority:{bg:"#fef9c3",color:"#a16207"},
+  single:{bg:"#f3f4f6",color:"#6b7280"},
+};
 const SC:Record<string,string>={new:"background:#dbeafe;color:#1d4ed8",reviewing:"background:#fef9c3;color:#a16207",approved:"background:#dcfce7;color:#15803d",rejected:"background:#fee2e2;color:#b91c1c",promoted:"background:#f3e8ff;color:#7e22ce"};
 export default function CandidatesPage(){
   const [items,setItems]=useState<Candidate[]>([]);
@@ -85,6 +92,12 @@ export default function CandidatesPage(){
                   {c.source_hints?.length>0
                     ? <span style={{fontSize:11,padding:"2px 8px",borderRadius:12,fontWeight:600,background:"#ecfdf5",color:"#047857"}}>source hint 있음</span>
                     : <span style={{fontSize:11,padding:"2px 8px",borderRadius:12,fontWeight:700,background:"#fef3c7",color:"#92400e"}}>⚠ source hint 없음</span>}
+                  {c.consensus_level&&(
+                    <span style={{fontSize:11,padding:"2px 8px",borderRadius:12,fontWeight:600,...(CONSENSUS_STYLE[c.consensus_level]??{bg:"#f3f4f6",color:"#6b7280"}),background:(CONSENSUS_STYLE[c.consensus_level]?.bg??"#f3f4f6")}}>
+                      {c.consensus_level}{c.consensus_score!=null?` ${Math.round(c.consensus_score*100)}%`:""}
+                    </span>
+                  )}
+                  {(()=>{const h=(Date.now()-new Date(c.created_at).getTime())/3_600_000;return h>24?<span style={{fontSize:11,padding:"2px 8px",borderRadius:12,fontWeight:700,background:"#fee2e2",color:"#b91c1c"}}>⏰ {Math.floor(h)}h 경과</span>:h>12?<span style={{fontSize:11,padding:"2px 8px",borderRadius:12,fontWeight:600,background:"#fff7df",color:"#7a4c00"}}>⏰ {Math.floor(h)}h 경과</span>:null})()}
                 </div>
                 <div style={{fontWeight:600,fontSize:15,overflow:"hidden",textOverflow:"ellipsis",whiteSpace:"nowrap"}}>{c.title}</div>
                 {c.why_people_ask_ai&&<div style={{fontSize:12,color:"#6b7280",marginTop:3}}>{c.why_people_ask_ai}</div>}

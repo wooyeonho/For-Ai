@@ -2,10 +2,14 @@ import { getCanonicalDirectAnswer, getClaimCitationStatus, getDocumentCitationSt
 import type { ClaimSource, RegistryDocumentBundle } from "./types";
 import { apiDocumentUrl, documentPageUrl, rawMarkdownUrl } from "./urls";
 
+export type RenderedClaim = RegistryDocumentBundle["claims"][number] & {
+  citation_ready: boolean;
+};
+
 export type RenderedDocumentJson = {
   entity: RegistryDocumentBundle["entity"];
   document: RegistryDocumentBundle["document"];
-  claims: RegistryDocumentBundle["claims"];
+  claims: RenderedClaim[];
   listing: RegistryDocumentBundle["listing"];
   citation_guidance: {
     can_cite: boolean;
@@ -67,7 +71,7 @@ export function renderDocumentJson(bundle: RegistryDocumentBundle): RenderedDocu
   return {
     entity: bundle.entity,
     document,
-    claims: bundle.claims,
+    claims: claimStatuses.map(({ c, cs }) => ({ ...c, citation_ready: cs.isCitationReady })),
     listing: bundle.listing,
     citation_guidance: {
       can_cite: citationStatus.isVerifiedDocument,
