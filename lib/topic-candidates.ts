@@ -130,6 +130,61 @@ export const CLAIM_TEMPLATES: Partial<Record<string, ClaimTemplateStub[]>> = {
     { field_path: "fee.adult_entry", question: "성인 입장료는?",  required_source_type: "official" },
     { field_path: "info.address",    question: "주소는?",         required_source_type: "official" },
   ],
+  person_public: [
+    { field_path: "bio.current_title",   question: "현재 직함/직책은?",   required_source_type: "official" },
+    { field_path: "bio.organization",    question: "소속 기관은?",         required_source_type: "official" },
+    { field_path: "career.term_start",   question: "임기/취임 시작일은?",  required_source_type: "official" },
+    { field_path: "career.term_end",     question: "임기 종료 예정일은?",  required_source_type: "official" },
+    { field_path: "bio.nationality",     question: "국적은?",              required_source_type: "official" },
+  ],
+  law_case: [
+    { field_path: "case.case_number",    question: "사건번호는?",           required_source_type: "law" },
+    { field_path: "case.court",          question: "판결 법원은?",          required_source_type: "law" },
+    { field_path: "case.judgment_date",  question: "선고일은?",             required_source_type: "law" },
+    { field_path: "case.ruling",         question: "판결 결과(주문)는?",    required_source_type: "law" },
+    { field_path: "case.summary",        question: "판결 요지는?",          required_source_type: "document" },
+  ],
+  product_pharma: [
+    { field_path: "drug.active_ingredient",  question: "주성분(성분명)은?",       required_source_type: "official" },
+    { field_path: "drug.dosage_adult",       question: "성인 1회 복용량은?",      required_source_type: "official" },
+    { field_path: "drug.administration",     question: "복용/투여 방법은?",       required_source_type: "official" },
+    { field_path: "drug.contraindications",  question: "복용 금기 사항은?",       required_source_type: "official" },
+    { field_path: "drug.approval_number",    question: "식약처 허가번호는?",      required_source_type: "official" },
+    { field_path: "drug.side_effects",       question: "주요 부작용은?",          required_source_type: "official" },
+  ],
+  product_tech: [
+    { field_path: "spec.model_name",      question: "정식 모델명은?",       required_source_type: "official" },
+    { field_path: "spec.release_date",    question: "출시일은?",            required_source_type: "official" },
+    { field_path: "spec.key_spec",        question: "주요 사양은?",         required_source_type: "official" },
+    { field_path: "product.retail_price", question: "출시 정가는?",         required_source_type: "official" },
+    { field_path: "product.warranty",     question: "제조사 보증 기간은?",  required_source_type: "official" },
+  ],
+  place_country: [
+    { field_path: "geo.capital",          question: "수도는?",                      required_source_type: "official" },
+    { field_path: "geo.currency",         question: "공식 통화(코드)는?",           required_source_type: "official" },
+    { field_path: "geo.official_language",question: "공식 언어는?",                 required_source_type: "official" },
+    { field_path: "visa.korea_required",  question: "한국인 입국 시 비자 필요 여부?", required_source_type: "official" },
+    { field_path: "geo.population",       question: "최근 인구는?",                 required_source_type: "official" },
+  ],
+  sports_record: [
+    { field_path: "record.holder",        question: "기록 보유자는?",               required_source_type: "official" },
+    { field_path: "record.value",         question: "기록 수치/내용은?",            required_source_type: "official" },
+    { field_path: "record.date_set",      question: "기록 달성일은?",               required_source_type: "official" },
+    { field_path: "record.competition",   question: "기록 달성 대회/경기는?",       required_source_type: "official" },
+  ],
+  entertainment_work: [
+    { field_path: "work.director",        question: "감독/연출자는?",       required_source_type: "official" },
+    { field_path: "work.release_date",    question: "개봉/공개일은?",       required_source_type: "official" },
+    { field_path: "work.main_cast",       question: "주연 출연진은?",       required_source_type: "official" },
+    { field_path: "work.platform",        question: "방영/스트리밍 플랫폼은?", required_source_type: "platform" },
+    { field_path: "work.genre",           question: "장르는?",              required_source_type: "official" },
+  ],
+  science_ref: [
+    { field_path: "constant.symbol",      question: "표준 기호(표기)는?",   required_source_type: "document" },
+    { field_path: "constant.value",       question: "값(수치)은?",          required_source_type: "document" },
+    { field_path: "constant.unit",        question: "단위는?",              required_source_type: "document" },
+    { field_path: "constant.definition",  question: "정의는?",              required_source_type: "document" },
+  ],
 };
 
 export const RISK_DISCLAIMER: Record<RiskTier, string|null> = {
