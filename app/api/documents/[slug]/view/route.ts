@@ -9,11 +9,17 @@ export async function POST(
   { params }: { params: Promise<{ slug: string }> }
 ) {
   const { slug } = await params;
-  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-    return NextResponse.json({ error: "DB not configured" }, { status: 500 });
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? SUPABASE_ANON_KEY;
+  if (!url || !key) {
+    const missing = [
+      !process.env.NEXT_PUBLIC_SUPABASE_URL && "NEXT_PUBLIC_SUPABASE_URL",
+      !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY && "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+    ].filter(Boolean);
+    return NextResponse.json({ error: "DB not configured", missing }, { status: 500 });
   }
 
-  const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const sb = createClient(url, key);
 
   const { data: doc } = await sb
     .from("documents")

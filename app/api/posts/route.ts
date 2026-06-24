@@ -7,13 +7,21 @@ const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
 const CONTRIBUTOR_SALT = process.env.CONTRIBUTOR_SALT ?? "gyeol-default-salt";
 
 function supabaseAnon() {
-  if (!SUPABASE_URL || !SUPABASE_ANON_KEY) return null;
-  return createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? SUPABASE_ANON_KEY;
+  if (!url || !key) return null;
+  return createClient(url, key);
 }
 
 export async function GET(request: Request) {
   const sb = supabaseAnon();
-  if (!sb) return NextResponse.json({ error: "DB not configured" }, { status: 500 });
+  if (!sb) {
+    const missing = [
+      !process.env.NEXT_PUBLIC_SUPABASE_URL && "NEXT_PUBLIC_SUPABASE_URL",
+      !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY && "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+    ].filter(Boolean);
+    return NextResponse.json({ error: "DB not configured", missing }, { status: 500 });
+  }
 
   const url = new URL(request.url);
   const documentId = url.searchParams.get("document_id");
@@ -41,7 +49,13 @@ export async function GET(request: Request) {
 
 export async function POST(request: Request) {
   const sb = supabaseAnon();
-  if (!sb) return NextResponse.json({ error: "DB not configured" }, { status: 500 });
+  if (!sb) {
+    const missing = [
+      !process.env.NEXT_PUBLIC_SUPABASE_URL && "NEXT_PUBLIC_SUPABASE_URL",
+      !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY && "NEXT_PUBLIC_SUPABASE_ANON_KEY",
+    ].filter(Boolean);
+    return NextResponse.json({ error: "DB not configured", missing }, { status: 500 });
+  }
 
   let body: Record<string, unknown>;
   try {
