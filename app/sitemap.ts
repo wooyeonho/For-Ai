@@ -1,13 +1,55 @@
 import type { MetadataRoute } from "next";
 import { getAllRegistryBundles } from "../lib/data";
+import { getPublishedVerifiedDocumentIndexFromSupabase } from "../lib/supabase-index";
 import { siteUrl, documentPageUrl } from "../lib/urls";
 
-export default function sitemap(): MetadataRoute.Sitemap {
-  const bundles = getAllRegistryBundles();
+type DocumentSitemapEntry = {
+  slug: string;
+  lang: string;
+  lastModified: string;
+};
 
-  const documentPages = bundles.map((bundle) => ({
-    url: documentPageUrl(bundle.document.slug, bundle.document.lang),
+function getStaticDocumentEntries(): DocumentSitemapEntry[] {
+  return getAllRegistryBundles().map((bundle) => ({
+    slug: bundle.document.slug,
+    lang: bundle.document.lang,
     lastModified: bundle.document.updated_at ?? new Date().toISOString(),
+  }));
+}
+
+async function getSupabaseDocumentEntries(): Promise<DocumentSitemapEntry[]> {
+  const documents = await getPublishedVerifiedDocumentIndexFromSupabase();
+
+  return documents.map((document) => ({
+    slug: document.slug,
+    lang: document.lang,
+    lastModified: document.updated_at ?? document.last_verified_at ?? new Date().toISOString(),
+  }));
+}
+
+function mergeDocumentEntries(entries: DocumentSitemapEntry[]): DocumentSitemapEntry[] {
+  const byPath = new Map<string, DocumentSitemapEntry>();
+
+  for (const entry of entries) {
+    byPath.set(`${entry.lang}/${entry.slug}`, entry);
+  }
+
+  return Array.from(byPath.values());
+}
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const staticDocumentEntries = getStaticDocumentEntries();
+  let documentEntries = staticDocumentEntries;
+
+  try {
+    documentEntries = mergeDocumentEntries([...staticDocumentEntries, ...(await getSupabaseDocumentEntries())]);
+  } catch (error) {
+    console.warn("Failed to load Supabase document index for sitemap; falling back to static sitemap.", error);
+  }
+
+  const documentPages = documentEntries.map((document) => ({
+    url: documentPageUrl(document.slug, document.lang),
+    lastModified: document.lastModified,
     changeFrequency: "weekly" as const,
     priority: 0.8,
   }));
