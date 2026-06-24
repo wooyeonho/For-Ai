@@ -14,6 +14,14 @@ interface DocItem {
   verification: "verified" | "candidate";
 }
 
+interface PopularDoc {
+  document_id: string;
+  view_count: number;
+  ai_citation_count: number;
+  slug?: string;
+  title?: string;
+}
+
 export const metadata: Metadata = {
   title: { absolute: "GYEOL — 로컬 팩트 레지스트리" },
   description:
@@ -98,11 +106,46 @@ async function getAllDocs(): Promise<DocItem[]> {
   return [...sbDocs, ...staticDocs];
 }
 
+async function getPopularDocs(): Promise<PopularDoc[]> {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!url || !key) return [];
+  try {
+    const sb = createClient(url, key);
+    const { data: stats } = await sb
+      .from("document_stats")
+      .select("document_id, view_count, ai_citation_count")
+      .order("ai_citation_count", { ascending: false })
+      .limit(10);
+    if (!stats || stats.length === 0) return [];
+
+    const docIds = stats.map((s: { document_id: string }) => s.document_id);
+    const { data: docs } = await sb
+      .from("documents")
+      .select("id, slug, title")
+      .in("id", docIds);
+
+    const docMap = new Map((docs ?? []).map((d: { id: string; slug: string; title: string }) => [d.id, d]));
+    return stats.map((s: { document_id: string; view_count: number; ai_citation_count: number }) => {
+      const doc = docMap.get(s.document_id);
+      return {
+        document_id: s.document_id,
+        view_count: s.view_count,
+        ai_citation_count: s.ai_citation_count,
+        slug: doc?.slug,
+        title: doc?.title,
+      };
+    }).filter((d: PopularDoc) => d.slug);
+  } catch {
+    return [];
+  }
+}
+
 export const revalidate = 60;
 
 export default async function HomePage() {
   const bundles = getAllRegistryBundles();
-  const docs = await getAllDocs();
+  const [docs, popularDocs] = await Promise.all([getAllDocs(), getPopularDocs()]);
 
   const claims = bundles.flatMap((b) => b.claims);
   const totalClaims = claims.length;
@@ -145,6 +188,9 @@ export default async function HomePage() {
           </Link>
           <Link href="/suggest-topic" className="btn btn-secondary">
             + 토픽 제안하기
+          </Link>
+          <Link href="/community" className="btn btn-secondary">
+            커뮤니티
           </Link>
         </div>
       </section>
@@ -289,6 +335,29 @@ export default async function HomePage() {
           </li>
         </ol>
       </section>
+
+      {/* Popular — by AI citation count and views */}
+      {popularDocs.length > 0 && (
+        <section className="section">
+          <p className="section-eyebrow">인기 문서</p>
+          <h2 className="section-title">AI 인용 · 조회수 인기순</h2>
+          <ul className="registry-index">
+            {popularDocs.map((d, i) => (
+              <li key={d.document_id} className="registry-row">
+                <div className="registry-row-main">
+                  <Link href={`/ko/wiki/${d.slug}`} className="registry-row-title">
+                    {i + 1}. {d.title}
+                  </Link>
+                </div>
+                <div className="registry-row-meta">
+                  <span className="badge" title="AI 인용">✦ {d.ai_citation_count}</span>
+                  <span className="badge" title="조회수">👁 {d.view_count}</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {/* Search */}
       <section className="section">

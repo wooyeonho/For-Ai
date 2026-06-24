@@ -152,3 +152,27 @@ export type RegistryDocumentBundle = {
   claims: ClaimWithSources[];
   listing: Listing | null;
 };
+
+export type CommunityPostAuthorType = "user" | "ai" | "admin";
+export type CommunityPostStatus = "published" | "hidden" | "spam" | "deleted";
+
+export type CommunityPost = {
+  id: string;
+  document_id: string | null;
+  author_type: CommunityPostAuthorType;
+  author_name: string;
+  content: string;
+  contributor_hash: string | null;
+  status: CommunityPostStatus;
+  created_at: string;
+  updated_at: string;
+  document_title?: string;
+  document_slug?: string;
+};
+
+export type DocumentStats = {
+  document_id: string;
+  view_count: number;
+  ai_citation_count: number;
+  updated_at: string;
+};

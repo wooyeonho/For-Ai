@@ -93,6 +93,7 @@ export function middleware(request: NextRequest) {
     pathname.startsWith("/report/") ||
     pathname.startsWith("/hallucination/") ||
     pathname.startsWith("/suggest-topic") ||
+    pathname.startsWith("/community") ||
     pathname.startsWith("/llms.txt") ||
     pathname.includes(".") // static files
   ) {

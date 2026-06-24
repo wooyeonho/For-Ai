@@ -10,6 +10,9 @@ import { getRegistryBundleFromSupabase } from "../../../../lib/supabase-document
 import { getCanonicalDirectAnswer, getDocumentCitationStatus } from "../../../../lib/citation-status";
 import { DirectAnswerBox } from "../../../components/DirectAnswerBox";
 import { ClaimTable } from "../../../components/ClaimTable";
+import { ViewTracker } from "../../../components/ViewTracker";
+import { DocumentStatsBar } from "../../../components/DocumentStatsBar";
+import { WikiPostSection } from "../../../components/WikiPostSection";
 
 export const revalidate = 60;
 
@@ -64,6 +67,7 @@ export default async function WikiDocumentPage({
 
   return (
     <article>
+      <ViewTracker slug={document.slug} />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
@@ -82,6 +86,7 @@ export default async function WikiDocumentPage({
           <span className="badge badge-low">{document.confidence}</span>
           {document.category && <span className="badge">{document.category}</span>}
         </div>
+        <DocumentStatsBar documentId={document.id} />
       </header>
 
       {/* Why people ask AI this question */}
@@ -137,6 +142,9 @@ export default async function WikiDocumentPage({
           <li><Link href={`/diagnostics/${document.slug}`}>{t.wiki.diagnostics}</Link></li>
         </ul>
       </nav>
+
+      {/* Community posts */}
+      <WikiPostSection documentId={document.id} />
 
       {/* Technical metadata — collapsed by default */}
       <details className="technical-meta registry-panel">
