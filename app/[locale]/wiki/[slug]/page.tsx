@@ -104,7 +104,7 @@ export default async function WikiDocumentPage({
         lastVerifiedAt={document.last_verified_at ?? null}
         sourceCount={totalSources}
         canCite={citationStatus.isVerifiedDocument}
-        canonicalUrl={`https://gyeol.com/${locale}/wiki/${document.slug}`}
+        canonicalUrl={`https://for-ai-e4mm.vercel.app/${locale}/wiki/${document.slug}`}
         docTitle={document.title}
         locale={locale}
       />

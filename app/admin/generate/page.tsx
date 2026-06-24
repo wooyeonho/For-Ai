@@ -87,7 +87,7 @@ export default function AdminGeneratePage() {
   const [adminSecret, setAdminSecret] = useState("");
 
   useEffect(() => {
-    const saved = localStorage.getItem("gyeol_admin_secret");
+    const saved = localStorage.getItem("forai_admin_secret");
     if (saved) setAdminSecret(saved);
 
     async function loadProviders() {
@@ -111,7 +111,7 @@ export default function AdminGeneratePage() {
 
   function saveAdminSecret(value: string) {
     setAdminSecret(value);
-    localStorage.setItem("gyeol_admin_secret", value);
+    localStorage.setItem("forai_admin_secret", value);
   }
 
   function toggleProvider(key: string) {
@@ -148,7 +148,7 @@ export default function AdminGeneratePage() {
         setError(msg);
         if (res.status === 401) {
           setAdminSecret("");
-          localStorage.removeItem("gyeol_admin_secret");
+          localStorage.removeItem("forai_admin_secret");
         }
       } else {
         setResult(data);
@@ -188,7 +188,7 @@ export default function AdminGeneratePage() {
             />
             {adminSecret && (
               <button
-                onClick={() => { setAdminSecret(""); localStorage.removeItem("gyeol_admin_secret"); }}
+                onClick={() => { setAdminSecret(""); localStorage.removeItem("forai_admin_secret"); }}
                 style={{ padding: "8px 12px", border: "1px solid #fca5a5", borderRadius: 6, background: "#fff", color: "#dc2626", fontSize: 12, cursor: "pointer" }}
               >
                 초기화

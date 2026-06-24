@@ -1,5 +1,5 @@
 // lib/i18n/locales.ts
-// Supported locales and configuration for GYEOL global fact registry
+// Supported locales and configuration for For-Ai global fact registry
 
 export const SUPPORTED_LOCALES = ["ko", "en", "hi", "ar", "es", "ja", "zh"] as const;
 export type SupportedLocale = (typeof SUPPORTED_LOCALES)[number];

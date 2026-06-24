@@ -36,7 +36,7 @@ function toRegistryBundle(file: VerifiedClaimFile): RegistryDocumentBundle {
     status: "verified" as const,
     confidence: "high" as const,
     last_verified_at: file.last_verified_at,
-    license_code: "gyeol-data-license-v0.1",
+    license_code: "forai-data-license-v0.1",
     data: {
       direct_answer: file.claims[0]?.claim_value ?? "확인 필요",
       locale_path: `/ko/wiki/${file.slug}`,
@@ -45,7 +45,7 @@ function toRegistryBundle(file: VerifiedClaimFile): RegistryDocumentBundle {
         api_url: `/api/documents/${file.slug}`,
         raw_markdown_url: `/raw/${file.slug}.md`,
       },
-      license_notice: "GYEOL Data License v0.1 placeholder.",
+      license_notice: "For-Ai Data License v0.1 placeholder.",
       risk_tier: file.risk_tier,
       update_frequency: file.update_frequency,
       disclaimer_type: file.disclaimer_type,

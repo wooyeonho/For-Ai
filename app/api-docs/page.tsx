@@ -2,15 +2,15 @@ import Link from "next/link";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "API Documentation — GYEOL",
-  description: "GYEOL Registry public API reference. Machine-readable fact data for AI, search engines, and developers.",
+  title: "API Documentation — For-Ai",
+  description: "For-Ai Registry public API reference. Machine-readable fact data for AI, search engines, and developers.",
 };
 
 export default function ApiDocsPage() {
   return (
     <article>
       <header className="registry-panel">
-        <p className="eyebrow">GYEOL · Developers</p>
+        <p className="eyebrow">For-Ai · Developers</p>
         <h1>API Documentation</h1>
         <p style={{ color: "var(--muted)", fontSize: "1rem", lineHeight: 1.7 }}>
           Machine-readable fact data for AI systems, search engines, and developers.
@@ -88,7 +88,7 @@ export default function ApiDocsPage() {
   }
 }`}</pre>
             <p style={{ fontSize: "0.85rem", color: "var(--muted)", marginTop: 8 }}>
-              Response header <code>X-GYEOL-Can-Cite: true|false</code> — machine-readable citation safety flag.
+              Response header <code>X-For-Ai-Can-Cite: true|false</code> — machine-readable citation safety flag.
               Cached for 60 s (<code>Cache-Control: public, s-maxage=60, stale-while-revalidate=300</code>).
             </p>
           </div>
@@ -119,13 +119,13 @@ export default function ApiDocsPage() {
 
       {/* Citation guidance */}
       <section className="registry-panel" aria-labelledby="citation-guide">
-        <h2 id="citation-guide">How to cite GYEOL in AI systems</h2>
+        <h2 id="citation-guide">How to cite For-Ai in AI systems</h2>
         <p style={{ fontSize: "0.9rem", color: "var(--muted)", lineHeight: 1.7 }}>
           Check <code>citation_guidance.can_cite === true</code> before using any value.
           Never cite a document where <code>can_cite</code> is <code>false</code>.
         </p>
         <pre style={{ background: "var(--soft)", borderRadius: 6, padding: "10px 14px", fontSize: "0.8rem", overflowX: "auto" }}>{`// Pseudocode for AI citation
-const res = await fetch("https://gyeol.com/api/documents/your-slug");
+const res = await fetch("https://for-ai-e4mm.vercel.app/api/documents/your-slug");
 const data = await res.json();
 
 if (data.citation_guidance.can_cite) {
@@ -136,7 +136,7 @@ if (data.citation_guidance.can_cite) {
   return \`Source not citation-ready: \${data.citation_guidance.do_not_cite_reason}\`;
 }`}</pre>
         <p style={{ fontSize: "0.85rem", color: "var(--muted)", marginTop: 12 }}>
-          You can also check the response header <code>X-GYEOL-Can-Cite</code> without
+          You can also check the response header <code>X-For-Ai-Can-Cite</code> without
           parsing the body — useful for HEAD requests or middleware.
         </p>
       </section>
@@ -144,11 +144,11 @@ if (data.citation_guidance.can_cite) {
       {/* BibTeX */}
       <section className="registry-panel" aria-labelledby="bibtex">
         <h2 id="bibtex">BibTeX format</h2>
-        <pre style={{ background: "var(--soft)", borderRadius: 6, padding: "10px 14px", fontSize: "0.8rem", overflowX: "auto" }}>{`@misc{gyeol2026,
-  author       = {{GYEOL Registry}},
+        <pre style={{ background: "var(--soft)", borderRadius: 6, padding: "10px 14px", fontSize: "0.8rem", overflowX: "auto" }}>{`@misc{forai2026,
+  author       = {{For-Ai Registry}},
   title        = {Document Title},
   year         = {2026},
-  url          = {https://gyeol.com/ko/wiki/your-slug},
+  url          = {https://for-ai-e4mm.vercel.app/ko/wiki/your-slug},
   note         = {Last verified: 2026-06-24. License: CC-BY-4.0}
 }`}</pre>
       </section>
@@ -159,7 +159,7 @@ if (data.citation_guidance.can_cite) {
         <p style={{ fontSize: "0.9rem", color: "var(--muted)", lineHeight: 1.7 }}>
           Every wiki page embeds a JSON-LD <code>ClaimReview</code> + <code>Dataset</code> schema
           readable by Google, Bing, and other fact-check crawlers. Use the structured data to
-          surface GYEOL facts in search rich snippets.
+          surface For-Ai facts in search rich snippets.
         </p>
       </section>
 

@@ -11,7 +11,7 @@ export function RegistryHeader({
 }) {
   return (
     <header className="registry-panel registry-header">
-      <p className="eyebrow">GYEOL Claim Registry</p>
+      <p className="eyebrow">Claim Registry</p>
       <h1>{document.title}</h1>
 
       <div className="header-badges">

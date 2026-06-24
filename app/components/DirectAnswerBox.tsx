@@ -27,7 +27,7 @@ export function DirectAnswerBox({
   const t = getTranslations(lang);
 
   const citationText = canCite && canonicalUrl && docTitle
-    ? `GYEOL Registry. "${docTitle}". Last verified: ${lastVerifiedAt ?? "unknown"}. ${canonicalUrl}`
+    ? `For-Ai Registry. "${docTitle}". Last verified: ${lastVerifiedAt ?? "unknown"}. ${canonicalUrl}`
     : null;
 
   return (

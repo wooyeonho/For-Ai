@@ -101,7 +101,7 @@ export function renderDocumentMarkdown(bundle: RegistryDocumentBundle): string {
   const licenseNotice = getStringDataValue(
     document.data,
     "license_notice",
-    "GYEOL Data License v0.1 placeholder.",
+    "For-Ai Data License v0.1 placeholder.",
   );
   const claimsMarkdown = claims
     .map((claim) => {

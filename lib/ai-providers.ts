@@ -1,5 +1,5 @@
 // lib/ai-providers.ts
-// Multi-AI provider abstraction for GYEOL fact registry
+// Multi-AI provider abstraction for For-Ai fact registry
 // Supports: Perplexity, Gemini, GPT, Grok
 
 export type AIProviderKey = "perplexity" | "gemini" | "gpt" | "grok";

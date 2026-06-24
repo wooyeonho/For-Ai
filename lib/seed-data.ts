@@ -54,13 +54,13 @@ function makeDoc(id: string, entity: Entity, slug: string, title: string,
   return {
     id, entity_id: entity.id, slug, lang: "ko", title, category, template,
     status: "ai_draft", confidence: "low", last_verified_at: null,
-    license_code: "gyeol-data-license-v0.1",
+    license_code: "forai-data-license-v0.1",
     data: {
       direct_answer: "확인 필요",
       locale_path: `/ko/wiki/${slug}`,
       canonical_path: `/ko/wiki/${slug}`,
       machine_readable: { api_url: `/api/documents/${slug}`, raw_markdown_url: `/raw/${slug}.md` },
-      license_notice: "GYEOL Data License v0.1 placeholder.",
+      license_notice: "For-Ai Data License v0.1 placeholder.",
     },
     created_at: null, updated_at: null,
   };

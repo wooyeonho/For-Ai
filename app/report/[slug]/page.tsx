@@ -5,7 +5,7 @@ import { createReportSubmissionStub } from "../../../lib/submission-stubs";
 
 export const metadata: Metadata = {
   title: "정정 제보",
-  description: "GYEOL 레지스트리 문서의 claim에 대한 정정을 제보합니다.",
+  description: "레지스트리 문서의 claim에 대한 정정을 제보합니다.",
 };
 
 export default async function ReportPage({

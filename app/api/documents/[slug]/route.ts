@@ -15,7 +15,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ slu
   return NextResponse.json(rendered, {
     headers: {
       "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
-      "X-GYEOL-Can-Cite": rendered.citation_guidance.can_cite ? "true" : "false",
+      "X-ForAi-Can-Cite": rendered.citation_guidance.can_cite ? "true" : "false",
     },
   });
 }

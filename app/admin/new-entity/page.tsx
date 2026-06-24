@@ -51,7 +51,7 @@ export default function NewEntityPage() {
   return (
     <article>
       <header className="registry-panel">
-        <p className="eyebrow">GYEOL · Admin</p>
+        <p className="eyebrow">For-Ai · Admin</p>
         <h1>새 Entity 생성</h1>
         <p>Supabase <code>entities</code> 테이블에 직접 저장합니다. Entity는 문서(Document)의 주체입니다.</p>
       </header>

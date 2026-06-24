@@ -3,8 +3,8 @@ import { createClient } from "@supabase/supabase-js";
 import CommunityClient from "./CommunityClient";
 
 export const metadata: Metadata = {
-  title: "커뮤니티 — GYEOL",
-  description: "사용자와 AI가 함께 글을 남기는 GYEOL 커뮤니티",
+  title: "커뮤니티",
+  description: "사용자와 AI가 함께 글을 남기는 커뮤니티",
 };
 
 export const revalidate = 60;

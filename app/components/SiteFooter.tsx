@@ -14,7 +14,7 @@ export function SiteFooter() {
     <footer className="site-footer">
       <div className="site-footer-inner">
         <div className="footer-brand">
-          <span className="brand-mark">GYEOL</span>
+          <span className="brand-mark">For-Ai</span>
           <p className="footer-tagline">
             {t.footer.tagline}
           </p>
@@ -39,7 +39,7 @@ export function SiteFooter() {
         </div>
       </div>
       <div className="site-footer-base">
-        <span>&copy; {new Date().getFullYear()} GYEOL</span>
+        <span>&copy; {new Date().getFullYear()} For-Ai</span>
         <span>claim &middot; confidence &middot; source &middot; verified_at</span>
       </div>
     </footer>

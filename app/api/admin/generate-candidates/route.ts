@@ -24,7 +24,7 @@ function buildPrompt(topic: string, count: number, lang: string) {
   const instruction = langInstructions[lang] ?? langInstructions.en;
 
   return `
-당신은 GYEOL — 글로벌 팩트 레지스트리의 콘텐츠 큐레이터입니다.
+당신은 For-Ai — 글로벌 팩트 레지스트리의 콘텐츠 큐레이터입니다.
 ${instruction}
 
 규칙:
@@ -72,7 +72,7 @@ function buildSystemPrompt(lang: string): string {
     zh: "Chinese",
   };
   const language = langMap[lang] ?? "English";
-  return `You are a global fact-registry curator for GYEOL. Search the web and output only valid JSON arrays. Prioritize topics with official sources. Find real official/platform/law/document URLs for source_hints, and prefer those source types over news, stats, blogs, or forums. Accept ANY topic: sports, entertainment, life, IT, finance, government, etc. Output in ${language}.`;
+  return `You are a global fact-registry curator for For-Ai. Search the web and output only valid JSON arrays. Prioritize topics with official sources. Find real official/platform/law/document URLs for source_hints, and prefer those source types over news, stats, blogs, or forums. Accept ANY topic: sports, entertainment, life, IT, finance, government, etc. Output in ${language}.`;
 }
 
 function parseCandidatesFromResponse(
