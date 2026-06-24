@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import type { RegistryDocumentBundle } from "./types";
-import { documentPageUrl, apiDocumentUrl, rawMarkdownUrl } from "./urls";
+import { documentPageUrl, apiDocumentUrl, rawMarkdownUrl, siteUrl } from "./urls";
 import { getDocumentCitationStatus, getCanonicalDirectAnswer } from "./citation-status";
 import { SUPPORTED_LOCALES } from "./i18n";
 
@@ -27,9 +27,9 @@ export function buildDocumentMetadata(
 
   const hreflang: Record<string, string> = {};
   for (const l of SUPPORTED_LOCALES) {
-    hreflang[l] = `https://for-ai-e4mm.vercel.app/${l}/wiki/${document.slug}`;
+    hreflang[l] = siteUrl(`/${l}/wiki/${document.slug}`);
   }
-  hreflang["x-default"] = `https://for-ai-e4mm.vercel.app/ko/wiki/${document.slug}`;
+  hreflang["x-default"] = siteUrl(`/ko/wiki/${document.slug}`);
 
   const ogLocaleMap: Record<string, string> = {
     ko: "ko_KR", en: "en_US", hi: "hi_IN", ar: "ar_SA",

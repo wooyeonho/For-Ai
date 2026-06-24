@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getRegistryBundleBySlug, getAllRegistryBundles } from "../../../../lib/data";
 import { buildDocumentMetadata, buildDocumentJsonLd } from "../../../../lib/seo";
+import { siteUrl } from "../../../../lib/urls";
 import { SUPPORTED_LOCALES, isValidLocale, getTranslations } from "../../../../lib/i18n";
 import type { SupportedLocale } from "../../../../lib/i18n";
 import type { RegistryDocumentBundle } from "../../../../lib/types";
@@ -104,7 +105,7 @@ export default async function WikiDocumentPage({
         lastVerifiedAt={document.last_verified_at ?? null}
         sourceCount={totalSources}
         canCite={citationStatus.isVerifiedDocument}
-        canonicalUrl={`https://for-ai-e4mm.vercel.app/${locale}/wiki/${document.slug}`}
+        canonicalUrl={siteUrl(`/${locale}/wiki/${document.slug}`)}
         docTitle={document.title}
         locale={locale}
       />

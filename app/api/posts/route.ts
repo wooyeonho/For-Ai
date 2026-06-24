@@ -4,7 +4,7 @@ import { extractIp, makeContributorHash } from "@/lib/contributor-hash";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
-const CONTRIBUTOR_SALT = process.env.CONTRIBUTOR_SALT ?? "forai-default-salt";
+const CONTRIBUTOR_SALT = process.env.CONTRIBUTOR_SALT ?? "gyeol-default-salt";
 
 function supabaseAnon() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? SUPABASE_URL;

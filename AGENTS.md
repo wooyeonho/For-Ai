@@ -2,9 +2,9 @@
 
 ## Product Identity
 
-GYEOL is not an AI wiki.
+For-Ai is not an AI wiki.
 
-GYEOL is a local fact registry for AI, search engines, and humans.
+For-Ai is a local fact registry for AI, search engines, and humans.
 
 ## Non-Negotiable Rules
 
@@ -17,7 +17,7 @@ GYEOL is a local fact registry for AI, search engines, and humans.
 - `entity_id` is mandatory from MVP.
 - English slug is stable.
 - Display titles are language-specific.
-- GYEOL is claim-level.
+- For-Ai is claim-level.
 - The canonical structure is:
 
   ```text
