@@ -1,56 +1,68 @@
 "use client";
 import { useState } from "react";
-import { createClient } from "@supabase/supabase-js";
-const SB_URL=process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const SB_KEY=process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-function hashContributor(str:string):string{
-  try{return btoa(str).slice(0,16);}catch{return "anon";}
-}
-export default function SuggestTopicForm(){
-  const [question,setQuestion]=useState("");
-  const [category,setCategory]=useState("");
-  const [reason,setReason]=useState("");
-  const [sourceUrl,setSourceUrl]=useState("");
-  const [aiContext,setAiContext]=useState("");
-  const [submitted,setSubmitted]=useState(false);
-  const [loading,setLoading]=useState(false);
-  const [error,setError]=useState("");
-  async function handleSubmit(e:React.FormEvent){
+
+export default function SuggestTopicForm() {
+  const [question, setQuestion] = useState("");
+  const [category, setCategory] = useState("");
+  const [reason, setReason] = useState("");
+  const [sourceUrl, setSourceUrl] = useState("");
+  const [aiContext, setAiContext] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if(!question.trim()||!category.trim()||!reason.trim())return;
-    setLoading(true);setError("");
-    const rawId=`${navigator.userAgent}-${Date.now().toString().slice(0,-3)}`;
-    const contributorHash=hashContributor(rawId);
-    const autoSlug=question.toLowerCase().replace(/[^a-z0-9\s]/g,"").trim().replace(/\s+/g,"-").slice(0,60)+"-"+Date.now().toString().slice(-6);
-    const sb=createClient(SB_URL,SB_KEY);
-    const {error:sbErr}=await sb.from("topic_candidates").insert({
-      title:question.trim(),slug:autoSlug,category:category.trim(),risk_tier:"medium",
-      why_people_ask_ai:reason.trim(),why_ai_gets_wrong:aiContext.trim()||null,
-      claims:[],source_hints:sourceUrl.trim()?[{url:sourceUrl.trim(),title:sourceUrl.trim()}]:[],
-      source:"user_suggested",lang:"ko",status:"new",contributor_hash:contributorHash,
-    });
-    setLoading(false);
-    if(sbErr){setError("제출 실패: "+sbErr.message);}else{setSubmitted(true);}
+    if (!question.trim() || !category.trim() || !reason.trim()) return;
+    setLoading(true);
+    setError("");
+    try {
+      const res = await fetch("/api/suggest-topic", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          question: question.trim(),
+          category: category.trim(),
+          reason: reason.trim(),
+          source_url: sourceUrl.trim() || null,
+          ai_context: aiContext.trim() || null,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError("제출 실패: " + (data?.error ?? res.status));
+      } else {
+        setSubmitted(true);
+      }
+    } catch {
+      setError("네트워크 오류. 잠시 후 다시 시도해 주세요.");
+    } finally {
+      setLoading(false);
+    }
   }
-  if(submitted)return(
+
+  if (submitted) return (
     <article>
       <header className="registry-panel">
         <p className="eyebrow">GYEOL · 토픽 제안</p>
         <h1>제안 접수 완료</h1>
       </header>
-      <section className="registry-panel" style={{background:"#f0fdf4",borderLeft:"3px solid #16a34a"}}>
+      <section className="registry-panel" style={{ background: "#f0fdf4", borderLeft: "3px solid #16a34a" }}>
         <h2>감사합니다!</h2>
         <p>토픽 제안이 검토 대기열에 등록되었습니다. 관리자 검토 후 승인되면 GYEOL 레지스트리에 추가됩니다.</p>
-        <p style={{marginTop:12}}>
-          <button onClick={()=>{setSubmitted(false);setQuestion("");setCategory("");setReason("");setSourceUrl("");setAiContext("");}}
-            style={{padding:"8px 16px",background:"#16a34a",color:"#fff",border:"none",borderRadius:8,cursor:"pointer",fontSize:14}}>
+        <p style={{ marginTop: 12 }}>
+          <button
+            onClick={() => { setSubmitted(false); setQuestion(""); setCategory(""); setReason(""); setSourceUrl(""); setAiContext(""); }}
+            style={{ padding: "8px 16px", background: "#16a34a", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer", fontSize: 14 }}
+          >
             다른 토픽 제안하기
           </button>
         </p>
       </section>
     </article>
   );
-  return(
+
+  return (
     <article>
       <header className="registry-panel">
         <p className="eyebrow">GYEOL · 토픽 제안</p>
@@ -61,27 +73,44 @@ export default function SuggestTopicForm(){
         <h2 id="suggest-form-title">토픽 제안 양식</h2>
         <form onSubmit={handleSubmit} className="registry-form">
           <label>질문 / 토픽 제목 <span aria-label="필수">*</span>
-            <input type="text" value={question} onChange={e=>setQuestion(e.target.value)} required minLength={5}
-              placeholder="예: 카카오뱅크 해외 송금 수수료는 얼마인가요?"/>
+            <input
+              type="text" value={question} onChange={e => setQuestion(e.target.value)}
+              required minLength={5}
+              placeholder="예: 카카오뱅크 해외 송금 수수료는 얼마인가요?"
+            />
           </label>
           <label>카테고리 <span aria-label="필수">*</span>
-            <input type="text" value={category} onChange={e=>setCategory(e.target.value)} required minLength={2}
-              placeholder="예: 금융, 스포츠, 연예, AI기술, 법률, 건강 등 자유 입력"/>
+            <input
+              type="text" value={category} onChange={e => setCategory(e.target.value)}
+              required minLength={2}
+              placeholder="예: 금융, 스포츠, 연예, AI기술, 법률, 건강 등 자유 입력"
+            />
           </label>
           <label>왜 이 토픽이 필요한가요? <span aria-label="필수">*</span>
-            <textarea value={reason} onChange={e=>setReason(e.target.value)} required minLength={10}
-              placeholder="AI가 자주 틀리는 이유, 정보가 자주 바뀌는 이유 등을 적어주세요."/>
+            <textarea
+              value={reason} onChange={e => setReason(e.target.value)}
+              required minLength={10}
+              placeholder="AI가 자주 틀리는 이유, 정보가 자주 바뀌는 이유 등을 적어주세요."
+            />
           </label>
           <label>출처 URL (선택)
-            <input type="url" value={sourceUrl} onChange={e=>setSourceUrl(e.target.value)}
-              placeholder="https://official-source.example.com/..."/>
+            <input
+              type="url" value={sourceUrl} onChange={e => setSourceUrl(e.target.value)}
+              placeholder="https://official-source.example.com/..."
+            />
           </label>
           <label>AI 오류/맥락 (선택)
-            <textarea value={aiContext} onChange={e=>setAiContext(e.target.value)}
-              placeholder="AI가 이 주제에 대해 어떻게 틀렸는지 적어주세요."/>
+            <textarea
+              value={aiContext} onChange={e => setAiContext(e.target.value)}
+              placeholder="AI가 이 주제에 대해 어떻게 틀렸는지 적어주세요."
+            />
           </label>
-          {error&&<div style={{padding:"10px 14px",background:"#fef2f2",border:"1px solid #fecaca",borderRadius:8,fontSize:13,color:"#b91c1c"}}>{error}</div>}
-          <button type="submit" disabled={loading}>{loading?"제출 중...":"토픽 제안 제출"}</button>
+          {error && (
+            <div style={{ padding: "10px 14px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, fontSize: 13, color: "#b91c1c" }}>
+              {error}
+            </div>
+          )}
+          <button type="submit" disabled={loading}>{loading ? "제출 중..." : "토픽 제안 제출"}</button>
         </form>
       </section>
       <section className="registry-panel" aria-labelledby="privacy-notice">
