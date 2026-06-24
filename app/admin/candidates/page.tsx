@@ -29,7 +29,7 @@ export default function CandidatesPage(){
   function flash(text:string,ok=true){setMsg({text,ok});setTimeout(()=>setMsg(null),4000);}
   async function act(id:string,st:string){
     if(!secret){flash("❌ admin secret을 입력하세요",false);return;}
-    const r=await fetch("/api/admin/candidates",{method:"PATCH",headers:{"Content-Type":"application/json","x-admin-secret":secret},body:JSON.stringify({id,status:st})});
+    const r=await fetch("/api/admin/candidates",{method:"PATCH",headers:{"Content-Type":"application/json","x-admin-secret":secret,"x-admin-csrf":"1"},body:JSON.stringify({id,status:st})});
     const d=await r.json();
     if(r.ok){flash(`✅ ${st}`);setSelected(null);load();}
     else flash(`❌ ${d.error??"권한 오류 — admin secret 확인"}`,false);
@@ -38,7 +38,7 @@ export default function CandidatesPage(){
     if(!secret){flash("❌ admin secret을 입력하세요",false);return;}
     setPromoting(id);
     try{
-      const r=await fetch("/api/admin/promote-candidate",{method:"POST",headers:{"Content-Type":"application/json","x-admin-secret":secret},body:JSON.stringify({candidateId:id})});
+      const r=await fetch("/api/admin/promote-candidate",{method:"POST",headers:{"Content-Type":"application/json","x-admin-secret":secret,"x-admin-csrf":"1"},body:JSON.stringify({candidateId:id})});
       const d=await r.json();
       if(r.ok&&d.success){flash(`🚀 공개 등록 완료 → /ko/wiki/${slug}`);setSelected(null);load();}
       else flash(`❌ ${d.error??"등록 실패"}`,false);

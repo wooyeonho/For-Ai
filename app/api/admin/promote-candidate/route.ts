@@ -1,15 +1,14 @@
 import { NextResponse } from "next/server";
 
-import { authorized, logAdminAuditEvent, supabaseAdmin } from "@/lib/admin-api";
+import { logAdminAuditEvent, requireAdmin, supabaseAdmin } from "@/lib/admin-api";
 
 function stableId(prefix: string, slug: string): string {
   return `${prefix}-${slug}`.replace(/[^a-zA-Z0-9_-]+/g, "-").slice(0, 120);
 }
 
 export async function POST(request: Request) {
-  if (!authorized(request)) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  }
+  const adminError = requireAdmin(request, "candidates.promote");
+  if (adminError) return adminError;
 
   const body = await request.json();
   const { candidateId } = body;
