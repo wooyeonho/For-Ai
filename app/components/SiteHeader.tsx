@@ -5,17 +5,13 @@ export function SiteHeader() {
   return (
     <header className="site-header">
       <div className="site-header-inner">
-        <Link href="/" className="brand" aria-label="GYEOL home">
-          <span className="brand-mark">GYEOL</span>
-          <span className="brand-sub">결 · Global Fact Registry</span>
+        <Link href="/" className="brand" aria-label="For-Ai home">
+          <span className="brand-mark">For-Ai</span>
         </Link>
         <nav className="site-nav" aria-label="Main menu">
-          <Link href="/#registry">Registry</Link>
-          <Link href="/#developers">Developers</Link>
-          <Link href="/#ai-systems">AI</Link>
-          <Link href="/suggest-topic" className="site-nav-cta">
-            Suggest
-          </Link>
+          <Link href="/#registry">문서</Link>
+          <Link href="/community">커뮤니티</Link>
+          <Link href="/suggest-topic">제안</Link>
           <LanguageSelector />
         </nav>
       </div>

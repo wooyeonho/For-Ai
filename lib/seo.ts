@@ -21,15 +21,15 @@ export function buildDocumentMetadata(
   const { entity, document } = bundle;
   const lang = locale ?? document.lang ?? "ko";
   const title = document.title;
-  const ogTitle = `${document.title} — GYEOL`;
-  const description = `${entity.canonical_name} ${document.template} 정보. 신뢰도: ${document.confidence}. GYEOL claim registry.`;
+  const ogTitle = `${document.title} — For-Ai`;
+  const description = `${entity.canonical_name} ${document.template} 정보. 신뢰도: ${document.confidence}. For-Ai claim registry.`;
   const url = documentPageUrl(document.slug, lang);
 
   const hreflang: Record<string, string> = {};
   for (const l of SUPPORTED_LOCALES) {
-    hreflang[l] = `https://gyeol.com/${l}/wiki/${document.slug}`;
+    hreflang[l] = `https://for-ai-e4mm.vercel.app/${l}/wiki/${document.slug}`;
   }
-  hreflang["x-default"] = `https://gyeol.com/ko/wiki/${document.slug}`;
+  hreflang["x-default"] = `https://for-ai-e4mm.vercel.app/ko/wiki/${document.slug}`;
 
   const ogLocaleMap: Record<string, string> = {
     ko: "ko_KR", en: "en_US", hi: "hi_IN", ar: "ar_SA",
@@ -47,7 +47,7 @@ export function buildDocumentMetadata(
       title: ogTitle,
       description,
       url,
-      siteName: "GYEOL",
+      siteName: "For-Ai",
       type: "article",
       locale: ogLocaleMap[lang] ?? "en_US",
     },
@@ -73,7 +73,7 @@ export function buildDocumentJsonLd(bundle: RegistryDocumentBundle): object {
     license: document.license_code,
     creator: {
       "@type": "Organization",
-      name: "GYEOL",
+      name: "For-Ai",
     },
     about: {
       "@type": "Place",
@@ -127,7 +127,7 @@ export function buildDocumentJsonLd(bundle: RegistryDocumentBundle): object {
     },
     author: {
       "@type": "Organization",
-      name: "GYEOL",
+      name: "For-Ai",
     },
     itemReviewed: {
       "@type": "Claim",

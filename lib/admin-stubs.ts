@@ -52,7 +52,7 @@ export function createDocumentDraftStub(input: {
     status: "ai_draft",
     confidence: "low",
     last_verified_at: null,
-    license_code: "gyeol-data-license-v0.1",
+    license_code: "forai-data-license-v0.1",
     data: {
       direct_answer: "확인 필요",
     },

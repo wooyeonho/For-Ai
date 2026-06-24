@@ -6,13 +6,13 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: {
-    default: "GYEOL",
-    template: "%s — GYEOL",
+    default: "For-Ai",
+    template: "%s — For-Ai",
   },
   description: "Local fact registry for AI, search engines, and humans.",
   metadataBase: new URL(siteUrl("/")),
   openGraph: {
-    siteName: "GYEOL",
+    siteName: "For-Ai",
     type: "website",
     locale: "ko_KR",
   },

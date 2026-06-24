@@ -23,7 +23,7 @@ interface PopularDoc {
 }
 
 export const metadata: Metadata = {
-  title: { absolute: "GYEOL — 로컬 팩트 레지스트리" },
+  title: { absolute: "For-Ai — 로컬 팩트 레지스트리" },
   description:
     "AI·검색·사람이 같은 사실을 같은 근거로 인용하는 로컬 팩트 레지스트리. claim 단위로 신뢰도·출처·검증일을 관리합니다.",
 };
@@ -168,29 +168,25 @@ export default async function HomePage() {
     <div className="home">
       {/* Hero */}
       <section className="hero">
-        <p className="hero-eyebrow">로컬 팩트 레지스트리 · for AI · search · humans</p>
+        <p className="hero-eyebrow">AI·검색·사람을 위한 로컬 팩트 레지스트리</p>
         <h1 className="hero-title">
           사실을 <span className="hero-accent">claim 단위</span>로,
           <br />
           출처와 검증일과 함께.
         </h1>
         <p className="hero-sub">
-          GYEOL은 AI·검색엔진·사람이 같은 사실을 같은 근거로 인용하도록 만드는 로컬 팩트
-          레지스트리입니다. 모든 사실은 신뢰도·출처·검증 상태를 가지며, 확인되지 않은
+          모든 사실은 신뢰도·출처·검증 상태를 가지며, 확인되지 않은
           정보는 추측하지 않고 <strong>&ldquo;확인 필요&rdquo;</strong>로 남깁니다.
         </p>
         <div className="hero-cta-row">
           <Link href="#registry" className="btn btn-primary">
-            레지스트리 둘러보기
-          </Link>
-          <Link href="#developers" className="btn btn-secondary">
-            개발자 · AI 연동 →
-          </Link>
-          <Link href="/suggest-topic" className="btn btn-secondary">
-            + 토픽 제안하기
+            문서 둘러보기
           </Link>
           <Link href="/community" className="btn btn-secondary">
             커뮤니티
+          </Link>
+          <Link href="/suggest-topic" className="btn btn-secondary">
+            토픽 제안
           </Link>
         </div>
       </section>

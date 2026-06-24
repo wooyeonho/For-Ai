@@ -71,7 +71,7 @@ export default function AdminImportPage() {
   return (
     <article>
       <header className="registry-panel">
-        <p className="eyebrow">GYEOL · Admin</p>
+        <p className="eyebrow">For-Ai · Admin</p>
         <h1>Topic Candidates 일괄 가져오기</h1>
         <p>
           JSONL(줄당 JSON 1개)을 붙여넣으면 <code>topic_candidates</code> 테이블에 <strong>status: new</strong>로 저장됩니다.

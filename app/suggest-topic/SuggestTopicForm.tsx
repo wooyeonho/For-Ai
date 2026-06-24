@@ -44,12 +44,12 @@ export default function SuggestTopicForm() {
   if (submitted) return (
     <article>
       <header className="registry-panel">
-        <p className="eyebrow">GYEOL · 토픽 제안</p>
+        <p className="eyebrow">토픽 제안</p>
         <h1>제안 접수 완료</h1>
       </header>
       <section className="registry-panel" style={{ background: "#f0fdf4", borderLeft: "3px solid #16a34a" }}>
         <h2>감사합니다!</h2>
-        <p>토픽 제안이 검토 대기열에 등록되었습니다. 관리자 검토 후 승인되면 GYEOL 레지스트리에 추가됩니다.</p>
+        <p>토픽 제안이 검토 대기열에 등록되었습니다. 관리자 검토 후 승인되면 레지스트리에 추가됩니다.</p>
         <p style={{ marginTop: 12 }}>
           <button
             onClick={() => { setSubmitted(false); setQuestion(""); setCategory(""); setReason(""); setSourceUrl(""); setAiContext(""); }}
@@ -65,7 +65,7 @@ export default function SuggestTopicForm() {
   return (
     <article>
       <header className="registry-panel">
-        <p className="eyebrow">GYEOL · 토픽 제안</p>
+        <p className="eyebrow">토픽 제안</p>
         <h1>새 토픽 제안</h1>
         <p>AI가 자주 틀리거나, 사람들이 AI에게 물어볼 수밖에 없는 정보를 제안해 주세요. 스포츠, 연예, 법률, 건강, 생활, IT — 어떤 분야든 괜찮습니다.</p>
       </header>

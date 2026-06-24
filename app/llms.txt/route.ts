@@ -86,10 +86,10 @@ export async function GET() {
   const candidateSupabaseDocs = supabaseDocs.filter((doc) => doc.verification === "candidate");
 
   const lines: string[] = [];
-  lines.push("# GYEOL — Local Fact Registry");
+  lines.push("# For-Ai — Local Fact Registry");
   lines.push("");
   lines.push(
-    "> GYEOL is a local fact registry for AI systems, search engines, and humans. " +
+    "> For-Ai is a local fact registry for AI systems, search engines, and humans. " +
       "Facts are recorded at claim level with confidence, sources, and a verification date. " +
       'Unverified facts are marked "확인 필요" (needs verification) and must NOT be cited as fact.',
   );

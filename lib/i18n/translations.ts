@@ -91,7 +91,7 @@ export interface UITranslations {
 
 const ko: UITranslations = {
   site: {
-    title: "GYEOL",
+    title: "For-Ai",
     subtitle: "결 · 글로벌 팩트 레지스트리",
     description: "AI·검색·사람이 같은 사실을 같은 근거로 인용하는 글로벌 팩트 레지스트리",
   },
@@ -136,7 +136,7 @@ const ko: UITranslations = {
   },
   wiki: {
     claimRegistry: "Claim 레지스트리 문서",
-    aiGenerated: "GYEOL · AI 생성 및 검토됨",
+    aiGenerated: "For-Ai · AI 생성 및 검토됨",
     whyPeopleAsk: "사람들이 AI에게 묻는 이유",
     citationStatus: "인용 상태",
     citationDocument: "문서:",
@@ -160,7 +160,7 @@ const ko: UITranslations = {
     suggestTopic: "토픽 제안",
     machineReadable: "기계 판독",
     policy: "정책",
-    licenseLabel: "라이선스: gyeol-data-license-v0.1",
+    licenseLabel: "라이선스: forai-data-license-v0.1",
     noCiteWithoutSource: "출처 없는 사실은 인용 불가",
   },
   common: {
@@ -177,7 +177,7 @@ const ko: UITranslations = {
 
 const en: UITranslations = {
   site: {
-    title: "GYEOL",
+    title: "For-Ai",
     subtitle: "Global Fact Registry",
     description: "A global fact registry where AI, search engines, and humans cite the same facts from the same sources",
   },
@@ -222,7 +222,7 @@ const en: UITranslations = {
   },
   wiki: {
     claimRegistry: "Claim registry document",
-    aiGenerated: "GYEOL · AI generated & reviewed",
+    aiGenerated: "For-Ai · AI generated & reviewed",
     whyPeopleAsk: "Why people ask AI",
     citationStatus: "Citation status",
     citationDocument: "Document:",
@@ -246,7 +246,7 @@ const en: UITranslations = {
     suggestTopic: "Suggest topic",
     machineReadable: "Machine-readable",
     policy: "Policy",
-    licenseLabel: "License: gyeol-data-license-v0.1",
+    licenseLabel: "License: forai-data-license-v0.1",
     noCiteWithoutSource: "Facts without sources cannot be cited",
   },
   common: {
@@ -263,7 +263,7 @@ const en: UITranslations = {
 
 const hi: UITranslations = {
   site: {
-    title: "GYEOL",
+    title: "For-Ai",
     subtitle: "वैश्विक तथ्य रजिस्ट्री",
     description: "एक वैश्विक तथ्य रजिस्ट्री जहाँ AI, खोज इंजन और लोग समान स्रोतों से समान तथ्य उद्धृत करते हैं",
   },
@@ -308,7 +308,7 @@ const hi: UITranslations = {
   },
   wiki: {
     claimRegistry: "Claim रजिस्ट्री दस्तावेज़",
-    aiGenerated: "GYEOL · AI द्वारा निर्मित और समीक्षित",
+    aiGenerated: "For-Ai · AI द्वारा निर्मित और समीक्षित",
     whyPeopleAsk: "लोग AI से क्यों पूछते हैं",
     citationStatus: "उद्धरण स्थिति",
     citationDocument: "दस्तावेज़:",
@@ -332,7 +332,7 @@ const hi: UITranslations = {
     suggestTopic: "विषय सुझाएँ",
     machineReadable: "मशीन-पठनीय",
     policy: "नीति",
-    licenseLabel: "लाइसेंस: gyeol-data-license-v0.1",
+    licenseLabel: "लाइसेंस: forai-data-license-v0.1",
     noCiteWithoutSource: "स्रोत के बिना तथ्यों को उद्धृत नहीं किया जा सकता",
   },
   common: {
@@ -349,7 +349,7 @@ const hi: UITranslations = {
 
 const ar: UITranslations = {
   site: {
-    title: "GYEOL",
+    title: "For-Ai",
     subtitle: "سجل الحقائق العالمي",
     description: "سجل حقائق عالمي حيث يستشهد الذكاء الاصطناعي ومحركات البحث والبشر بنفس الحقائق من نفس المصادر",
   },
@@ -394,7 +394,7 @@ const ar: UITranslations = {
   },
   wiki: {
     claimRegistry: "وثيقة سجل المطالبات",
-    aiGenerated: "GYEOL · تم إنشاؤه ومراجعته بواسطة AI",
+    aiGenerated: "For-Ai · تم إنشاؤه ومراجعته بواسطة AI",
     whyPeopleAsk: "لماذا يسأل الناس AI",
     citationStatus: "حالة الاستشهاد",
     citationDocument: "المستند:",
@@ -418,7 +418,7 @@ const ar: UITranslations = {
     suggestTopic: "اقتراح موضوع",
     machineReadable: "قابل للقراءة آليًا",
     policy: "السياسة",
-    licenseLabel: "الترخيص: gyeol-data-license-v0.1",
+    licenseLabel: "الترخيص: forai-data-license-v0.1",
     noCiteWithoutSource: "لا يمكن الاستشهاد بحقائق بدون مصادر",
   },
   common: {
@@ -435,7 +435,7 @@ const ar: UITranslations = {
 
 const es: UITranslations = {
   site: {
-    title: "GYEOL",
+    title: "For-Ai",
     subtitle: "Registro Global de Hechos",
     description: "Un registro global de hechos donde la IA, los motores de búsqueda y los humanos citan los mismos hechos de las mismas fuentes",
   },
@@ -480,7 +480,7 @@ const es: UITranslations = {
   },
   wiki: {
     claimRegistry: "Documento de registro de claims",
-    aiGenerated: "GYEOL · Generado y revisado por IA",
+    aiGenerated: "For-Ai · Generado y revisado por IA",
     whyPeopleAsk: "Por qué la gente pregunta a la IA",
     citationStatus: "Estado de citación",
     citationDocument: "Documento:",
@@ -504,7 +504,7 @@ const es: UITranslations = {
     suggestTopic: "Sugerir tema",
     machineReadable: "Legible por máquina",
     policy: "Política",
-    licenseLabel: "Licencia: gyeol-data-license-v0.1",
+    licenseLabel: "Licencia: forai-data-license-v0.1",
     noCiteWithoutSource: "Los hechos sin fuentes no pueden ser citados",
   },
   common: {
@@ -521,7 +521,7 @@ const es: UITranslations = {
 
 const ja: UITranslations = {
   site: {
-    title: "GYEOL",
+    title: "For-Ai",
     subtitle: "グローバル・ファクト・レジストリ",
     description: "AI・検索・人間が同じ事実を同じ根拠で引用するグローバル・ファクト・レジストリ",
   },
@@ -566,7 +566,7 @@ const ja: UITranslations = {
   },
   wiki: {
     claimRegistry: "Claimレジストリ文書",
-    aiGenerated: "GYEOL · AI生成・レビュー済み",
+    aiGenerated: "For-Ai · AI生成・レビュー済み",
     whyPeopleAsk: "なぜ人々はAIに質問するのか",
     citationStatus: "引用ステータス",
     citationDocument: "ドキュメント:",
@@ -590,7 +590,7 @@ const ja: UITranslations = {
     suggestTopic: "トピック提案",
     machineReadable: "機械可読",
     policy: "ポリシー",
-    licenseLabel: "ライセンス: gyeol-data-license-v0.1",
+    licenseLabel: "ライセンス: forai-data-license-v0.1",
     noCiteWithoutSource: "出典のない事実は引用不可",
   },
   common: {
@@ -607,7 +607,7 @@ const ja: UITranslations = {
 
 const zh: UITranslations = {
   site: {
-    title: "GYEOL",
+    title: "For-Ai",
     subtitle: "全球事实注册表",
     description: "AI、搜索引擎和人类从相同来源引用相同事实的全球事实注册表",
   },
@@ -652,7 +652,7 @@ const zh: UITranslations = {
   },
   wiki: {
     claimRegistry: "Claim注册文档",
-    aiGenerated: "GYEOL · AI生成并审核",
+    aiGenerated: "For-Ai · AI生成并审核",
     whyPeopleAsk: "人们为什么问AI",
     citationStatus: "引用状态",
     citationDocument: "文档:",
@@ -676,7 +676,7 @@ const zh: UITranslations = {
     suggestTopic: "建议主题",
     machineReadable: "机器可读",
     policy: "政策",
-    licenseLabel: "许可证: gyeol-data-license-v0.1",
+    licenseLabel: "许可证: forai-data-license-v0.1",
     noCiteWithoutSource: "无来源的事实不可引用",
   },
   common: {

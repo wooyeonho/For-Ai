@@ -5,7 +5,7 @@ import { createHallucinationReportStub } from "../../../lib/submission-stubs";
 
 export const metadata: Metadata = {
   title: "AI 오답 신고",
-  description: "AI 서비스가 GYEOL 문서와 다른 답을 생성한 경우 신고합니다.",
+  description: "AI 서비스가 문서와 다른 답을 생성한 경우 신고합니다.",
 };
 
 export default async function HallucinationPage({
@@ -68,7 +68,7 @@ export default async function HallucinationPage({
 
       <section className="registry-panel" aria-labelledby="hallucination-form-title">
         <h2 id="hallucination-form-title">AI 오답 신고</h2>
-        <p>AI 서비스가 GYEOL 문서와 다른 답변을 생성했다면 신고해 주세요. AI 서비스 이름은 자유 입력입니다.</p>
+        <p>AI 서비스가 문서와 다른 답변을 생성했다면 신고해 주세요. AI 서비스 이름은 자유 입력입니다.</p>
         <form action={submitHallucinationReport} className="registry-form">
           <label>
             AI service

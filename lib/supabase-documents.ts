@@ -94,7 +94,7 @@ export async function getRegistryBundleFromSupabase(slug: string): Promise<Regis
           status: v3Doc.status as RegistryDocumentBundle["document"]["status"],
           confidence: toConfidence(v3Doc.confidence),
           last_verified_at: (v3Doc.last_verified_at ?? null) as string | null,
-          license_code: String(v3Doc.license_code ?? "gyeol-data-license-v0.1"),
+          license_code: String(v3Doc.license_code ?? "forai-data-license-v0.1"),
           data: (v3Doc.data ?? {}) as Record<string, unknown>,
           created_at: (v3Doc.created_at ?? null) as string | null,
           updated_at: (v3Doc.updated_at ?? null) as string | null,

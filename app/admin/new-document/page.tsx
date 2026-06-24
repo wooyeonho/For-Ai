@@ -85,7 +85,7 @@ export default function NewDocumentPage() {
   return (
     <article>
       <header className="registry-panel">
-        <p className="eyebrow">GYEOL · Admin</p>
+        <p className="eyebrow">For-Ai · Admin</p>
         <h1>새 Document 생성</h1>
         <p>
           Supabase <code>documents</code> + <code>claims</code> + <code>listings</code> 테이블에 직접 저장합니다.
