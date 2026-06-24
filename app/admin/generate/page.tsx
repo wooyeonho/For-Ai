@@ -16,6 +16,18 @@ const FALLBACK_PROVIDERS = [
   { key: "grok", label: "Grok", icon: "⚡" },
 ];
 
+const CATEGORY_PRESETS = [
+  { label: "교통 요금", example: "서울 지하철 환승 요금과 심야버스 요금" },
+  { label: "여권/민원 수수료", example: "여권 재발급 수수료와 온라인 민원 발급 수수료" },
+  { label: "전입신고/과태료", example: "전입신고 기한과 지연 과태료" },
+  { label: "공항 주차 요금", example: "인천공항 장기주차 요금과 할인 조건" },
+  { label: "택배 추가 요금", example: "도서산간 택배 추가 요금과 대형 화물 할증" },
+  { label: "은행 수수료", example: "타행 ATM 출금 수수료와 해외송금 수수료" },
+  { label: "통신사 요금제 조건", example: "5G 요금제 선택약정 할인 조건과 위약금" },
+  { label: "환불 규정", example: "온라인 공연 예매 취소 수수료와 환불 기한" },
+  { label: "공공기관 신청 기한", example: "근로장려금 신청 기한과 추가 신청 기간" },
+];
+
 const LANGUAGES = [
   { code: "ko", label: "한국어", flag: "🇰🇷" },
   { code: "en", label: "English", flag: "🇺🇸" },
@@ -187,6 +199,32 @@ export default function AdminGeneratePage() {
 
         {/* Topic input */}
         <div>
+          <label style={{ fontWeight: 600, fontSize: 14, display: "block", marginBottom: 6 }}>
+            추천 카테고리 프리셋
+          </label>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
+            {CATEGORY_PRESETS.map((preset) => (
+              <button
+                key={preset.label}
+                type="button"
+                onClick={() => setTopic(preset.example)}
+                title={preset.example}
+                style={{
+                  padding: "7px 10px",
+                  border: topic === preset.example ? "2px solid #2563eb" : "1px solid #e5e7eb",
+                  borderRadius: 999,
+                  background: topic === preset.example ? "#eff6ff" : "#fff",
+                  cursor: "pointer",
+                  fontSize: 12,
+                }}
+              >
+                {preset.label}
+              </button>
+            ))}
+          </div>
+          <p style={{ margin: "0 0 12px", fontSize: 12, color: "#6b7280" }}>
+            공식 출처가 존재하는 주제를 우선 추천합니다. 프리셋을 누르면 topic 입력창에 예시가 자동 입력됩니다.
+          </p>
           <label style={{ fontWeight: 600, fontSize: 14, display: "block", marginBottom: 6 }}>
             토픽 / 주제
           </label>
@@ -389,10 +427,18 @@ export default function AdminGeneratePage() {
                 const levelLabels: Record<string, string> = {
                   unanimous: "만장일치", majority: "다수 동의", minority: "소수", single: "단독",
                 };
+                const sourceHints = Array.isArray(c.source_hints) ? c.source_hints : [];
+                const hasSourceHints = sourceHints.length > 0;
                 return (
-                  <div key={i} style={{ padding: 12, border: "1px solid #e5e7eb", borderRadius: 8, marginBottom: 8 }}>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div key={i} style={{ padding: 12, border: hasSourceHints ? "1px solid #e5e7eb" : "1px solid #f59e0b", borderRadius: 8, marginBottom: 8, background: hasSourceHints ? "#fff" : "#fffbeb" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 8 }}>
                       <p style={{ fontWeight: 600 }}>{String(c.title)}</p>
+                      <div style={{ display: "flex", gap: 6, alignItems: "center", flexWrap: "wrap", justifyContent: "flex-end" }}>
+                      {!hasSourceHints && (
+                        <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 12, color: "#92400e", background: "#fef3c7" }}>
+                          ⚠ source_hints 없음
+                        </span>
+                      )}
                       {c.consensus_level && (
                         <span style={{
                           fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 12,
@@ -403,9 +449,10 @@ export default function AdminGeneratePage() {
                           {c.consensus_score !== undefined && ` ${Math.round(c.consensus_score * 100)}%`}
                         </span>
                       )}
+                      </div>
                     </div>
                     <p style={{ fontSize: 12, color: "#6b7280" }}>
-                      {String(c.slug)} · {String(c.category)} · {String(c.generation_model)}
+                      {String(c.slug)} · {String(c.category)} · {String(c.generation_model)} · source hints {sourceHints.length}개
                       {c.agreed_providers && ` · ${(c.agreed_providers as string[]).join(", ")}`}
                     </p>
                   </div>
