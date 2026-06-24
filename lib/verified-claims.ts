@@ -1,3 +1,4 @@
+import { getDocumentCitationStatus } from "./citation-status";
 import type { ClaimWithSources, RegistryDocumentBundle, VerificationEventType } from "./types";
 
 import seoulMetroFare from "../data/verified-claims/seoul-metro-base-fare.json";
@@ -119,12 +120,11 @@ export function getVerifiedBundleBySlug(
 }
 
 export function getVerifiedMetrics() {
-  const totalTopics = verifiedFiles.length;
-  const totalClaims = verifiedFiles.reduce(
-    (sum, f) => sum + f.claims.length,
-    0
-  );
-  const verifiedClaims = totalClaims; // all claims in this directory are verified
-  const citationReadyClaims = verifiedClaims; // verified = citation-ready
+  const bundles = verifiedBundles;
+  const totalTopics = bundles.length;
+  const statuses = bundles.map(getDocumentCitationStatus);
+  const totalClaims = statuses.reduce((sum, status) => sum + status.totalClaims, 0);
+  const citationReadyClaims = statuses.reduce((sum, status) => sum + status.verifiedClaims, 0);
+  const verifiedClaims = citationReadyClaims;
   return { totalTopics, totalClaims, verifiedClaims, citationReadyClaims };
 }

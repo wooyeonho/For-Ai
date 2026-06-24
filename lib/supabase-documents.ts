@@ -1,5 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
-import type { ClaimSource, ClaimStatus, Confidence, RegistryDocumentBundle } from "./types";
+import type { ClaimSource, ClaimStatus, Confidence, RegistryDocumentBundle, VerificationEvent } from "./types";
 
 function isClaimStatus(value: unknown): value is ClaimStatus {
   return ["needs_review", "verified", "disputed", "unknown"].includes(String(value));
@@ -7,6 +7,21 @@ function isClaimStatus(value: unknown): value is ClaimStatus {
 
 function toConfidence(value: unknown): Confidence {
   return value === "medium" || value === "high" ? value : "low";
+}
+
+function eventFromRow(row: Record<string, unknown>): VerificationEvent {
+  return {
+    id: String(row.id),
+    claim_id: String(row.claim_id),
+    event_type: String(row.event_type ?? "reviewed") as VerificationEvent["event_type"],
+    previous_status: (row.previous_status ?? null) as VerificationEvent["previous_status"],
+    new_status: (row.new_status ?? null) as VerificationEvent["new_status"],
+    previous_confidence: (row.previous_confidence ?? null) as VerificationEvent["previous_confidence"],
+    new_confidence: (row.new_confidence ?? null) as VerificationEvent["new_confidence"],
+    note: (row.note ?? null) as string | null,
+    contributor_hash: (row.contributor_hash ?? null) as string | null,
+    created_at: (row.created_at ?? null) as string | null,
+  };
 }
 
 function sourceFromRow(row: Record<string, unknown>): ClaimSource {
@@ -33,7 +48,7 @@ export async function getRegistryBundleFromSupabase(slug: string): Promise<Regis
 
     const { data: v3Doc } = await sb
       .from("documents")
-      .select("*, entities(*), claims(*, claim_sources(*))")
+      .select("*, entities(*), claims(*, claim_sources(*), verification_events(*))")
       .eq("slug", slug)
       .in("status", ["published", "verified"])
       .maybeSingle();
@@ -54,7 +69,7 @@ export async function getRegistryBundleFromSupabase(slug: string): Promise<Regis
         created_at: (cl.created_at ?? null) as string | null,
         updated_at: (cl.updated_at ?? null) as string | null,
         sources: ((cl.claim_sources ?? []) as Record<string, unknown>[]).map(sourceFromRow),
-        verification_events: [],
+        verification_events: ((cl.verification_events ?? []) as Record<string, unknown>[]).map(eventFromRow),
       }));
 
       return {
