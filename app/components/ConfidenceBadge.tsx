@@ -1,3 +1,5 @@
+import { getTranslations } from "../../lib/i18n";
+import type { SupportedLocale } from "../../lib/i18n";
 import type { Confidence } from "../../lib/types";
 
 const CONFIDENCE_STYLES: Record<Confidence, string> = {
@@ -6,16 +8,16 @@ const CONFIDENCE_STYLES: Record<Confidence, string> = {
   high: "badge badge-high",
 };
 
-const CONFIDENCE_LABELS: Record<Confidence, string> = {
-  low: "낮음",
-  medium: "보통",
-  high: "높음",
-};
-
-export function ConfidenceBadge({ level }: { level: Confidence }) {
+export function ConfidenceBadge({ level, locale }: { level: Confidence; locale?: string }) {
+  const t = getTranslations((locale ?? "ko") as SupportedLocale);
+  const labels: Record<Confidence, string> = {
+    low: t.claims.confidenceLow,
+    medium: t.claims.confidenceMedium,
+    high: t.claims.confidenceHigh,
+  };
   return (
     <span className={CONFIDENCE_STYLES[level]}>
-      신뢰도: {CONFIDENCE_LABELS[level]}
+      {t.claims.confidence}: {labels[level]}
     </span>
   );
 }

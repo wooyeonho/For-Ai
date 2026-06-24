@@ -9,6 +9,7 @@ interface DocItem {
   slug: string;
   title: string;
   category?: string;
+  summary?: string;
   source: "static" | "supabase";
   verification: "verified" | "candidate";
 }
@@ -44,6 +45,7 @@ async function getAllDocs(): Promise<DocItem[]> {
     slug: b.document.slug,
     title: b.document.title,
     category: undefined,
+    summary: b.listing?.summary ?? undefined,
     source: "static" as const,
     verification: isVerifiedDocumentBundle(b) ? "verified" as const : "candidate" as const,
   }));
@@ -76,10 +78,15 @@ async function getAllDocs(): Promise<DocItem[]> {
               ? "verified"
               : "candidate";
 
+          const firstVerifiedValue = claims.find(
+            (c) => c.claim_value && c.claim_value !== "확인 필요",
+          )?.claim_value;
+
           return {
             slug: d.slug,
             title: d.title,
             category: d.category ?? "",
+            summary: firstVerifiedValue ?? undefined,
             source: "supabase" as const,
             verification,
           };

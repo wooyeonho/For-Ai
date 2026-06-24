@@ -895,6 +895,83 @@ const b48 = bundle(e48, "doc-kr-welfare-child-allowance-ko", "child-allowance-cr
 ]);
 
 // ===========================================================================
+// 49. 류현진 (KBO/MLB 투수) — person_athlete
+// ===========================================================================
+const e49: Entity = { id: "kr-person-athlete-ryu-hyun-jin-001", type: "person_athlete", canonical_name: "류현진", country: "KR", region: null, city: null, created_at: null, updated_at: null };
+const b49 = bundle(e49, "doc-kr-person-athlete-ryu-hyun-jin-ko", "ryu-hyun-jin-current-team",
+  "류현진 현재 소속팀 및 포지션", "person_athlete", "athlete-profile", [
+  { id: "claim-ryuhj-team", fieldPath: "career.current_team", text: "류현진의 현재 소속팀은 확인이 필요합니다. AI는 과거 팀 정보를 최신인 것처럼 답하는 경우가 많습니다." },
+  { id: "claim-ryuhj-position", fieldPath: "career.position", text: "류현진의 포지션(선발투수/구원)은 확인이 필요합니다." },
+  { id: "claim-ryuhj-league", fieldPath: "career.league", text: "류현진이 현재 뛰는 리그(KBO/MLB)는 확인이 필요합니다." },
+]);
+
+// ===========================================================================
+// 50. 손흥민 (축구선수) — person_athlete
+// ===========================================================================
+const e50: Entity = { id: "kr-person-athlete-son-heung-min-001", type: "person_athlete", canonical_name: "손흥민", country: "KR", region: null, city: null, created_at: null, updated_at: null };
+const b50 = bundle(e50, "doc-kr-person-athlete-son-heung-min-ko", "son-heung-min-current-team",
+  "손흥민 현재 소속팀 및 등번호", "person_athlete", "athlete-profile", [
+  { id: "claim-son-team", fieldPath: "career.current_team", text: "손흥민의 현재 소속팀은 확인이 필요합니다." },
+  { id: "claim-son-number", fieldPath: "career.uniform_number", text: "손흥민의 등번호는 확인이 필요합니다." },
+  { id: "claim-son-position", fieldPath: "career.position", text: "손흥민의 주 포지션은 확인이 필요합니다." },
+]);
+
+// ===========================================================================
+// 51. BTS (방탄소년단) 멤버 — person_entertainer
+// ===========================================================================
+const e51: Entity = { id: "kr-person-entertainer-bts-001", type: "person_entertainer", canonical_name: "BTS (방탄소년단)", country: "KR", region: null, city: null, created_at: null, updated_at: null };
+const b51 = bundle(e51, "doc-kr-person-entertainer-bts-members-ko", "bts-members-agency",
+  "BTS 멤버 구성 및 소속사", "person_entertainer", "group-profile", [
+  { id: "claim-bts-agency", fieldPath: "career.agency", text: "BTS 소속사는 확인이 필요합니다." },
+  { id: "claim-bts-members", fieldPath: "group.member_count", text: "BTS 현재 활동 멤버 수는 확인이 필요합니다. (군입대 등으로 변동)" },
+  { id: "claim-bts-activity", fieldPath: "career.activity_status", text: "BTS의 현재 그룹 활동 상태(완전체/개인활동)는 확인이 필요합니다." },
+]);
+
+// ===========================================================================
+// 52. 블랙핑크 — person_entertainer
+// ===========================================================================
+const e52: Entity = { id: "kr-person-entertainer-blackpink-001", type: "person_entertainer", canonical_name: "블랙핑크 (BLACKPINK)", country: "KR", region: null, city: null, created_at: null, updated_at: null };
+const b52 = bundle(e52, "doc-kr-person-entertainer-blackpink-ko", "blackpink-agency-members",
+  "블랙핑크 소속사 및 멤버 현황", "person_entertainer", "group-profile", [
+  { id: "claim-bp-agency", fieldPath: "career.agency", text: "블랙핑크 현재 소속사는 확인이 필요합니다. AI가 구버전 정보를 답하는 경우가 있습니다." },
+  { id: "claim-bp-members", fieldPath: "group.member_list", text: "블랙핑크 멤버 이름 목록은 확인이 필요합니다." },
+  { id: "claim-bp-debut", fieldPath: "career.debut_date", text: "블랙핑크 데뷔일은 확인이 필요합니다." },
+]);
+
+// ===========================================================================
+// 53. 배스킨라빈스 민트초코칩 — product_food
+// ===========================================================================
+const e53: Entity = { id: "kr-product-food-br-mint-choco-001", type: "product_food", canonical_name: "배스킨라빈스 민트초코칩", country: "KR", region: null, city: null, created_at: null, updated_at: null };
+const b53 = bundle(e53, "doc-kr-product-food-br-mint-choco-ko", "baskin-robbins-mint-choco-chip-allergens",
+  "배스킨라빈스 민트초코칩 알레르기 성분", "product_food", "allergen-info", [
+  { id: "claim-br-mint-allergens", fieldPath: "nutrition.allergens", text: "배스킨라빈스 민트초코칩 아이스크림의 알레르기 유발 성분은 확인이 필요합니다." },
+  { id: "claim-br-mint-calories", fieldPath: "nutrition.calories_kcal", text: "배스킨라빈스 민트초코칩 1스쿱(Regular) 칼로리는 확인이 필요합니다." },
+  { id: "claim-br-mint-ingredients", fieldPath: "nutrition.main_ingredients", text: "배스킨라빈스 민트초코칩의 주요 원재료는 확인이 필요합니다." },
+]);
+
+// ===========================================================================
+// 54. 루브르 박물관 운영시간 — place_attraction (글로벌)
+// ===========================================================================
+const e54: Entity = { id: "fr-place-attraction-louvre-001", type: "place_attraction", canonical_name: "루브르 박물관 (Musée du Louvre)", country: "FR", region: "Île-de-France", city: "Paris", created_at: null, updated_at: null };
+const b54 = bundle(e54, "doc-fr-place-louvre-hours-ko", "louvre-museum-opening-hours",
+  "루브르 박물관 운영시간 및 휴관일", "place_attraction", "venue-hours", [
+  { id: "claim-louvre-hours-weekday", fieldPath: "hours.weekday", text: "루브르 박물관 평일 운영시간은 확인이 필요합니다." },
+  { id: "claim-louvre-closed-day", fieldPath: "hours.closed_day", text: "루브르 박물관 정기 휴관일은 확인이 필요합니다. AI는 자주 틀립니다." },
+  { id: "claim-louvre-ticket-adult", fieldPath: "fee.adult_entry", text: "루브르 박물관 성인 입장료(유로)는 확인이 필요합니다." },
+]);
+
+// ===========================================================================
+// 55. 도로교통법 어린이 카시트 의무 — law_statute
+// ===========================================================================
+const e55: Entity = { id: "kr-law-statute-child-seat-001", type: "law_statute", canonical_name: "도로교통법 카시트 규정", country: "KR", region: null, city: null, created_at: null, updated_at: null };
+const b55 = bundle(e55, "doc-kr-law-statute-child-seat-ko", "kr-road-traffic-act-child-seat",
+  "도로교통법 어린이 카시트 의무 규정", "law_statute", "law-summary", [
+  { id: "claim-childseat-age", fieldPath: "law.eligible_age", text: "도로교통법상 카시트 착용 의무 대상 나이는 확인이 필요합니다." },
+  { id: "claim-childseat-penalty", fieldPath: "law.penalty", text: "카시트 미착용 시 과태료 금액은 확인이 필요합니다." },
+  { id: "claim-childseat-exception", fieldPath: "law.exception", text: "카시트 착용 의무 예외 사항(차종·상황)은 확인이 필요합니다." },
+]);
+
+// ===========================================================================
 // Backward-compatible exports
 // ===========================================================================
 export const seedEntity = laluceEntity;
@@ -903,7 +980,7 @@ export const seedClaims = b01.claims;
 export const seedListing = b01.listing;
 export const seedRegistryBundle = b01;
 
-// All bundles — 48 entities
+// All bundles — 55 entities
 export const allRegistryBundles: RegistryDocumentBundle[] = [
   b01, b02, b03, b04, b05, b06, b07, b08,
   b09, b10, b11, b12, b13, b14, b15, b16,
@@ -911,4 +988,5 @@ export const allRegistryBundles: RegistryDocumentBundle[] = [
   b25, b26, b27, b28, b29, b30, b31, b32,
   b33, b34, b35, b36, b37, b38, b39, b40,
   b41, b42, b43, b44, b45, b46, b47, b48,
+  b49, b50, b51, b52, b53, b54, b55,
 ];

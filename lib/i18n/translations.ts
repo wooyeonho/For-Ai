@@ -33,6 +33,20 @@ export interface UITranslations {
     confidence: string;
     sources: string;
     lastVerified: string;
+    canCite: string;
+    directAnswer: string;
+    copyCitation: string;
+    copied: string;
+    confidenceLow: string;
+    confidenceMedium: string;
+    confidenceHigh: string;
+    notVerified: string;
+    statusAiDraft: string;
+    statusPublished: string;
+    statusArchived: string;
+    statusUnknown: string;
+    verificationDate: string;
+    sourceCount: string;
   };
   common: {
     loading: string;
@@ -76,6 +90,20 @@ const ko: UITranslations = {
     confidence: "신뢰도",
     sources: "출처",
     lastVerified: "마지막 검증일",
+    canCite: "✓ AI 인용 가능",
+    directAnswer: "직접 답변",
+    copyCitation: "인용 복사",
+    copied: "복사됨!",
+    confidenceLow: "낮음",
+    confidenceMedium: "보통",
+    confidenceHigh: "높음",
+    notVerified: "미검증",
+    statusAiDraft: "AI 초안",
+    statusPublished: "게시됨",
+    statusArchived: "보관됨",
+    statusUnknown: "알 수 없음",
+    verificationDate: "최종 검증",
+    sourceCount: "출처 수",
   },
   common: {
     loading: "로딩 중...",
@@ -119,6 +147,20 @@ const en: UITranslations = {
     confidence: "Confidence",
     sources: "Sources",
     lastVerified: "Last verified",
+    canCite: "✓ Citable by AI",
+    directAnswer: "Direct Answer",
+    copyCitation: "Copy Citation",
+    copied: "Copied!",
+    confidenceLow: "Low",
+    confidenceMedium: "Medium",
+    confidenceHigh: "High",
+    notVerified: "Unverified",
+    statusAiDraft: "AI Draft",
+    statusPublished: "Published",
+    statusArchived: "Archived",
+    statusUnknown: "Unknown",
+    verificationDate: "Last verified",
+    sourceCount: "Sources",
   },
   common: {
     loading: "Loading...",
@@ -162,6 +204,20 @@ const hi: UITranslations = {
     confidence: "विश्वसनीयता",
     sources: "स्रोत",
     lastVerified: "अंतिम सत्यापन",
+    canCite: "✓ AI द्वारा उद्धृत",
+    directAnswer: "सीधा जवाब",
+    copyCitation: "उद्धरण कॉपी करें",
+    copied: "कॉपी हो गया!",
+    confidenceLow: "कम",
+    confidenceMedium: "मध्यम",
+    confidenceHigh: "उच्च",
+    notVerified: "असत्यापित",
+    statusAiDraft: "AI मसौदा",
+    statusPublished: "प्रकाशित",
+    statusArchived: "संग्रहीत",
+    statusUnknown: "अज्ञात",
+    verificationDate: "अंतिम सत्यापन",
+    sourceCount: "स्रोत संख्या",
   },
   common: {
     loading: "लोड हो रहा है...",
@@ -205,6 +261,20 @@ const ar: UITranslations = {
     confidence: "الثقة",
     sources: "المصادر",
     lastVerified: "آخر تحقق",
+    canCite: "✓ قابل للاستشهاد",
+    directAnswer: "الإجابة المباشرة",
+    copyCitation: "نسخ الاستشهاد",
+    copied: "تم النسخ!",
+    confidenceLow: "منخفض",
+    confidenceMedium: "متوسط",
+    confidenceHigh: "عالٍ",
+    notVerified: "غير موثق",
+    statusAiDraft: "مسودة AI",
+    statusPublished: "منشور",
+    statusArchived: "مؤرشف",
+    statusUnknown: "غير معروف",
+    verificationDate: "آخر تحقق",
+    sourceCount: "عدد المصادر",
   },
   common: {
     loading: "جاري التحميل...",
@@ -248,6 +318,20 @@ const es: UITranslations = {
     confidence: "Confianza",
     sources: "Fuentes",
     lastVerified: "Última verificación",
+    canCite: "✓ Citable por IA",
+    directAnswer: "Respuesta directa",
+    copyCitation: "Copiar cita",
+    copied: "¡Copiado!",
+    confidenceLow: "Bajo",
+    confidenceMedium: "Medio",
+    confidenceHigh: "Alto",
+    notVerified: "No verificado",
+    statusAiDraft: "Borrador IA",
+    statusPublished: "Publicado",
+    statusArchived: "Archivado",
+    statusUnknown: "Desconocido",
+    verificationDate: "Última verificación",
+    sourceCount: "Fuentes",
   },
   common: {
     loading: "Cargando...",
@@ -291,6 +375,20 @@ const ja: UITranslations = {
     confidence: "信頼度",
     sources: "出典",
     lastVerified: "最終検証日",
+    canCite: "✓ AI引用可能",
+    directAnswer: "直接回答",
+    copyCitation: "引用をコピー",
+    copied: "コピーしました!",
+    confidenceLow: "低",
+    confidenceMedium: "中",
+    confidenceHigh: "高",
+    notVerified: "未検証",
+    statusAiDraft: "AI下書き",
+    statusPublished: "公開済み",
+    statusArchived: "アーカイブ",
+    statusUnknown: "不明",
+    verificationDate: "最終検証日",
+    sourceCount: "出典数",
   },
   common: {
     loading: "読み込み中...",
@@ -334,6 +432,20 @@ const zh: UITranslations = {
     confidence: "可信度",
     sources: "来源",
     lastVerified: "最后验证",
+    canCite: "✓ 可被AI引用",
+    directAnswer: "直接答案",
+    copyCitation: "复制引用",
+    copied: "已复制!",
+    confidenceLow: "低",
+    confidenceMedium: "中",
+    confidenceHigh: "高",
+    notVerified: "未验证",
+    statusAiDraft: "AI草稿",
+    statusPublished: "已发布",
+    statusArchived: "已归档",
+    statusUnknown: "未知",
+    verificationDate: "最后验证",
+    sourceCount: "来源数量",
   },
   common: {
     loading: "加载中...",
