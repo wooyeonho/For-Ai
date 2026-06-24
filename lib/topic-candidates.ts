@@ -75,9 +75,62 @@ export const TAXONOMY: Record<string, { label: string; subcategories: string[]; 
   science:       { label: "과학", subcategories: ["물리개념","화학","천문학","지구과학"], risk_tier: "low" },
   tech:          { label: "IT/기술", subcategories: ["용어","프로토콜","하드웨어","소프트웨어"], risk_tier: "low" },
   law_terms:     { label: "법률용어", subcategories: ["민법용어","형법용어","행정법","계약"], risk_tier: "high" },
+  // Global / diverse categories
+  person_athlete:     { label: "스포츠 선수",    subcategories: ["소속팀","포지션","국적","데뷔","기록","수상"],         risk_tier: "low" },
+  person_entertainer: { label: "연예인/아티스트", subcategories: ["소속사","데뷔","앨범","드라마","수상","국적"],         risk_tier: "low" },
+  person_public:      { label: "공인",            subcategories: ["직책","경력","소속","임기"],                          risk_tier: "medium" },
+  law_statute:        { label: "법령/조항",        subcategories: ["조문번호","시행일","관할","제재","개정"],              risk_tier: "high" },
+  law_case:           { label: "판례",             subcategories: ["사건번호","판결요지","법원","선고일"],                 risk_tier: "high" },
+  product_food:       { label: "식품/음료",        subcategories: ["칼로리","알레르기","원재료","가격","용량"],            risk_tier: "low" },
+  product_pharma:     { label: "의약품",           subcategories: ["성분","용량","복약법","부작용","허가번호"],            risk_tier: "high" },
+  product_tech:       { label: "전자제품",         subcategories: ["스펙","가격","출시일","보증","AS"],                   risk_tier: "low" },
+  place_attraction:   { label: "관광지/시설",      subcategories: ["운영시간","입장료","주소","주의사항"],                 risk_tier: "low" },
+  place_country:      { label: "국가정보",         subcategories: ["수도","통화","비자","공휴일","언어"],                  risk_tier: "low" },
+  sports_record:      { label: "스포츠 기록",      subcategories: ["기록","규칙","리그","팀","역대수상"],                  risk_tier: "low" },
+  entertainment_work: { label: "작품/콘텐츠",      subcategories: ["출연진","감독","개봉일","수상","플랫폼"],              risk_tier: "low" },
+  science_ref:        { label: "과학/단위",        subcategories: ["값","단위","정의","공식"],                            risk_tier: "low" },
 };
 
 export const TAXONOMY_KEYS = Object.keys(TAXONOMY);
+
+export type ClaimTemplateStub = { field_path: string; question: string; required_source_type: RequiredSourceType };
+
+export const CLAIM_TEMPLATES: Partial<Record<string, ClaimTemplateStub[]>> = {
+  person_athlete: [
+    { field_path: "bio.full_name",        question: "선수 본명은?",      required_source_type: "official" },
+    { field_path: "bio.date_of_birth",    question: "생년월일은?",       required_source_type: "official" },
+    { field_path: "bio.nationality",      question: "국적은?",           required_source_type: "official" },
+    { field_path: "career.current_team",  question: "현재 소속팀은?",    required_source_type: "official" },
+    { field_path: "career.position",      question: "포지션은?",         required_source_type: "official" },
+    { field_path: "career.debut_year",    question: "데뷔 연도는?",      required_source_type: "official" },
+    { field_path: "stats.notable_record", question: "대표 기록/수상은?", required_source_type: "official" },
+  ],
+  person_entertainer: [
+    { field_path: "bio.full_name",        question: "본명은?",           required_source_type: "official" },
+    { field_path: "bio.date_of_birth",    question: "생년월일은?",       required_source_type: "official" },
+    { field_path: "career.agency",        question: "소속사는?",         required_source_type: "official" },
+    { field_path: "career.debut_date",    question: "데뷔일은?",         required_source_type: "official" },
+    { field_path: "career.notable_works", question: "대표작은?",         required_source_type: "official" },
+  ],
+  law_statute: [
+    { field_path: "law.article_number",   question: "조문 번호는?",      required_source_type: "law" },
+    { field_path: "law.enforcement_date", question: "시행일은?",         required_source_type: "law" },
+    { field_path: "law.jurisdiction",     question: "관할은?",           required_source_type: "law" },
+    { field_path: "law.penalty",          question: "위반 시 제재는?",   required_source_type: "law" },
+  ],
+  product_food: [
+    { field_path: "nutrition.calories_kcal", question: "칼로리는?",       required_source_type: "official" },
+    { field_path: "nutrition.allergens",     question: "알레르기 성분은?", required_source_type: "official" },
+    { field_path: "product.origin_country",  question: "원산지는?",       required_source_type: "official" },
+    { field_path: "product.standard_price",  question: "소비자가격은?",   required_source_type: "platform" },
+  ],
+  place_attraction: [
+    { field_path: "hours.weekday",   question: "평일 운영시간은?", required_source_type: "official" },
+    { field_path: "hours.weekend",   question: "주말 운영시간은?", required_source_type: "official" },
+    { field_path: "fee.adult_entry", question: "성인 입장료는?",  required_source_type: "official" },
+    { field_path: "info.address",    question: "주소는?",         required_source_type: "official" },
+  ],
+};
 
 export const RISK_DISCLAIMER: Record<RiskTier, string|null> = {
   low: null,

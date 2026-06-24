@@ -53,8 +53,8 @@ export function missingSupabaseAdminEnv(): string[] {
 }
 
 export function authorized(request: Request): boolean {
-  const auth = request.headers.get("x-admin-secret");
-  return !ADMIN_SECRET || auth === ADMIN_SECRET;
+  const auth = request.headers.get("x-admin-secret") ?? "";
+  return Boolean(ADMIN_SECRET) && auth === ADMIN_SECRET;
 }
 
 export function safeRequestMetadata(request: Request): AdminAuditMetadata {

@@ -3,10 +3,12 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getRegistryBundleBySlug, getAllRegistryBundles } from "../../../../lib/data";
 import { buildDocumentMetadata, buildDocumentJsonLd } from "../../../../lib/seo";
-import { SUPPORTED_LOCALES, isValidLocale, getTranslations } from "../../../../lib/i18n";
+import { SUPPORTED_LOCALES, isValidLocale } from "../../../../lib/i18n";
 import type { RegistryDocumentBundle } from "../../../../lib/types";
 import { getRegistryBundleFromSupabase } from "../../../../lib/supabase-documents";
-import { getCanonicalDirectAnswer, getClaimCitationStatus, getDocumentCitationStatus, UNKNOWN_FACT_TEXT } from "../../../../lib/citation-status";
+import { getCanonicalDirectAnswer, getDocumentCitationStatus } from "../../../../lib/citation-status";
+import { DirectAnswerBox } from "../../../components/DirectAnswerBox";
+import { ClaimTable } from "../../../components/ClaimTable";
 
 export const revalidate = 60;
 
@@ -20,7 +22,6 @@ export async function generateStaticParams() {
 async function getMetadataBundle(slug: string): Promise<RegistryDocumentBundle | null> {
   const staticBundle = getRegistryBundleBySlug(slug);
   if (staticBundle) return staticBundle;
-
   return getRegistryBundleFromSupabase(slug);
 }
 
@@ -44,7 +45,6 @@ export default async function WikiDocumentPage({
   const { locale, slug } = await params;
   if (!isValidLocale(locale)) notFound();
 
-  const t = getTranslations(locale);
   let bundle: RegistryDocumentBundle | null = getRegistryBundleBySlug(slug);
   if (!bundle) bundle = await getRegistryBundleFromSupabase(slug);
   if (!bundle) notFound();
@@ -58,6 +58,7 @@ export default async function WikiDocumentPage({
   const isPromoted = !getRegistryBundleBySlug(slug);
   const jsonLd = buildDocumentJsonLd(bundle);
   const citationStatus = getDocumentCitationStatus(bundle);
+  const totalSources = claims.reduce((n, c) => n + c.sources.length, 0);
 
   return (
     <article>
@@ -65,22 +66,23 @@ export default async function WikiDocumentPage({
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
+
+      {/* Clean header: title + status only, no technical IDs */}
       <header className="registry-panel">
         <p className="eyebrow">
           {isPromoted ? "GYEOL · AI generated & reviewed" : "Claim registry document"}
         </p>
         <h1>{document.title}</h1>
-        <div className="meta-grid">
-          <div><span className="meta-label">entity_id</span><br />{entity.id}</div>
-          <div><span className="meta-label">slug</span><br />{document.slug}</div>
-          <div><span className="meta-label">citation status</span><br /><span className={citationStatus.isVerifiedDocument ? "badge badge-verified" : "badge badge-review"}>{citationStatus.label}</span></div>
-          <div><span className="meta-label">{t.claims.confidence}</span><br /><span className="badge badge-low">{document.confidence}</span></div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
+          <span className={citationStatus.isVerifiedDocument ? "badge badge-verified" : "badge badge-review"}>
+            {citationStatus.label}
+          </span>
+          <span className="badge badge-low">{document.confidence}</span>
+          {document.category && <span className="badge">{document.category}</span>}
         </div>
-        {document.category && (
-          <p style={{ marginTop: 8, fontSize: 13, color: "#6b7280" }}>category: {document.category}</p>
-        )}
       </header>
 
+      {/* Why people ask AI this question */}
       {whyPeopleAsk && (
         <section className="registry-panel" style={{ background: "#fffbeb", borderLeft: "3px solid #f59e0b" }}>
           <p className="eyebrow">Why people ask AI</p>
@@ -88,57 +90,38 @@ export default async function WikiDocumentPage({
         </section>
       )}
 
-      {directAnswer && (
-        <section className="registry-panel" aria-labelledby="direct-answer">
-          <h2 id="direct-answer">Direct Answer</h2>
-          <p><strong>{directAnswer}</strong></p>
+      {/* Answer first — with trust signals */}
+      <DirectAnswerBox
+        answer={directAnswer}
+        confidence={document.confidence}
+        lastVerifiedAt={document.last_verified_at ?? null}
+        sourceCount={totalSources}
+        canCite={citationStatus.isVerifiedDocument}
+      />
+
+      {/* Claims — uses ClaimCard internally */}
+      {claims.length === 0 ? (
+        <section className="registry-panel">
+          <p style={{ color: "#9ca3af" }}>No claims registered yet.</p>
         </section>
+      ) : (
+        <ClaimTable claims={claims} />
       )}
 
-      <section className="registry-panel" aria-labelledby="claims">
-        <h2 id="claims">{t.claims.needsReview} ({claims.length})</h2>
-        {claims.length === 0 ? (
-          <p style={{ color: "#9ca3af" }}>No claims registered.</p>
-        ) : (
-          claims.map((claim) => {
-            const claimCitationStatus = getClaimCitationStatus(claim);
-            const displayValue = claim.claim_value || UNKNOWN_FACT_TEXT;
-            const displayConfidence = displayValue === UNKNOWN_FACT_TEXT ? "low" : claim.confidence;
-            return (
-              <div className="claim-card" key={claim.field_path}>
-                <p className="eyebrow">{claim.field_path}</p>
-                <p><strong>{displayValue}</strong></p>
-                {claim.claim_text && <p>{claim.claim_text}</p>}
-                <p>
-                  <span className={claimCitationStatus.isCitationReady ? "badge badge-verified" : "badge badge-review"}>citation: {claimCitationStatus.label}</span>{" "}
-                  <span className="badge badge-low">{t.claims.confidence}: {displayConfidence}</span>{" "}
-                  <span className="badge badge-review">state: {claim.status}</span>{" "}
-                  <span className="badge">{t.claims.sources}: {claim.sources.length}</span>{" "}
-                  <span className="badge">verification_events: {claim.verification_events.length}</span>
-                </p>
-                <p className="meta-label">{claimCitationStatus.reason}</p>
-                {claim.last_verified_at && (
-                  <p className="meta-label">{t.claims.lastVerified}: {claim.last_verified_at}</p>
-                )}
-              </div>
-            );
-          })
-        )}
-      </section>
-
+      {/* Citation guidance */}
       <section className="registry-panel" aria-labelledby="citation-status">
         <h2 id="citation-status">Citation status</h2>
         <p>
-          Document citation status: {citationStatus.label}. Citation-ready claims: {citationStatus.verifiedClaims}/{citationStatus.totalClaims}.
-          Individual claim values may be cited only when claims are verified, source-backed, and have verification events.
+          Document: <strong>{citationStatus.label}</strong>. Citation-ready claims:{" "}
+          {citationStatus.verifiedClaims}/{citationStatus.totalClaims}.
         </p>
         <ul className="link-list">
-          <li>Do not cite values marked “확인 필요” as factual answers.</li>
-          <li>Do not cite low-confidence or needs_review claims as factual answers.</li>
-          <li>Current claim source counts and verification event counts are shown on each claim card above.</li>
+          <li>&quot;확인 필요&quot; 값은 사실로 인용하지 마세요.</li>
+          <li>confidence: low 또는 needs_review 상태의 claim은 인용하지 마세요.</li>
         </ul>
       </section>
 
+      {/* Machine-readable links */}
       <nav className="registry-panel" aria-labelledby="machine-links">
         <h2 id="machine-links">Machine-readable links</h2>
         <ul className="link-list">
@@ -150,11 +133,18 @@ export default async function WikiDocumentPage({
         </ul>
       </nav>
 
-      <section className="registry-panel" aria-labelledby="licensing">
-        <h2 id="licensing">License</h2>
-        <p className="meta-label">{document.license_code ?? "CC-BY-4.0"}</p>
-      </section>
+      {/* Technical metadata — collapsed by default */}
+      <details className="technical-meta registry-panel">
+        <summary>기술 메타데이터</summary>
+        <dl>
+          <dt>entity_id</dt><dd>{entity.id}</dd>
+          <dt>document_id</dt><dd>{document.id}</dd>
+          <dt>slug</dt><dd>{document.slug}</dd>
+          <dt>lang</dt><dd>{document.lang}</dd>
+        </dl>
+      </details>
 
+      {/* Language switcher */}
       <nav className="registry-panel" aria-labelledby="lang-switch">
         <h2 id="lang-switch">Other languages</h2>
         <ul className="link-list" style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
@@ -163,6 +153,12 @@ export default async function WikiDocumentPage({
           ))}
         </ul>
       </nav>
+
+      {/* License */}
+      <section className="registry-panel" aria-labelledby="licensing">
+        <h2 id="licensing">License</h2>
+        <p className="meta-label">{document.license_code ?? "CC-BY-4.0"}</p>
+      </section>
     </article>
   );
 }

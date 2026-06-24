@@ -7,6 +7,13 @@ export type RenderedDocumentJson = {
   document: RegistryDocumentBundle["document"];
   claims: RegistryDocumentBundle["claims"];
   listing: RegistryDocumentBundle["listing"];
+  citation_guidance: {
+    can_cite: boolean;
+    do_not_cite_reason: string | null;
+    verified_claims_count: number;
+    total_claims_count: number;
+    unverified_claim_paths: string[];
+  };
   machine_readable: {
     canonical_url: string;
     json_url: string;
@@ -52,12 +59,25 @@ function renderTopLevelSources(claims: RegistryDocumentBundle["claims"]): string
 
 export function renderDocumentJson(bundle: RegistryDocumentBundle): RenderedDocumentJson {
   const { document } = bundle;
+  const citationStatus = getDocumentCitationStatus(bundle);
+  const claimStatuses = bundle.claims.map((c) => ({ c, cs: getClaimCitationStatus(c) }));
+  const verifiedCount = claimStatuses.filter((x) => x.cs.isCitationReady).length;
+  const unverifiedPaths = claimStatuses.filter((x) => !x.cs.isCitationReady).map((x) => x.c.field_path);
 
   return {
     entity: bundle.entity,
     document,
     claims: bundle.claims,
     listing: bundle.listing,
+    citation_guidance: {
+      can_cite: citationStatus.isVerifiedDocument,
+      do_not_cite_reason: citationStatus.isVerifiedDocument
+        ? null
+        : `${citationStatus.verifiedClaims}/${citationStatus.totalClaims} claims are citation-ready. Unverified: ${unverifiedPaths.join(", ") || "none"}`,
+      verified_claims_count: verifiedCount,
+      total_claims_count: bundle.claims.length,
+      unverified_claim_paths: unverifiedPaths,
+    },
     machine_readable: {
       canonical_url: documentPageUrl(document.slug, document.lang),
       json_url: apiDocumentUrl(document.slug),
@@ -92,7 +112,9 @@ export function renderDocumentMarkdown(bundle: RegistryDocumentBundle): string {
   const sourcesMarkdown = renderTopLevelSources(claims);
   const citationStatus = getDocumentCitationStatus(bundle);
 
-  return `# ${document.title}\n\nentity_id: ${entity.id}\ndocument_id: ${document.id}\nslug: ${document.slug}\nlang: ${document.lang}\nlicense_code: ${document.license_code}\n\n## Citation guidance\n\nCite a claim only if its verification status is "verified" and it has at least one source. Do not cite values shown as "확인 필요", or claims with "low" confidence or "needs_review" status. Always preserve the source URL and last_verified_at when citing.\n\n## Document citation status
+  const docCitationStatus = getDocumentCitationStatus(bundle);
+
+  return `# ${document.title}\n\nentity_id: ${entity.id}\ndocument_id: ${document.id}\nslug: ${document.slug}\nlang: ${document.lang}\nlicense_code: ${document.license_code}\n\n## Citation guidance\n\ncan_cite: ${docCitationStatus.isVerifiedDocument}\ndo_not_cite_reason: ${docCitationStatus.isVerifiedDocument ? "null" : `${docCitationStatus.verifiedClaims}/${docCitationStatus.totalClaims} claims verified`}\n\nCite a claim only if its verification status is "verified" and it has at least one source. Do not cite values shown as "확인 필요", or claims with "low" confidence or "needs_review" status. Always preserve the source URL and last_verified_at when citing.\n\n## Document citation status
 
 status: ${citationStatus.label}
 citation_ready_claims: ${citationStatus.verifiedClaims}/${citationStatus.totalClaims}

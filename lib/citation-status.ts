@@ -18,10 +18,12 @@ export type DocumentCitationStatus = {
 
 export function getClaimCitationStatus(claim: ClaimWithSources): ClaimCitationStatus {
   const hasSource = claim.sources.length > 0;
-  const hasVerificationEvent = claim.verification_events.some((event) =>
-    event.new_status === "verified" || event.event_type === "source_verified",
-  );
-  const hasVerifiedValue = claim.claim_value !== UNKNOWN_FACT_TEXT;
+  const hasVerificationEvent =
+    claim.status === "verified" ||
+    claim.verification_events.some((event) =>
+      event.new_status === "verified" || event.event_type === "source_verified",
+    );
+  const hasVerifiedValue = Boolean(claim.claim_value?.trim()) && claim.claim_value !== UNKNOWN_FACT_TEXT;
   const isCitationReady =
     claim.status === "verified" &&
     claim.confidence !== "low" &&
