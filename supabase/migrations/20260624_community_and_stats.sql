@@ -2,7 +2,7 @@
 -- Posts can optionally link to a document.
 create table community_posts (
   id              uuid primary key default gen_random_uuid(),
-  document_id     text references documents(id) on delete set null,
+  document_id     text,
   author_type     text not null default 'user'
                   check (author_type in ('user', 'ai', 'admin')),
   author_name     text not null default '익명',
@@ -32,7 +32,7 @@ create policy community_posts_public_select
 
 -- Document stats: track view_count and ai_citation_count per document.
 create table document_stats (
-  document_id       text primary key references documents(id) on delete cascade,
+  document_id       text primary key,
   view_count        bigint not null default 0,
   ai_citation_count bigint not null default 0,
   updated_at        timestamptz not null default now()
