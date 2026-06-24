@@ -8,11 +8,6 @@ interface Candidate {
   source_hints:{url:string;title:string}[];
   status:string;source:string;generation_model?:string;created_at:string;
 }
-const SB_URL=process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const SB_KEY=process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-async function sbFetch(path:string,opts?:RequestInit){
-  return fetch(`${SB_URL}/rest/v1/${path}`,{...opts,headers:{apikey:SB_KEY,Authorization:`Bearer ${SB_KEY}`,"Content-Type":"application/json",Prefer:"return=representation",...(opts?.headers??{})}});
-}
 const SC:Record<string,string>={new:"background:#dbeafe;color:#1d4ed8",reviewing:"background:#fef9c3;color:#a16207",approved:"background:#dcfce7;color:#15803d",rejected:"background:#fee2e2;color:#b91c1c",promoted:"background:#f3e8ff;color:#7e22ce"};
 export default function CandidatesPage(){
   const [items,setItems]=useState<Candidate[]>([]);
@@ -24,16 +19,18 @@ export default function CandidatesPage(){
   const [promoting,setPromoting]=useState<string|null>(null);
   const load=useCallback(async()=>{
     setLoading(true);
-    const q=filter==="all"?"":`&status=eq.${filter}`;
-    const r=await sbFetch(`topic_candidates?select=*&order=created_at.desc&limit=100${q}`);
-    const d=await r.json();setItems(Array.isArray(d)?d:[]);setLoading(false);
-  },[filter]);
+    const r=await fetch(`/api/admin/candidates?status=${filter}`,{headers:{"x-admin-secret":secret}});
+    const d=await r.json();setItems(Array.isArray(d.candidates)?d.candidates:[]);setLoading(false);
+    if(!r.ok) flash(`❌ ${d.error??"후보 조회 실패"}`,false);
+  },[filter,secret]);
   useEffect(()=>{load();},[load]);
   function flash(text:string,ok=true){setMsg({text,ok});setTimeout(()=>setMsg(null),4000);}
   async function act(id:string,st:string){
-    const r=await sbFetch(`topic_candidates?id=eq.${id}`,{method:"PATCH",headers:{"x-admin-secret":secret},body:JSON.stringify({status:st,reviewed_at:new Date().toISOString()})});
-    if(r.ok||r.status===200||r.status===204){flash(`✅ ${st}`);setSelected(null);load();}
-    else flash("❌ 권한 오류 — admin secret 확인",false);
+    if(!secret){flash("❌ admin secret을 입력하세요",false);return;}
+    const r=await fetch("/api/admin/candidates",{method:"PATCH",headers:{"Content-Type":"application/json","x-admin-secret":secret},body:JSON.stringify({id,status:st})});
+    const d=await r.json();
+    if(r.ok){flash(`✅ ${st}`);setSelected(null);load();}
+    else flash(`❌ ${d.error??"권한 오류 — admin secret 확인"}`,false);
   }
   async function promote(id:string,slug:string){
     if(!secret){flash("❌ admin secret을 입력하세요",false);return;}

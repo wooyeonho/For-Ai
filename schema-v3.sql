@@ -151,15 +151,29 @@ create table listings (
 create unique index listings_lang_slug_key on listings (lang, slug);
 create index listings_entity_id_idx on listings (entity_id);
 
+create table admin_audit_events (
+  id uuid primary key default gen_random_uuid(),
+  action text not null,
+  metadata jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now()
+);
+
+comment on table admin_audit_events is 'Admin-only audit trail. Do not store raw IP addresses; use safe metadata such as hashed user-agent or contributor_hash only.';
+comment on column admin_audit_events.metadata is 'Safe request/action metadata only. Raw IP addresses are forbidden.';
+
+create index admin_audit_events_created_at_idx on admin_audit_events (created_at desc);
+
 alter table edits enable row level security;
 alter table reports enable row level security;
 alter table hallucination_reports enable row level security;
+alter table admin_audit_events enable row level security;
 
 create policy edits_public_insert_only on edits for insert to anon with check (true);
 create policy reports_public_insert_only on reports for insert to anon with check (true);
 create policy hallucination_reports_public_insert_only on hallucination_reports for insert to anon with check (true);
 
 -- No public SELECT policies are defined for edits, reports, or hallucination_reports.
+-- No public SELECT policies are defined for admin_audit_events.
 -- Never store raw IP addresses. Store contributor_hash only for submissions/events.
 
 -- topic_candidates: AI/user-generated knowledge candidates (NOT verified facts)
@@ -183,9 +197,9 @@ create table topic_candidates (
   source_hints   jsonb default '[]',
   contributor_hash text,
   generation_model text,
-  consensus_score numeric check (consensus_score is null or (consensus_score >= 0 and consensus_score <= 1)),
-  consensus_level text check (consensus_level is null or consensus_level in ('low','medium','high')),
-  consensus_sources jsonb default '[]',
+  consensus_score  numeric(3,2),
+  consensus_level  text check (consensus_level in ('unanimous','majority','minority','single')),
+  agreed_providers text[],
   created_at     timestamptz default now(),
   reviewed_at    timestamptz,
   promoted_at    timestamptz

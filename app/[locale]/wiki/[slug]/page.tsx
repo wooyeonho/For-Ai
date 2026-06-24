@@ -1,11 +1,11 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { createClient } from "@supabase/supabase-js";
 import { getRegistryBundleBySlug, getAllRegistryBundles } from "../../../../lib/data";
 import { buildDocumentMetadata, buildDocumentJsonLd } from "../../../../lib/seo";
 import { SUPPORTED_LOCALES, isValidLocale, getTranslations } from "../../../../lib/i18n";
 import type { RegistryDocumentBundle } from "../../../../lib/types";
+import { getRegistryBundleFromSupabase } from "../../../../lib/supabase-documents";
 
 export const revalidate = 60;
 
@@ -16,6 +16,13 @@ export async function generateStaticParams() {
   );
 }
 
+async function getMetadataBundle(slug: string): Promise<RegistryDocumentBundle | null> {
+  const staticBundle = getRegistryBundleBySlug(slug);
+  if (staticBundle) return staticBundle;
+
+  return getRegistryBundleFromSupabase(slug);
+}
+
 export async function generateMetadata({
   params,
 }: {
@@ -23,77 +30,9 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { locale, slug } = await params;
   if (!isValidLocale(locale)) return { title: "Not found" };
-  const bundle = getRegistryBundleBySlug(slug);
+  const bundle = await getMetadataBundle(slug);
   if (!bundle) return { title: "Document not found" };
   return buildDocumentMetadata(bundle);
-}
-
-async function getBundleFromSupabase(slug: string): Promise<RegistryDocumentBundle | null> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) return null;
-  const sb = createClient(url, key);
-  const { data: doc } = await sb
-    .from("registry_documents")
-    .select("*, registry_entities(*), registry_claims(*)")
-    .eq("slug", slug)
-    .eq("status", "published")
-    .maybeSingle();
-  if (!doc || !doc.registry_entities) return null;
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const ent = doc.registry_entities as any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const rawClaims = (doc.registry_claims ?? []) as any[];
-
-  const claims = rawClaims.map((cl) => ({
-    id: cl.id as string,
-    document_id: doc.id as string,
-    entity_id: ent.id as string,
-    field_path: cl.field_path as string,
-    claim_text: (cl.claim_text ?? "") as string,
-    claim_value: (cl.claim_value ?? "") as string,
-    confidence: (cl.confidence ?? "low") as "low" | "medium" | "high",
-    status: (["verified", "disputed", "unknown"].includes(cl.status)
-      ? cl.status
-      : "needs_review") as "needs_review" | "verified" | "disputed" | "unknown",
-    last_verified_at: (cl.last_verified_at ?? null) as string | null,
-    created_at: null,
-    updated_at: null,
-    sources: [],
-    verification_events: [],
-  }));
-
-  return {
-    entity: {
-      id: ent.id as string,
-      type: (ent.entity_type ?? ent.type ?? "concept") as string,
-      canonical_name: ent.canonical_name as string,
-      country: (ent.country ?? "KR") as string,
-      region: (ent.region ?? null) as string | null,
-      city: (ent.city ?? null) as string | null,
-      created_at: null,
-      updated_at: null,
-    },
-    document: {
-      id: doc.id as string,
-      entity_id: ent.id as string,
-      slug: doc.slug as string,
-      lang: (doc.lang ?? "ko") as string,
-      title: doc.title as string,
-      category: (doc.category ?? "") as string,
-      template: (doc.template ?? "fact-sheet") as string,
-      status: doc.status,
-      confidence: (doc.confidence ?? "low") as "low" | "medium" | "high",
-      last_verified_at: null,
-      license_code: (doc.license_code ?? "CC-BY-4.0") as string,
-      data: (doc.data ?? {}) as Record<string, unknown>,
-      created_at: null,
-      updated_at: null,
-    },
-    claims,
-    listing: null,
-  };
 }
 
 export default async function WikiDocumentPage({
@@ -106,7 +45,7 @@ export default async function WikiDocumentPage({
 
   const t = getTranslations(locale);
   let bundle: RegistryDocumentBundle | null = getRegistryBundleBySlug(slug);
-  if (!bundle) bundle = await getBundleFromSupabase(slug);
+  if (!bundle) bundle = await getRegistryBundleFromSupabase(slug);
   if (!bundle) notFound();
 
   const { entity, document, claims } = bundle;
@@ -175,6 +114,19 @@ export default async function WikiDocumentPage({
             </div>
           ))
         )}
+      </section>
+
+      <section className="registry-panel" aria-labelledby="citation-status">
+        <h2 id="citation-status">Citation status</h2>
+        <p>
+          This document may be cited as a GYEOL registry entry, but individual claim values
+          may be cited only when the claim status is verified and sources are attached.
+        </p>
+        <ul className="link-list">
+          <li>Do not cite values marked “확인 필요” as factual answers.</li>
+          <li>Do not cite low-confidence or needs_review claims as factual answers.</li>
+          <li>Current claim source counts are shown on each claim card above.</li>
+        </ul>
       </section>
 
       <nav className="registry-panel" aria-labelledby="machine-links">

@@ -171,11 +171,12 @@ Goals:
 
 ## Repository prompt kit
 
-Reusable prompts are checked into `ai-ops/` so each tool can be started from a stable file instead of copying from chat history:
+Reusable prompts are checked into stable locations so each tool can be started from a file instead of copying from chat history:
 
-- `ai-ops/lazycodex/master-plan.txt` — first LazyCodex stabilization plan.
-- `ai-ops/lazycodex/p0-stabilization.txt` — P0 LazyCodex planning and loops.
-- `ai-ops/lazycodex/ai-readiness.txt` — AI-readiness LazyCodex loop.
+- `docs/lazycodex/master-plan.txt` — first LazyCodex stabilization plan.
+- `docs/lazycodex/p0-stabilization.txt` — P0 LazyCodex planning and loops.
+- `docs/lazycodex/ai-readiness.txt` — AI-readiness LazyCodex loop.
+- `docs/lazycodex/four-hour-stabilization.txt` — bounded four-hour LazyCodex stabilization loop.
 - `ai-ops/claude/product-review.txt` — Claude product and investor review.
 - `ai-ops/claude/source-trust-policy.txt` — Claude trust-policy design.
 - `ai-ops/devin/final-cleanup.txt` — Devin final cleanup prompt.
@@ -186,6 +187,7 @@ Print any prompt with:
 npm run ai:prompt -- lazycodex:master
 npm run ai:prompt -- lazycodex:p0
 npm run ai:prompt -- lazycodex:ai-readiness
+npm run ai:prompt -- lazycodex:four-hour
 npm run ai:prompt -- claude:product-review
 npm run ai:prompt -- claude:source-trust
 npm run ai:prompt -- devin:final-cleanup

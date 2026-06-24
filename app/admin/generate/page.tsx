@@ -2,7 +2,14 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 
-const PROVIDERS = [
+const PROVIDER_ICONS: Record<string, string> = {
+  perplexity: "🔍",
+  gemini: "✦",
+  gpt: "◎",
+  grok: "⚡",
+};
+
+const FALLBACK_PROVIDERS = [
   { key: "perplexity", label: "Perplexity (웹 검색)", icon: "🔍" },
   { key: "gemini", label: "Gemini 2.0", icon: "✦" },
   { key: "gpt", label: "GPT-4o", icon: "◎" },
@@ -19,28 +26,47 @@ const LANGUAGES = [
   { code: "zh", label: "中文", flag: "🇨🇳" },
 ];
 
+interface ConsensusInfo {
+  consensus_score?: number;
+  consensus_level?: "unanimous" | "majority" | "minority" | "single";
+  agreed_providers?: string[];
+}
+
+interface ProviderOption {
+  key: string;
+  label: string;
+  model?: string;
+  supports_web_search?: boolean;
+}
+
 interface GenerateResult {
   topic: string;
   lang: string;
   providers_used: string[];
   total_generated: number;
   saved: number;
-  preview: Record<string, unknown>[];
+  preview: (Record<string, unknown> & ConsensusInfo)[];
   provider_results?: Record<string, { generated: number; error?: string }>;
   consensus_summary?: {
-    provider_count: number;
-    candidate_count: number;
-    consensus_group_count: number;
-    levels?: Record<string, number>;
+    total_unique: number;
+    unanimous: number;
+    majority: number;
+    minority: number;
+    single: number;
   };
   error?: string;
+  save_status?: "saved" | "failed" | "skipped";
   save_error?: string;
+  save_error_details?: Record<string, unknown>;
 }
 
 export default function AdminGeneratePage() {
   const [topic, setTopic] = useState("");
   const [count, setCount] = useState(10);
   const [lang, setLang] = useState("ko");
+  const [availableProviders, setAvailableProviders] = useState<ProviderOption[]>([]);
+  const [providersLoading, setProvidersLoading] = useState(true);
+  const [providersError, setProvidersError] = useState("");
   const [selectedProviders, setSelectedProviders] = useState<string[]>(["perplexity"]);
   const [crossVerify, setCrossVerify] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -51,6 +77,23 @@ export default function AdminGeneratePage() {
   useEffect(() => {
     const saved = localStorage.getItem("gyeol_admin_secret");
     if (saved) setAdminSecret(saved);
+
+    async function loadProviders() {
+      try {
+        const res = await fetch("/api/admin/generate-candidates");
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
+        const providers = (data.available_providers ?? []) as ProviderOption[];
+        setAvailableProviders(providers);
+        if (providers.length > 0) setSelectedProviders([providers[0].key]);
+      } catch (e) {
+        setProvidersError(String(e));
+      } finally {
+        setProvidersLoading(false);
+      }
+    }
+
+    loadProviders();
   }, []);
 
   function saveAdminSecret(value: string) {
@@ -185,23 +228,32 @@ export default function AdminGeneratePage() {
             AI 모델 선택
           </label>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {PROVIDERS.map((p) => (
+            {(availableProviders.length > 0 ? availableProviders : FALLBACK_PROVIDERS).map((p) => (
               <button
                 key={p.key}
-                onClick={() => toggleProvider(p.key)}
+                onClick={() => availableProviders.length > 0 && toggleProvider(p.key)}
+                disabled={availableProviders.length === 0}
                 style={{
                   padding: "8px 14px",
                   border: selectedProviders.includes(p.key) ? "2px solid #2563eb" : "1px solid #e5e7eb",
                   borderRadius: 8,
                   background: selectedProviders.includes(p.key) ? "#eff6ff" : "#fff",
-                  cursor: "pointer",
+                  cursor: availableProviders.length === 0 ? "not-allowed" : "pointer",
+                  opacity: availableProviders.length === 0 ? 0.55 : 1,
                   fontSize: 14,
                 }}
               >
-                {p.icon} {p.label}
+                {PROVIDER_ICONS[p.key] ?? "•"} {p.label}
               </button>
             ))}
           </div>
+          {providersLoading && <p style={{ marginTop: 8, fontSize: 12, color: "#6b7280" }}>사용 가능한 provider 확인 중...</p>}
+          {!providersLoading && availableProviders.length === 0 && (
+            <p style={{ marginTop: 8, fontSize: 12, color: "#b45309" }}>
+              사용 가능한 provider가 없습니다. 배포 환경변수에 PERPLEXITY_API_KEY 등 provider API key를 설정해야 합니다.
+              {providersError && ` (${providersError})`}
+            </p>
+          )}
         </div>
 
         {/* Options row */}
@@ -234,7 +286,7 @@ export default function AdminGeneratePage() {
         {/* Generate button */}
         <button
           onClick={handleGenerate}
-          disabled={loading || !topic.trim() || selectedProviders.length === 0}
+          disabled={loading || !topic.trim() || selectedProviders.length === 0 || availableProviders.length === 0}
           style={{
             padding: "12px 24px",
             background: loading ? "#9ca3af" : "#2563eb",
@@ -243,7 +295,7 @@ export default function AdminGeneratePage() {
             borderRadius: 8,
             fontSize: 16,
             fontWeight: 600,
-            cursor: loading ? "not-allowed" : "pointer",
+            cursor: loading || !topic.trim() || selectedProviders.length === 0 || availableProviders.length === 0 ? "not-allowed" : "pointer",
           }}
         >
           {loading ? "생성 중..." : `후보 ${count}개 생성`}
@@ -278,7 +330,12 @@ export default function AdminGeneratePage() {
 
           {result.save_error && (
             <div style={{ padding: 12, background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, marginBottom: 16, fontSize: 13, color: "#b91c1c" }}>
-              DB 저장 실패: {result.save_error}
+              <strong>DB 저장 실패:</strong> {result.save_error}
+              {result.save_error_details && (
+                <pre style={{ whiteSpace: "pre-wrap", marginTop: 8, fontSize: 12 }}>
+                  {JSON.stringify(result.save_error_details, null, 2)}
+                </pre>
+              )}
             </div>
           )}
 
@@ -308,24 +365,65 @@ export default function AdminGeneratePage() {
             </div>
           )}
 
+          {result.consensus_summary && (
+            <div style={{ marginBottom: 20, padding: 16, background: "#f0f9ff", border: "1px solid #bae6fd", borderRadius: 8 }}>
+              <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>교차검증 합의 결과</h3>
+              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: 8, fontSize: 13 }}>
+                <div style={{ textAlign: "center", padding: 8, background: "#dcfce7", borderRadius: 6 }}>
+                  <div style={{ fontSize: 20, fontWeight: 700 }}>{result.consensus_summary.unanimous}</div>
+                  <div style={{ color: "#15803d" }}>만장일치</div>
+                </div>
+                <div style={{ textAlign: "center", padding: 8, background: "#dbeafe", borderRadius: 6 }}>
+                  <div style={{ fontSize: 20, fontWeight: 700 }}>{result.consensus_summary.majority}</div>
+                  <div style={{ color: "#1d4ed8" }}>다수 동의</div>
+                </div>
+                <div style={{ textAlign: "center", padding: 8, background: "#fef9c3", borderRadius: 6 }}>
+                  <div style={{ fontSize: 20, fontWeight: 700 }}>{result.consensus_summary.minority}</div>
+                  <div style={{ color: "#a16207" }}>소수 동의</div>
+                </div>
+                <div style={{ textAlign: "center", padding: 8, background: "#f3f4f6", borderRadius: 6 }}>
+                  <div style={{ fontSize: 20, fontWeight: 700 }}>{result.consensus_summary.single}</div>
+                  <div style={{ color: "#6b7280" }}>단독 생성</div>
+                </div>
+              </div>
+              <p style={{ fontSize: 12, color: "#6b7280", marginTop: 8 }}>
+                중복 제거 후 고유 토픽: {result.consensus_summary.total_unique}개
+              </p>
+            </div>
+          )}
+
           {result.preview && result.preview.length > 0 && (
             <div>
-              <h3 style={{ fontSize: 14, marginBottom: 8 }}>미리보기 (상위 3개)</h3>
-              {result.preview.map((c, i) => (
-                <div key={i} style={{ padding: 12, border: "1px solid #e5e7eb", borderRadius: 8, marginBottom: 8 }}>
-                  <p style={{ fontWeight: 600 }}>{String(c.title)}</p>
-                  <p style={{ fontSize: 12, color: "#6b7280" }}>
-                    {String(c.slug)} · {String(c.category)} · {String(c.generation_model)}
-                  </p>
-                  {c.consensus_score !== undefined && (
-                    <p style={{ marginTop: 6, fontSize: 12 }}>
-                      <span style={{ padding: "2px 7px", borderRadius: 999, background: c.consensus_level === "high" ? "#dcfce7" : c.consensus_level === "medium" ? "#fef3c7" : "#fee2e2", fontWeight: 600 }}>
-                        consensus {String(c.consensus_level)} · {String(c.consensus_score)}
-                      </span>
+              <h3 style={{ fontSize: 14, marginBottom: 8 }}>미리보기 (상위 {result.preview.length}개)</h3>
+              {result.preview.map((c, i) => {
+                const levelColors: Record<string, string> = {
+                  unanimous: "#16a34a", majority: "#2563eb", minority: "#ca8a04", single: "#9ca3af",
+                };
+                const levelLabels: Record<string, string> = {
+                  unanimous: "만장일치", majority: "다수 동의", minority: "소수", single: "단독",
+                };
+                return (
+                  <div key={i} style={{ padding: 12, border: "1px solid #e5e7eb", borderRadius: 8, marginBottom: 8 }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <p style={{ fontWeight: 600 }}>{String(c.title)}</p>
+                      {c.consensus_level && (
+                        <span style={{
+                          fontSize: 11, fontWeight: 600, padding: "2px 8px", borderRadius: 12,
+                          color: levelColors[c.consensus_level] ?? "#9ca3af",
+                          background: `${levelColors[c.consensus_level] ?? "#9ca3af"}18`,
+                        }}>
+                          {levelLabels[c.consensus_level] ?? c.consensus_level}
+                          {c.consensus_score !== undefined && ` ${Math.round(c.consensus_score * 100)}%`}
+                        </span>
+                      )}
+                    </div>
+                    <p style={{ fontSize: 12, color: "#6b7280" }}>
+                      {String(c.slug)} · {String(c.category)} · {String(c.generation_model)}
+                      {c.agreed_providers && ` · ${(c.agreed_providers as string[]).join(", ")}`}
                     </p>
-                  )}
-                </div>
-              ))}
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>

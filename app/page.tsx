@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
-import { getAllRegistryBundles } from "../lib/data";
+import { getAllRegistryBundles, isVerifiedDocumentBundle, partitionRegistryBundles } from "../lib/data";
 import type { RegistryDocumentBundle } from "../lib/types";
 import HomeSearch from "./components/HomeSearch";
 
@@ -10,6 +10,7 @@ interface DocItem {
   title: string;
   category?: string;
   source: "static" | "supabase";
+  verification: "verified" | "candidate";
 }
 
 export const metadata: Metadata = {
@@ -44,6 +45,7 @@ async function getAllDocs(): Promise<DocItem[]> {
     title: b.document.title,
     category: undefined,
     source: "static" as const,
+    verification: isVerifiedDocumentBundle(b) ? "verified" as const : "candidate" as const,
   }));
   const staticSlugs = new Set(staticDocs.map((d) => d.slug));
   let sbDocs: DocItem[] = [];
@@ -54,18 +56,34 @@ async function getAllDocs(): Promise<DocItem[]> {
       const sb = createClient(url, key);
       const { data } = await sb
         .from("registry_documents")
-        .select("slug,title,category")
-        .eq("status", "published")
+        .select("slug,title,category,status,confidence,registry_claims(status,confidence,claim_value)")
+        .in("status", ["published", "verified", "needs_review"])
         .order("created_at", { ascending: false })
         .limit(500);
       sbDocs = (data ?? [])
         .filter((d: { slug: string }) => !staticSlugs.has(d.slug))
-        .map((d: { slug: string; title: string; category?: string }) => ({
-          slug: d.slug,
-          title: d.title,
-          category: d.category ?? "",
-          source: "supabase" as const,
-        }));
+        .map((d: { slug: string; title: string; category?: string; status?: string; confidence?: string; registry_claims?: { status?: string; confidence?: string; claim_value?: string }[] }) => {
+          const claims = d.registry_claims ?? [];
+          const verification =
+            (d.status === "published" || d.status === "verified") &&
+            d.confidence !== "low" &&
+            claims.length > 0 &&
+            claims.every((claim) =>
+              claim.status === "verified" &&
+              claim.confidence !== "low" &&
+              claim.claim_value !== "확인 필요",
+            )
+              ? "verified"
+              : "candidate";
+
+          return {
+            slug: d.slug,
+            title: d.title,
+            category: d.category ?? "",
+            source: "supabase" as const,
+            verification,
+          };
+        });
     } catch {
       /* Supabase unavailable — use static only */
     }
@@ -94,6 +112,7 @@ export default async function HomePage() {
     const r = statusRank(a) - statusRank(b);
     return r !== 0 ? r : a.document.title.localeCompare(b.document.title, "ko");
   });
+  const { verified: verifiedDocuments, candidates: candidateDocuments } = partitionRegistryBundles(sorted);
 
   return (
     <div className="home">
@@ -273,8 +292,34 @@ export default async function HomePage() {
       <section className="section" id="registry">
         <p className="section-eyebrow">레지스트리</p>
         <h2 className="section-title">등록된 문서 ({bundles.length})</h2>
+        <p className="section-subtitle">
+          검증 문서는 모든 claim이 출처를 가진 verified 상태일 때만 분리합니다. 후보 문서는
+          stable English slug를 유지하되 표시 제목은 언어별 title을 사용하며, 미확인 값은
+          “확인 필요”와 low confidence로 남깁니다.
+        </p>
+        <h3>검증된 문서 ({verifiedDocuments.length})</h3>
         <ul className="registry-index">
-          {sorted.map((b) => {
+          {verifiedDocuments.map((b) => {
+            const badge = statusBadge(b.document.status);
+            return (
+              <li key={b.document.slug} className="registry-row">
+                <div className="registry-row-main">
+                  <Link href={`/ko/wiki/${b.document.slug}`} className="registry-row-title">
+                    {b.document.title}
+                  </Link>
+                  <span className="registry-row-entity">{b.entity.canonical_name}</span>
+                </div>
+                <div className="registry-row-meta">
+                  <span className={badge.className}>{badge.label}</span>
+                  <span className="badge">{b.entity.type}</span>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+        <h3>후보 · 확인 필요 문서 ({candidateDocuments.length})</h3>
+        <ul className="registry-index">
+          {candidateDocuments.map((b) => {
             const badge = statusBadge(b.document.status);
             return (
               <li key={b.document.slug} className="registry-row">

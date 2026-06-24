@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import {
   type AIProviderKey,
   AI_PROVIDERS,
@@ -8,15 +7,9 @@ import {
   generateWithAll,
   type AIGenerateResponse,
 } from "../../../../lib/ai-providers";
+import { buildConsensus, type ConsensusCandidate } from "../../../../lib/consensus";
 
-const ADMIN_SECRET = process.env.ADMIN_SECRET ?? "";
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
-
-function supabaseAdmin() {
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) return null;
-  return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-}
+import { authorized, logAdminAuditEvent, missingSupabaseAdminEnv, supabaseAdmin } from "@/lib/admin-api";
 
 function buildPrompt(topic: string, count: number, lang: string) {
   const langInstructions: Record<string, string> = {
@@ -220,8 +213,7 @@ function applyConsensus(
 }
 
 export async function POST(request: Request) {
-  const auth = request.headers.get("x-admin-secret");
-  if (ADMIN_SECRET && auth !== ADMIN_SECRET) {
+  if (!authorized(request)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
@@ -264,19 +256,34 @@ export async function POST(request: Request) {
 
   let allCandidates: Record<string, unknown>[] = [];
   const providerResults: Record<string, { generated: number; error?: string }> = {};
+  let consensusResults: ConsensusCandidate[] | null = null;
 
   let consensusSummary: Record<string, unknown> | null = null;
 
   if (crossVerify && providers.length >= 2) {
-    // Cross-verification: run all providers, cluster similar candidates into consensus groups.
+    // Cross-verification: run all providers, build consensus
     const responses = await generateWithAll(providers, aiRequest);
+    const candidatesByProvider = new Map<string, Record<string, unknown>[]>();
+
     for (const resp of responses) {
       const candidates = parseCandidatesFromResponse(resp, lang);
       providerResults[resp.provider] = {
         generated: candidates.length,
         error: resp.error || undefined,
       };
-      allCandidates.push(...candidates);
+      if (candidates.length > 0) {
+        candidatesByProvider.set(resp.provider, candidates);
+      }
+    }
+
+    if (candidatesByProvider.size >= 2) {
+      consensusResults = buildConsensus(candidatesByProvider, providers.length);
+      allCandidates = consensusResults;
+    } else {
+      // Only one provider returned results — no consensus possible
+      for (const candidates of candidatesByProvider.values()) {
+        allCandidates.push(...candidates);
+      }
     }
 
     const consensus = applyConsensus(allCandidates, providers.length);
@@ -304,21 +311,54 @@ export async function POST(request: Request) {
   // Save to DB if configured
   let saved: unknown[] = [];
   let saveError: string | null = null;
+  let saveErrorDetails: Record<string, unknown> | null = null;
   const client = supabaseAdmin();
 
   if (saveToDb && client) {
+    // Strip non-DB fields before insert; keep only schema-compatible columns
+    const dbRows = allCandidates.map((c) => {
+      const row = { ...c } as Record<string, unknown>;
+      // Remove consensus metadata that isn't in the DB table columns
+      delete row.merged_source_hints;
+      delete row.merged_claims;
+      delete row.total_providers;
+      return row;
+    });
+
     const { data, error } = await client
       .from("topic_candidates")
-      .insert(allCandidates)
+      .insert(dbRows)
       .select("id, title, slug");
 
     if (error) {
       saveError = error.message;
+      saveErrorDetails = {
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+      };
+      console.error("[admin/generate-candidates] Supabase insert failed", {
+        message: error.message,
+        code: error.code,
+        details: error.details,
+        hint: error.hint,
+        attempted_rows: dbRows.length,
+      });
     } else {
       saved = data ?? [];
+      await logAdminAuditEvent(client, request, "admin.generate_candidates", {
+        topic,
+        lang,
+        saved_count: saved.length,
+        providers_used: Object.keys(providerResults),
+        cross_verify: crossVerify,
+      });
     }
   } else if (saveToDb && !client) {
     saveError = "SUPABASE_SERVICE_ROLE_KEY not configured. AI candidates generated but cannot be saved. anon key is not accepted for ai_generated inserts due to RLS policy.";
+    saveErrorDetails = {
+      missing_env: missingSupabaseAdminEnv(),
+    };
   }
 
   return NextResponse.json({
@@ -331,8 +371,31 @@ export async function POST(request: Request) {
     ...(consensusSummary ? { consensus_summary: consensusSummary } : {}),
     total_generated: allCandidates.length,
     saved: saved.length,
+    save_status: saveToDb
+      ? (saveError ? "failed" : "saved")
+      : "skipped",
     ...(saveError ? { save_error: saveError } : {}),
-    preview: allCandidates.slice(0, 3),
+    ...(saveErrorDetails ? { save_error_details: saveErrorDetails } : {}),
+    ...(consensusResults ? {
+      consensus_summary: {
+        total_unique: consensusResults.length,
+        unanimous: consensusResults.filter((c) => c.consensus_level === "unanimous").length,
+        majority: consensusResults.filter((c) => c.consensus_level === "majority").length,
+        minority: consensusResults.filter((c) => c.consensus_level === "minority").length,
+        single: consensusResults.filter((c) => c.consensus_level === "single").length,
+      },
+    } : {}),
+    preview: allCandidates.slice(0, 5).map((c) => {
+      const consensus = c as Record<string, unknown>;
+      return {
+        ...c,
+        ...(consensus.consensus_score !== undefined ? {
+          consensus_score: consensus.consensus_score,
+          consensus_level: consensus.consensus_level,
+          agreed_providers: consensus.agreed_providers,
+        } : {}),
+      };
+    }),
   });
 }
 
