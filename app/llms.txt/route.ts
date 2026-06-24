@@ -3,6 +3,7 @@ import {
   getAllRegistryBundles,
   partitionRegistryBundles,
 } from "../../lib/data";
+import { getDocumentCitationStatus } from "../../lib/citation-status";
 import { siteUrl, documentPageUrl, apiDocumentUrl, rawMarkdownUrl } from "../../lib/urls";
 
 // Static-first AI/RAG discovery entry point. Served as text/plain at /llms.txt.
@@ -101,7 +102,7 @@ export async function GET() {
   lines.push("");
   lines.push("## Citation policy");
   lines.push("");
-  lines.push("- Cite a claim only when its `status` is `verified` and it has at least one source.");
+  lines.push("- Cite a claim only when it is verified from `claims`, has at least one `claim_sources` row, and has a matching `verification_events` record.");
   lines.push(
     '- Never cite a claim whose value is "확인 필요", whose `confidence` is `low`, or whose `status` is `needs_review`.',
   );
@@ -121,8 +122,9 @@ export async function GET() {
   lines.push("");
   for (const b of verified) {
     const d = b.document;
+    const status = getDocumentCitationStatus(b);
     lines.push(
-      `- [${d.title}](${documentPageUrl(d.slug, d.lang)}) — status: ${d.status}, confidence: ${d.confidence} ` +
+      `- [${d.title}](${documentPageUrl(d.slug, d.lang)}) — citation: ${status.label}, claims: ${status.verifiedClaims}/${status.totalClaims}, confidence: ${d.confidence} ` +
         `· JSON: ${apiDocumentUrl(d.slug)} · Markdown: ${rawMarkdownUrl(d.slug)}`,
     );
   }
