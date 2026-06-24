@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import {
   type AIProviderKey,
   AI_PROVIDERS,
@@ -10,14 +9,7 @@ import {
 } from "../../../../lib/ai-providers";
 import { buildConsensus, type ConsensusCandidate } from "../../../../lib/consensus";
 
-const ADMIN_SECRET = process.env.ADMIN_SECRET ?? "";
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
-
-function supabaseAdmin() {
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) return null;
-  return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-}
+import { authorized, logAdminAuditEvent, missingSupabaseAdminEnv, supabaseAdmin } from "@/lib/admin-api";
 
 function buildPrompt(topic: string, count: number, lang: string) {
   const langInstructions: Record<string, string> = {
@@ -124,8 +116,7 @@ function parseCandidatesFromResponse(
 }
 
 export async function POST(request: Request) {
-  const auth = request.headers.get("x-admin-secret");
-  if (ADMIN_SECRET && auth !== ADMIN_SECRET) {
+  if (!authorized(request)) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
@@ -252,14 +243,18 @@ export async function POST(request: Request) {
       });
     } else {
       saved = data ?? [];
+      await logAdminAuditEvent(client, request, "admin.generate_candidates", {
+        topic,
+        lang,
+        saved_count: saved.length,
+        providers_used: Object.keys(providerResults),
+        cross_verify: crossVerify,
+      });
     }
   } else if (saveToDb && !client) {
     saveError = "SUPABASE_SERVICE_ROLE_KEY not configured. AI candidates generated but cannot be saved. anon key is not accepted for ai_generated inserts due to RLS policy.";
     saveErrorDetails = {
-      missing_env: [
-        ...(!SUPABASE_URL ? ["NEXT_PUBLIC_SUPABASE_URL"] : []),
-        ...(!SUPABASE_SERVICE_ROLE_KEY ? ["SUPABASE_SERVICE_ROLE_KEY"] : []),
-      ],
+      missing_env: missingSupabaseAdminEnv(),
     };
   }
 
