@@ -8,8 +8,7 @@ import {
   type AIGenerateResponse,
 } from "../../../../lib/ai-providers";
 import { buildConsensus, type ConsensusCandidate } from "../../../../lib/consensus";
-
-import { authorized, logAdminAuditEvent, missingSupabaseAdminEnv, supabaseAdmin } from "@/lib/admin-api";
+import { logAdminAuditEvent, missingSupabaseAdminEnv, requireAdmin, supabaseAdmin } from "@/lib/admin-api";
 
 function buildPrompt(topic: string, count: number, lang: string) {
   const langInstructions: Record<string, string> = {
@@ -116,9 +115,8 @@ function parseCandidatesFromResponse(
 }
 
 export async function POST(request: Request) {
-  if (!authorized(request)) {
-    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  }
+  const adminError = requireAdmin(request, "candidates.generate");
+  if (adminError) return adminError;
 
   const body = await request.json();
   const topic = String(body.topic ?? body.category ?? "").trim();
@@ -295,7 +293,9 @@ export async function POST(request: Request) {
   });
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const adminError = requireAdmin(request, "candidates.generate_metadata");
+  if (adminError) return adminError;
   const available = getAvailableProviders();
   return NextResponse.json({
     available_providers: available.map((p) => ({

@@ -80,7 +80,8 @@ export default function AdminGeneratePage() {
 
     async function loadProviders() {
       try {
-        const res = await fetch("/api/admin/generate-candidates");
+        if (!adminSecret) { setProvidersLoading(false); return; }
+        const res = await fetch("/api/admin/generate-candidates", { headers: { "x-admin-secret": adminSecret } });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
         const providers = (data.available_providers ?? []) as ProviderOption[];
@@ -94,7 +95,7 @@ export default function AdminGeneratePage() {
     }
 
     loadProviders();
-  }, []);
+  }, [adminSecret]);
 
   function saveAdminSecret(value: string) {
     setAdminSecret(value);
@@ -119,6 +120,7 @@ export default function AdminGeneratePage() {
         headers: {
           "Content-Type": "application/json",
           "x-admin-secret": adminSecret,
+          "x-admin-csrf": "1",
         },
         body: JSON.stringify({
           topic: topic.trim(),
