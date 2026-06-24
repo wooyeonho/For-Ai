@@ -64,7 +64,7 @@ export default function VerifyClaimPage() {
     if (!selectedClaim) return;
     const res = await fetch("/api/admin/verify-claim", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-admin-secret": secret },
+      headers: { "Content-Type": "application/json", "x-admin-secret": secret, "x-admin-csrf": "1" },
       body: JSON.stringify({
         claim_id: selectedClaim.id,
         claim_value: claimValue,

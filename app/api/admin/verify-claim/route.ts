@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 
-import { authorized, logAdminAuditEvent, supabaseAdmin } from "@/lib/admin-api";
+import { logAdminAuditEvent, requireAdmin, supabaseAdmin } from "@/lib/admin-api";
 
 export async function GET(request: Request) {
-  if (!authorized(request)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const adminError = requireAdmin(request, "claims.read_for_review");
+  if (adminError) return adminError;
   const sb = supabaseAdmin();
   if (!sb) return NextResponse.json({ error: "SUPABASE_SERVICE_ROLE_KEY not configured" }, { status: 500 });
 
@@ -21,7 +22,8 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  if (!authorized(request)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const adminError = requireAdmin(request, "claims.verify");
+  if (adminError) return adminError;
   const sb = supabaseAdmin();
   if (!sb) return NextResponse.json({ error: "SUPABASE_SERVICE_ROLE_KEY not configured" }, { status: 500 });
 
