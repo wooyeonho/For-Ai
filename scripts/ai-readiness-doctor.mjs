@@ -23,7 +23,7 @@ const SCAN_ROOTS = ["app", "lib"];
 const SOURCE_EXT = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".css", ".md"]);
 // Legitimate non-ASCII chars in U+0080-U+00FF (mirror of ci-guards allowlist).
 // Includes i18n characters for multilingual support (Spanish accents, etc.)
-const MOJIBAKE_ALLOWLIST = new Set(["·", "×", "©", "ñ", "é", "á", "í", "ó", "ú", "ü", "Ñ", "É", "Á", "Í", "Ó", "Ú", "Ü"]);
+const MOJIBAKE_ALLOWLIST = new Set(["·", "×", "©", "ñ", "é", "á", "í", "ó", "ú", "ü", "Ñ", "É", "Á", "Í", "Ó", "Ú", "Ü", "¡", "¿", "Î", "î", "ê", "û", "ô", "â", "ë", "ï", "ç", "à", "è", "ù"]);
 const DUMP_EXT = new Set([".jsonl", ".ndjson", ".csv"]);
 const DUMP_MAX_LINES = 2000;
 const DUMP_MAX_BYTES = 1_000_000;
@@ -35,7 +35,7 @@ const TITLED_PAGES = [
   "app/report/[slug]/page.tsx",
   "app/hallucination/[slug]/page.tsx",
   "app/diagnostics/[slug]/page.tsx",
-  "app/ko/wiki/[slug]/page.tsx",
+  "app/[locale]/wiki/[slug]/page.tsx",
 ];
 
 // --- helpers ---------------------------------------------------------------
@@ -127,7 +127,7 @@ check("md-citation", "Raw Markdown includes citation guidance", () => {
 });
 
 check("jsonld", "Document pages emit JSON-LD Dataset + metadata", () => {
-  const src = read("app/ko/wiki/[slug]/page.tsx");
+  const src = read("app/[locale]/wiki/[slug]/page.tsx");
   const ok =
     /buildDocumentJsonLd/.test(src) &&
     /application\/ld\+json/.test(src) &&
