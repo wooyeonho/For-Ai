@@ -4,7 +4,7 @@ import { ClaimStatusBadge } from "./StatusBadge";
 import { SourcePill } from "./SourcePill";
 import { VerificationMeta } from "./VerificationMeta";
 
-export function ClaimCard({ claim }: { claim: ClaimWithSources }) {
+export function ClaimCard({ claim, locale }: { claim: ClaimWithSources; locale?: string }) {
   return (
     <div className="claim-card">
       {/* Human-readable sentence first */}
@@ -21,8 +21,8 @@ export function ClaimCard({ claim }: { claim: ClaimWithSources }) {
           {claim.field_path}
         </span>
         <div className="claim-badges">
-          <ConfidenceBadge level={claim.confidence} />
-          <ClaimStatusBadge status={claim.status} />
+          <ConfidenceBadge level={claim.confidence} locale={locale} />
+          <ClaimStatusBadge status={claim.status} locale={locale} />
         </div>
       </div>
 
@@ -37,6 +37,7 @@ export function ClaimCard({ claim }: { claim: ClaimWithSources }) {
       <VerificationMeta
         lastVerifiedAt={claim.last_verified_at}
         sourceCount={claim.sources.length}
+        locale={locale}
       />
     </div>
   );

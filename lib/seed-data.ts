@@ -36,7 +36,13 @@ function vClaim(
       title: sourceTitle, url: sourceUrl, citation: sourceCitation,
       observed_at: observedAt, contributor_hash: null, created_at: null,
     } as ClaimSource],
-    verification_events: [],
+    verification_events: [{
+      id: `ve-${id}`, claim_id: id, event_type: "source_verified",
+      previous_status: "needs_review", new_status: "verified",
+      previous_confidence: "low", new_confidence: confidence,
+      note: `Verified via ${sourceTitle}`,
+      contributor_hash: null, created_at: observedAt,
+    }],
   };
 }
 

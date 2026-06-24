@@ -29,7 +29,7 @@ const SOURCE_EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".css",
 //   U+00B7 MIDDLE DOT  (·)  used as a separator in headings/admin labels
 //   U+00D7 MULTIPLICATION SIGN (×) used in seed-data dimensions
 //   U+00A9 COPYRIGHT SIGN (©) used in the site footer
-const MOJIBAKE_ALLOWLIST = new Set(["·", "×", "©", "ñ", "é", "á", "í", "ó", "ú", "ü", "Ñ", "É", "Á", "Í", "Ó", "Ú", "Ü"]);
+const MOJIBAKE_ALLOWLIST = new Set(["·", "×", "©", "ñ", "é", "á", "í", "ó", "ú", "ü", "Ñ", "É", "Á", "Í", "Ó", "Ú", "Ü", "¡", "¿", "Î", "î", "ê", "û", "ô", "â", "ë", "ï", "ç", "à", "è", "ù"]);
 
 // A full-repo-rewrite PR touches most of the tree. The repo currently tracks
 // ~67 files, so a legitimate scoped change stays well under this limit. Override
@@ -183,8 +183,10 @@ function guardDiffSize() {
     (f) => CORE_PREFIXES.some((p) => f.startsWith(p)) || CORE_FILES.includes(f),
   );
 
-  const headMsg = git(["log", "-1", "--format=%B", "HEAD"]);
-  const overridden = headMsg.includes(LARGE_DIFF_OVERRIDE);
+  // In GitHub Actions PR context, HEAD is a merge commit whose message won't
+  // contain the override flag. Check all commits in the range instead.
+  const allMsgs = git(["log", "--format=%B", range]);
+  const overridden = allMsgs.includes(LARGE_DIFF_OVERRIDE);
 
   console.log(`diff-size guard: ${changedFiles.length} files changed in ${range}`);
 

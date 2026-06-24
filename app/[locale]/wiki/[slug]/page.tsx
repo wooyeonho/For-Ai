@@ -3,7 +3,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getRegistryBundleBySlug, getAllRegistryBundles } from "../../../../lib/data";
 import { buildDocumentMetadata, buildDocumentJsonLd } from "../../../../lib/seo";
-import { SUPPORTED_LOCALES, isValidLocale } from "../../../../lib/i18n";
+import { SUPPORTED_LOCALES, isValidLocale, getTranslations } from "../../../../lib/i18n";
+import type { SupportedLocale } from "../../../../lib/i18n";
 import type { RegistryDocumentBundle } from "../../../../lib/types";
 import { getRegistryBundleFromSupabase } from "../../../../lib/supabase-documents";
 import { getCanonicalDirectAnswer, getDocumentCitationStatus } from "../../../../lib/citation-status";
@@ -50,6 +51,7 @@ export default async function WikiDocumentPage({
   if (!bundle) notFound();
 
   const { entity, document, claims } = bundle;
+  const t = getTranslations(locale as SupportedLocale);
   const docData = document.data as Record<string, unknown>;
   const directAnswer = getCanonicalDirectAnswer(bundle);
   const whyPeopleAsk = (docData?.why_people_ask_ai as string) ?? null;
@@ -70,7 +72,7 @@ export default async function WikiDocumentPage({
       {/* Clean header: title + status only, no technical IDs */}
       <header className="registry-panel">
         <p className="eyebrow">
-          {isPromoted ? "GYEOL · AI generated & reviewed" : "Claim registry document"}
+          {isPromoted ? t.wiki.aiGenerated : t.wiki.claimRegistry}
         </p>
         <h1>{document.title}</h1>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
@@ -85,7 +87,7 @@ export default async function WikiDocumentPage({
       {/* Why people ask AI this question */}
       {whyPeopleAsk && (
         <section className="registry-panel" style={{ background: "#fffbeb", borderLeft: "3px solid #f59e0b" }}>
-          <p className="eyebrow">Why people ask AI</p>
+          <p className="eyebrow">{t.wiki.whyPeopleAsk}</p>
           <p>{whyPeopleAsk}</p>
         </section>
       )}
@@ -105,40 +107,40 @@ export default async function WikiDocumentPage({
       {/* Claims — uses ClaimCard internally */}
       {claims.length === 0 ? (
         <section className="registry-panel">
-          <p style={{ color: "#9ca3af" }}>No claims registered yet.</p>
+          <p style={{ color: "#9ca3af" }}>{t.wiki.noClaims}</p>
         </section>
       ) : (
-        <ClaimTable claims={claims} />
+        <ClaimTable claims={claims} locale={locale} />
       )}
 
       {/* Citation guidance */}
       <section className="registry-panel" aria-labelledby="citation-status">
-        <h2 id="citation-status">Citation status</h2>
+        <h2 id="citation-status">{t.wiki.citationStatus}</h2>
         <p>
-          Document: <strong>{citationStatus.label}</strong>. Citation-ready claims:{" "}
+          {t.wiki.citationDocument} <strong>{citationStatus.label}</strong>. {t.wiki.citationReadyClaims}{" "}
           {citationStatus.verifiedClaims}/{citationStatus.totalClaims}.
         </p>
         <ul className="link-list">
-          <li>&quot;확인 필요&quot; 값은 사실로 인용하지 마세요.</li>
-          <li>confidence: low 또는 needs_review 상태의 claim은 인용하지 마세요.</li>
+          <li>{t.wiki.doNotCiteUnknown}</li>
+          <li>{t.wiki.doNotCiteLow}</li>
         </ul>
       </section>
 
       {/* Machine-readable links */}
       <nav className="registry-panel" aria-labelledby="machine-links">
-        <h2 id="machine-links">Machine-readable links</h2>
+        <h2 id="machine-links">{t.wiki.machineReadable}</h2>
         <ul className="link-list">
           <li><Link href={apiUrl}>JSON API ({apiUrl})</Link></li>
           <li><Link href={rawUrl}>Raw Markdown ({rawUrl})</Link></li>
-          <li><Link href={`/report/${document.slug}`}>Correction report</Link></li>
-          <li><Link href={`/hallucination/${document.slug}`}>AI hallucination report</Link></li>
-          <li><Link href={`/diagnostics/${document.slug}`}>AI-readiness diagnostics</Link></li>
+          <li><Link href={`/report/${document.slug}`}>{t.wiki.correctionReport}</Link></li>
+          <li><Link href={`/hallucination/${document.slug}`}>{t.wiki.hallucinationReport}</Link></li>
+          <li><Link href={`/diagnostics/${document.slug}`}>{t.wiki.diagnostics}</Link></li>
         </ul>
       </nav>
 
       {/* Technical metadata — collapsed by default */}
       <details className="technical-meta registry-panel">
-        <summary>기술 메타데이터</summary>
+        <summary>{t.wiki.technicalMeta}</summary>
         <dl>
           <dt>entity_id</dt><dd>{entity.id}</dd>
           <dt>document_id</dt><dd>{document.id}</dd>
@@ -149,7 +151,7 @@ export default async function WikiDocumentPage({
 
       {/* Language switcher */}
       <nav className="registry-panel" aria-labelledby="lang-switch">
-        <h2 id="lang-switch">Other languages</h2>
+        <h2 id="lang-switch">{t.wiki.otherLanguages}</h2>
         <ul className="link-list" style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
           {SUPPORTED_LOCALES.filter((l) => l !== locale).map((l) => (
             <li key={l}><Link href={`/${l}/wiki/${slug}`}>{l.toUpperCase()}</Link></li>
@@ -159,7 +161,7 @@ export default async function WikiDocumentPage({
 
       {/* License */}
       <section className="registry-panel" aria-labelledby="licensing">
-        <h2 id="licensing">License</h2>
+        <h2 id="licensing">{t.wiki.license}</h2>
         <p className="meta-label">{document.license_code ?? "CC-BY-4.0"}</p>
       </section>
     </article>

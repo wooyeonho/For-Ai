@@ -1,38 +1,46 @@
+"use client";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { getTranslations, isValidLocale } from "../../lib/i18n";
+import type { SupportedLocale } from "../../lib/i18n";
 
 export function SiteFooter() {
+  const pathname = usePathname();
+  const segments = pathname.split("/").filter(Boolean);
+  const locale = (segments[0] && isValidLocale(segments[0]) ? segments[0] : "ko") as SupportedLocale;
+  const t = getTranslations(locale);
+
   return (
     <footer className="site-footer">
       <div className="site-footer-inner">
         <div className="footer-brand">
           <span className="brand-mark">GYEOL</span>
           <p className="footer-tagline">
-            AI·검색엔진·사람이 같은 사실을 같은 근거로 인용하도록 만드는 로컬 팩트
-            레지스트리. 확인되지 않은 정보는 추측하지 않고 “확인 필요”로 남깁니다.
+            {t.footer.tagline}
           </p>
         </div>
 
         <div className="footer-col">
-          <p className="footer-col-title">사람용</p>
-          <Link href="/#registry">레지스트리 둘러보기</Link>
-          <Link href="/suggest-topic">토픽 제안</Link>
+          <p className="footer-col-title">{t.footer.forHumans}</p>
+          <Link href="/#registry">{t.footer.browseRegistry}</Link>
+          <Link href="/suggest-topic">{t.footer.suggestTopic}</Link>
         </div>
 
         <div className="footer-col">
-          <p className="footer-col-title">기계 판독</p>
+          <p className="footer-col-title">{t.footer.machineReadable}</p>
           <Link href="/sitemap.xml">sitemap.xml</Link>
           <Link href="/robots.txt">robots.txt</Link>
         </div>
 
         <div className="footer-col">
-          <p className="footer-col-title">정책</p>
-          <span className="footer-note">라이선스: gyeol-data-license-v0.1</span>
-          <span className="footer-note">출처 없는 사실은 인용 불가</span>
+          <p className="footer-col-title">{t.footer.policy}</p>
+          <span className="footer-note">{t.footer.licenseLabel}</span>
+          <span className="footer-note">{t.footer.noCiteWithoutSource}</span>
         </div>
       </div>
       <div className="site-footer-base">
-        <span>© {new Date().getFullYear()} GYEOL</span>
-        <span>claim · confidence · source · verified_at</span>
+        <span>&copy; {new Date().getFullYear()} GYEOL</span>
+        <span>claim &middot; confidence &middot; source &middot; verified_at</span>
       </div>
     </footer>
   );

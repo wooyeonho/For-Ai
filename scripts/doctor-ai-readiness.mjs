@@ -23,7 +23,7 @@ const sourceFiles = [
   "app/layout.tsx",
   "app/page.tsx",
   "app/not-found.tsx",
-  "app/ko/wiki/[slug]/page.tsx",
+  "app/[locale]/wiki/[slug]/page.tsx",
   "app/llms.txt/route.ts",
   "app/robots.ts",
   "app/sitemap.ts",
@@ -40,7 +40,7 @@ add("llms.txt route exists with citation policy", existsSync(join(root, "app/llm
 add("sitemap includes llms.txt", contains("app/sitemap.ts", ["/llms.txt"]));
 add("robots declares sitemap and host", contains("app/robots.ts", ["sitemap", "host"]));
 add("raw markdown includes citation guidance", contains("lib/render.ts", ["Citation guidance", "Unknown facts remain"]));
-add("wiki page has JSON-LD Dataset and metadata", contains("app/ko/wiki/[slug]/page.tsx", ["buildDocumentJsonLd", "buildDocumentMetadata", "application/ld+json"]));
+add("wiki page has JSON-LD Dataset and metadata", contains("app/[locale]/wiki/[slug]/page.tsx", ["buildDocumentJsonLd", "buildDocumentMetadata", "application/ld+json"]));
 add("layout has Korean lang, title template, header, and footer", contains("app/layout.tsx", ["lang=\"ko\"", "template", "site-header", "site-footer"]));
 add("public pages have SEO metadata baseline", contains("app/layout.tsx", ["description", "openGraph", "metadataBase"]));
 add("custom 404 exists", existsSync(join(root, "app/not-found.tsx")) && contains("app/not-found.tsx", ["문서를 찾을 수 없습니다"]));

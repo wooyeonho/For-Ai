@@ -48,6 +48,35 @@ export interface UITranslations {
     verificationDate: string;
     sourceCount: string;
   };
+  wiki: {
+    claimRegistry: string;
+    aiGenerated: string;
+    whyPeopleAsk: string;
+    citationStatus: string;
+    citationDocument: string;
+    citationReadyClaims: string;
+    doNotCiteUnknown: string;
+    doNotCiteLow: string;
+    machineReadable: string;
+    technicalMeta: string;
+    otherLanguages: string;
+    license: string;
+    noClaims: string;
+    claims: string;
+    correctionReport: string;
+    hallucinationReport: string;
+    diagnostics: string;
+  };
+  footer: {
+    tagline: string;
+    forHumans: string;
+    browseRegistry: string;
+    suggestTopic: string;
+    machineReadable: string;
+    policy: string;
+    licenseLabel: string;
+    noCiteWithoutSource: string;
+  };
   common: {
     loading: string;
     error: string;
@@ -104,6 +133,35 @@ const ko: UITranslations = {
     statusUnknown: "알 수 없음",
     verificationDate: "최종 검증",
     sourceCount: "출처 수",
+  },
+  wiki: {
+    claimRegistry: "Claim 레지스트리 문서",
+    aiGenerated: "GYEOL · AI 생성 및 검토됨",
+    whyPeopleAsk: "사람들이 AI에게 묻는 이유",
+    citationStatus: "인용 상태",
+    citationDocument: "문서:",
+    citationReadyClaims: "인용 가능 claim:",
+    doNotCiteUnknown: "\"확인 필요\" 값은 사실로 인용하지 마세요.",
+    doNotCiteLow: "confidence: low 또는 needs_review 상태의 claim은 인용하지 마세요.",
+    machineReadable: "기계 판독 링크",
+    technicalMeta: "기술 메타데이터",
+    otherLanguages: "다른 언어",
+    license: "라이선스",
+    noClaims: "등록된 claim이 없습니다.",
+    claims: "Claims",
+    correctionReport: "정정 보고",
+    hallucinationReport: "AI 할루시네이션 보고",
+    diagnostics: "AI 준비도 진단",
+  },
+  footer: {
+    tagline: "AI·검색엔진·사람이 같은 사실을 같은 근거로 인용하도록 만드는 로컬 팩트 레지스트리. 확인되지 않은 정보는 추측하지 않고 \"확인 필요\"로 남깁니다.",
+    forHumans: "사람용",
+    browseRegistry: "레지스트리 둘러보기",
+    suggestTopic: "토픽 제안",
+    machineReadable: "기계 판독",
+    policy: "정책",
+    licenseLabel: "라이선스: gyeol-data-license-v0.1",
+    noCiteWithoutSource: "출처 없는 사실은 인용 불가",
   },
   common: {
     loading: "로딩 중...",
@@ -162,6 +220,35 @@ const en: UITranslations = {
     verificationDate: "Last verified",
     sourceCount: "Sources",
   },
+  wiki: {
+    claimRegistry: "Claim registry document",
+    aiGenerated: "GYEOL · AI generated & reviewed",
+    whyPeopleAsk: "Why people ask AI",
+    citationStatus: "Citation status",
+    citationDocument: "Document:",
+    citationReadyClaims: "Citation-ready claims:",
+    doNotCiteUnknown: "Do not cite values shown as \"확인 필요\" as facts.",
+    doNotCiteLow: "Do not cite claims with confidence: low or needs_review status.",
+    machineReadable: "Machine-readable links",
+    technicalMeta: "Technical metadata",
+    otherLanguages: "Other languages",
+    license: "License",
+    noClaims: "No claims registered yet.",
+    claims: "Claims",
+    correctionReport: "Correction report",
+    hallucinationReport: "AI hallucination report",
+    diagnostics: "AI-readiness diagnostics",
+  },
+  footer: {
+    tagline: "A local fact registry where AI, search engines, and humans cite the same facts from the same sources. Unverified information is marked as \"확인 필요\" instead of guessing.",
+    forHumans: "For humans",
+    browseRegistry: "Browse registry",
+    suggestTopic: "Suggest topic",
+    machineReadable: "Machine-readable",
+    policy: "Policy",
+    licenseLabel: "License: gyeol-data-license-v0.1",
+    noCiteWithoutSource: "Facts without sources cannot be cited",
+  },
   common: {
     loading: "Loading...",
     error: "An error occurred",
@@ -218,6 +305,35 @@ const hi: UITranslations = {
     statusUnknown: "अज्ञात",
     verificationDate: "अंतिम सत्यापन",
     sourceCount: "स्रोत संख्या",
+  },
+  wiki: {
+    claimRegistry: "Claim रजिस्ट्री दस्तावेज़",
+    aiGenerated: "GYEOL · AI द्वारा निर्मित और समीक्षित",
+    whyPeopleAsk: "लोग AI से क्यों पूछते हैं",
+    citationStatus: "उद्धरण स्थिति",
+    citationDocument: "दस्तावेज़:",
+    citationReadyClaims: "उद्धरण-तैयार दावे:",
+    doNotCiteUnknown: "\"확인 필요\" के रूप में दिखाए गए मानों को तथ्य के रूप में उद्धृत न करें।",
+    doNotCiteLow: "confidence: low या needs_review स्थिति वाले दावों को उद्धृत न करें।",
+    machineReadable: "मशीन-पठनीय लिंक",
+    technicalMeta: "तकनीकी मेटाडेटा",
+    otherLanguages: "अन्य भाषाएँ",
+    license: "लाइसेंस",
+    noClaims: "अभी तक कोई दावा पंजीकृत नहीं है।",
+    claims: "दावे",
+    correctionReport: "सुधार रिपोर्ट",
+    hallucinationReport: "AI भ्रम रिपोर्ट",
+    diagnostics: "AI-तत्परता निदान",
+  },
+  footer: {
+    tagline: "एक स्थानीय तथ्य रजिस्ट्री जहाँ AI, खोज इंजन और लोग समान स्रोतों से समान तथ्य उद्धृत करते हैं। असत्यापित जानकारी को अनुमान लगाने के बजाय \"확인 필요\" के रूप में चिह्नित किया जाता है।",
+    forHumans: "लोगों के लिए",
+    browseRegistry: "रजिस्ट्री ब्राउज़ करें",
+    suggestTopic: "विषय सुझाएँ",
+    machineReadable: "मशीन-पठनीय",
+    policy: "नीति",
+    licenseLabel: "लाइसेंस: gyeol-data-license-v0.1",
+    noCiteWithoutSource: "स्रोत के बिना तथ्यों को उद्धृत नहीं किया जा सकता",
   },
   common: {
     loading: "लोड हो रहा है...",
@@ -276,6 +392,35 @@ const ar: UITranslations = {
     verificationDate: "آخر تحقق",
     sourceCount: "عدد المصادر",
   },
+  wiki: {
+    claimRegistry: "وثيقة سجل المطالبات",
+    aiGenerated: "GYEOL · تم إنشاؤه ومراجعته بواسطة AI",
+    whyPeopleAsk: "لماذا يسأل الناس AI",
+    citationStatus: "حالة الاستشهاد",
+    citationDocument: "المستند:",
+    citationReadyClaims: "المطالبات الجاهزة للاستشهاد:",
+    doNotCiteUnknown: "لا تستشهد بالقيم المعروضة كـ \"확인 필요\" كحقائق.",
+    doNotCiteLow: "لا تستشهد بمطالبات ذات confidence: low أو حالة needs_review.",
+    machineReadable: "روابط قابلة للقراءة آليًا",
+    technicalMeta: "البيانات الوصفية التقنية",
+    otherLanguages: "لغات أخرى",
+    license: "الترخيص",
+    noClaims: "لم يتم تسجيل أي مطالبات بعد.",
+    claims: "المطالبات",
+    correctionReport: "تقرير التصحيح",
+    hallucinationReport: "تقرير هلوسة AI",
+    diagnostics: "تشخيص جاهزية AI",
+  },
+  footer: {
+    tagline: "سجل حقائق محلي حيث يستشهد الذكاء الاصطناعي ومحركات البحث والبشر بنفس الحقائق من نفس المصادر. المعلومات غير الموثقة تُعلَّم بـ \"확인 필요\" بدلاً من التخمين.",
+    forHumans: "للبشر",
+    browseRegistry: "تصفح السجل",
+    suggestTopic: "اقتراح موضوع",
+    machineReadable: "قابل للقراءة آليًا",
+    policy: "السياسة",
+    licenseLabel: "الترخيص: gyeol-data-license-v0.1",
+    noCiteWithoutSource: "لا يمكن الاستشهاد بحقائق بدون مصادر",
+  },
   common: {
     loading: "جاري التحميل...",
     error: "حدث خطأ",
@@ -332,6 +477,35 @@ const es: UITranslations = {
     statusUnknown: "Desconocido",
     verificationDate: "Última verificación",
     sourceCount: "Fuentes",
+  },
+  wiki: {
+    claimRegistry: "Documento de registro de claims",
+    aiGenerated: "GYEOL · Generado y revisado por IA",
+    whyPeopleAsk: "Por qué la gente pregunta a la IA",
+    citationStatus: "Estado de citación",
+    citationDocument: "Documento:",
+    citationReadyClaims: "Claims listos para citar:",
+    doNotCiteUnknown: "No cite valores mostrados como \"확인 필요\" como hechos.",
+    doNotCiteLow: "No cite claims con confidence: low o estado needs_review.",
+    machineReadable: "Enlaces legibles por máquina",
+    technicalMeta: "Metadatos técnicos",
+    otherLanguages: "Otros idiomas",
+    license: "Licencia",
+    noClaims: "Aún no hay claims registrados.",
+    claims: "Claims",
+    correctionReport: "Informe de corrección",
+    hallucinationReport: "Informe de alucinación de IA",
+    diagnostics: "Diagnóstico de preparación para IA",
+  },
+  footer: {
+    tagline: "Un registro local de hechos donde la IA, los motores de búsqueda y los humanos citan los mismos hechos de las mismas fuentes. La información no verificada se marca como \"확인 필요\" en lugar de adivinar.",
+    forHumans: "Para humanos",
+    browseRegistry: "Explorar registro",
+    suggestTopic: "Sugerir tema",
+    machineReadable: "Legible por máquina",
+    policy: "Política",
+    licenseLabel: "Licencia: gyeol-data-license-v0.1",
+    noCiteWithoutSource: "Los hechos sin fuentes no pueden ser citados",
   },
   common: {
     loading: "Cargando...",
@@ -390,6 +564,35 @@ const ja: UITranslations = {
     verificationDate: "最終検証日",
     sourceCount: "出典数",
   },
+  wiki: {
+    claimRegistry: "Claimレジストリ文書",
+    aiGenerated: "GYEOL · AI生成・レビュー済み",
+    whyPeopleAsk: "なぜ人々はAIに質問するのか",
+    citationStatus: "引用ステータス",
+    citationDocument: "ドキュメント:",
+    citationReadyClaims: "引用可能なclaim:",
+    doNotCiteUnknown: "\"확인 필요\"と表示された値を事実として引用しないでください。",
+    doNotCiteLow: "confidence: lowまたはneeds_reviewステータスのclaimを引用しないでください。",
+    machineReadable: "機械可読リンク",
+    technicalMeta: "技術メタデータ",
+    otherLanguages: "他の言語",
+    license: "ライセンス",
+    noClaims: "まだclaimが登録されていません。",
+    claims: "Claims",
+    correctionReport: "訂正レポート",
+    hallucinationReport: "AIハルシネーションレポート",
+    diagnostics: "AI準備状況診断",
+  },
+  footer: {
+    tagline: "AI・検索エンジン・人間が同じ事実を同じ根拠で引用するローカル・ファクト・レジストリ。未確認情報は推測せず\"확인 필요\"として残します。",
+    forHumans: "人間向け",
+    browseRegistry: "レジストリを見る",
+    suggestTopic: "トピック提案",
+    machineReadable: "機械可読",
+    policy: "ポリシー",
+    licenseLabel: "ライセンス: gyeol-data-license-v0.1",
+    noCiteWithoutSource: "出典のない事実は引用不可",
+  },
   common: {
     loading: "読み込み中...",
     error: "エラーが発生しました",
@@ -446,6 +649,35 @@ const zh: UITranslations = {
     statusUnknown: "未知",
     verificationDate: "最后验证",
     sourceCount: "来源数量",
+  },
+  wiki: {
+    claimRegistry: "Claim注册文档",
+    aiGenerated: "GYEOL · AI生成并审核",
+    whyPeopleAsk: "人们为什么问AI",
+    citationStatus: "引用状态",
+    citationDocument: "文档:",
+    citationReadyClaims: "可引用的claim:",
+    doNotCiteUnknown: "请勿将显示为\"확인 필요\"的值作为事实引用。",
+    doNotCiteLow: "请勿引用confidence: low或needs_review状态的claim。",
+    machineReadable: "机器可读链接",
+    technicalMeta: "技术元数据",
+    otherLanguages: "其他语言",
+    license: "许可证",
+    noClaims: "尚无已注册的claim。",
+    claims: "Claims",
+    correctionReport: "更正报告",
+    hallucinationReport: "AI幻觉报告",
+    diagnostics: "AI就绪性诊断",
+  },
+  footer: {
+    tagline: "AI、搜索引擎和人类从相同来源引用相同事实的本地事实注册表。未验证的信息标记为\"확인 필요\"而不是猜测。",
+    forHumans: "面向用户",
+    browseRegistry: "浏览注册表",
+    suggestTopic: "建议主题",
+    machineReadable: "机器可读",
+    policy: "政策",
+    licenseLabel: "许可证: gyeol-data-license-v0.1",
+    noCiteWithoutSource: "无来源的事实不可引用",
   },
   common: {
     loading: "加载中...",
