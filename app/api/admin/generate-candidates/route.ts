@@ -31,9 +31,11 @@ ${instruction}
 규칙:
 - placeholder_value는 반드시 "확인 필요" (절대 실제 숫자/날짜 쓰지 말 것)
 - AI가 실제로 자주 틀리는 정보 위주
+- 공식 출처가 존재하는 주제 우선
 - 최대한 구체적이고 검색 가능한 토픽
 - category는 토픽에 맞게 자유롭게 설정
 - title과 why_people_ask_ai는 ${lang} 언어로 작성
+- source_hints는 official/platform/law/document 출처를 우선하고, 각 후보마다 가능한 한 최소 1개 이상 포함
 
 각 토픽을 JSON으로:
 {
@@ -48,7 +50,7 @@ ${instruction}
     {
       "question": "구체적 질문 (${lang} 언어)",
       "placeholder_value": "확인 필요",
-      "required_source_type": "official|law|platform|document|news|stats"
+      "required_source_type": "official|platform|law|document"
     }
   ],
   "source_hints": [
@@ -71,7 +73,7 @@ function buildSystemPrompt(lang: string): string {
     zh: "Chinese",
   };
   const language = langMap[lang] ?? "English";
-  return `You are a global fact-registry curator for GYEOL. Search the web and output only valid JSON arrays. Find real official/platform URLs for source_hints. Accept ANY topic: sports, entertainment, life, IT, finance, government, etc. Output in ${language}.`;
+  return `You are a global fact-registry curator for GYEOL. Search the web and output only valid JSON arrays. Prioritize topics with official sources. Find real official/platform/law/document URLs for source_hints, and prefer those source types over news, stats, blogs, or forums. Accept ANY topic: sports, entertainment, life, IT, finance, government, etc. Output in ${language}.`;
 }
 
 function parseCandidatesFromResponse(
@@ -113,6 +115,103 @@ function parseCandidatesFromResponse(
   } catch {
     return [];
   }
+}
+
+function normalizeForMatch(value: unknown): string {
+  return String(value ?? "")
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9가-힣ぁ-んァ-ン一-龥]+/g, " ")
+    .trim();
+}
+
+function tokenize(value: unknown): Set<string> {
+  return new Set(normalizeForMatch(value).split(/\s+/).filter(Boolean));
+}
+
+function jaccard(a: Set<string>, b: Set<string>): number {
+  if (a.size === 0 || b.size === 0) return 0;
+  const intersection = [...a].filter((v) => b.has(v)).length;
+  const union = new Set([...a, ...b]).size;
+  return union === 0 ? 0 : intersection / union;
+}
+
+function candidateSimilarity(a: Record<string, unknown>, b: Record<string, unknown>): number {
+  const slugA = normalizeForMatch(a.slug).replace(/\s+/g, "-");
+  const slugB = normalizeForMatch(b.slug).replace(/\s+/g, "-");
+  const slugScore = slugA && slugA === slugB ? 1 : jaccard(tokenize(slugA.replace(/-/g, " ")), tokenize(slugB.replace(/-/g, " ")));
+  const titleScore = jaccard(tokenize(a.title), tokenize(b.title));
+  return Math.max(slugScore, titleScore * 0.92);
+}
+
+function consensusLevel(score: number): "low" | "medium" | "high" {
+  if (score >= 0.8) return "high";
+  if (score >= 0.55) return "medium";
+  return "low";
+}
+
+function mergeSourceHints(candidates: Record<string, unknown>[]): Record<string, string>[] {
+  const merged = new Map<string, Record<string, string>>();
+  for (const candidate of candidates) {
+    for (const hint of (candidate.source_hints as Record<string, string>[] | undefined) ?? []) {
+      const url = String(hint.url ?? "").trim();
+      if (!url || merged.has(url)) continue;
+      merged.set(url, { url, title: String(hint.title ?? url) });
+    }
+  }
+  return [...merged.values()];
+}
+
+function applyConsensus(
+  candidates: Record<string, unknown>[],
+  providerCount: number
+): { candidates: Record<string, unknown>[]; summary: Record<string, unknown> } {
+  const groups: Record<string, unknown>[][] = [];
+
+  for (const candidate of candidates) {
+    const best = groups
+      .map((group, index) => ({ index, score: Math.max(...group.map((existing) => candidateSimilarity(candidate, existing))) }))
+      .sort((a, b) => b.score - a.score)[0];
+
+    if (best && best.score >= 0.5) groups[best.index].push(candidate);
+    else groups.push([candidate]);
+  }
+
+  const enriched = groups.flatMap((group) => {
+    const providers = [...new Set(group.map((c) => String(c.generation_model ?? "").split("/")[0]).filter(Boolean))];
+    const supportRatio = providerCount > 0 ? providers.length / providerCount : 0;
+    const similarity = group.length > 1
+      ? group.reduce((sum, current, index) => sum + (index === 0 ? 1 : candidateSimilarity(group[0], current)), 0) / group.length
+      : 0;
+    const score = Math.min(1, Math.round((supportRatio * 0.7 + similarity * 0.3) * 100) / 100);
+    const level = consensusLevel(score);
+    const sourceHints = mergeSourceHints(group);
+
+    return group.map((candidate) => ({
+      ...candidate,
+      consensus_score: score,
+      consensus_level: level,
+      consensus_sources: providers,
+      source_hints: sourceHints,
+    }));
+  });
+
+  const levels = enriched.reduce<Record<string, number>>((acc, candidate) => {
+    const level = String(candidate.consensus_level ?? "low");
+    acc[level] = (acc[level] ?? 0) + 1;
+    return acc;
+  }, {});
+
+  return {
+    candidates: enriched,
+    summary: {
+      provider_count: providerCount,
+      candidate_count: candidates.length,
+      consensus_group_count: groups.length,
+      levels,
+    },
+  };
 }
 
 export async function POST(request: Request) {
@@ -161,6 +260,8 @@ export async function POST(request: Request) {
   const providerResults: Record<string, { generated: number; error?: string }> = {};
   let consensusResults: ConsensusCandidate[] | null = null;
 
+  let consensusSummary: Record<string, unknown> | null = null;
+
   if (crossVerify && providers.length >= 2) {
     // Cross-verification: run all providers, build consensus
     const responses = await generateWithAll(providers, aiRequest);
@@ -186,6 +287,10 @@ export async function POST(request: Request) {
         allCandidates.push(...candidates);
       }
     }
+
+    const consensus = applyConsensus(allCandidates, providers.length);
+    allCandidates = consensus.candidates;
+    consensusSummary = consensus.summary;
   } else {
     // Single provider (or sequential)
     const primaryProvider = providers[0];
@@ -265,6 +370,7 @@ export async function POST(request: Request) {
     available_providers: available.map((p) => ({ key: p, label: AI_PROVIDERS[p].label })),
     cross_verify: crossVerify,
     provider_results: providerResults,
+    ...(consensusSummary ? { consensus_summary: consensusSummary } : {}),
     total_generated: allCandidates.length,
     saved: saved.length,
     save_status: saveToDb
