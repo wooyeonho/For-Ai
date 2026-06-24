@@ -1,19 +1,6 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 
-const ADMIN_SECRET = process.env.ADMIN_SECRET ?? "";
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
-
-function supabaseAdmin() {
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) return null;
-  return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-}
-
-function authorized(request: Request): boolean {
-  const auth = request.headers.get("x-admin-secret");
-  return !ADMIN_SECRET || auth === ADMIN_SECRET;
-}
+import { authorized, logAdminAuditEvent, supabaseAdmin } from "@/lib/admin-api";
 
 export async function GET(request: Request) {
   if (!authorized(request)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -27,6 +14,9 @@ export async function GET(request: Request) {
     .limit(100);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  await logAdminAuditEvent(sb, request, "admin.verify_claim.list", {
+    result_count: data?.length ?? 0,
+  });
   return NextResponse.json({ documents: data ?? [] });
 }
 
@@ -100,6 +90,13 @@ export async function POST(request: Request) {
     last_verified_at: allVerified ? observedAt : null,
     updated_at: now,
   }).eq("id", existingClaim.document_id);
+  await logAdminAuditEvent(sb, request, "admin.verify_claim.update", {
+    claim_id: claimId,
+    document_id: existingClaim.document_id,
+    source_type: sourceType,
+    confidence,
+    document_all_verified: allVerified,
+  });
 
   return NextResponse.json({ claim: updatedClaim, source_id: sourceId, document_all_verified: allVerified });
 }

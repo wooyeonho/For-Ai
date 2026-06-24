@@ -1,19 +1,6 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 
-const ADMIN_SECRET = process.env.ADMIN_SECRET ?? "";
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
-
-function supabaseAdmin() {
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) return null;
-  return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
-}
-
-function authorized(request: Request): boolean {
-  const auth = request.headers.get("x-admin-secret");
-  return !ADMIN_SECRET || auth === ADMIN_SECRET;
-}
+import { authorized, logAdminAuditEvent, supabaseAdmin } from "@/lib/admin-api";
 
 export async function GET(request: Request) {
   if (!authorized(request)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
@@ -26,6 +13,10 @@ export async function GET(request: Request) {
   if (status !== "all") query = query.eq("status", status);
   const { data, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  await logAdminAuditEvent(sb, request, "admin.candidates.list", {
+    status,
+    result_count: data?.length ?? 0,
+  });
   return NextResponse.json({ candidates: data ?? [] });
 }
 
@@ -48,5 +39,9 @@ export async function PATCH(request: Request) {
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  await logAdminAuditEvent(sb, request, "admin.candidates.update_status", {
+    candidate_id: id,
+    status,
+  });
   return NextResponse.json({ candidate: data });
 }
