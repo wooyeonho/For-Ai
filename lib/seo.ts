@@ -3,7 +3,7 @@ import type { RegistryDocumentBundle } from "./types";
 import type { EntityProfile } from "./entity-profile";
 import { documentPageUrl, apiDocumentUrl, rawMarkdownUrl, apiEntityUrl, entityPageUrl, siteUrl } from "./urls";
 import { getDocumentCitationStatus, getCanonicalDirectAnswer } from "./citation-status";
-import { SUPPORTED_LOCALES } from "./i18n";
+import { SUPPORTED_LOCALES, DEFAULT_LOCALE } from "./i18n";
 
 // Map a free-form entity.type (e.g. "transport.metro", "telecom.mobile") to the
 // closest schema.org type so structured data is meaningful to search/AI.
@@ -29,7 +29,7 @@ export function buildDocumentMetadata(
   locale?: string,
 ): Metadata {
   const { entity, document } = bundle;
-  const lang = locale ?? document.lang ?? "ko";
+  const lang = locale ?? document.lang ?? DEFAULT_LOCALE;
   const title = document.title;
   const ogTitle = `${document.title} — For-Ai`;
   const description = `${entity.canonical_name} ${document.template} 정보. 신뢰도: ${document.confidence}. For-Ai claim registry.`;
@@ -39,7 +39,7 @@ export function buildDocumentMetadata(
   for (const l of SUPPORTED_LOCALES) {
     hreflang[l] = siteUrl(`/${l}/wiki/${document.slug}`);
   }
-  hreflang["x-default"] = siteUrl(`/ko/wiki/${document.slug}`);
+  hreflang["x-default"] = siteUrl(`/${DEFAULT_LOCALE}/wiki/${document.slug}`);
 
   const ogLocaleMap: Record<string, string> = {
     ko: "ko_KR", en: "en_US", hi: "hi_IN", ar: "ar_SA",
@@ -153,7 +153,7 @@ export function buildDocumentJsonLd(bundle: RegistryDocumentBundle): object {
 
 export function buildEntityMetadata(profile: EntityProfile, locale?: string): Metadata {
   const { entity, summary } = profile;
-  const lang = locale ?? "ko";
+  const lang = locale ?? DEFAULT_LOCALE;
   const title = entity.canonical_name;
   const description =
     `${entity.canonical_name} — For-Ai fact registry. ` +
@@ -163,7 +163,7 @@ export function buildEntityMetadata(profile: EntityProfile, locale?: string): Me
 
   const hreflang: Record<string, string> = {};
   for (const l of SUPPORTED_LOCALES) hreflang[l] = entityPageUrl(entity.id, l);
-  hreflang["x-default"] = entityPageUrl(entity.id, "ko");
+  hreflang["x-default"] = entityPageUrl(entity.id, DEFAULT_LOCALE);
 
   return {
     title,
@@ -181,7 +181,7 @@ export function buildEntityJsonLd(profile: EntityProfile): object {
     "@type": schemaTypeForEntity(entity.type),
     name: entity.canonical_name,
     identifier: entity.id,
-    url: entityPageUrl(entity.id, "ko"),
+    url: entityPageUrl(entity.id, DEFAULT_LOCALE),
     address: {
       "@type": "PostalAddress",
       addressCountry: entity.country,

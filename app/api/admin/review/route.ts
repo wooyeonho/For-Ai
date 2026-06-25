@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { documentPageUrl } from "../../../../lib/urls";
+import { DEFAULT_LOCALE } from "../../../../lib/i18n/locales";
 
 const ADMIN_SECRET = process.env.ADMIN_SECRET ?? "";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
@@ -34,7 +35,7 @@ async function countRows(
 
 function publicDocumentLink(doc: { slug?: string | null; lang?: string | null }) {
   if (!doc.slug) return null;
-  return documentPageUrl(doc.slug, doc.lang ?? "ko");
+  return documentPageUrl(doc.slug, doc.lang ?? DEFAULT_LOCALE);
 }
 
 export async function GET(request: Request) {

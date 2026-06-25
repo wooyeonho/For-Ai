@@ -1,10 +1,18 @@
 import type { ClaimWithSources } from "../../lib/types";
+import { UNKNOWN_FACT_TEXT } from "../../lib/citation-status";
+import { getTranslations } from "../../lib/i18n";
+import type { SupportedLocale } from "../../lib/i18n";
+import { DEFAULT_LOCALE } from "../../lib/i18n/locales";
 import { ConfidenceBadge } from "./ConfidenceBadge";
 import { ClaimStatusBadge } from "./StatusBadge";
 import { SourcePill } from "./SourcePill";
 import { VerificationMeta } from "./VerificationMeta";
 
 export function ClaimCard({ claim, locale }: { claim: ClaimWithSources; locale?: string }) {
+  const t = getTranslations((locale ?? DEFAULT_LOCALE) as SupportedLocale);
+  // The canonical unknown sentinel ("확인 필요") is shown to humans in their own
+  // language; machine surfaces (JSON/JSON-LD/llms.txt) keep the canonical value.
+  const displayValue = claim.claim_value === UNKNOWN_FACT_TEXT ? t.claims.needsReview : claim.claim_value;
   return (
     <div className="claim-card">
       {/* Human-readable sentence first */}
@@ -13,7 +21,7 @@ export function ClaimCard({ claim, locale }: { claim: ClaimWithSources; locale?:
       )}
 
       {/* The actual value — bold */}
-      <p className="claim-value">{claim.claim_value}</p>
+      <p className="claim-value">{displayValue}</p>
 
       {/* Technical label + badges — de-emphasized */}
       <div className="claim-card-header">

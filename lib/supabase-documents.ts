@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import type { ClaimSource, ClaimStatus, Confidence, RegistryDocumentBundle, VerificationEvent } from "./types";
+import { DEFAULT_LOCALE } from "./i18n/locales";
 
 function isClaimStatus(value: unknown): value is ClaimStatus {
   return ["needs_review", "verified", "disputed", "unknown"].includes(String(value));
@@ -77,7 +78,7 @@ export async function getRegistryBundleFromSupabase(slug: string): Promise<Regis
           id: String(ent.id),
           type: String(ent.type ?? "concept"),
           canonical_name: String(ent.canonical_name ?? ""),
-          country: String(ent.country ?? "KR"),
+          country: String(ent.country ?? ""),
           region: (ent.region ?? null) as string | null,
           city: (ent.city ?? null) as string | null,
           created_at: (ent.created_at ?? null) as string | null,
@@ -87,7 +88,7 @@ export async function getRegistryBundleFromSupabase(slug: string): Promise<Regis
           id: String(v3Doc.id),
           entity_id: String(ent.id),
           slug: String(v3Doc.slug),
-          lang: String(v3Doc.lang ?? "ko"),
+          lang: String(v3Doc.lang ?? DEFAULT_LOCALE),
           title: String(v3Doc.title ?? ""),
           category: String(v3Doc.category ?? ""),
           template: String(v3Doc.template ?? "fact-sheet"),
@@ -135,7 +136,7 @@ export async function getRegistryBundleFromSupabase(slug: string): Promise<Regis
         id: String(ent.id),
         type: String(ent.entity_type ?? ent.type ?? "concept"),
         canonical_name: String(ent.canonical_name ?? ""),
-        country: String(ent.country ?? "KR"),
+        country: String(ent.country ?? ""),
         region: (ent.region ?? null) as string | null,
         city: (ent.city ?? null) as string | null,
         created_at: null,
@@ -145,7 +146,7 @@ export async function getRegistryBundleFromSupabase(slug: string): Promise<Regis
         id: String(legacyDoc.id),
         entity_id: String(ent.id),
         slug: String(legacyDoc.slug),
-        lang: String(legacyDoc.lang ?? "ko"),
+        lang: String(legacyDoc.lang ?? DEFAULT_LOCALE),
         title: String(legacyDoc.title ?? ""),
         category: String(legacyDoc.category ?? ""),
         template: String(legacyDoc.template ?? "fact-sheet"),

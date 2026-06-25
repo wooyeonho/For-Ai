@@ -2,6 +2,7 @@ import { createClient } from "@supabase/supabase-js";
 import { getAllRegistryBundles } from "./data";
 import { getRegistryBundleFromSupabase } from "./supabase-documents";
 import { getDocumentCitationStatus, isStale, type FreshnessLabel } from "./citation-status";
+import { DEFAULT_LOCALE } from "./i18n/locales";
 import type { Entity, RegistryDocumentBundle } from "./types";
 
 // An entity profile aggregates EVERY document/claim For-Ai holds about one entity
@@ -117,7 +118,7 @@ export async function getAllEntityRefs(): Promise<{ id: string; lang: string }[]
         .select("entity_id, lang")
         .in("status", ["published", "verified"]);
       for (const row of (data ?? []) as { entity_id: string | null; lang: string | null }[]) {
-        if (row.entity_id && !byId.has(row.entity_id)) byId.set(row.entity_id, row.lang ?? "ko");
+        if (row.entity_id && !byId.has(row.entity_id)) byId.set(row.entity_id, row.lang ?? DEFAULT_LOCALE);
       }
     } catch {
       // fall back to static-only refs

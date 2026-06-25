@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
 
 import { logAdminAuditEvent, requireAdmin, supabaseAdmin } from "@/lib/admin-api";
+import { DEFAULT_LOCALE, LOCALE_CONFIG, isValidLocale } from "@/lib/i18n/locales";
+
+// Derive a country from the content language's primary country (ko→KR, en→US,
+// ja→JP…) instead of silently defaulting everything to KR.
+function countryForLang(lang: string): string {
+  return isValidLocale(lang) ? LOCALE_CONFIG[lang].country : "";
+}
 
 function stableId(prefix: string, slug: string): string {
   return `${prefix}-${slug}`.replace(/[^a-zA-Z0-9_-]+/g, "-").slice(0, 120);
@@ -29,7 +36,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: `승인된 후보만 등록 가능합니다 (현재: ${candidate.status})` }, { status: 400 });
   }
 
-  const lang = candidate.lang ?? "ko";
+  const lang = candidate.lang ?? DEFAULT_LOCALE;
   const slug = candidate.slug as string;
   const entityId = stableId("entity", slug);
   const documentId = stableId("doc", `${slug}-${lang}`);
@@ -57,7 +64,7 @@ export async function POST(request: Request) {
     id: entityId,
     canonical_name: candidate.title,
     type: candidate.category ?? "concept",
-    country: candidate.country ?? "KR",
+    country: candidate.country ?? countryForLang(lang),
   });
   if (entityErr) {
     return NextResponse.json({ error: "entity 생성 실패", detail: entityErr.message }, { status: 500 });

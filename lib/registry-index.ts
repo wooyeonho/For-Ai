@@ -1,6 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { getAllRegistryBundles } from "./data";
 import { getDocumentCitationStatus, isStale, type FreshnessLabel } from "./citation-status";
+import { DEFAULT_LOCALE } from "./i18n/locales";
 
 // Normalized, filterable index over the whole registry (static seed bundles +
 // Supabase documents). Every discovery surface — /api/index, llms.txt's Supabase
@@ -145,7 +146,7 @@ export async function getSupabaseIndexItems(staticSlugs: Set<string>): Promise<R
           entity_name: row.entities?.canonical_name ?? "",
           type: row.entities?.type ?? "",
           country: row.entities?.country ?? "",
-          lang: row.lang ?? "ko",
+          lang: row.lang ?? DEFAULT_LOCALE,
           verification: verified ? "verified" : "candidate",
           confidence: row.confidence ?? "low",
           doc_status: row.status ?? "needs_review",

@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { getEntityProfile } from "../../../../lib/entity-profile";
 import { getDocumentCitationStatus } from "../../../../lib/citation-status";
 import { documentPageUrl, apiDocumentUrl, rawMarkdownUrl, entityPageUrl } from "../../../../lib/urls";
+import { DEFAULT_LOCALE } from "../../../../lib/i18n/locales";
 
 // Machine-readable entity profile: an entity plus every document/claim For-Ai
 // holds about it, with a citable summary. Lets an AI cite at the entity level
@@ -29,7 +30,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     summary,
     citation_policy:
       'Cite a document only when can_cite=true (human-approved + every claim verified). Never cite values shown as "확인 필요", low confidence, or needs_review status.',
-    page_url: entityPageUrl(entity.id, documents[0]?.document.lang ?? "ko"),
+    page_url: entityPageUrl(entity.id, documents[0]?.document.lang ?? DEFAULT_LOCALE),
     documents: documents.map((bundle) => {
       const status = getDocumentCitationStatus(bundle);
       return {

@@ -2,6 +2,8 @@ import { ConfidenceBadge } from "./ConfidenceBadge";
 import { CopyCitationButton } from "./CopyCitationButton";
 import { getTranslations } from "../../lib/i18n";
 import type { SupportedLocale } from "../../lib/i18n";
+import { DEFAULT_LOCALE } from "../../lib/i18n/locales";
+import { UNKNOWN_FACT_TEXT } from "../../lib/citation-status";
 import type { Confidence } from "../../lib/types";
 
 export function DirectAnswerBox({
@@ -23,8 +25,9 @@ export function DirectAnswerBox({
   docTitle?: string;
   locale?: string;
 }) {
-  const lang = (locale ?? "ko") as SupportedLocale;
+  const lang = (locale ?? DEFAULT_LOCALE) as SupportedLocale;
   const t = getTranslations(lang);
+  const displayAnswer = answer === UNKNOWN_FACT_TEXT ? t.claims.needsReview : answer;
 
   const citationText = canCite && canonicalUrl && docTitle
     ? `For-Ai Registry. "${docTitle}". Last verified: ${lastVerifiedAt ?? "unknown"}. ${canonicalUrl}`
@@ -45,7 +48,7 @@ export function DirectAnswerBox({
           )}
         </div>
       )}
-      <p className="direct-answer-text">{answer}</p>
+      <p className="direct-answer-text">{displayAnswer}</p>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginTop: 8 }}>
         <ConfidenceBadge level={confidence} locale={locale} />
         {sourceCount != null && sourceCount > 0 && (

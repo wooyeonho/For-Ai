@@ -4,7 +4,17 @@
 export const SUPPORTED_LOCALES = ["ko", "en", "hi", "ar", "es", "ja", "zh"] as const;
 export type SupportedLocale = (typeof SUPPORTED_LOCALES)[number];
 
-export const DEFAULT_LOCALE: SupportedLocale = "ko";
+// Global default locale. Configurable via NEXT_PUBLIC_DEFAULT_LOCALE; defaults to
+// "en" so unknown/worldwide visitors get English. The middleware still detects
+// Accept-Language first, so Korean browsers continue to receive "ko".
+function resolveDefaultLocale(): SupportedLocale {
+  const env = process.env.NEXT_PUBLIC_DEFAULT_LOCALE;
+  return env && SUPPORTED_LOCALES.includes(env as SupportedLocale)
+    ? (env as SupportedLocale)
+    : "en";
+}
+
+export const DEFAULT_LOCALE: SupportedLocale = resolveDefaultLocale();
 
 export const LOCALE_CONFIG: Record<SupportedLocale, {
   label: string;

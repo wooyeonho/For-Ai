@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { logAdminAuditEvent, requireAdmin, supabaseAdmin } from "@/lib/admin-api";
+import { DEFAULT_LOCALE } from "@/lib/i18n/locales";
 
 function stableId(prefix: string, slug: string): string {
   return `${prefix}-${slug}`.replace(/[^a-zA-Z0-9_-]+/g, "-").slice(0, 120);
@@ -26,7 +27,7 @@ export async function POST(request: Request) {
 
   const entity_id = String(body.entity_id ?? "").trim();
   const slug = String(body.slug ?? "").trim();
-  const lang = String(body.lang ?? "ko").trim() || "ko";
+  const lang = String(body.lang ?? DEFAULT_LOCALE).trim() || DEFAULT_LOCALE;
   const title = String(body.title ?? "").trim();
   const category = String(body.category ?? "").trim();
   const template = String(body.template ?? "fact-sheet").trim() || "fact-sheet";
