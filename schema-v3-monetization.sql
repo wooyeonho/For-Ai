@@ -187,3 +187,26 @@ create index api_usage_log_created_idx on api_usage_log(created_at desc);
 
 -- Partition by month for performance (optional, noted for future)
 comment on table api_usage_log is 'Lightweight API usage tracking for billing and rate limit enforcement. Consider partitioning by month at scale.';
+
+-- =============================================================================
+-- Webhook Subscriptions (Goal 15: Developer Experience)
+-- =============================================================================
+
+create table webhook_subscriptions (
+  id              uuid primary key default gen_random_uuid(),
+  profile_id      uuid references verified_business_profiles(id) on delete set null,
+  url             text not null,
+  events          text[] not null default '{}',
+  secret          text not null,
+  is_active       boolean not null default true,
+  last_triggered_at timestamptz,
+  failure_count   int not null default 0,
+  created_at      timestamptz not null default now()
+);
+
+create index webhook_subs_active_idx on webhook_subscriptions(is_active) where is_active = true;
+create index webhook_subs_profile_idx on webhook_subscriptions(profile_id);
+
+comment on table webhook_subscriptions is 'Webhook subscriptions for verification events. Auto-disabled after 10 consecutive failures.';
+comment on column webhook_subscriptions.events is 'Array of event types: claim.verified, claim.updated, claim.disputed, document.published, document.updated, entity.created, business_profile.verified, correction.accepted, correction.rejected';
+comment on column webhook_subscriptions.secret is 'HMAC-SHA256 signing secret for payload verification. Sent as X-ForAi-Signature header.';
