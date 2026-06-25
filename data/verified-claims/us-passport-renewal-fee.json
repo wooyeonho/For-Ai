@@ -1,0 +1,48 @@
+{
+  "entity_id": "us-gov-state-dept-passport-001",
+  "slug": "us-passport-renewal-fee",
+  "type": "government.documents",
+  "name": "US Passport Renewal Fee (2025)",
+  "lang": "en",
+  "country": "US",
+  "jurisdiction": "US",
+  "risk_tier": "low",
+  "update_frequency": "event_based",
+  "disclaimer_type": "check_official_source",
+  "last_verified_at": "2026-06-25",
+  "claims": [
+    {
+      "claim_id": "us-passport-book-renewal-fee",
+      "field_path": "fee.passport_book_renewal",
+      "claim_text": "US passport book renewal fee (adult, by mail)",
+      "claim_value": "확인 필요",
+      "confidence": "low",
+      "status": "needs_review",
+      "last_verified_at": null,
+      "sources": [],
+      "verification_event": null
+    },
+    {
+      "claim_id": "us-passport-card-renewal-fee",
+      "field_path": "fee.passport_card_renewal",
+      "claim_text": "US passport card renewal fee (adult, by mail)",
+      "claim_value": "확인 필요",
+      "confidence": "low",
+      "status": "needs_review",
+      "last_verified_at": null,
+      "sources": [],
+      "verification_event": null
+    },
+    {
+      "claim_id": "us-passport-processing-time-routine",
+      "field_path": "processing.routine_weeks",
+      "claim_text": "US passport routine processing time in weeks",
+      "claim_value": "확인 필요",
+      "confidence": "low",
+      "status": "needs_review",
+      "last_verified_at": null,
+      "sources": [],
+      "verification_event": null
+    }
+  ]
+}

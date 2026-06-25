@@ -4,7 +4,7 @@ export function siteUrl(path: string): string {
   return `${SITE_URL}${path.startsWith("/") ? path : `/${path}`}`;
 }
 
-export function documentPageUrl(slug: string, lang = "ko"): string {
+export function documentPageUrl(slug: string, lang = "en"): string {
   return siteUrl(`/${lang}/wiki/${slug}`);
 }
 

@@ -1,0 +1,37 @@
+{
+  "entity_id": "jp-transport-tokyo-metro-fare-001",
+  "slug": "tokyo-metro-base-fare",
+  "type": "transport.metro",
+  "name": "Tokyo Metro Base Fare (2025)",
+  "lang": "ja",
+  "country": "JP",
+  "jurisdiction": "JP",
+  "risk_tier": "low",
+  "update_frequency": "event_based",
+  "disclaimer_type": "check_official_source",
+  "last_verified_at": "2026-06-25",
+  "claims": [
+    {
+      "claim_id": "tokyo-metro-ic-1-6km",
+      "field_path": "fare.ic_1_6km",
+      "claim_text": "Tokyo Metro IC card fare for 1-6km",
+      "claim_value": "확인 필요",
+      "confidence": "low",
+      "status": "needs_review",
+      "last_verified_at": null,
+      "sources": [],
+      "verification_event": null
+    },
+    {
+      "claim_id": "tokyo-metro-ic-7-11km",
+      "field_path": "fare.ic_7_11km",
+      "claim_text": "Tokyo Metro IC card fare for 7-11km",
+      "claim_value": "확인 필요",
+      "confidence": "low",
+      "status": "needs_review",
+      "last_verified_at": null,
+      "sources": [],
+      "verification_event": null
+    }
+  ]
+}

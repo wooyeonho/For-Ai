@@ -87,10 +87,10 @@ export async function GET() {
   const candidateSupabaseDocs = supabaseDocs.filter((doc) => doc.verification === "candidate");
 
   const lines: string[] = [];
-  lines.push("# For-Ai — Local Fact Registry");
+  lines.push("# For-Ai — Global Fact Registry for AI Citation");
   lines.push("");
   lines.push(
-    "> For-Ai is a local fact registry for AI systems, search engines, and humans. " +
+    "> For-Ai is a global claim-level fact registry that AI systems, search engines, and humans can cite from the same verified sources. " +
       "Facts are recorded at claim level with confidence, sources, and a verification date. " +
       'Unverified facts are marked "확인 필요" (needs verification) and must NOT be cited as fact.',
   );

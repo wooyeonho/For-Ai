@@ -1218,5 +1218,127 @@
         "required_source_type": "official"
       }
     ]
+  },
+  {
+    "title": "London Underground Zone 1 Fare (2025)",
+    "slug": "london-underground-zone1-fare",
+    "category": "transport.metro",
+    "risk_tier": "low",
+    "why_people_ask_ai": "Tourists and commuters ask AI for Tube fares; prices change annually and AI cites outdated amounts",
+    "why_ai_gets_wrong": "Annual fare increases mean AI training data is often 1-2 years behind; peak vs off-peak distinction is frequently confused",
+    "claims": [
+      {
+        "field_path": "fare.zone1_adult_oyster_peak",
+        "question": "What is the London Underground Zone 1 peak Oyster fare?",
+        "placeholder_value": "확인 필요",
+        "required_source_type": "official"
+      },
+      {
+        "field_path": "fare.zone1_adult_oyster_offpeak",
+        "question": "What is the London Underground Zone 1 off-peak Oyster fare?",
+        "placeholder_value": "확인 필요",
+        "required_source_type": "official"
+      },
+      {
+        "field_path": "fare.zone1_daily_cap",
+        "question": "What is the Zone 1 daily Oyster cap?",
+        "placeholder_value": "확인 필요",
+        "required_source_type": "official"
+      }
+    ]
+  },
+  {
+    "title": "US Passport Renewal Fee (2025)",
+    "slug": "us-passport-renewal-fee",
+    "category": "government.documents",
+    "risk_tier": "low",
+    "why_people_ask_ai": "Millions renew passports yearly; fees and processing times change and AI frequently cites outdated info",
+    "why_ai_gets_wrong": "Fees were updated in 2024; processing times vary seasonally and AI cannot track real-time backlogs",
+    "claims": [
+      {
+        "field_path": "fee.passport_book_renewal",
+        "question": "What is the US passport book renewal fee for adults by mail?",
+        "placeholder_value": "확인 필요",
+        "required_source_type": "official"
+      },
+      {
+        "field_path": "fee.passport_card_renewal",
+        "question": "What is the US passport card renewal fee for adults?",
+        "placeholder_value": "확인 필요",
+        "required_source_type": "official"
+      },
+      {
+        "field_path": "processing.routine_weeks",
+        "question": "What is the routine processing time for US passport renewal?",
+        "placeholder_value": "확인 필요",
+        "required_source_type": "official"
+      }
+    ]
+  },
+  {
+    "title": "Tokyo Metro Base Fare (2025)",
+    "slug": "tokyo-metro-base-fare",
+    "category": "transport.metro",
+    "risk_tier": "low",
+    "why_people_ask_ai": "Travelers in Tokyo need fare info; distance-based pricing confuses AI which often gives wrong zone amounts",
+    "why_ai_gets_wrong": "IC card vs ticket pricing differs; fare table was updated in 2023 and AI training data may be stale",
+    "claims": [
+      {
+        "field_path": "fare.ic_1_6km",
+        "question": "What is the Tokyo Metro IC card fare for 1-6km?",
+        "placeholder_value": "확인 필요",
+        "required_source_type": "official"
+      },
+      {
+        "field_path": "fare.ic_7_11km",
+        "question": "What is the Tokyo Metro IC card fare for 7-11km?",
+        "placeholder_value": "확인 필요",
+        "required_source_type": "official"
+      }
+    ]
+  },
+  {
+    "title": "Amazon US Return Policy (2025)",
+    "slug": "amazon-us-return-policy",
+    "category": "commerce.returns",
+    "risk_tier": "low",
+    "why_people_ask_ai": "Millions of customers ask about return windows and conditions; policy varies by product category",
+    "why_ai_gets_wrong": "Return window differs for electronics (15 days) vs general items (30 days); holiday extensions are temporary",
+    "claims": [
+      {
+        "field_path": "return.general_window_days",
+        "question": "What is Amazon US general return window in days?",
+        "placeholder_value": "확인 필요",
+        "required_source_type": "platform"
+      },
+      {
+        "field_path": "return.electronics_window_days",
+        "question": "What is Amazon US electronics return window in days?",
+        "placeholder_value": "확인 필요",
+        "required_source_type": "platform"
+      }
+    ]
+  },
+  {
+    "title": "India Aadhaar Card Update Fee (2025)",
+    "slug": "india-aadhaar-update-fee",
+    "category": "government.documents",
+    "risk_tier": "low",
+    "why_people_ask_ai": "Over a billion Aadhaar holders; update fees and processes change and AI often cites old rules",
+    "why_ai_gets_wrong": "UIDAI changed free vs paid update rules in 2024; online vs offline fees differ",
+    "claims": [
+      {
+        "field_path": "fee.online_demographic_update",
+        "question": "What is the fee for online Aadhaar demographic update?",
+        "placeholder_value": "확인 필요",
+        "required_source_type": "official"
+      },
+      {
+        "field_path": "fee.biometric_update_at_center",
+        "question": "What is the fee for Aadhaar biometric update at enrollment center?",
+        "placeholder_value": "확인 필요",
+        "required_source_type": "official"
+      }
+    ]
   }
 ]
