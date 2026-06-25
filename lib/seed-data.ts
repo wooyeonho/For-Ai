@@ -10,7 +10,7 @@ function claimStub(
   return {
     id, document_id: docId, entity_id: entityId,
     field_path: fieldPath, claim_text: text,
-    claim_value: "확인 필요", confidence: "low", status: "needs_review",
+    claim_value: "확인 필요", jurisdiction: entityId.slice(0, 2).toUpperCase(), confidence: "low", status: "needs_review",
     last_verified_at: null, created_at: null, updated_at: null,
     sources: [], verification_events: [],
   };
@@ -29,6 +29,7 @@ function vClaim(
   return {
     id, document_id: docId, entity_id: entityId,
     field_path: fieldPath, claim_text: text, claim_value: value,
+    jurisdiction: entityId.slice(0, 2).toUpperCase(),
     confidence, status: "verified", last_verified_at: observedAt,
     created_at: null, updated_at: null,
     sources: [{
@@ -50,15 +51,15 @@ function vClaim(
 // Helper: build document
 // ---------------------------------------------------------------------------
 function makeDoc(id: string, entity: Entity, slug: string, title: string,
-  category: string, template: string): Document {
+  category: string, template: string, lang = "ko"): Document {
   return {
-    id, entity_id: entity.id, slug, lang: "ko", title, category, template,
+    id, entity_id: entity.id, slug, lang, country: entity.country, title, category, template,
     status: "ai_draft", confidence: "low", last_verified_at: null,
     license_code: "forai-data-license-v0.1",
     data: {
       direct_answer: "확인 필요",
-      locale_path: `/ko/wiki/${slug}`,
-      canonical_path: `/ko/wiki/${slug}`,
+      locale_path: `/${lang}/wiki/${slug}`,
+      canonical_path: `/${lang}/wiki/${slug}`,
       machine_readable: { api_url: `/api/documents/${slug}`, raw_markdown_url: `/raw/${slug}.md` },
       license_notice: "For-Ai Data License v0.1 placeholder.",
     },
@@ -78,8 +79,9 @@ function bundle(
   entity: Entity, docId: string, slug: string, title: string,
   category: string, template: string,
   claims: Array<{ id: string; fieldPath: string; text: string }>,
+  lang = "ko",
 ): RegistryDocumentBundle {
-  const d = makeDoc(docId, entity, slug, title, category, template);
+  const d = makeDoc(docId, entity, slug, title, category, template, lang);
   return {
     entity, document: d,
     claims: claims.map(c => claimStub(c.id, d.id, entity.id, c.fieldPath, c.text)),
@@ -958,13 +960,33 @@ const b53 = bundle(e53, "doc-kr-product-food-br-mint-choco-ko", "baskin-robbins-
 // ===========================================================================
 // 54. 루브르 박물관 운영시간 — place_attraction (글로벌)
 // ===========================================================================
-const e54: Entity = { id: "fr-place-attraction-louvre-001", type: "place_attraction", canonical_name: "루브르 박물관 (Musée du Louvre)", country: "FR", region: "Île-de-France", city: "Paris", created_at: null, updated_at: null };
-const b54 = bundle(e54, "doc-fr-place-louvre-hours-ko", "louvre-museum-opening-hours",
-  "루브르 박물관 운영시간 및 휴관일", "place_attraction", "venue-hours", [
-  { id: "claim-louvre-hours-weekday", fieldPath: "hours.weekday", text: "루브르 박물관 평일 운영시간은 확인이 필요합니다." },
-  { id: "claim-louvre-closed-day", fieldPath: "hours.closed_day", text: "루브르 박물관 정기 휴관일은 확인이 필요합니다. AI는 자주 틀립니다." },
-  { id: "claim-louvre-ticket-adult", fieldPath: "fee.adult_entry", text: "루브르 박물관 성인 입장료(유로)는 확인이 필요합니다." },
-]);
+const e54: Entity = { id: "fr-place-attraction-louvre-001", type: "place_attraction", canonical_name: "Musée du Louvre", country: "FR", region: "Île-de-France", city: "Paris", created_at: null, updated_at: null };
+const b54 = bundle(e54, "doc-fr-place-louvre-hours-en", "louvre-museum-opening-hours",
+  "Louvre Museum opening hours and closure days", "place_attraction", "venue-hours", [
+  { id: "claim-louvre-hours-weekday", fieldPath: "hours.weekday", text: "The Louvre Museum weekday opening hours need verification." },
+  { id: "claim-louvre-closed-day", fieldPath: "hours.closed_day", text: "The Louvre Museum regular closure day needs verification." },
+  { id: "claim-louvre-ticket-adult", fieldPath: "fee.adult_entry", text: "The Louvre Museum adult ticket fee in euros needs verification." },
+], "en");
+
+const e56: Entity = { id: "us-gov-passport-fee-001", type: "government", canonical_name: "United States passport fees", country: "US", region: null, city: null, created_at: null, updated_at: null };
+const b56 = bundle(e56, "doc-us-passport-fee-en", "passport-fee",
+  "United States passport fee claims", "government", "document-fees", [
+  { id: "claim-us-passport-book-fee", fieldPath: "fee.passport_book", text: "The U.S. passport book fee needs verification." },
+  { id: "claim-us-passport-card-fee", fieldPath: "fee.passport_card", text: "The U.S. passport card fee needs verification." },
+], "en");
+
+
+const e58: Entity = { id: "kr-gov-passport-fee-en-001", type: "government", canonical_name: "Republic of Korea passport fees", country: "KR", region: null, city: null, created_at: null, updated_at: null };
+const b58 = bundle(e58, "doc-kr-passport-fee-en", "passport-fee",
+  "Republic of Korea passport fee claims", "government", "document-fees", [
+  { id: "claim-kr-passport-book-fee-en", fieldPath: "fee.passport_book", text: "The Republic of Korea passport book fee needs verification." },
+], "en");
+
+const e57: Entity = { id: "jp-gov-residence-certificate-001", type: "government", canonical_name: "Japan residence certificate issuance", country: "JP", region: null, city: null, created_at: null, updated_at: null };
+const b57 = bundle(e57, "doc-jp-residence-certificate-fee-en", "residence-certificate-fee",
+  "Japan residence certificate fee claims", "government", "document-fees", [
+  { id: "claim-jp-residence-certificate-fee", fieldPath: "fee.residence_certificate", text: "The Japan residence certificate issuance fee needs verification." },
+], "en");
 
 // ===========================================================================
 // 55. 도로교통법 어린이 카시트 의무 — law_statute
@@ -994,5 +1016,8 @@ export const allRegistryBundles: RegistryDocumentBundle[] = [
   b25, b26, b27, b28, b29, b30, b31, b32,
   b33, b34, b35, b36, b37, b38, b39, b40,
   b41, b42, b43, b44, b45, b46, b47, b48,
-  b49, b50, b51, b52, b53, b54, b55,
+  b49, b50, b51, b52, b53, b54,
+  b56,
+  b58,
+  b57, b55,
 ];

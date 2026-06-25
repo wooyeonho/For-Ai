@@ -1,3 +1,4 @@
+import { DEFAULT_LOCALE } from "@/lib/i18n";
 import { NextResponse } from "next/server";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { documentPageUrl } from "../../../../lib/urls";
@@ -34,7 +35,7 @@ async function countRows(
 
 function publicDocumentLink(doc: { slug?: string | null; lang?: string | null }) {
   if (!doc.slug) return null;
-  return documentPageUrl(doc.slug, doc.lang ?? "ko");
+  return documentPageUrl(doc.slug, doc.lang ?? DEFAULT_LOCALE);
 }
 
 export async function GET(request: Request) {

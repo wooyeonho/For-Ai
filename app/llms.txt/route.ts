@@ -1,3 +1,4 @@
+import { DEFAULT_LOCALE } from "@/lib/i18n";
 import { createClient } from "@supabase/supabase-js";
 import {
   getAllRegistryBundles,
@@ -68,7 +69,7 @@ async function getSupabaseIndexDocs(staticSlugs: Set<string>): Promise<SupabaseI
       .map((doc) => ({
         slug: doc.slug,
         title: doc.title,
-        lang: doc.lang ?? "ko",
+        lang: doc.lang ?? DEFAULT_LOCALE,
         status: doc.status ?? "needs_review",
         confidence: doc.confidence ?? "low",
         verification: isVerifiedSupabaseDoc(doc) ? "verified" : "candidate",

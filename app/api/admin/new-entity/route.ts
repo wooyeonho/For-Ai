@@ -18,12 +18,12 @@ export async function POST(request: Request) {
   const id = String(body.id ?? "").trim();
   const type = String(body.type ?? "").trim();
   const canonical_name = String(body.canonical_name ?? "").trim();
-  const country = String(body.country ?? "KR").trim() || "KR";
+  const country = String(body.country ?? "").trim();
   const region = String(body.region ?? "").trim() || null;
   const city = String(body.city ?? "").trim() || null;
 
-  if (!id || !type || !canonical_name) {
-    return NextResponse.json({ error: "id, type, canonical_name are required" }, { status: 400 });
+  if (!id || !type || !canonical_name || !country) {
+    return NextResponse.json({ error: "id, type, canonical_name, country are required" }, { status: 400 });
   }
 
   const { data: existing } = await sb.from("entities").select("id").eq("id", id).maybeSingle();

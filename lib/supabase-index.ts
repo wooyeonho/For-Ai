@@ -1,3 +1,4 @@
+import { DEFAULT_LOCALE } from "./i18n";
 import { createClient } from "@supabase/supabase-js";
 
 export type SupabaseDocumentIndexItem = {
@@ -32,7 +33,7 @@ export async function getPublishedVerifiedDocumentIndexFromSupabase(): Promise<S
     .filter((row) => typeof row.slug === "string" && row.slug.length > 0)
     .map((row) => ({
       slug: row.slug as string,
-      lang: row.lang ?? "ko",
+      lang: row.lang ?? DEFAULT_LOCALE,
       updated_at: row.updated_at,
       last_verified_at: row.last_verified_at,
     }));

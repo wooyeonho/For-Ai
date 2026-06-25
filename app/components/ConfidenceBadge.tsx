@@ -1,3 +1,4 @@
+import { DEFAULT_LOCALE } from "@/lib/i18n";
 import { getTranslations } from "../../lib/i18n";
 import type { SupportedLocale } from "../../lib/i18n";
 import type { Confidence } from "../../lib/types";
@@ -9,7 +10,7 @@ const CONFIDENCE_STYLES: Record<Confidence, string> = {
 };
 
 export function ConfidenceBadge({ level, locale }: { level: Confidence; locale?: string }) {
-  const t = getTranslations((locale ?? "ko") as SupportedLocale);
+  const t = getTranslations((locale ?? DEFAULT_LOCALE) as SupportedLocale);
   const labels: Record<Confidence, string> = {
     low: t.claims.confidenceLow,
     medium: t.claims.confidenceMedium,

@@ -4,7 +4,11 @@
 export const SUPPORTED_LOCALES = ["ko", "en", "hi", "ar", "es", "ja", "zh"] as const;
 export type SupportedLocale = (typeof SUPPORTED_LOCALES)[number];
 
-export const DEFAULT_LOCALE: SupportedLocale = "ko";
+const configuredDefaultLocale = process.env.NEXT_PUBLIC_DEFAULT_LOCALE;
+
+export const DEFAULT_LOCALE: SupportedLocale = SUPPORTED_LOCALES.includes(configuredDefaultLocale as SupportedLocale)
+  ? (configuredDefaultLocale as SupportedLocale)
+  : "en";
 
 export const LOCALE_CONFIG: Record<SupportedLocale, {
   label: string;

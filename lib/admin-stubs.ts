@@ -37,6 +37,7 @@ export function createDocumentDraftStub(input: {
   entity_id: string;
   slug: string;
   lang: string;
+  country: string;
   title: string;
   category: string;
   template: string;
@@ -46,6 +47,7 @@ export function createDocumentDraftStub(input: {
     entity_id: input.entity_id,
     slug: input.slug,
     lang: input.lang,
+    country: input.country,
     title: input.title,
     category: input.category,
     template: input.template,
@@ -77,6 +79,7 @@ export function generatePlaceholderClaimsStub(input: {
     field_path: fieldPath,
     claim_text: `${fieldPath} 값은 확인이 필요합니다.`,
     claim_value: "확인 필요",
+    jurisdiction: null,
     confidence: "low",
     status: "needs_review",
     last_verified_at: null,

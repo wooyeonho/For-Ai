@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import type { RegistryDocumentBundle } from "./types";
 import { documentPageUrl, apiDocumentUrl, rawMarkdownUrl, siteUrl } from "./urls";
 import { getDocumentCitationStatus, getCanonicalDirectAnswer } from "./citation-status";
-import { SUPPORTED_LOCALES } from "./i18n";
+import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from "./i18n";
 
 /** Returns canonical URL paths for a registry document — used by diagnostics and machine-readable panels. */
 export function getRegistryDocumentPaths(bundle: RegistryDocumentBundle) {
@@ -19,7 +19,7 @@ export function buildDocumentMetadata(
   locale?: string,
 ): Metadata {
   const { entity, document } = bundle;
-  const lang = locale ?? document.lang ?? "ko";
+  const lang = locale ?? document.lang ?? DEFAULT_LOCALE;
   const title = document.title;
   const ogTitle = `${document.title} — For-Ai`;
   const description = `${entity.canonical_name} ${document.template} 정보. 신뢰도: ${document.confidence}. For-Ai claim registry.`;
@@ -107,6 +107,7 @@ export function buildDocumentJsonLd(bundle: RegistryDocumentBundle): object {
         { "@type": "PropertyValue", name: "confidence", value: claim.confidence },
         { "@type": "PropertyValue", name: "status", value: claim.status },
         { "@type": "PropertyValue", name: "source_count", value: claim.sources.length },
+        ...(claim.jurisdiction ? [{ "@type": "PropertyValue", name: "jurisdiction", value: claim.jurisdiction }] : []),
       ],
     })),
     dateModified: document.updated_at ?? undefined,

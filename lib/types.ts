@@ -40,6 +40,7 @@ export type Document = {
   entity_id: string;
   slug: string;
   lang: string;
+  country: string;
   title: string;
   category: string;
   template: string;
@@ -59,6 +60,7 @@ export type Claim = {
   field_path: string;
   claim_text: string;
   claim_value: string;
+  jurisdiction: string | null;
   confidence: Confidence;
   status: ClaimStatus;
   last_verified_at: string | null;

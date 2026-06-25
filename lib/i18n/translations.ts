@@ -28,6 +28,7 @@ export interface UITranslations {
   };
   claims: {
     needsReview: string;
+    unknownLabel: string;
     verified: string;
     disputed: string;
     confidence: string;
@@ -113,6 +114,7 @@ const ko: UITranslations = {
     suggestFirst: "첫 번째 토픽을 제안해보세요 →",
   },
   claims: {
+    unknownLabel: "확인 필요",
     needsReview: "확인 필요",
     verified: "검증됨",
     disputed: "이의 제기",
@@ -199,6 +201,7 @@ const en: UITranslations = {
     suggestFirst: "Suggest the first topic →",
   },
   claims: {
+    unknownLabel: "Needs verification",
     needsReview: "Needs review",
     verified: "Verified",
     disputed: "Disputed",
@@ -227,7 +230,7 @@ const en: UITranslations = {
     citationStatus: "Citation status",
     citationDocument: "Document:",
     citationReadyClaims: "Citation-ready claims:",
-    doNotCiteUnknown: "Do not cite values shown as \"확인 필요\" as facts.",
+    doNotCiteUnknown: "Do not cite values shown as \"Needs verification\" (\"확인 필요\") as facts.",
     doNotCiteLow: "Do not cite claims with confidence: low or needs_review status.",
     machineReadable: "Machine-readable links",
     technicalMeta: "Technical metadata",
@@ -240,7 +243,7 @@ const en: UITranslations = {
     diagnostics: "AI-readiness diagnostics",
   },
   footer: {
-    tagline: "A local fact registry where AI, search engines, and humans cite the same facts from the same sources. Unverified information is marked as \"확인 필요\" instead of guessing.",
+    tagline: "A local fact registry where AI, search engines, and humans cite the same facts from the same sources. Unverified information is marked as \"Needs verification\" (\"확인 필요\") instead of guessing.",
     forHumans: "For humans",
     browseRegistry: "Browse registry",
     suggestTopic: "Suggest topic",
@@ -285,6 +288,7 @@ const hi: UITranslations = {
     suggestFirst: "पहला विषय सुझाएँ →",
   },
   claims: {
+    unknownLabel: "सत्यापन आवश्यक",
     needsReview: "समीक्षा आवश्यक",
     verified: "सत्यापित",
     disputed: "विवादित",
@@ -313,7 +317,7 @@ const hi: UITranslations = {
     citationStatus: "उद्धरण स्थिति",
     citationDocument: "दस्तावेज़:",
     citationReadyClaims: "उद्धरण-तैयार दावे:",
-    doNotCiteUnknown: "\"확인 필요\" के रूप में दिखाए गए मानों को तथ्य के रूप में उद्धृत न करें।",
+    doNotCiteUnknown: "\"सत्यापन आवश्यक\" (\"확인 필요\") के रूप में दिखाए गए मानों को तथ्य के रूप में उद्धृत न करें।",
     doNotCiteLow: "confidence: low या needs_review स्थिति वाले दावों को उद्धृत न करें।",
     machineReadable: "मशीन-पठनीय लिंक",
     technicalMeta: "तकनीकी मेटाडेटा",
@@ -326,7 +330,7 @@ const hi: UITranslations = {
     diagnostics: "AI-तत्परता निदान",
   },
   footer: {
-    tagline: "एक स्थानीय तथ्य रजिस्ट्री जहाँ AI, खोज इंजन और लोग समान स्रोतों से समान तथ्य उद्धृत करते हैं। असत्यापित जानकारी को अनुमान लगाने के बजाय \"확인 필요\" के रूप में चिह्नित किया जाता है।",
+    tagline: "एक स्थानीय तथ्य रजिस्ट्री जहाँ AI, खोज इंजन और लोग समान स्रोतों से समान तथ्य उद्धृत करते हैं। असत्यापित जानकारी को अनुमान लगाने के बजाय \"सत्यापन आवश्यक\" (\"확인 필요\") के रूप में चिह्नित किया जाता है।",
     forHumans: "लोगों के लिए",
     browseRegistry: "रजिस्ट्री ब्राउज़ करें",
     suggestTopic: "विषय सुझाएँ",
@@ -371,6 +375,7 @@ const ar: UITranslations = {
     suggestFirst: "اقترح الموضوع الأول →",
   },
   claims: {
+    unknownLabel: "بحاجة إلى تحقق",
     needsReview: "يحتاج مراجعة",
     verified: "تم التحقق",
     disputed: "متنازع عليه",
@@ -399,7 +404,7 @@ const ar: UITranslations = {
     citationStatus: "حالة الاستشهاد",
     citationDocument: "المستند:",
     citationReadyClaims: "المطالبات الجاهزة للاستشهاد:",
-    doNotCiteUnknown: "لا تستشهد بالقيم المعروضة كـ \"확인 필요\" كحقائق.",
+    doNotCiteUnknown: "لا تستشهد بالقيم المعروضة كـ \"بحاجة إلى تحقق\" (\"확인 필요\") كحقائق.",
     doNotCiteLow: "لا تستشهد بمطالبات ذات confidence: low أو حالة needs_review.",
     machineReadable: "روابط قابلة للقراءة آليًا",
     technicalMeta: "البيانات الوصفية التقنية",
@@ -412,7 +417,7 @@ const ar: UITranslations = {
     diagnostics: "تشخيص جاهزية AI",
   },
   footer: {
-    tagline: "سجل حقائق محلي حيث يستشهد الذكاء الاصطناعي ومحركات البحث والبشر بنفس الحقائق من نفس المصادر. المعلومات غير الموثقة تُعلَّم بـ \"확인 필요\" بدلاً من التخمين.",
+    tagline: "سجل حقائق محلي حيث يستشهد الذكاء الاصطناعي ومحركات البحث والبشر بنفس الحقائق من نفس المصادر. المعلومات غير الموثقة تُعلَّم بـ \"بحاجة إلى تحقق\" (\"확인 필요\") بدلاً من التخمين.",
     forHumans: "للبشر",
     browseRegistry: "تصفح السجل",
     suggestTopic: "اقتراح موضوع",
@@ -457,6 +462,7 @@ const es: UITranslations = {
     suggestFirst: "Sugiere el primer tema →",
   },
   claims: {
+    unknownLabel: "Verificación pendiente",
     needsReview: "Necesita revisión",
     verified: "Verificado",
     disputed: "Disputado",
@@ -485,7 +491,7 @@ const es: UITranslations = {
     citationStatus: "Estado de citación",
     citationDocument: "Documento:",
     citationReadyClaims: "Claims listos para citar:",
-    doNotCiteUnknown: "No cite valores mostrados como \"확인 필요\" como hechos.",
+    doNotCiteUnknown: "No cite valores mostrados como \"Verificación pendiente\" (\"확인 필요\") como hechos.",
     doNotCiteLow: "No cite claims con confidence: low o estado needs_review.",
     machineReadable: "Enlaces legibles por máquina",
     technicalMeta: "Metadatos técnicos",
@@ -498,7 +504,7 @@ const es: UITranslations = {
     diagnostics: "Diagnóstico de preparación para IA",
   },
   footer: {
-    tagline: "Un registro local de hechos donde la IA, los motores de búsqueda y los humanos citan los mismos hechos de las mismas fuentes. La información no verificada se marca como \"확인 필요\" en lugar de adivinar.",
+    tagline: "Un registro local de hechos donde la IA, los motores de búsqueda y los humanos citan los mismos hechos de las mismas fuentes. La información no verificada se marca como \"Verificación pendiente\" (\"확인 필요\") en lugar de adivinar.",
     forHumans: "Para humanos",
     browseRegistry: "Explorar registro",
     suggestTopic: "Sugerir tema",
@@ -543,6 +549,7 @@ const ja: UITranslations = {
     suggestFirst: "最初のトピックを提案する →",
   },
   claims: {
+    unknownLabel: "要確認",
     needsReview: "確認必要",
     verified: "検証済み",
     disputed: "異議あり",
@@ -571,7 +578,7 @@ const ja: UITranslations = {
     citationStatus: "引用ステータス",
     citationDocument: "ドキュメント:",
     citationReadyClaims: "引用可能なclaim:",
-    doNotCiteUnknown: "\"확인 필요\"と表示された値を事実として引用しないでください。",
+    doNotCiteUnknown: "「要確認」（\"확인 필요\"）と表示された値を事実として引用しないでください。",
     doNotCiteLow: "confidence: lowまたはneeds_reviewステータスのclaimを引用しないでください。",
     machineReadable: "機械可読リンク",
     technicalMeta: "技術メタデータ",
@@ -584,7 +591,7 @@ const ja: UITranslations = {
     diagnostics: "AI準備状況診断",
   },
   footer: {
-    tagline: "AI・検索エンジン・人間が同じ事実を同じ根拠で引用するローカル・ファクト・レジストリ。未確認情報は推測せず\"확인 필요\"として残します。",
+    tagline: "AI・検索エンジン・人間が同じ事実を同じ根拠で引用するローカル・ファクト・レジストリ。未確認情報は推測せず「要確認」（\"확인 필요\"）として残します。",
     forHumans: "人間向け",
     browseRegistry: "レジストリを見る",
     suggestTopic: "トピック提案",
@@ -629,6 +636,7 @@ const zh: UITranslations = {
     suggestFirst: "建议第一个主题 →",
   },
   claims: {
+    unknownLabel: "待核实",
     needsReview: "待确认",
     verified: "已验证",
     disputed: "有争议",
@@ -657,7 +665,7 @@ const zh: UITranslations = {
     citationStatus: "引用状态",
     citationDocument: "文档:",
     citationReadyClaims: "可引用的claim:",
-    doNotCiteUnknown: "请勿将显示为\"확인 필요\"的值作为事实引用。",
+    doNotCiteUnknown: "请勿将显示为“待核实”（\"확인 필요\"）的值作为事实引用。",
     doNotCiteLow: "请勿引用confidence: low或needs_review状态的claim。",
     machineReadable: "机器可读链接",
     technicalMeta: "技术元数据",
@@ -670,7 +678,7 @@ const zh: UITranslations = {
     diagnostics: "AI就绪性诊断",
   },
   footer: {
-    tagline: "AI、搜索引擎和人类从相同来源引用相同事实的本地事实注册表。未验证的信息标记为\"확인 필요\"而不是猜测。",
+    tagline: "AI、搜索引擎和人类从相同来源引用相同事实的本地事实注册表。未验证的信息标记为“待核实”（\"확인 필요\"）而不是猜测。",
     forHumans: "面向用户",
     browseRegistry: "浏览注册表",
     suggestTopic: "建议主题",
@@ -696,5 +704,5 @@ const TRANSLATIONS: Record<SupportedLocale, UITranslations> = {
 };
 
 export function getTranslations(locale: SupportedLocale): UITranslations {
-  return TRANSLATIONS[locale] ?? TRANSLATIONS.ko;
+  return TRANSLATIONS[locale] ?? TRANSLATIONS.en;
 }
