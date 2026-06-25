@@ -52,6 +52,7 @@ export async function GET() {
   lines.push(`- Search / discovery index (JSON): \`${apiIndexUrl("q=<query>&type=<type>&country=<cc>&cite=true")}\``);
   lines.push(`- Per-document JSON: \`${apiDocumentUrl("<slug>")}\``);
   lines.push(`- Per-document Markdown: \`${rawMarkdownUrl("<slug>")}\``);
+  lines.push(`- Per-entity profile (all documents about one entity): \`${siteUrl("/api/entities/<entity_id>")}\``);
   lines.push("");
   lines.push(`## Verified documents (${verified.length + verifiedSupabaseDocs.length})`);
   lines.push("");

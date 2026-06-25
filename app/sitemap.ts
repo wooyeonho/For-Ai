@@ -1,7 +1,8 @@
 import type { MetadataRoute } from "next";
 import { getAllRegistryBundles } from "../lib/data";
 import { getPublishedVerifiedDocumentIndexFromSupabase } from "../lib/supabase-index";
-import { siteUrl, documentPageUrl } from "../lib/urls";
+import { getAllEntityRefs } from "../lib/entity-profile";
+import { siteUrl, documentPageUrl, entityPageUrl } from "../lib/urls";
 
 type DocumentSitemapEntry = {
   slug: string;
@@ -54,6 +55,19 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }));
 
+  let entityPages: MetadataRoute.Sitemap = [];
+  try {
+    const refs = await getAllEntityRefs();
+    entityPages = refs.map((ref) => ({
+      url: entityPageUrl(ref.id, ref.lang),
+      lastModified: new Date().toISOString(),
+      changeFrequency: "weekly" as const,
+      priority: 0.7,
+    }));
+  } catch (error) {
+    console.warn("Failed to load entity refs for sitemap; skipping entity pages.", error);
+  }
+
   return [
     {
       url: siteUrl("/"),
@@ -68,5 +82,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.5,
     },
     ...documentPages,
+    ...entityPages,
   ];
 }
