@@ -58,7 +58,8 @@ interface GenerateResult {
   total_generated: number;
   saved: number;
   preview: (Record<string, unknown> & ConsensusInfo)[];
-  provider_results?: Record<string, { generated: number; error?: string }>;
+  provider_results?: Record<string, { generated: number; error?: string; parse_error?: string }>;
+  skipped_duplicates?: number;
   consensus_summary?: {
     total_unique: number;
     unanimous: number;
@@ -67,7 +68,7 @@ interface GenerateResult {
     single: number;
   };
   error?: string;
-  save_status?: "saved" | "failed" | "skipped";
+  save_status?: "saved" | "failed" | "skipped" | "skipped_all_duplicates";
   save_error?: string;
   save_error_details?: Record<string, unknown>;
 }
@@ -87,9 +88,6 @@ export default function AdminGeneratePage() {
   const [adminSecret, setAdminSecret] = useState("");
 
   useEffect(() => {
-    const saved = localStorage.getItem("forai_admin_secret");
-    if (saved) setAdminSecret(saved);
-
     async function loadProviders() {
       try {
         if (!adminSecret) { setProvidersLoading(false); return; }
@@ -108,11 +106,6 @@ export default function AdminGeneratePage() {
 
     loadProviders();
   }, [adminSecret]);
-
-  function saveAdminSecret(value: string) {
-    setAdminSecret(value);
-    localStorage.setItem("forai_admin_secret", value);
-  }
 
   function toggleProvider(key: string) {
     setSelectedProviders((prev) =>
@@ -148,7 +141,6 @@ export default function AdminGeneratePage() {
         setError(msg);
         if (res.status === 401) {
           setAdminSecret("");
-          localStorage.removeItem("forai_admin_secret");
         }
       } else {
         setResult(data);
@@ -182,19 +174,21 @@ export default function AdminGeneratePage() {
               type="password"
               value={adminSecret}
               onChange={(e) => setAdminSecret(e.target.value)}
-              onBlur={(e) => { if (e.target.value) saveAdminSecret(e.target.value); }}
               placeholder="ADMIN_SECRET 입력"
               style={{ flex: 1, padding: "8px 12px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 }}
             />
             {adminSecret && (
               <button
-                onClick={() => { setAdminSecret(""); localStorage.removeItem("forai_admin_secret"); }}
+                onClick={() => setAdminSecret("")}
                 style={{ padding: "8px 12px", border: "1px solid #fca5a5", borderRadius: 6, background: "#fff", color: "#dc2626", fontSize: 12, cursor: "pointer" }}
               >
                 초기화
               </button>
             )}
           </div>
+          <p style={{ margin: "6px 0 0", fontSize: 11, color: "#6b7280" }}>
+            보안을 위해 인증키는 브라우저에 저장되지 않습니다. 새로고침 시 다시 입력하세요.
+          </p>
         </div>
 
         {/* Topic input */}
@@ -385,6 +379,7 @@ export default function AdminGeneratePage() {
                 <div key={provider} style={{ padding: "4px 0" }}>
                   <strong>{provider}</strong>: {r.generated}개 생성
                   {r.error && <span style={{ color: "#dc2626" }}> — {r.error}</span>}
+                  {r.parse_error && <span style={{ color: "#b45309" }}> — 파싱 실패: {r.parse_error}</span>}
                 </div>
               ))}
             </div>
@@ -458,6 +453,19 @@ export default function AdminGeneratePage() {
                   </div>
                 );
               })}
+            </div>
+          )}
+
+          {(!result.preview || result.preview.length === 0) && (
+            <div style={{ padding: 20, background: "#f9fafb", border: "1px dashed #d1d5db", borderRadius: 8, textAlign: "center", color: "#6b7280" }}>
+              <p style={{ fontWeight: 600, marginBottom: 4 }}>표시할 후보가 없습니다</p>
+              <p style={{ fontSize: 13, margin: 0 }}>
+                {result.save_status === "skipped_all_duplicates"
+                  ? `생성된 ${result.total_generated}개가 모두 이미 등록된 후보(중복)라 저장되지 않았습니다.`
+                  : result.total_generated === 0
+                    ? "AI가 이 토픽으로 후보를 생성하지 못했습니다. 더 구체적인 토픽으로 다시 시도해 보세요."
+                    : "생성은 되었으나 미리보기가 비어 있습니다. provider 결과를 확인하세요."}
+              </p>
             </div>
           )}
         </div>

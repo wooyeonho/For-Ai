@@ -86,13 +86,18 @@ export default async function WikiDocumentPage({
           </span>
           <span className="badge badge-low">{document.confidence}</span>
           {document.category && <span className="badge">{document.category}</span>}
+          {citationStatus.isVerifiedDocument && citationStatus.freshness === "stale" && (
+            <span className="badge badge-review" title={`Oldest verified claim: ${citationStatus.oldestVerifiedAt ?? "unknown"}`}>
+              ⏳ stale
+            </span>
+          )}
         </div>
         <DocumentStatsBar documentId={document.id} />
       </header>
 
       {/* Why people ask AI this question */}
       {whyPeopleAsk && (
-        <section className="registry-panel" style={{ background: "#fffbeb", borderLeft: "3px solid #f59e0b" }}>
+        <section className="registry-panel" style={{ background: "#fffbeb", borderInlineStart: "3px solid #f59e0b" }}>
           <p className="eyebrow">{t.wiki.whyPeopleAsk}</p>
           <p>{whyPeopleAsk}</p>
         </section>

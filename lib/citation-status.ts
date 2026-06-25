@@ -2,6 +2,29 @@ import type { ClaimWithSources, RegistryDocumentBundle } from "./types";
 
 export const UNKNOWN_FACT_TEXT = "확인 필요";
 
+// Facts decay. A verified claim that hasn't been re-checked in this window is
+// flagged "stale" so AI consumers and admins can prioritise re-verification.
+export const FRESHNESS_TTL_DAYS = 180;
+
+export type FreshnessLabel = "fresh" | "stale" | "unknown";
+
+export function ageInDays(iso: string | null | undefined, now: Date = new Date()): number | null {
+  if (!iso) return null;
+  const t = Date.parse(iso);
+  if (Number.isNaN(t)) return null;
+  return Math.floor((now.getTime() - t) / 86_400_000);
+}
+
+export function isStale(
+  iso: string | null | undefined,
+  ttlDays: number = FRESHNESS_TTL_DAYS,
+  now: Date = new Date(),
+): boolean {
+  const age = ageInDays(iso, now);
+  if (age === null) return true; // no verification date → treat as not-fresh
+  return age > ttlDays;
+}
+
 export type ClaimCitationStatus = {
   isCitationReady: boolean;
   label: "verified" | "unverified";
@@ -14,6 +37,8 @@ export type DocumentCitationStatus = {
   totalClaims: number;
   label: "verified" | "unverified";
   isVerifiedDocument: boolean;
+  freshness: FreshnessLabel;
+  oldestVerifiedAt: string | null;
 };
 
 export function getClaimCitationStatus(claim: ClaimWithSources): ClaimCitationStatus {
@@ -43,12 +68,30 @@ export function getClaimCitationStatus(claim: ClaimWithSources): ClaimCitationSt
   };
 }
 
-export function getDocumentCitationStatus(bundle: RegistryDocumentBundle): DocumentCitationStatus {
-  const claimStatuses = bundle.claims.map(getClaimCitationStatus);
-  const verifiedClaims = claimStatuses.filter((status) => status.isCitationReady).length;
+export function getDocumentCitationStatus(
+  bundle: RegistryDocumentBundle,
+  ttlDays: number = FRESHNESS_TTL_DAYS,
+): DocumentCitationStatus {
+  const claimStatuses = bundle.claims.map((claim) => ({ claim, status: getClaimCitationStatus(claim) }));
+  const verifiedClaims = claimStatuses.filter(({ status }) => status.isCitationReady).length;
   const totalClaims = bundle.claims.length;
   const unverifiedClaims = totalClaims - verifiedClaims;
   const isVerifiedDocument = totalClaims > 0 && verifiedClaims === totalClaims;
+
+  // Freshness is bound by the oldest verification among citation-ready claims:
+  // if the weakest link is stale, the citable answer is stale.
+  const readyDates = claimStatuses
+    .filter(({ status }) => status.isCitationReady)
+    .map(({ claim }) => claim.last_verified_at)
+    .filter((value): value is string => Boolean(value) && !Number.isNaN(Date.parse(value as string)));
+  const oldestVerifiedAt = readyDates.length > 0
+    ? readyDates.reduce((oldest, current) => (Date.parse(current) < Date.parse(oldest) ? current : oldest))
+    : null;
+  const freshness: FreshnessLabel = !isVerifiedDocument
+    ? "unknown"
+    : isStale(oldestVerifiedAt, ttlDays)
+      ? "stale"
+      : "fresh";
 
   return {
     verifiedClaims,
@@ -56,6 +99,8 @@ export function getDocumentCitationStatus(bundle: RegistryDocumentBundle): Docum
     totalClaims,
     label: isVerifiedDocument ? "verified" : "unverified",
     isVerifiedDocument,
+    freshness,
+    oldestVerifiedAt,
   };
 }
 

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
+import { ageInDays, isStale } from "../../../lib/citation-status";
 
 type Counts = {
   candidates_new: number;
@@ -44,6 +45,14 @@ type VerifiedDocument = {
   public_url?: string | null;
 };
 
+type TopCited = {
+  document_id: string;
+  title: string;
+  view_count: number;
+  ai_citation_count: number;
+  public_url?: string | null;
+};
+
 type ReviewPayload = {
   counts: Counts;
   priorities: {
@@ -51,6 +60,11 @@ type ReviewPayload = {
     approved_candidates: ApprovedCandidate[];
   };
   verified_documents: VerifiedDocument[];
+  engagement?: {
+    total_views: number;
+    total_citations: number;
+    top_cited: TopCited[];
+  };
 };
 
 const EMPTY_COUNTS: Counts = {
@@ -165,16 +179,52 @@ export default function AdminReviewPage() {
         ))}
       </section>
 
+      <section className="registry-panel" aria-labelledby="engagement-title">
+        <h2 id="engagement-title">인용 픽업 (실제 사용 계측)</h2>
+        <div className="stat-strip">
+          <div className="stat"><span className="stat-num">{data?.engagement?.total_views ?? 0}</span><span className="stat-label">누적 조회</span></div>
+          <div className="stat"><span className="stat-num">{data?.engagement?.total_citations ?? 0}</span><span className="stat-label">누적 AI 인용</span></div>
+        </div>
+        <h3>인용 많은 문서 Top</h3>
+        {(data?.engagement?.top_cited.length ?? 0) === 0 && <p>아직 집계된 AI 인용이 없습니다. 인용은 POST /api/documents/&lt;slug&gt;/cite로 증가합니다.</p>}
+        {data?.engagement?.top_cited.map((doc) => (
+          <div className="claim-card" key={doc.document_id}>
+            <p><strong>{doc.title}</strong></p>
+            <p>
+              <span className="badge badge-verified">✦ AI 인용 {doc.ai_citation_count}</span>{" "}
+              <span className="badge">👁 조회 {doc.view_count}</span>
+            </p>
+            {doc.public_url && <a href={doc.public_url} target="_blank" rel="noopener noreferrer">문서 보기</a>}
+          </div>
+        ))}
+      </section>
+
       <section className="registry-panel" id="verified-documents" aria-labelledby="verified-title">
         <h2 id="verified-title">verified 완료 문서 공유</h2>
+        {(() => {
+          const staleCount = (data?.verified_documents ?? []).filter((doc) => isStale(doc.last_verified_at)).length;
+          return staleCount > 0 ? (
+            <p style={{ color: "#92400e" }}>⏳ 재검증 필요(180일 경과): <strong>{staleCount}</strong>건 — 신선도가 만료된 문서는 AI가 인용을 회피할 수 있습니다.</p>
+          ) : null;
+        })()}
         {(data?.verified_documents.length ?? 0) === 0 && <p>외부 공유 가능한 verified 문서가 없습니다.</p>}
         <ul className="link-list">
-          {data?.verified_documents.map((doc) => (
-            <li key={doc.id}>
-              <strong>{doc.title}</strong> · {doc.last_verified_at ?? "last_verified_at 없음"}<br />
-              {doc.public_url ? <a href={doc.public_url} target="_blank" rel="noopener noreferrer">{doc.public_url}</a> : <span>공유 링크 생성 불가</span>}
-            </li>
-          ))}
+          {data?.verified_documents.map((doc) => {
+            const stale = isStale(doc.last_verified_at);
+            const age = ageInDays(doc.last_verified_at);
+            return (
+              <li key={doc.id}>
+                <strong>{doc.title}</strong> · {doc.last_verified_at ?? "last_verified_at 없음"}
+                {age !== null && (
+                  <span className={stale ? "badge badge-review" : "badge badge-verified"} style={{ marginLeft: 8 }}>
+                    {stale ? `⏳ ${age}일 경과 · 재검증` : `✓ ${age}일 전`}
+                  </span>
+                )}
+                <br />
+                {doc.public_url ? <a href={doc.public_url} target="_blank" rel="noopener noreferrer">{doc.public_url}</a> : <span>공유 링크 생성 불가</span>}
+              </li>
+            );
+          })}
         </ul>
       </section>
 

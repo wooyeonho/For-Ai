@@ -8,6 +8,7 @@
     "start": "next start",
     "lint": "eslint .",
     "generate:question-candidates": "node scripts/generate-question-candidates.mjs",
+    "generate:seed-candidates": "node scripts/seed-to-candidates.mjs",
     "ci:guards": "node scripts/ci-guards.mjs all",
     "ai:doctor": "node scripts/ai-readiness-doctor.mjs",
     "ai:lazycodex:install": "npx lazycodex-ai install",

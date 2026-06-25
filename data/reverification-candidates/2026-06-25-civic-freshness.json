@@ -1,0 +1,237 @@
+{
+  "_meta": {
+    "generated_by": "ai_research",
+    "generated_at": "2026-06-25",
+    "status": "needs_review",
+    "purpose": "기존 verified-claims 3건의 신선도 재검증 후보. AI가 공식 출처를 재조회해 값/출처를 제안만 함. verified 승격은 사람이 /admin/verify-claim에서 공식 출처를 직접 확인한 뒤 수행한다 (verification_event는 의도적으로 비워둠).",
+    "integrity_note": "claim_value는 '제안값'이며 단정이 아니다. confidence=low, status=needs_review."
+  },
+  "candidates": [
+    {
+      "entity_id": "kr-admin-passport-fee-001",
+      "slug": "passport-reissue-fee-2025",
+      "target_verified_file": "data/verified-claims/passport-reissue-fee.json",
+      "reverification_summary": "값(52,000원 등)은 현재도 정확. 단, 기존 문서가 출처로 단 정부24 페이지가 2026-03 인상 미반영(50,000원, stale)으로 확인됨 → 출처를 외교부 여권안내로 교체 제안.",
+      "claims": [
+        {
+          "claim_id": "passport-fee-10year",
+          "field_path": "fee.adult_10year",
+          "claim_text": "성인 복수여권 (10년, 58면) 발급 수수료",
+          "current_verified_value": "52,000원",
+          "proposed_value": "52,000원",
+          "value_changed": false,
+          "confidence": "low",
+          "status": "needs_review",
+          "proposed_sources": [
+            {
+              "source_type": "official",
+              "title": "외교부 여권안내 — 수수료 안내",
+              "url": "https://www.passport.go.kr/home/kor/contents.do?menuPos=41",
+              "observed_at": "2026-06-25",
+              "note": "복수여권 10년(58면) 합계 52,000원 (발급수수료 40,000 + 국제교류기여금 12,000). 2026-03-01 인상 반영된 권위 출처."
+            }
+          ],
+          "source_conflicts": [
+            {
+              "title": "정부24 여권 발급 민원안내 (기존 문서 출처)",
+              "url": "https://m.gov.kr/main?CappBizCD=12600000001",
+              "observed_at": "2026-06-25",
+              "observed_value": "50,000원",
+              "note": "2026-03 인상 미반영(구값). 기존 verified 문서가 이 페이지를 출처로 달고 있어 출처 교체 권장."
+            },
+            {
+              "title": "동아일보 (교차확인, 비공식)",
+              "url": "https://www.donga.com/news/Society/article/all/20260223/133404513/1",
+              "observed_at": "2026-06-25",
+              "observed_value": "5만→5만2천 (2026-03-01 인상)",
+              "note": "외교부 발표 인용 보도. 값 교차확인용(출처로는 official 우선)."
+            }
+          ]
+        },
+        {
+          "claim_id": "passport-fee-single-electronic",
+          "field_path": "fee.single_electronic",
+          "claim_text": "단수여권 (전자, 1년 이내) 발급 수수료",
+          "current_verified_value": "17,000원",
+          "proposed_value": "17,000원",
+          "value_changed": false,
+          "confidence": "low",
+          "status": "needs_review",
+          "proposed_sources": [
+            {
+              "source_type": "official",
+              "title": "외교부 여권안내 — 수수료 안내",
+              "url": "https://www.passport.go.kr/home/kor/contents.do?menuPos=41",
+              "observed_at": "2026-06-25",
+              "note": "단수여권 1년 이내 17,000원."
+            }
+          ],
+          "source_conflicts": [
+            {
+              "title": "정부24",
+              "url": "https://m.gov.kr/main?CappBizCD=12600000001",
+              "observed_at": "2026-06-25",
+              "observed_value": "15,000원",
+              "note": "구값(인상 미반영)."
+            }
+          ]
+        },
+        {
+          "claim_id": "passport-fee-remaining-validity",
+          "field_path": "fee.remaining_validity_reissue",
+          "claim_text": "잔여 유효기간 부여 여권 재발급 수수료",
+          "current_verified_value": "27,000원",
+          "proposed_value": "27,000원",
+          "value_changed": false,
+          "confidence": "low",
+          "status": "needs_review",
+          "proposed_sources": [
+            {
+              "source_type": "official",
+              "title": "외교부 여권안내 — 수수료 안내",
+              "url": "https://www.passport.go.kr/home/kor/contents.do?menuPos=41",
+              "observed_at": "2026-06-25",
+              "note": "잔여기간 부여 여권(58면) 27,000원. 동아일보 2026-02-23 보도와 일치(2만5천→2만7천)."
+            }
+          ],
+          "source_conflicts": [
+            {
+              "title": "정부24",
+              "url": "https://m.gov.kr/main?CappBizCD=12600000001",
+              "observed_at": "2026-06-25",
+              "observed_value": "25,000원",
+              "note": "구값."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "entity_id": "kr-admin-move-in-report-001",
+      "slug": "move-in-report-deadline",
+      "target_verified_file": "data/verified-claims/move-in-report-deadline.json",
+      "reverification_summary": "법령 근거로 안정. '전입한 날부터 14일 이내' 재확인. 값 변경 없음.",
+      "claims": [
+        {
+          "claim_id": "move-in-report-deadline-days",
+          "field_path": "deadline.days",
+          "claim_text": "전입신고 기한은 이사 후 며칠 이내인가?",
+          "current_verified_value": "14일 이내",
+          "proposed_value": "14일 이내",
+          "value_changed": false,
+          "confidence": "low",
+          "status": "needs_review",
+          "proposed_sources": [
+            {
+              "source_type": "law",
+              "title": "주민등록법 제16조 (거주지의 이동) — 국가법령정보센터",
+              "url": "https://www.law.go.kr/LSW/lsLawLinkInfo.do?lsId=001655&lsJoLnkSeq=1000723398",
+              "observed_at": "2026-06-25",
+              "note": "제16조 제1항 '신거주지에 전입한 날부터 14일 이내'. [시행 2025.7.22.] 법률 제20677호. 정부24 전입신고 안내도 동일."
+            }
+          ],
+          "source_conflicts": []
+        }
+      ]
+    },
+    {
+      "entity_id": "kr-transport-seoul-metro-fare-001",
+      "slug": "seoul-metro-base-fare",
+      "target_verified_file": "data/verified-claims/seoul-metro-base-fare.json",
+      "reverification_summary": "교통카드 기본요금 성인 1,550 / 청소년 900 / 어린이 550 재확인(서울교통공사+서울시 물가정보 일치). 값 변경 없음. TAGO는 구값(1,250) 표시 — 출처 신뢰도 주의.",
+      "claims": [
+        {
+          "claim_id": "metro-base-adult-card",
+          "field_path": "fare.base_adult_card",
+          "claim_text": "서울 지하철 성인 기본요금 (교통카드)",
+          "current_verified_value": "1,550원",
+          "proposed_value": "1,550원",
+          "value_changed": false,
+          "confidence": "low",
+          "status": "needs_review",
+          "proposed_sources": [
+            {
+              "source_type": "official",
+              "title": "서울교통공사 운임안내",
+              "url": "https://www.seoulmetro.co.kr/kr/page.do?menuIdx=354",
+              "observed_at": "2026-06-25",
+              "note": "교통카드 10km까지 어른 1,550원."
+            },
+            {
+              "source_type": "official",
+              "title": "서울시 물가정보 — 대중교통(지하철)",
+              "url": "https://sftc.seoul.go.kr/seoul/mulga/main/contents.do?menuNo=200021",
+              "observed_at": "2026-06-25",
+              "note": "기본요금(10km 이내) 1,550원. 서울교통공사와 일치."
+            }
+          ],
+          "source_conflicts": [
+            {
+              "title": "TAGO (국토교통부 대중교통포털)",
+              "url": "http://www.tago.go.kr/v5/subway/seoulFareInfo.jsp",
+              "observed_at": "2026-06-25",
+              "observed_value": "1,250원",
+              "note": "수년 전 구값 표시. AI가 이 페이지를 인용하면 오답 — 출처 신뢰도 경고 대상."
+            }
+          ]
+        },
+        {
+          "claim_id": "metro-base-youth-card",
+          "field_path": "fare.base_youth_card",
+          "claim_text": "서울 지하철 청소년 기본요금 (교통카드)",
+          "current_verified_value": "900원",
+          "proposed_value": "900원",
+          "value_changed": false,
+          "confidence": "low",
+          "status": "needs_review",
+          "proposed_sources": [
+            {
+              "source_type": "official",
+              "title": "서울교통공사 운임안내 / 서울시 물가정보",
+              "url": "https://sftc.seoul.go.kr/seoul/mulga/main/contents.do?menuNo=200021",
+              "observed_at": "2026-06-25",
+              "note": "청소년 기본요금 900원."
+            }
+          ],
+          "source_conflicts": [
+            {
+              "title": "TAGO",
+              "url": "http://www.tago.go.kr/v5/subway/seoulFareInfo.jsp",
+              "observed_at": "2026-06-25",
+              "observed_value": "720원",
+              "note": "구값."
+            }
+          ]
+        },
+        {
+          "claim_id": "metro-base-child-card",
+          "field_path": "fare.base_child_card",
+          "claim_text": "서울 지하철 어린이 기본요금 (교통카드)",
+          "current_verified_value": "550원",
+          "proposed_value": "550원",
+          "value_changed": false,
+          "confidence": "low",
+          "status": "needs_review",
+          "proposed_sources": [
+            {
+              "source_type": "official",
+              "title": "서울교통공사 운임안내 / 서울시 물가정보",
+              "url": "https://sftc.seoul.go.kr/seoul/mulga/main/contents.do?menuNo=200021",
+              "observed_at": "2026-06-25",
+              "note": "어린이 기본요금 550원."
+            }
+          ],
+          "source_conflicts": [
+            {
+              "title": "TAGO",
+              "url": "http://www.tago.go.kr/v5/subway/seoulFareInfo.jsp",
+              "observed_at": "2026-06-25",
+              "observed_value": "450원",
+              "note": "구값."
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

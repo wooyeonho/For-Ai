@@ -38,7 +38,7 @@ export function LanguageSelector() {
         <ul
           style={{
             position: "absolute",
-            right: 0,
+            insetInlineEnd: 0,
             top: "100%",
             marginTop: 4,
             padding: "4px 0",
