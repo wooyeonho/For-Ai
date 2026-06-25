@@ -46,6 +46,7 @@ export function createDocumentDraftStub(input: {
     entity_id: input.entity_id,
     slug: input.slug,
     lang: input.lang,
+    country: "",
     title: input.title,
     category: input.category,
     template: input.template,

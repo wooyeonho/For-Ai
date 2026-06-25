@@ -46,7 +46,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "entity_id, slug, title, category are required" }, { status: 400 });
   }
 
-  const { data: entity } = await sb.from("entities").select("id").eq("id", entity_id).maybeSingle();
+  const { data: entity } = await sb.from("entities").select("id, country").eq("id", entity_id).maybeSingle();
   if (!entity) return NextResponse.json({ error: `entity "${entity_id}" not found` }, { status: 404 });
 
   const { data: existingDoc } = await sb.from("documents").select("id").eq("slug", slug).eq("lang", lang).maybeSingle();
@@ -60,6 +60,7 @@ export async function POST(request: Request) {
     entity_id,
     slug,
     lang,
+    country: String((entity as { country?: string }).country ?? ""),
     title,
     category,
     template,

@@ -71,6 +71,7 @@ export async function POST(request: Request) {
   }
 
   // ── Insert document ──────────────────────────────────────────────────────
+  const docCountry = candidate.country ?? countryForLang(lang);
   const { error: docErr } = await sb.from("documents").insert({
     id: documentId,
     entity_id: entityId,
@@ -78,6 +79,7 @@ export async function POST(request: Request) {
     title: candidate.title,
     template: "fact-sheet",
     lang,
+    country: docCountry,
     status: "published",
     confidence: "low",
     category: candidate.category,

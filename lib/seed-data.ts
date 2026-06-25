@@ -52,7 +52,7 @@ function vClaim(
 function makeDoc(id: string, entity: Entity, slug: string, title: string,
   category: string, template: string): Document {
   return {
-    id, entity_id: entity.id, slug, lang: "ko", title, category, template,
+    id, entity_id: entity.id, slug, lang: "ko", country: entity.country, title, category, template,
     status: "ai_draft", confidence: "low", last_verified_at: null,
     license_code: "forai-data-license-v0.1",
     data: {

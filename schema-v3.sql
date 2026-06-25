@@ -28,6 +28,7 @@ create table documents (
   entity_id text not null references entities(id) on delete restrict,
   slug text not null,
   lang text not null,
+  country text not null default '',
   title text not null,
   category text not null,
   template text not null,
@@ -46,7 +47,9 @@ create table documents (
 
 comment on column documents.data is 'Rendering convenience only. Canonical facts must exist as claims.';
 
-create unique index documents_lang_slug_key on documents (lang, slug);
+-- Country-namespaced identity: the same (lang, slug) may exist per country, so a
+-- worldwide registry can hold e.g. a KR and a US "passport-fee" in English.
+create unique index documents_country_lang_slug_key on documents (country, lang, slug);
 create unique index documents_entity_lang_template_key on documents (entity_id, lang, template);
 
 create table claims (
@@ -58,6 +61,7 @@ create table claims (
   claim_value text not null,
   confidence confidence_level not null default 'low',
   status claim_status not null default 'needs_review',
+  jurisdiction text,
   last_verified_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),

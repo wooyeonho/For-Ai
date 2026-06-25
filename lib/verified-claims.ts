@@ -30,6 +30,7 @@ function toRegistryBundle(file: VerifiedClaimFile): RegistryDocumentBundle {
     entity_id: file.entity_id,
     slug: file.slug,
     lang: file.lang,
+    country: file.country,
     title: file.name,
     category: file.type,
     template: "fact-registry",
