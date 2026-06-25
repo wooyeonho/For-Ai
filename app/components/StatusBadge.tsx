@@ -1,3 +1,4 @@
+import { DEFAULT_LOCALE } from "@/lib/i18n";
 import { getTranslations } from "../../lib/i18n";
 import type { SupportedLocale } from "../../lib/i18n";
 import type { ClaimStatus, DocumentStatus } from "../../lib/types";
@@ -9,7 +10,7 @@ function statusClass(status: string): string {
 }
 
 export function ClaimStatusBadge({ status, locale }: { status: ClaimStatus; locale?: string }) {
-  const t = getTranslations((locale ?? "ko") as SupportedLocale);
+  const t = getTranslations((locale ?? DEFAULT_LOCALE) as SupportedLocale);
   const labels: Record<ClaimStatus, string> = {
     needs_review: t.claims.needsReview,
     verified:     t.claims.verified,
@@ -20,7 +21,7 @@ export function ClaimStatusBadge({ status, locale }: { status: ClaimStatus; loca
 }
 
 export function DocumentStatusBadge({ status, locale }: { status: DocumentStatus; locale?: string }) {
-  const t = getTranslations((locale ?? "ko") as SupportedLocale);
+  const t = getTranslations((locale ?? DEFAULT_LOCALE) as SupportedLocale);
   const labels: Record<DocumentStatus, string> = {
     ai_draft:     t.claims.statusAiDraft,
     needs_review: t.claims.needsReview,

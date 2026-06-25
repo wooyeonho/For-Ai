@@ -28,6 +28,7 @@ create table documents (
   entity_id text not null references entities(id) on delete restrict,
   slug text not null,
   lang text not null,
+  country text not null,
   title text not null,
   category text not null,
   template text not null,
@@ -41,12 +42,13 @@ create table documents (
   constraint documents_entity_id_required check (length(entity_id) > 0),
   constraint documents_slug_required check (length(slug) > 0),
   constraint documents_lang_required check (length(lang) > 0),
+  constraint documents_country_required check (length(country) > 0),
   constraint documents_license_not_cc_by_sa check (license_code <> 'CC-BY-SA')
 );
 
 comment on column documents.data is 'Rendering convenience only. Canonical facts must exist as claims.';
 
-create unique index documents_lang_slug_key on documents (lang, slug);
+create unique index documents_country_lang_slug_key on documents (country, lang, slug);
 create unique index documents_entity_lang_template_key on documents (entity_id, lang, template);
 
 create table claims (
@@ -56,6 +58,7 @@ create table claims (
   field_path text not null,
   claim_text text not null,
   claim_value text not null,
+  jurisdiction text,
   confidence confidence_level not null default 'low',
   status claim_status not null default 'needs_review',
   last_verified_at timestamptz,

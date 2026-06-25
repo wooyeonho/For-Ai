@@ -29,7 +29,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: `승인된 후보만 등록 가능합니다 (현재: ${candidate.status})` }, { status: 400 });
   }
 
-  const lang = candidate.lang ?? "ko";
+  const lang = String(candidate.lang ?? "").trim();
+  const country = String(candidate.country ?? "").trim();
+  if (!lang || !country) return NextResponse.json({ error: "candidate lang and country are required" }, { status: 400 });
   const slug = candidate.slug as string;
   const entityId = stableId("entity", slug);
   const documentId = stableId("doc", `${slug}-${lang}`);
@@ -41,6 +43,7 @@ export async function POST(request: Request) {
     .select("id, slug")
     .eq("slug", slug)
     .eq("lang", lang)
+    .eq("country", country)
     .maybeSingle();
   if (existingDoc) return NextResponse.json({ error: `slug "${slug}" 이미 존재합니다` }, { status: 409 });
 
@@ -57,7 +60,7 @@ export async function POST(request: Request) {
     id: entityId,
     canonical_name: candidate.title,
     type: candidate.category ?? "concept",
-    country: candidate.country ?? "KR",
+    country,
   });
   if (entityErr) {
     return NextResponse.json({ error: "entity 생성 실패", detail: entityErr.message }, { status: 500 });
@@ -71,6 +74,7 @@ export async function POST(request: Request) {
     title: candidate.title,
     template: "fact-sheet",
     lang,
+    country,
     status: "published",
     confidence: "low",
     category: candidate.category,
