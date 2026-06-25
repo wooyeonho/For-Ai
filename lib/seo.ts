@@ -1,8 +1,18 @@
 import type { Metadata } from "next";
 import type { RegistryDocumentBundle } from "./types";
-import { documentPageUrl, apiDocumentUrl, rawMarkdownUrl, siteUrl } from "./urls";
+import type { EntityProfile } from "./entity-profile";
+import { documentPageUrl, apiDocumentUrl, rawMarkdownUrl, apiEntityUrl, entityPageUrl, siteUrl } from "./urls";
 import { getDocumentCitationStatus, getCanonicalDirectAnswer } from "./citation-status";
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from "./i18n";
+
+// Map a free-form entity.type (e.g. "transport.metro", "telecom.mobile") to the
+// closest schema.org type so structured data is meaningful to search/AI.
+function schemaTypeForEntity(entityType: string): "Place" | "Product" | "Organization" {
+  const t = entityType.toLowerCase();
+  if (/^(transport|transit|travel|housing|place|life\.environment|education\.)/.test(t)) return "Place";
+  if (/^(commerce|product|hardware|electricity|plumbing|telecom\.(device|mobile))/.test(t)) return "Product";
+  return "Organization";
+}
 
 /** Returns canonical URL paths for a registry document — used by diagnostics and machine-readable panels. */
 export function getRegistryDocumentPaths(bundle: RegistryDocumentBundle) {
@@ -140,4 +150,68 @@ export function buildDocumentJsonLd(bundle: RegistryDocumentBundle): object {
     "@context": "https://schema.org",
     "@graph": [dataset, claimReview],
   };
+}
+
+export function buildEntityMetadata(profile: EntityProfile, locale?: string): Metadata {
+  const { entity, summary } = profile;
+  const lang = locale ?? "ko";
+  const title = entity.canonical_name;
+  const description =
+    `${entity.canonical_name} — For-Ai fact registry. ` +
+    `${summary.citable_documents}/${summary.total_documents} documents citable, ` +
+    `${summary.verified_claims}/${summary.total_claims} claims verified.`;
+  const url = entityPageUrl(entity.id, lang);
+
+  const hreflang: Record<string, string> = {};
+  for (const l of SUPPORTED_LOCALES) hreflang[l] = entityPageUrl(entity.id, l);
+  hreflang["x-default"] = entityPageUrl(entity.id, "ko");
+
+  return {
+    title,
+    description,
+    alternates: { canonical: url, languages: hreflang },
+    openGraph: { title: `${title} — For-Ai`, description, url, siteName: "For-Ai", type: "profile" },
+    other: { "api-url": apiEntityUrl(entity.id) },
+  };
+}
+
+export function buildEntityJsonLd(profile: EntityProfile): object {
+  const { entity, documents, summary } = profile;
+  const node: Record<string, unknown> = {
+    "@context": "https://schema.org",
+    "@type": schemaTypeForEntity(entity.type),
+    name: entity.canonical_name,
+    identifier: entity.id,
+    url: entityPageUrl(entity.id, "ko"),
+    address: {
+      "@type": "PostalAddress",
+      addressCountry: entity.country,
+      addressRegion: entity.region ?? undefined,
+      addressLocality: entity.city ?? undefined,
+    },
+    // Each document about this entity is a citable Dataset. Only human-approved
+    // documents carry can_cite=true; all are listed for discovery.
+    subjectOf: documents.map((bundle) => {
+      const status = getDocumentCitationStatus(bundle);
+      return {
+        "@type": "Dataset",
+        name: bundle.document.title,
+        url: documentPageUrl(bundle.document.slug, bundle.document.lang),
+        identifier: bundle.document.id,
+        license: bundle.document.license_code,
+        creativeWorkStatus: status.isVerifiedDocument ? "verified" : "candidate",
+        distribution: [
+          { "@type": "DataDownload", encodingFormat: "application/json", contentUrl: apiDocumentUrl(bundle.document.slug) },
+        ],
+      };
+    }),
+    additionalProperty: [
+      { "@type": "PropertyValue", name: "citable_documents", value: summary.citable_documents },
+      { "@type": "PropertyValue", name: "total_documents", value: summary.total_documents },
+      { "@type": "PropertyValue", name: "verified_claims", value: summary.verified_claims },
+      { "@type": "PropertyValue", name: "total_claims", value: summary.total_claims },
+      { "@type": "PropertyValue", name: "freshness", value: summary.freshness },
+    ],
+  };
+  return node;
 }
