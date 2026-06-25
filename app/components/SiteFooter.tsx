@@ -1,45 +1,41 @@
 "use client";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { getTranslations, isValidLocale } from "../../lib/i18n";
-import type { SupportedLocale } from "../../lib/i18n";
 
 export function SiteFooter() {
-  const pathname = usePathname();
-  const segments = pathname.split("/").filter(Boolean);
-  const locale = (segments[0] && isValidLocale(segments[0]) ? segments[0] : "ko") as SupportedLocale;
-  const t = getTranslations(locale);
-
   return (
     <footer className="site-footer">
       <div className="site-footer-inner">
         <div className="footer-brand">
           <span className="brand-mark">For-Ai</span>
           <p className="footer-tagline">
-            {t.footer.tagline}
+            A global fact registry where AI, search engines, and humans cite the same facts from the same verified sources. Unverified claims are never presented as truth.
           </p>
         </div>
 
         <div className="footer-col">
-          <p className="footer-col-title">{t.footer.forHumans}</p>
-          <Link href="/#registry">{t.footer.browseRegistry}</Link>
-          <Link href="/suggest-topic">{t.footer.suggestTopic}</Link>
+          <p className="footer-col-title">For Humans</p>
+          <Link href="/#registry">Browse Registry</Link>
+          <Link href="/suggest-topic">Suggest Topic</Link>
+          <Link href="/community">Community</Link>
         </div>
 
         <div className="footer-col">
-          <p className="footer-col-title">{t.footer.machineReadable}</p>
+          <p className="footer-col-title">For Machines</p>
+          <Link href="/llms.txt">llms.txt</Link>
+          <Link href="/api-docs">API Docs</Link>
           <Link href="/sitemap.xml">sitemap.xml</Link>
           <Link href="/robots.txt">robots.txt</Link>
         </div>
 
         <div className="footer-col">
-          <p className="footer-col-title">{t.footer.policy}</p>
-          <span className="footer-note">{t.footer.licenseLabel}</span>
-          <span className="footer-note">{t.footer.noCiteWithoutSource}</span>
+          <p className="footer-col-title">Citation Policy</p>
+          <span className="footer-note">No citation without verified source</span>
+          <span className="footer-note">Unknown = &quot;Needs verification&quot;</span>
+          <span className="footer-note">License: forai-data-license-v0.1</span>
         </div>
       </div>
       <div className="site-footer-base">
-        <span>&copy; {new Date().getFullYear()} For-Ai</span>
+        <span>&copy; {new Date().getFullYear()} For-Ai &middot; Global Fact Registry</span>
         <span>claim &middot; confidence &middot; source &middot; verified_at</span>
       </div>
     </footer>

@@ -1,0 +1,48 @@
+{
+  "entity_id": "gb-transport-tfl-tube-fare-001",
+  "slug": "london-underground-zone1-fare",
+  "type": "transport.metro",
+  "name": "London Underground Zone 1 Fare (2025)",
+  "lang": "en",
+  "country": "GB",
+  "jurisdiction": "GB",
+  "risk_tier": "low",
+  "update_frequency": "annual",
+  "disclaimer_type": "check_official_source",
+  "last_verified_at": "2026-06-25",
+  "claims": [
+    {
+      "claim_id": "tfl-zone1-adult-oyster-peak",
+      "field_path": "fare.zone1_adult_oyster_peak",
+      "claim_text": "London Underground Zone 1 adult pay-as-you-go Oyster peak fare",
+      "claim_value": "확인 필요",
+      "confidence": "low",
+      "status": "needs_review",
+      "last_verified_at": null,
+      "sources": [],
+      "verification_event": null
+    },
+    {
+      "claim_id": "tfl-zone1-adult-oyster-offpeak",
+      "field_path": "fare.zone1_adult_oyster_offpeak",
+      "claim_text": "London Underground Zone 1 adult pay-as-you-go Oyster off-peak fare",
+      "claim_value": "확인 필요",
+      "confidence": "low",
+      "status": "needs_review",
+      "last_verified_at": null,
+      "sources": [],
+      "verification_event": null
+    },
+    {
+      "claim_id": "tfl-zone1-daily-cap",
+      "field_path": "fare.zone1_daily_cap",
+      "claim_text": "London Underground Zone 1 daily Oyster cap",
+      "claim_value": "확인 필요",
+      "confidence": "low",
+      "status": "needs_review",
+      "last_verified_at": null,
+      "sources": [],
+      "verification_event": null
+    }
+  ]
+}

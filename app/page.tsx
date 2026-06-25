@@ -23,22 +23,22 @@ interface PopularDoc {
 }
 
 export const metadata: Metadata = {
-  title: { absolute: "For-Ai — 로컬 팩트 레지스트리" },
+  title: { absolute: "For-Ai — Global Fact Registry for AI Citation" },
   description:
-    "AI·검색·사람이 같은 사실을 같은 근거로 인용하는 로컬 팩트 레지스트리. claim 단위로 신뢰도·출처·검증일을 관리합니다.",
+    "A global claim-level fact registry where AI, search engines, and humans cite the same facts from the same verified sources. Every claim has confidence, sources, and verification status.",
 };
 
 function statusBadge(status: string): { className: string; label: string } {
   switch (status) {
     case "verified":
     case "published":
-      return { className: "badge badge-verified", label: "검증됨" };
+      return { className: "badge badge-verified", label: "Verified" };
     case "needs_review":
-      return { className: "badge badge-review", label: "확인 필요" };
+      return { className: "badge badge-review", label: "Needs Review" };
     case "archived":
-      return { className: "badge", label: "보관" };
+      return { className: "badge", label: "Archived" };
     default:
-      return { className: "badge badge-low", label: "초안" };
+      return { className: "badge badge-low", label: "Draft" };
   }
 }
 
@@ -168,66 +168,64 @@ export default async function HomePage() {
     <div className="home">
       {/* Hero */}
       <section className="hero">
-        <p className="hero-eyebrow">AI·검색·사람을 위한 로컬 팩트 레지스트리</p>
+        <p className="hero-eyebrow">Global Fact Registry for AI, Search & Humans</p>
         <h1 className="hero-title">
-          사실을 <span className="hero-accent">claim 단위</span>로,
+          Every fact at the <span className="hero-accent">claim level</span>,
           <br />
-          출처와 검증일과 함께.
+          with sources and verification.
         </h1>
         <p className="hero-sub">
-          모든 사실은 신뢰도·출처·검증 상태를 가지며, 확인되지 않은
-          정보는 추측하지 않고 <strong>&ldquo;확인 필요&rdquo;</strong>로 남깁니다.
+          Every claim carries confidence, sources, and verification status.
+          Unverified information is never guessed — it stays as <strong>&ldquo;Needs verification&rdquo;</strong>.
         </p>
         <div className="hero-cta-row">
           <Link href="#registry" className="btn btn-primary">
-            문서 둘러보기
+            Browse Registry
           </Link>
-          <Link href="/community" className="btn btn-secondary">
-            커뮤니티
+          <Link href="/api-docs" className="btn btn-secondary">
+            API Docs
           </Link>
           <Link href="/suggest-topic" className="btn btn-secondary">
-            토픽 제안
+            Suggest Topic
           </Link>
         </div>
       </section>
 
       {/* Trust / stats */}
-      <section className="stat-strip" aria-label="레지스트리 현황">
+      <section className="stat-strip" aria-label="Registry stats">
         <div className="stat">
           <span className="stat-num">{bundles.length}</span>
-          <span className="stat-label">등록 문서</span>
+          <span className="stat-label">Documents</span>
         </div>
         <div className="stat">
           <span className="stat-num">{totalClaims}</span>
-          <span className="stat-label">전체 claim</span>
+          <span className="stat-label">Total Claims</span>
         </div>
         <div className="stat">
           <span className="stat-num">{verifiedClaims}</span>
-          <span className="stat-label">검증된 claim</span>
+          <span className="stat-label">Verified Claims</span>
         </div>
         <div className="stat">
           <span className="stat-num">{categories}</span>
-          <span className="stat-label">카테고리</span>
+          <span className="stat-label">Categories</span>
         </div>
         <p className="stat-note">
-          검증 {verifiedClaims} · 확인 필요 {needsReviewClaims} ({verifiedPct}% 검증). 우리는
-          모르는 것을 모른다고 표시합니다.
+          Verified {verifiedClaims} · Needs review {needsReviewClaims} ({verifiedPct}% verified). We mark what we don&apos;t know.
         </p>
       </section>
 
       {/* 3 audience entry points */}
       <section className="section">
-        <p className="section-eyebrow">누가 쓰나요</p>
-        <h2 className="section-title">세 종류의 사용자, 하나의 사실</h2>
+        <p className="section-eyebrow">Who uses For-Ai</p>
+        <h2 className="section-title">Three audiences, one source of truth</h2>
         <div className="audience-grid">
           <article className="audience-card" id="developers">
             <div className="audience-icon" aria-hidden>
               {"</>"}
             </div>
-            <h3>개발자</h3>
+            <h3>Developers</h3>
             <p>
-              구조화된 JSON·Markdown·JSON-LD로 사실을 가져가세요. claim마다 신뢰도와 출처가
-              붙어 있어, RAG·에이전트가 그대로 인용·검증할 수 있습니다.
+              Fetch structured facts via JSON, Markdown, or JSON-LD. Every claim includes confidence and sources — ready for RAG pipelines and AI agents to cite directly.
             </p>
             <div className="audience-links">
               {exampleSlug ? (
@@ -240,51 +238,49 @@ export default async function HomePage() {
                   </Link>
                 </>
               ) : null}
-              <Link href="/sitemap.xml" className="mono-link">
-                GET /sitemap.xml
+              <Link href="/api-docs" className="text-link">
+                Full API Documentation
               </Link>
             </div>
           </article>
 
           <article className="audience-card">
             <div className="audience-icon" aria-hidden>
-              ☷
+              &#9783;
             </div>
-            <h3>일반 사용자</h3>
+            <h3>People</h3>
             <p>
-              검색해서 들어온 질문에 출처가 달린 답을. 값이 틀렸거나 오래됐다면 로그인 없이
-              한 번의 클릭으로 정정을 제보할 수 있습니다.
+              Find source-backed answers to questions AI often gets wrong. If something is outdated or incorrect, report it with one click — no login required.
             </p>
             <div className="audience-links">
               <Link href="#registry" className="text-link">
-                레지스트리 둘러보기
+                Browse Registry
               </Link>
               <Link href="/suggest-topic" className="text-link">
-                새 토픽 제안하기
+                Suggest a Topic
               </Link>
             </div>
           </article>
 
           <article className="audience-card" id="ai-systems">
             <div className="audience-icon" aria-hidden>
-              ✦
+              &#10022;
             </div>
-            <h3>AI · 크롤러</h3>
+            <h3>AI &amp; Crawlers</h3>
             <p>
-              인용 전에 <code>confidence</code>·<code>status</code>·<code>sources</code>를
-              확인하세요. 미검증(&ldquo;확인 필요&rdquo;) 사실은 인용하지 마세요. 각 문서는 JSON-LD
-              Dataset을 raw HTML에 내장합니다.
+              Check <code>confidence</code>, <code>status</code>, and <code>sources</code> before citing.
+              Never cite unverified (&ldquo;Needs verification&rdquo;) claims as facts. Each document embeds JSON-LD in raw HTML.
             </p>
             <div className="audience-links">
+              <Link href="/llms.txt" className="mono-link">
+                /llms.txt
+              </Link>
               <Link href="/sitemap.xml" className="mono-link">
                 /sitemap.xml
               </Link>
-              <Link href="/robots.txt" className="mono-link">
-                /robots.txt
-              </Link>
               {exampleSlug ? (
                 <Link href={`/diagnostics/${exampleSlug}`} className="text-link">
-                  AI-readiness 진단 보기
+                  AI-readiness diagnostics
                 </Link>
               ) : null}
             </div>
@@ -294,38 +290,33 @@ export default async function HomePage() {
 
       {/* How it works */}
       <section className="section">
-        <p className="section-eyebrow">어떻게 동작하나</p>
-        <h2 className="section-title">추측하지 않고, 검증합니다</h2>
+        <p className="section-eyebrow">How it works</p>
+        <h2 className="section-title">No guessing. Only verification.</h2>
         <ol className="steps">
           <li className="step">
             <span className="step-num">1</span>
             <div>
-              <h3>claim 등록</h3>
+              <h3>Claim registered</h3>
               <p>
-                모든 사실은 <code>확인 필요</code> / <code>low</code> /{" "}
-                <code>needs_review</code> / 출처 없음 상태로 시작합니다. AI가 생성한 후보도
-                예외 없이 동일합니다.
+                Every fact starts as <code>Needs verification</code> / <code>confidence: low</code> / <code>status: needs_review</code> / no sources. AI-generated candidates follow the same rule.
               </p>
             </div>
           </li>
           <li className="step">
             <span className="step-num">2</span>
             <div>
-              <h3>출처 부착 · 검증 이벤트</h3>
+              <h3>Source attached &amp; verified</h3>
               <p>
-                공식·법령·운영기관 등 허용된 출처와 확인 시각을 붙이고, 검증 이벤트로 변경
-                이력을 기록합니다.
+                Official, regulatory, or platform sources are attached with observation timestamps. Verification events record the full audit trail.
               </p>
             </div>
           </li>
           <li className="step">
             <span className="step-num">3</span>
             <div>
-              <h3>verified 승격</h3>
+              <h3>Promoted to verified</h3>
               <p>
-                출처가 검증된 뒤에만 실제 값으로 바뀌고 신뢰도가{" "}
-                <code>medium/high</code>로 올라갑니다. AI 생성 콘텐츠는 검증된 사실로
-                발행되지 않습니다.
+                Only after human review does a claim become <code>verified</code> with <code>confidence: medium/high</code>. AI-generated content is never published as verified fact without source backing.
               </p>
             </div>
           </li>
@@ -335,19 +326,19 @@ export default async function HomePage() {
       {/* Popular — by AI citation count and views */}
       {popularDocs.length > 0 && (
         <section className="section">
-          <p className="section-eyebrow">인기 문서</p>
-          <h2 className="section-title">AI 인용 · 조회수 인기순</h2>
+          <p className="section-eyebrow">Most cited</p>
+          <h2 className="section-title">Popular by AI citations &amp; views</h2>
           <ul className="registry-index">
             {popularDocs.map((d, i) => (
               <li key={d.document_id} className="registry-row">
                 <div className="registry-row-main">
-                  <Link href={`/ko/wiki/${d.slug}`} className="registry-row-title">
+                  <Link href={`/en/wiki/${d.slug}`} className="registry-row-title">
                     {i + 1}. {d.title}
                   </Link>
                 </div>
                 <div className="registry-row-meta">
-                  <span className="badge" title="AI 인용">✦ {d.ai_citation_count}</span>
-                  <span className="badge" title="조회수">👁 {d.view_count}</span>
+                  <span className="badge" title="AI citations">AI {d.ai_citation_count}</span>
+                  <span className="badge" title="Views">{d.view_count} views</span>
                 </div>
               </li>
             ))}
@@ -362,41 +353,42 @@ export default async function HomePage() {
 
       {/* Registry index */}
       <section className="section" id="registry">
-        <p className="section-eyebrow">레지스트리</p>
-        <h2 className="section-title">등록된 문서 ({bundles.length})</h2>
-        <p className="section-subtitle">
-          검증 문서는 모든 claim이 출처를 가진 verified 상태일 때만 분리합니다. 후보 문서는
-          stable English slug를 유지하되 표시 제목은 언어별 title을 사용하며, 미확인 값은
-          “확인 필요”와 low confidence로 남깁니다.
-        </p>
-        <h3>검증된 문서 ({verifiedDocuments.length})</h3>
-        <ul className="registry-index">
-          {verifiedDocuments.map((b) => {
-            const badge = statusBadge(b.document.status);
-            return (
-              <li key={b.document.slug} className="registry-row">
-                <div className="registry-row-main">
-                  <Link href={`/ko/wiki/${b.document.slug}`} className="registry-row-title">
-                    {b.document.title}
-                  </Link>
-                  <span className="registry-row-entity">{b.entity.canonical_name}</span>
-                </div>
-                <div className="registry-row-meta">
-                  <span className={badge.className}>{badge.label}</span>
-                  <span className="badge">{b.entity.type}</span>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
-        <h3>후보 · 확인 필요 문서 ({candidateDocuments.length})</h3>
+        <p className="section-eyebrow">Registry</p>
+        <h2 className="section-title">Registered Documents ({bundles.length})</h2>
+
+        {verifiedDocuments.length > 0 && (
+          <>
+            <h3>Verified ({verifiedDocuments.length})</h3>
+            <ul className="registry-index">
+              {verifiedDocuments.map((b) => {
+                const badge = statusBadge(b.document.status);
+                return (
+                  <li key={b.document.slug} className="registry-row">
+                    <div className="registry-row-main">
+                      <Link href={`/en/wiki/${b.document.slug}`} className="registry-row-title">
+                        {b.document.title}
+                      </Link>
+                      <span className="registry-row-entity">{b.entity.canonical_name}</span>
+                    </div>
+                    <div className="registry-row-meta">
+                      <span className={badge.className}>{badge.label}</span>
+                      <span className="badge">{b.entity.type}</span>
+                    </div>
+                  </li>
+                );
+              })}
+            </ul>
+          </>
+        )}
+
+        <h3>Candidates &middot; Needs Review ({candidateDocuments.length})</h3>
         <ul className="registry-index">
           {candidateDocuments.map((b) => {
             const badge = statusBadge(b.document.status);
             return (
               <li key={b.document.slug} className="registry-row">
                 <div className="registry-row-main">
-                  <Link href={`/ko/wiki/${b.document.slug}`} className="registry-row-title">
+                  <Link href={`/en/wiki/${b.document.slug}`} className="registry-row-title">
                     {b.document.title}
                   </Link>
                   <span className="registry-row-entity">{b.entity.canonical_name}</span>

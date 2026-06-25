@@ -12,17 +12,19 @@ export function SiteHeader() {
       <div className="site-header-inner">
         <Link href="/" className="brand" aria-label="For-Ai home" onClick={close}>
           <span className="brand-mark">For-Ai</span>
+          <span className="brand-sub">Global Fact Registry</span>
         </Link>
         <nav className="site-nav" aria-label="Main menu">
-          <Link href="/#registry">문서</Link>
-          <Link href="/community">커뮤니티</Link>
-          <Link href="/suggest-topic">제안</Link>
+          <Link href="/#registry">Registry</Link>
+          <Link href="/api-docs">API</Link>
+          <Link href="/community">Community</Link>
+          <Link href="/suggest-topic">Suggest</Link>
           <LanguageSelector />
         </nav>
         <button
           type="button"
           className="nav-toggle"
-          aria-label={open ? "메뉴 닫기" : "메뉴 열기"}
+          aria-label={open ? "Close menu" : "Open menu"}
           aria-expanded={open}
           onClick={() => setOpen((v) => !v)}
         >
@@ -33,9 +35,10 @@ export function SiteHeader() {
       </div>
       {open && (
         <nav className="site-nav-mobile" aria-label="Mobile menu">
-          <Link href="/#registry" onClick={close}>문서</Link>
-          <Link href="/community" onClick={close}>커뮤니티</Link>
-          <Link href="/suggest-topic" onClick={close}>제안</Link>
+          <Link href="/#registry" onClick={close}>Registry</Link>
+          <Link href="/api-docs" onClick={close}>API</Link>
+          <Link href="/community" onClick={close}>Community</Link>
+          <Link href="/suggest-topic" onClick={close}>Suggest Topic</Link>
           <div className="site-nav-mobile-lang"><LanguageSelector /></div>
         </nav>
       )}
