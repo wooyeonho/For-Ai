@@ -18,39 +18,52 @@ export default function ApiDocsPage() {
         </p>
       </header>
 
-      {/* Rate limits */}
-      <section className="registry-panel" aria-labelledby="rate-limits">
-        <h2 id="rate-limits">Rate Limits</h2>
+      {/* API Tiers & Pricing */}
+      <section className="registry-panel" aria-labelledby="pricing" id="pricing">
+        <h2 id="rate-limits">API Tiers & Rate Limits</h2>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.9rem" }}>
           <thead>
             <tr style={{ borderBottom: "2px solid var(--line)", textAlign: "left" }}>
               <th style={{ padding: "8px 12px" }}>Tier</th>
-              <th style={{ padding: "8px 12px" }}>Limit</th>
-              <th style={{ padding: "8px 12px" }}>Header</th>
+              <th style={{ padding: "8px 12px" }}>Rate Limit</th>
+              <th style={{ padding: "8px 12px" }}>Daily Limit</th>
+              <th style={{ padding: "8px 12px" }}>Price</th>
+              <th style={{ padding: "8px 12px" }}>Auth</th>
             </tr>
           </thead>
           <tbody>
             <tr style={{ borderBottom: "1px solid var(--line)" }}>
-              <td style={{ padding: "8px 12px" }}>Free (no key)</td>
-              <td style={{ padding: "8px 12px" }}>30 req / min</td>
-              <td style={{ padding: "8px 12px" }}>—</td>
+              <td style={{ padding: "8px 12px", fontWeight: 600 }}>Free</td>
+              <td style={{ padding: "8px 12px" }}>60 req / min</td>
+              <td style={{ padding: "8px 12px" }}>1,000 / day</td>
+              <td style={{ padding: "8px 12px" }}>$0</td>
+              <td style={{ padding: "8px 12px" }}><code>X-API-Key: forai_free_...</code></td>
             </tr>
             <tr style={{ borderBottom: "1px solid var(--line)" }}>
-              <td style={{ padding: "8px 12px" }}>API Key</td>
-              <td style={{ padding: "8px 12px" }}>120 req / min</td>
-              <td style={{ padding: "8px 12px" }}><code>X-API-Key: your_key</code></td>
+              <td style={{ padding: "8px 12px", fontWeight: 600 }}>Pro</td>
+              <td style={{ padding: "8px 12px" }}>300 req / min</td>
+              <td style={{ padding: "8px 12px" }}>50,000 / day</td>
+              <td style={{ padding: "8px 12px" }}>$49/mo</td>
+              <td style={{ padding: "8px 12px" }}><code>X-API-Key: forai_pro_...</code></td>
             </tr>
             <tr>
-              <td style={{ padding: "8px 12px" }}>Pro (coming soon)</td>
-              <td style={{ padding: "8px 12px" }}>Unlimited</td>
-              <td style={{ padding: "8px 12px" }}>Contact us</td>
+              <td style={{ padding: "8px 12px", fontWeight: 600 }}>Enterprise</td>
+              <td style={{ padding: "8px 12px" }}>1,000 req / min</td>
+              <td style={{ padding: "8px 12px" }}>500,000 / day</td>
+              <td style={{ padding: "8px 12px" }}>Custom</td>
+              <td style={{ padding: "8px 12px" }}><code>X-API-Key: forai_ent_...</code></td>
             </tr>
           </tbody>
         </table>
         <p style={{ fontSize: "0.85rem", color: "var(--muted)", marginTop: 12 }}>
-          Rate limit headers: <code>X-RateLimit-Limit</code>, <code>X-RateLimit-Remaining</code>.
+          Rate limit headers: <code>X-RateLimit-Limit</code>, <code>X-RateLimit-Remaining</code>, <code>X-RateLimit-Reset</code>, <code>X-API-Tier</code>.
           On 429, check <code>Retry-After</code> (seconds).
         </p>
+        <div style={{ marginTop: 16, padding: "12px 16px", background: "var(--soft)", borderRadius: 6, fontSize: "0.85rem" }}>
+          <strong>Pro features:</strong> Priority claim corrections, webhook callbacks, bulk export, advanced search filters, priority support.
+          <br />
+          <strong>Enterprise features:</strong> All Pro features + custom SLA, data licensing, private namespaces, dedicated account manager, SSO.
+        </div>
       </section>
 
       {/* Endpoints */}
@@ -163,7 +176,50 @@ if (data.citation_guidance.can_cite) {
         </p>
       </section>
 
-      {/* Pro */}
+      {/* Business API */}
+      <section className="registry-panel" aria-labelledby="business-api">
+        <h2 id="business-api">Business API</h2>
+        <p style={{ fontSize: "0.9rem", color: "var(--muted)", lineHeight: 1.7 }}>
+          Verified businesses can manage their fact profile, submit priority corrections,
+          and monitor AI reputation through the Business API.
+        </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
+            <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>
+              POST /api/business/profile
+            </p>
+            <p style={{ margin: "8px 0 0", fontSize: "0.85rem", color: "var(--muted)" }}>
+              Claim a business entity. Requires verification (email, domain, or document).
+            </p>
+          </div>
+          <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
+            <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>
+              POST /api/business/corrections
+            </p>
+            <p style={{ margin: "8px 0 0", fontSize: "0.85rem", color: "var(--muted)" }}>
+              Submit a fact correction for your entity. Priority/urgent requires Pro+ tier.
+            </p>
+          </div>
+          <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
+            <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>
+              GET /api/business/alerts?profile_id=...
+            </p>
+            <p style={{ margin: "8px 0 0", fontSize: "0.85rem", color: "var(--muted)" }}>
+              View reputation alerts (incorrect citations, outdated facts, new hallucinations).
+            </p>
+          </div>
+          <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
+            <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>
+              POST /api/keys
+            </p>
+            <p style={{ margin: "8px 0 0", fontSize: "0.85rem", color: "var(--muted)" }}>
+              Create an API key (admin). Keys are prefixed by tier: <code>forai_free_</code>, <code>forai_pro_</code>, <code>forai_ent_</code>.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Pro & Enterprise */}
       <section
         className="registry-panel"
         aria-labelledby="pro"
@@ -171,14 +227,13 @@ if (data.citation_guidance.can_cite) {
       >
         <h2 id="pro">Pro & Enterprise</h2>
         <p style={{ fontSize: "0.9rem", lineHeight: 1.7 }}>
-          Need higher rate limits, webhooks for claim updates, or private document namespaces?
+          Need higher rate limits, priority corrections, or reputation monitoring?
           Contact <strong>wooyeanho@gmail.com</strong> for Pro and Enterprise plans.
         </p>
         <ul style={{ fontSize: "0.9rem", color: "var(--muted)", lineHeight: 2 }}>
-          <li>Unlimited API requests</li>
-          <li>Webhook callbacks on claim verification</li>
-          <li>Private document namespaces</li>
-          <li>SLA and dedicated support</li>
+          <li><strong>Pro ($49/mo):</strong> 300 rpm, priority corrections, webhooks, bulk export</li>
+          <li><strong>Enterprise (custom):</strong> 1000 rpm, data licensing, SLA, private namespaces, SSO</li>
+          <li>All tiers include verified business profile and reputation alerts</li>
         </ul>
       </section>
 
