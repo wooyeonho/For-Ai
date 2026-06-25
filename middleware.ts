@@ -2,7 +2,11 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 const SUPPORTED_LOCALES = ["ko", "en", "hi", "ar", "es", "ja", "zh"];
-const DEFAULT_LOCALE = "ko";
+// Final fallback locale when Accept-Language has no match. Defaults to "en" for a
+// global audience (NEXT_PUBLIC_DEFAULT_LOCALE is build-inlined). Korean browsers
+// still resolve to "ko" via the Accept-Language detection below.
+const ENV_DEFAULT = process.env.NEXT_PUBLIC_DEFAULT_LOCALE;
+const DEFAULT_LOCALE = ENV_DEFAULT && SUPPORTED_LOCALES.includes(ENV_DEFAULT) ? ENV_DEFAULT : "en";
 
 // In-memory rate limiter (per Edge worker instance; resets on deploy)
 // For production scale, replace with Upstash Redis or similar

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { logAdminAuditEvent, requireAdmin, supabaseAdmin } from "@/lib/admin-api";
+import { DEFAULT_LOCALE } from "@/lib/i18n/locales";
 
 export async function GET(request: Request) {
   const adminError = requireAdmin(request, "candidates.read");
@@ -45,7 +46,7 @@ export async function POST(request: Request) {
     title: String(r.title ?? "").trim(),
     slug: String(r.slug ?? "").trim(),
     category: String(r.category ?? "").trim(),
-    lang: String(r.lang ?? "ko").trim() || "ko",
+    lang: String(r.lang ?? DEFAULT_LOCALE).trim() || DEFAULT_LOCALE,
     source: "admin_created",
     status: "new",
     subcategory: r.subcategory ? String(r.subcategory) : null,

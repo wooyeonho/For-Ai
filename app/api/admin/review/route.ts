@@ -2,6 +2,7 @@ import { DEFAULT_LOCALE } from "@/lib/i18n";
 import { NextResponse } from "next/server";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { documentPageUrl } from "../../../../lib/urls";
+import { DEFAULT_LOCALE } from "../../../../lib/i18n/locales";
 
 const ADMIN_SECRET = process.env.ADMIN_SECRET ?? "";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";

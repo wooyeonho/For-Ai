@@ -9,6 +9,7 @@ import {
 } from "../../../../lib/ai-providers";
 import { buildConsensus, type ConsensusCandidate } from "../../../../lib/consensus";
 import { logAdminAuditEvent, missingSupabaseAdminEnv, requireAdmin, supabaseAdmin } from "@/lib/admin-api";
+import { DEFAULT_LOCALE } from "@/lib/i18n/locales";
 
 function buildPrompt(topic: string, count: number, lang: string) {
   const langInstructions: Record<string, string> = {
@@ -254,7 +255,7 @@ export async function POST(request: Request) {
   const body = await request.json();
   const topic = String(body.topic ?? body.category ?? "").trim();
   const count = Math.min(Math.max(parseInt(body.count ?? "10"), 1), 50);
-  const lang = String(body.lang ?? "ko").trim();
+  const lang = String(body.lang ?? DEFAULT_LOCALE).trim() || DEFAULT_LOCALE;
   const saveToDb = body.save !== false;
   const requestedProviders = body.providers as AIProviderKey[] | undefined;
   const crossVerify = body.cross_verify === true;
