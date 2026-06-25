@@ -85,6 +85,36 @@ export async function GET(request: Request) {
       .limit(10);
     if (docsError) throw docsError;
 
+    // Citation pickup: which documents AI/users actually engage with.
+    const { data: statsRows } = await sb
+      .from("document_stats")
+      .select("document_id, view_count, ai_citation_count")
+      .order("ai_citation_count", { ascending: false })
+      .limit(200);
+    const stats = statsRows ?? [];
+    const totalViews = stats.reduce((sum, r) => sum + Number(r.view_count ?? 0), 0);
+    const totalCitations = stats.reduce((sum, r) => sum + Number(r.ai_citation_count ?? 0), 0);
+    const topStats = stats.filter((r) => Number(r.ai_citation_count ?? 0) > 0).slice(0, 10);
+    const topIds = topStats.map((r) => r.document_id);
+    const titleById = new Map<string, { title?: string | null; slug?: string | null; lang?: string | null }>();
+    if (topIds.length > 0) {
+      const { data: topDocs } = await sb
+        .from("documents")
+        .select("id, title, slug, lang")
+        .in("id", topIds);
+      for (const d of topDocs ?? []) titleById.set(d.id, d);
+    }
+    const topCited = topStats.map((r) => {
+      const doc = titleById.get(r.document_id);
+      return {
+        document_id: r.document_id,
+        title: doc?.title ?? r.document_id,
+        view_count: Number(r.view_count ?? 0),
+        ai_citation_count: Number(r.ai_citation_count ?? 0),
+        public_url: doc ? publicDocumentLink(doc) : null,
+      };
+    });
+
     return NextResponse.json({
       counts: {
         candidates_new: candidatesNew,
@@ -106,6 +136,11 @@ export async function GET(request: Request) {
         ...doc,
         public_url: publicDocumentLink(doc),
       })),
+      engagement: {
+        total_views: totalViews,
+        total_citations: totalCitations,
+        top_cited: topCited,
+      },
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "admin review query failed";

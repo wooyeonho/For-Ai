@@ -1,11 +1,20 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/admin-api";
+import { clientIp, rateLimited } from "@/lib/rate-limit";
+
+// Cap repeat views from the same caller for the same document within a window.
+const VIEW_MAX_PER_WINDOW = 10;
+const VIEW_WINDOW_MS = 60_000;
 
 export async function POST(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ slug: string }> }
 ) {
   const { slug } = await params;
+
+  if (rateLimited("doc-view", `${clientIp(request)}:${slug}`, VIEW_MAX_PER_WINDOW, VIEW_WINDOW_MS)) {
+    return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+  }
 
   // Stat writes use the service-role client so the public anon key has no write
   // access to document_stats (RLS locked). Reads stay public via anon select.

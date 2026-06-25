@@ -1,11 +1,21 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/admin-api";
+import { clientIp, rateLimited } from "@/lib/rate-limit";
+
+// Cap repeat citations from the same caller for the same document so the public,
+// unauthenticated counter cannot be trivially inflated.
+const CITE_MAX_PER_WINDOW = 5;
+const CITE_WINDOW_MS = 60_000;
 
 export async function POST(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ slug: string }> }
 ) {
   const { slug } = await params;
+
+  if (rateLimited("doc-cite", `${clientIp(request)}:${slug}`, CITE_MAX_PER_WINDOW, CITE_WINDOW_MS)) {
+    return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+  }
 
   // Stat writes use the service-role client so the public anon key has no write
   // access to document_stats (RLS locked). Reads stay public via anon select.

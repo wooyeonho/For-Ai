@@ -45,6 +45,14 @@ type VerifiedDocument = {
   public_url?: string | null;
 };
 
+type TopCited = {
+  document_id: string;
+  title: string;
+  view_count: number;
+  ai_citation_count: number;
+  public_url?: string | null;
+};
+
 type ReviewPayload = {
   counts: Counts;
   priorities: {
@@ -52,6 +60,11 @@ type ReviewPayload = {
     approved_candidates: ApprovedCandidate[];
   };
   verified_documents: VerifiedDocument[];
+  engagement?: {
+    total_views: number;
+    total_citations: number;
+    top_cited: TopCited[];
+  };
 };
 
 const EMPTY_COUNTS: Counts = {
@@ -162,6 +175,26 @@ export default function AdminReviewPage() {
             <p>{candidate.lang}/wiki/{candidate.slug}</p>
             <p><span className="badge badge-review">{candidate.status}</span></p>
             <Link href="/admin/candidates">공개 등록하러 가기</Link>
+          </div>
+        ))}
+      </section>
+
+      <section className="registry-panel" aria-labelledby="engagement-title">
+        <h2 id="engagement-title">인용 픽업 (실제 사용 계측)</h2>
+        <div className="stat-strip">
+          <div className="stat"><span className="stat-num">{data?.engagement?.total_views ?? 0}</span><span className="stat-label">누적 조회</span></div>
+          <div className="stat"><span className="stat-num">{data?.engagement?.total_citations ?? 0}</span><span className="stat-label">누적 AI 인용</span></div>
+        </div>
+        <h3>인용 많은 문서 Top</h3>
+        {(data?.engagement?.top_cited.length ?? 0) === 0 && <p>아직 집계된 AI 인용이 없습니다. 인용은 POST /api/documents/&lt;slug&gt;/cite로 증가합니다.</p>}
+        {data?.engagement?.top_cited.map((doc) => (
+          <div className="claim-card" key={doc.document_id}>
+            <p><strong>{doc.title}</strong></p>
+            <p>
+              <span className="badge badge-verified">✦ AI 인용 {doc.ai_citation_count}</span>{" "}
+              <span className="badge">👁 조회 {doc.view_count}</span>
+            </p>
+            {doc.public_url && <a href={doc.public_url} target="_blank" rel="noopener noreferrer">문서 보기</a>}
           </div>
         ))}
       </section>
