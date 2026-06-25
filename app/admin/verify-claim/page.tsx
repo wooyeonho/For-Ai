@@ -37,6 +37,15 @@ export default function VerifyClaimPage() {
   const [citation, setCitation] = useState("");
   const [confidence, setConfidence] = useState("high");
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
+  const [checking, setChecking] = useState(false);
+  const [sourceCheck, setSourceCheck] = useState<{
+    reachable: boolean;
+    status: number;
+    error?: string;
+    exact_match?: boolean | null;
+    token_match?: { matched: string[]; missing: string[] } | null;
+    snippet?: string | null;
+  } | null>(null);
 
   const load = useCallback(async () => {
     if (!secret) return;
@@ -48,7 +57,27 @@ export default function VerifyClaimPage() {
     else setMessage({ ok: false, text: data.error ?? "claim 목록 조회 실패" });
   }, [secret]);
 
+  const [targetSlug, setTargetSlug] = useState<string | null>(null);
+
   useEffect(() => { load(); }, [load]);
+
+  // Deep-link target: /admin/verify-claim?slug=<slug> (set by candidates promote flow)
+  useEffect(() => {
+    const slug = new URLSearchParams(window.location.search).get("slug");
+    if (slug) setTargetSlug(slug);
+  }, []);
+
+  // Once documents load, scroll the targeted doc into view and open its first unverified claim.
+  useEffect(() => {
+    if (!targetSlug || documents.length === 0) return;
+    const doc = documents.find((d) => d.slug === targetSlug);
+    if (!doc) return;
+    const el = document.getElementById(`doc-${doc.slug}`);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    const firstUnverified = (doc.claims ?? []).find((c) => c.status !== "verified");
+    if (firstUnverified) openVerify(firstUnverified);
+    setTargetSlug(null);
+  }, [targetSlug, documents]);
 
   function openVerify(claim: ClaimRow) {
     setSelectedClaim(claim);
@@ -58,6 +87,33 @@ export default function VerifyClaimPage() {
     setCitation("");
     setSourceType("official");
     setConfidence("high");
+    setSourceCheck(null);
+  }
+
+  async function checkSource() {
+    if (!url.trim()) {
+      setMessage({ ok: false, text: "확인할 출처 URL을 입력하세요" });
+      return;
+    }
+    setChecking(true);
+    setSourceCheck(null);
+    try {
+      const res = await fetch("/api/admin/check-source", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-admin-secret": secret, "x-admin-csrf": "1" },
+        body: JSON.stringify({ url: url.trim(), match: claimValue.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setMessage({ ok: false, text: data.error ?? "출처 확인 실패" });
+      } else {
+        setSourceCheck(data);
+      }
+    } catch (e) {
+      setMessage({ ok: false, text: `출처 확인 오류: ${String(e)}` });
+    } finally {
+      setChecking(false);
+    }
   }
 
   async function submitVerify() {
@@ -113,7 +169,7 @@ export default function VerifyClaimPage() {
       </div>
 
       {documents.map((doc) => (
-        <section className="registry-panel" key={doc.id}>
+        <section className="registry-panel" key={doc.id} id={`doc-${doc.slug}`}>
           <h2><Link href={`/ko/wiki/${doc.slug}`}>{doc.title}</Link></h2>
           <p className="meta-label">{doc.slug} · {doc.status} · {doc.confidence}</p>
           {(doc.claims ?? []).map((claim) => (
@@ -136,7 +192,30 @@ export default function VerifyClaimPage() {
           <label>검증된 값<input value={claimValue} onChange={(e) => setClaimValue(e.target.value)} placeholder="확인된 값" /></label>
           <label>source_type<select value={sourceType} onChange={(e) => setSourceType(e.target.value)}>{SOURCE_TYPES.map((type) => <option key={type} value={type}>{type}</option>)}</select></label>
           <label>출처 제목<input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="공식 페이지명" /></label>
-          <label>출처 URL<input value={url} onChange={(e) => setUrl(e.target.value)} placeholder="https://..." /></label>
+          <label>출처 URL
+            <div style={{ display: "flex", gap: 8 }}>
+              <input value={url} onChange={(e) => { setUrl(e.target.value); setSourceCheck(null); }} placeholder="https://..." style={{ flex: 1 }} />
+              <button type="button" onClick={checkSource} disabled={checking || !url.trim()}>{checking ? "확인 중..." : "출처 확인"}</button>
+            </div>
+          </label>
+          {sourceCheck && (
+            <div style={{ padding: 12, borderRadius: 8, fontSize: 13, background: sourceCheck.reachable ? "#f0fdf4" : "#fef2f2", border: `1px solid ${sourceCheck.reachable ? "#86efac" : "#fecaca"}` }}>
+              <p style={{ margin: "0 0 6px", fontWeight: 600 }}>
+                {sourceCheck.reachable ? `✓ 도달 가능 (HTTP ${sourceCheck.status})` : `✗ 도달 실패${sourceCheck.status ? ` (HTTP ${sourceCheck.status})` : ""}`}
+                {sourceCheck.error && <span style={{ color: "#b91c1c", fontWeight: 400 }}> — {sourceCheck.error}</span>}
+              </p>
+              {sourceCheck.exact_match === true && <p style={{ margin: "0 0 4px", color: "#166534" }}>✓ 입력한 값이 페이지 본문에 그대로 존재합니다</p>}
+              {sourceCheck.exact_match === false && sourceCheck.token_match && (
+                <p style={{ margin: "0 0 4px", color: "#92400e" }}>
+                  부분 일치: {sourceCheck.token_match.matched.length}개 토큰 확인
+                  {sourceCheck.token_match.matched.length > 0 && ` (${sourceCheck.token_match.matched.join(", ")})`}
+                  {sourceCheck.token_match.missing.length > 0 && ` · 미발견: ${sourceCheck.token_match.missing.join(", ")}`}
+                </p>
+              )}
+              {sourceCheck.snippet && <p style={{ margin: "4px 0 0", color: "#374151", fontStyle: "italic" }}>…{sourceCheck.snippet}…</p>}
+              <p style={{ margin: "6px 0 0", fontSize: 11, color: "#6b7280" }}>본문 자동 매칭은 보조 수단입니다 — 반드시 직접 확인 후 저장하세요.</p>
+            </div>
+          )}
           <label>citation / 메모<textarea value={citation} onChange={(e) => setCitation(e.target.value)} placeholder="어떤 문구/근거를 확인했는지" /></label>
           <label>confidence<select value={confidence} onChange={(e) => setConfidence(e.target.value)}><option value="high">high</option><option value="medium">medium</option></select></label>
           <div style={{ display: "flex", gap: 8 }}>

@@ -75,18 +75,45 @@ function buildSystemPrompt(lang: string): string {
   return `You are a global fact-registry curator for For-Ai. Search the web and output only valid JSON arrays. Prioritize topics with official sources. Find real official/platform/law/document URLs for source_hints, and prefer those source types over news, stats, blogs, or forums. Accept ANY topic: sports, entertainment, life, IT, finance, government, etc. Output in ${language}.`;
 }
 
+type ParsedCandidates = { candidates: Record<string, unknown>[]; parseError?: string };
+
 function parseCandidatesFromResponse(
   response: AIGenerateResponse,
   lang: string
-): Record<string, unknown>[] {
-  if (response.error || !response.content) return [];
+): ParsedCandidates {
+  if (response.error || !response.content) return { candidates: [] };
+
+  const match = response.content.match(/\[[\s\S]*\]/);
+  if (!match) {
+    const preview = response.content.trim().slice(0, 120).replace(/\s+/g, " ");
+    console.warn("[admin/generate-candidates] no JSON array found in response", {
+      provider: response.provider,
+      model: response.model,
+      content_preview: preview,
+    });
+    return { candidates: [], parseError: `JSON 배열을 찾지 못함 (응답 앞부분: ${preview || "빈 응답"})` };
+  }
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(match[0]);
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : String(err);
+    console.warn("[admin/generate-candidates] JSON.parse failed", {
+      provider: response.provider,
+      model: response.model,
+      reason,
+      matched_length: match[0].length,
+    });
+    return { candidates: [], parseError: `JSON 파싱 실패: ${reason}` };
+  }
+
+  if (!Array.isArray(parsed)) {
+    return { candidates: [], parseError: "JSON이 배열 형식이 아님" };
+  }
 
   try {
-    const match = response.content.match(/\[[\s\S]*\]/);
-    if (!match) return [];
-    const parsed = JSON.parse(match[0]);
-
-    return parsed.map((c: Record<string, unknown>) => {
+    const candidates = parsed.map((c: Record<string, unknown>) => {
       const hints = (c.source_hints as { url: string; title: string }[]) ?? [];
       const citations = response.citations ?? [];
       const hintUrls = new Set(hints.map((h) => h.url));
@@ -111,8 +138,15 @@ function parseCandidatesFromResponse(
         source_hints: [...hints, ...extra],
       };
     });
-  } catch {
-    return [];
+    return { candidates };
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : String(err);
+    console.warn("[admin/generate-candidates] candidate normalization failed", {
+      provider: response.provider,
+      model: response.model,
+      reason,
+    });
+    return { candidates: [], parseError: `후보 정규화 실패: ${reason}` };
   }
 }
 
@@ -255,7 +289,7 @@ export async function POST(request: Request) {
   const aiRequest = { systemPrompt, userPrompt, temperature: 0.3 };
 
   let allCandidates: Record<string, unknown>[] = [];
-  const providerResults: Record<string, { generated: number; error?: string }> = {};
+  const providerResults: Record<string, { generated: number; error?: string; parse_error?: string }> = {};
   let consensusResults: ConsensusCandidate[] | null = null;
 
   let consensusSummary: Record<string, unknown> | null = null;
@@ -266,10 +300,11 @@ export async function POST(request: Request) {
     const candidatesByProvider = new Map<string, Record<string, unknown>[]>();
 
     for (const resp of responses) {
-      const candidates = parseCandidatesFromResponse(resp, lang);
+      const { candidates, parseError } = parseCandidatesFromResponse(resp, lang);
       providerResults[resp.provider] = {
         generated: candidates.length,
         error: resp.error || undefined,
+        parse_error: parseError,
       };
       if (candidates.length > 0) {
         candidatesByProvider.set(resp.provider, candidates);
@@ -293,17 +328,29 @@ export async function POST(request: Request) {
     // Single provider (or sequential)
     const primaryProvider = providers[0];
     const response = await generateWithProvider(primaryProvider, aiRequest);
-    const candidates = parseCandidatesFromResponse(response, lang);
+    const { candidates, parseError } = parseCandidatesFromResponse(response, lang);
     providerResults[primaryProvider] = {
       generated: candidates.length,
       error: response.error || undefined,
+      parse_error: parseError,
     };
     allCandidates = candidates;
   }
 
   if (allCandidates.length === 0) {
+    const parseErrors = Object.entries(providerResults)
+      .filter(([, r]) => r.parse_error)
+      .map(([provider, r]) => `${provider}: ${r.parse_error}`);
+    const apiErrors = Object.entries(providerResults)
+      .filter(([, r]) => r.error)
+      .map(([provider, r]) => `${provider}: ${r.error}`);
+    const reason = parseErrors.length > 0
+      ? `AI 응답을 파싱하지 못했습니다 — ${parseErrors.join(" / ")}`
+      : apiErrors.length > 0
+        ? `AI 호출 실패 — ${apiErrors.join(" / ")}`
+        : "AI가 후보를 생성하지 못했습니다 (다른 토픽으로 다시 시도해 보세요)";
     return NextResponse.json({
-      error: "No candidates generated",
+      error: reason,
       provider_results: providerResults,
     }, { status: 502 });
   }

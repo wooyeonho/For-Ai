@@ -41,13 +41,13 @@ export default function CandidatesPage(){
     if(r.ok){flash(`✅ ${st}`);setSelected(null);load();}
     else flash(`❌ ${d.error??"권한 오류 — admin secret 확인"}`,false);
   }
-  async function promote(id:string,slug:string){
+  async function promote(id:string){
     if(!secret){flash("❌ admin secret을 입력하세요",false);return;}
     setPromoting(id);
     try{
       const r=await fetch("/api/admin/promote-candidate",{method:"POST",headers:{"Content-Type":"application/json","x-admin-secret":secret,"x-admin-csrf":"1"},body:JSON.stringify({candidateId:id})});
       const d=await r.json();
-      if(r.ok&&d.success){flash(`🚀 공개 등록 완료 → /ko/wiki/${slug}`);setSelected(null);load();}
+      if(r.ok&&d.success){flash(`🚀 공개 등록 완료 → 이제 ${d.claims_created??0}개 claim을 검증하세요 (검증하기 버튼)`);setSelected(null);load();}
       else flash(`❌ ${d.error??"등록 실패"}`,false);
     }catch{flash("❌ 네트워크 오류",false);}finally{setPromoting(null);}
   }
@@ -116,7 +116,8 @@ export default function CandidatesPage(){
                 <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
                   {c.status==="new"&&<button onClick={()=>act(c.id,"reviewing")} style={{padding:"8px 16px",background:"#f59e0b",color:"#fff",border:"none",borderRadius:8,fontSize:13,fontWeight:600,cursor:"pointer"}}>검토중</button>}
                   {(c.status==="new"||c.status==="reviewing")&&<button onClick={()=>act(c.id,"approved")} style={{padding:"8px 16px",background:"#16a34a",color:"#fff",border:"none",borderRadius:8,fontSize:13,fontWeight:600,cursor:"pointer"}}>✅ 승인</button>}
-                  {c.status==="approved"&&<button onClick={()=>promote(c.id,c.slug)} disabled={promoting===c.id} style={{padding:"8px 20px",background:promoting===c.id?"#a855f7":"#7c3aed",color:"#fff",border:"none",borderRadius:8,fontSize:13,fontWeight:700,cursor:promoting===c.id?"not-allowed":"pointer"}}>{promoting===c.id?"등록 중...":"🚀 공개 등록"}</button>}
+                  {c.status==="approved"&&<button onClick={()=>promote(c.id)} disabled={promoting===c.id} style={{padding:"8px 20px",background:promoting===c.id?"#a855f7":"#7c3aed",color:"#fff",border:"none",borderRadius:8,fontSize:13,fontWeight:700,cursor:promoting===c.id?"not-allowed":"pointer"}}>{promoting===c.id?"등록 중...":"🚀 공개 등록"}</button>}
+                  {c.status==="promoted"&&<Link href={`/admin/verify-claim?slug=${encodeURIComponent(c.slug)}`} style={{padding:"8px 16px",background:"#16a34a",color:"#fff",border:"none",borderRadius:8,fontSize:13,fontWeight:600,textDecoration:"none"}}>✅ 검증하기</Link>}
                   {c.status==="promoted"&&<a href={`/ko/wiki/${c.slug}`} target="_blank" rel="noopener" style={{padding:"8px 16px",background:"#f3f4f6",color:"#7e22ce",border:"1px solid #e9d5ff",borderRadius:8,fontSize:13,fontWeight:600,textDecoration:"none"}}>🔗 공개 페이지 보기</a>}
                   {c.status!=="rejected"&&c.status!=="promoted"&&<button onClick={()=>act(c.id,"rejected")} style={{padding:"8px 16px",background:"#dc2626",color:"#fff",border:"none",borderRadius:8,fontSize:13,fontWeight:600,cursor:"pointer"}}>❌ 거절</button>}
                   <span style={{fontSize:11,color:"#9ca3af",marginLeft:"auto"}}>{c.generation_model} · {c.slug}</span>

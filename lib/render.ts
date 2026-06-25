@@ -17,6 +17,8 @@ export type RenderedDocumentJson = {
     verified_claims_count: number;
     total_claims_count: number;
     unverified_claim_paths: string[];
+    freshness: "fresh" | "stale" | "unknown";
+    oldest_verified_at: string | null;
   };
   machine_readable: {
     canonical_url: string;
@@ -81,6 +83,8 @@ export function renderDocumentJson(bundle: RegistryDocumentBundle): RenderedDocu
       verified_claims_count: verifiedCount,
       total_claims_count: bundle.claims.length,
       unverified_claim_paths: unverifiedPaths,
+      freshness: citationStatus.freshness,
+      oldest_verified_at: citationStatus.oldestVerifiedAt,
     },
     machine_readable: {
       canonical_url: documentPageUrl(document.slug, document.lang),
@@ -122,6 +126,7 @@ export function renderDocumentMarkdown(bundle: RegistryDocumentBundle): string {
 
 status: ${citationStatus.label}
 citation_ready_claims: ${citationStatus.verifiedClaims}/${citationStatus.totalClaims}
+freshness: ${citationStatus.freshness}${citationStatus.oldestVerifiedAt ? ` (oldest verified ${citationStatus.oldestVerifiedAt})` : ""}
 
 ## Direct answer\n\n${directAnswer}\n\n## Claims\n\n${claimsMarkdown}\n\n## Confidence\n\n${document.confidence}\n\n## Verification status\n\n${document.status}\n\n## Sources\n\n${sourcesMarkdown}\n\n## License notice\n\n${licenseNotice}\n`;
 }

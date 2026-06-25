@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
+import { ageInDays, isStale } from "../../../lib/citation-status";
 
 type Counts = {
   candidates_new: number;
@@ -167,14 +168,30 @@ export default function AdminReviewPage() {
 
       <section className="registry-panel" id="verified-documents" aria-labelledby="verified-title">
         <h2 id="verified-title">verified 완료 문서 공유</h2>
+        {(() => {
+          const staleCount = (data?.verified_documents ?? []).filter((doc) => isStale(doc.last_verified_at)).length;
+          return staleCount > 0 ? (
+            <p style={{ color: "#92400e" }}>⏳ 재검증 필요(180일 경과): <strong>{staleCount}</strong>건 — 신선도가 만료된 문서는 AI가 인용을 회피할 수 있습니다.</p>
+          ) : null;
+        })()}
         {(data?.verified_documents.length ?? 0) === 0 && <p>외부 공유 가능한 verified 문서가 없습니다.</p>}
         <ul className="link-list">
-          {data?.verified_documents.map((doc) => (
-            <li key={doc.id}>
-              <strong>{doc.title}</strong> · {doc.last_verified_at ?? "last_verified_at 없음"}<br />
-              {doc.public_url ? <a href={doc.public_url} target="_blank" rel="noopener noreferrer">{doc.public_url}</a> : <span>공유 링크 생성 불가</span>}
-            </li>
-          ))}
+          {data?.verified_documents.map((doc) => {
+            const stale = isStale(doc.last_verified_at);
+            const age = ageInDays(doc.last_verified_at);
+            return (
+              <li key={doc.id}>
+                <strong>{doc.title}</strong> · {doc.last_verified_at ?? "last_verified_at 없음"}
+                {age !== null && (
+                  <span className={stale ? "badge badge-review" : "badge badge-verified"} style={{ marginLeft: 8 }}>
+                    {stale ? `⏳ ${age}일 경과 · 재검증` : `✓ ${age}일 전`}
+                  </span>
+                )}
+                <br />
+                {doc.public_url ? <a href={doc.public_url} target="_blank" rel="noopener noreferrer">{doc.public_url}</a> : <span>공유 링크 생성 불가</span>}
+              </li>
+            );
+          })}
         </ul>
       </section>
 
