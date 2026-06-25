@@ -10,6 +10,8 @@ export default function NewDocumentPage() {
   const [entityId, setEntityId] = useState("");
   const [slug, setSlug] = useState("");
   const [lang, setLang] = useState("ko");
+  const [country, setCountry] = useState("KR");
+  const [jurisdiction, setJurisdiction] = useState("KR");
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("");
   const [template, setTemplate] = useState("fact-sheet");
@@ -56,6 +58,8 @@ export default function NewDocumentPage() {
           entity_id: entityId.trim(),
           slug: slug.trim(),
           lang: lang.trim() || "ko",
+          country: country.trim().toUpperCase(),
+          jurisdiction: jurisdiction.trim().toUpperCase() || country.trim().toUpperCase(),
           title: title.trim(),
           category: category.trim(),
           template: template.trim() || "fact-sheet",
@@ -141,6 +145,18 @@ export default function NewDocumentPage() {
             <input
               type="text" value={lang} onChange={e => setLang(e.target.value)} required
               placeholder="ko"
+            />
+          </label>
+          <label>Country <span aria-label="필수">*</span>
+            <input
+              type="text" value={country} onChange={e => { setCountry(e.target.value); if (!jurisdiction) setJurisdiction(e.target.value); }} required
+              placeholder="KR"
+            />
+          </label>
+          <label>Jurisdiction (claim 관할)
+            <input
+              type="text" value={jurisdiction} onChange={e => setJurisdiction(e.target.value)}
+              placeholder="KR, US-CA, EU"
             />
           </label>
           <label>Title <span aria-label="필수">*</span>

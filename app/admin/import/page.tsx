@@ -2,14 +2,15 @@
 import Link from "next/link";
 import { useState } from "react";
 
-const JSONL_PLACEHOLDER = `{"title":"손흥민 현재 소속팀","slug":"son-heung-min-current-team","category":"person_athlete","lang":"ko","why_people_ask_ai":"이적 루머가 많아 AI에게 자주 물어봄","claims":[{"question":"현재 소속팀은?","placeholder_value":"확인 필요"}]}
-{"title":"배스킨라빈스 민트초코 알레르기 성분","slug":"baskinrobbins-mint-choco-allergens","category":"product_food","lang":"ko","claims":[{"question":"알레르기 유발 성분은?","placeholder_value":"확인 필요"}]}`;
+const JSONL_PLACEHOLDER = `{"entity_id":"kr-person-athlete-son-001","type":"person_athlete","name":"손흥민 현재 소속팀","title":"손흥민 현재 소속팀","slug":"son-heung-min-current-team","category":"person_athlete","lang":"ko","country":"KR","jurisdiction":"KR","claims":[{"field_path":"athlete.current_team","claim_text":"현재 소속팀은 확인이 필요합니다.","claim_value":"확인 필요","confidence":"low","status":"needs_review","sources":[]}]}
+{"entity_id":"global-food-allergen-001","type":"product_food","name":"민트초코 알레르기 성분","title":"민트초코 알레르기 성분","slug":"mint-choco-allergens","category":"product_food","lang":"ko","country":"global","jurisdiction":"global","claims":[{"field_path":"food.allergens","claim_text":"알레르기 유발 성분은 확인이 필요합니다.","claim_value":"확인 필요","confidence":"low","status":"needs_review","sources":[]}]}`;
 
 interface ImportResult {
   success: boolean;
   imported?: number;
+  claims_created?: number;
   error?: string;
-  candidates?: { id: string; slug: string }[];
+  validation?: { line: number; missing: string[]; claims: number }[];
 }
 
 export default function AdminImportPage() {
@@ -43,18 +44,18 @@ export default function AdminImportPage() {
 
     setLoading(true);
     try {
-      const res = await fetch("/api/admin/candidates", {
+      const res = await fetch("/api/admin/import", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           "x-admin-secret": adminSecret,
           "x-admin-csrf": "1",
         },
-        body: JSON.stringify({ candidates: rows }),
+        body: JSON.stringify({ rows }),
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok) {
-        setResult({ success: true, imported: data.imported, candidates: data.candidates });
+        setResult({ success: true, imported: data.imported, claims_created: data.claims_created, validation: data.validation });
         setJsonlText("");
       } else {
         setResult({ success: false, error: data.error ?? String(res.status) });
@@ -72,10 +73,10 @@ export default function AdminImportPage() {
     <article>
       <header className="registry-panel">
         <p className="eyebrow">For-Ai · Admin</p>
-        <h1>Topic Candidates 일괄 가져오기</h1>
+        <h1>Canonical JSONL 일괄 가져오기</h1>
         <p>
-          JSONL(줄당 JSON 1개)을 붙여넣으면 <code>topic_candidates</code> 테이블에 <strong>status: new</strong>로 저장됩니다.
-          저장 후 <Link href="/admin/candidates" style={{ color: "#2563eb" }}>후보 검토 페이지</Link>에서 승인/거절할 수 있습니다.
+          JSONL(줄당 JSON 1개)을 검증한 뒤 <code>entities → documents → claims</code>에 저장합니다.
+          모든 claim은 <strong>확인 필요 / low / needs_review</strong>로 시작하며, country/jurisdiction 값을 유지합니다.
         </p>
       </header>
 
@@ -91,16 +92,9 @@ export default function AdminImportPage() {
           {result.success ? (
             <>
               <h2>가져오기 완료</h2>
-              <p>{result.imported}개 후보가 검토 대기열에 등록되었습니다.</p>
-              {result.candidates && result.candidates.length > 0 && (
-                <ul style={{ fontSize: 13, marginTop: 8, color: "#374151" }}>
-                  {result.candidates.map(c => (
-                    <li key={c.id}><code>{c.slug}</code></li>
-                  ))}
-                </ul>
-              )}
+              <p>{result.imported}개 문서와 {result.claims_created}개 placeholder claim이 생성되었습니다.</p>
               <p style={{ marginTop: 8 }}>
-                <Link href="/admin/candidates" style={{ color: "#2563eb" }}>후보 검토하러 가기 →</Link>
+                <Link href="/admin/verify-claim" style={{ color: "#2563eb" }}>claim 검증하러 가기 →</Link>
               </p>
             </>
           ) : (
@@ -143,11 +137,16 @@ export default function AdminImportPage() {
 
       <section className="registry-panel" aria-labelledby="jsonl-format-guide">
         <h2 id="jsonl-format-guide">JSONL 형식</h2>
-        <p style={{ fontSize: 13, color: "#6b7280", lineHeight: 1.7 }}>필수 필드: <code>title</code>, <code>slug</code>, <code>category</code></p>
+        <p style={{ fontSize: 13, color: "#6b7280", lineHeight: 1.7 }}>필수 필드: <code>entity_id</code>, <code>type</code>, <code>title</code>, <code>slug</code>, <code>category</code>, <code>country</code></p>
         <pre style={{ fontSize: 12, background: "#f9fafb", padding: "10px 12px", borderRadius: 6, overflow: "auto" }}>{`{
+  "entity_id": "kr-topic-example-001",
+  "type": "administration.documents",
+  "name": "엔티티 이름",
   "title": "문서 제목",
   "slug": "url-friendly-slug",
-  "category": "person_athlete",
+  "category": "administration.documents",
+  "country": "KR",
+  "jurisdiction": "KR",
   "lang": "ko",
   "why_people_ask_ai": "AI에게 자주 물어보는 이유",
   "why_ai_gets_wrong": "AI가 틀리는 이유",
