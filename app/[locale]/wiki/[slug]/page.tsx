@@ -6,6 +6,7 @@ import { buildDocumentMetadata, buildDocumentJsonLd } from "../../../../lib/seo"
 import { siteUrl } from "../../../../lib/urls";
 import { SUPPORTED_LOCALES, isValidLocale, getTranslations } from "../../../../lib/i18n";
 import type { SupportedLocale } from "../../../../lib/i18n";
+import { getEntityLabels } from "../../../../lib/i18n/entity-labels";
 import type { RegistryDocumentBundle } from "../../../../lib/types";
 import { getRegistryBundleFromSupabase } from "../../../../lib/supabase-documents";
 import { getCanonicalDirectAnswer, getDocumentCitationStatus } from "../../../../lib/citation-status";
@@ -56,6 +57,7 @@ export default async function WikiDocumentPage({
 
   const { entity, document, claims } = bundle;
   const t = getTranslations(locale as SupportedLocale);
+  const el = getEntityLabels(locale as SupportedLocale);
   const docData = document.data as Record<string, unknown>;
   const directAnswer = getCanonicalDirectAnswer(bundle);
   const whyPeopleAsk = (docData?.why_people_ask_ai as string) ?? null;
@@ -92,6 +94,9 @@ export default async function WikiDocumentPage({
             </span>
           )}
         </div>
+        <p style={{ marginTop: 8 }}>
+          <Link href={`/${locale}/entity/${encodeURIComponent(entity.id)}`}>{el.allFacts} →</Link>
+        </p>
         <DocumentStatsBar documentId={document.id} />
       </header>
 
