@@ -70,8 +70,11 @@ export default function CommunityClient({ documents }: { documents: { id: string
       if (r.ok) {
         flash("글이 등록되었습니다!");
         setContent("");
+        setAuthorName("");
+        setDocumentId("");
         setShowForm(false);
         loadPosts();
+        window.scrollTo({ top: 0, behavior: "smooth" });
       } else {
         flash(d.error ?? "등록 실패", false);
       }
@@ -208,7 +211,7 @@ export default function CommunityClient({ documents }: { documents: { id: string
                   )}
                 </div>
                 <div style={{ fontSize: 11, color: "#9ca3af", whiteSpace: "nowrap" }}>
-                  {new Date(p.created_at).toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                  {new Date(p.created_at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                 </div>
               </div>
             </div>

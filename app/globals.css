@@ -151,7 +151,7 @@ h2 {
 
 /* Direct Answer Box */
 .direct-answer-box {
-  border-left: 4px solid var(--accent);
+  border-inline-start: 4px solid var(--accent);
 }
 
 .direct-answer-text {
@@ -173,7 +173,7 @@ h2 {
   min-width: 22px;
   height: 22px;
   padding: 0 6px;
-  margin-left: 6px;
+  margin-inline-start: 6px;
   vertical-align: middle;
 }
 
@@ -349,7 +349,7 @@ h2 {
 
 /* Links list (for other pages) */
 .link-list {
-  padding-left: 18px;
+  padding-inline-start: 18px;
 }
 
 /* Report Forms */
@@ -612,11 +612,70 @@ h2 {
   color: #fff;
 }
 
+/* Hamburger toggle — hidden on desktop, shown on mobile */
+.nav-toggle {
+  display: none;
+  flex-direction: column;
+  justify-content: center;
+  gap: 4px;
+  width: 40px;
+  height: 40px;
+  padding: 8px;
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+.nav-toggle-bar {
+  display: block;
+  height: 2px;
+  width: 100%;
+  background: var(--text);
+  border-radius: 2px;
+}
+
+.site-nav-mobile {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: min(100%, var(--max));
+  margin: 0 auto;
+  padding: 8px 16px 16px;
+  border-top: 1px solid var(--line);
+}
+
+.site-nav-mobile a {
+  color: var(--text);
+  text-decoration: none;
+  font-size: 1rem;
+  font-weight: 500;
+  padding: 12px 8px;
+  border-radius: 8px;
+}
+
+.site-nav-mobile a:hover {
+  background: var(--soft);
+}
+
+.site-nav-mobile-lang {
+  padding: 8px 0 0;
+}
+
 @media (max-width: 560px) {
   .brand-sub {
     display: none;
   }
-  .site-nav a:not(.site-nav-cta) {
+  .site-nav {
+    display: none;
+  }
+  .nav-toggle {
+    display: inline-flex;
+  }
+}
+
+@media (min-width: 561px) {
+  .site-nav-mobile {
     display: none;
   }
 }

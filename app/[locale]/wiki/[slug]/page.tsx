@@ -97,7 +97,7 @@ export default async function WikiDocumentPage({
 
       {/* Why people ask AI this question */}
       {whyPeopleAsk && (
-        <section className="registry-panel" style={{ background: "#fffbeb", borderLeft: "3px solid #f59e0b" }}>
+        <section className="registry-panel" style={{ background: "#fffbeb", borderInlineStart: "3px solid #f59e0b" }}>
           <p className="eyebrow">{t.wiki.whyPeopleAsk}</p>
           <p>{whyPeopleAsk}</p>
         </section>
