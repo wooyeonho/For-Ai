@@ -1,25 +1,18 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
+import { supabaseAdmin } from "@/lib/admin-api";
 
 export async function POST(
   _request: Request,
   { params }: { params: Promise<{ slug: string }> }
 ) {
   const { slug } = await params;
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? SUPABASE_ANON_KEY;
-  if (!url || !key) {
-    const missing = [
-      !process.env.NEXT_PUBLIC_SUPABASE_URL && "NEXT_PUBLIC_SUPABASE_URL",
-      !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY && "NEXT_PUBLIC_SUPABASE_ANON_KEY",
-    ].filter(Boolean);
-    return NextResponse.json({ error: "DB not configured", missing }, { status: 500 });
-  }
 
-  const sb = createClient(url, key);
+  // Stat writes use the service-role client so the public anon key has no write
+  // access to document_stats (RLS locked). Reads stay public via anon select.
+  const sb = supabaseAdmin();
+  if (!sb) {
+    return NextResponse.json({ error: "DB not configured", missing: ["SUPABASE_SERVICE_ROLE_KEY"] }, { status: 500 });
+  }
 
   const { data: doc } = await sb
     .from("documents")

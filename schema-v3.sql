@@ -217,17 +217,13 @@ create policy topic_candidates_public_insert
   on topic_candidates for insert to anon
   with check (source = 'user_suggested' and status = 'new');
 
--- Admin review pipeline: allow anon SELECT (candidate metadata is not sensitive)
--- and UPDATE (admin auth is enforced at the application layer via x-admin-secret).
--- Future: refactor admin candidates page to use server API routes with service_role.
+-- Admin review pipeline: allow anon SELECT (candidate metadata is not sensitive).
+-- UPDATE is NOT granted to anon — candidate review/approve/promote runs through
+-- service-role API routes (/api/admin/*) gated by x-admin-secret. Granting anon
+-- UPDATE here would let any unauthenticated caller self-approve a candidate.
 create policy topic_candidates_public_select
   on topic_candidates for select to anon
   using (true);
-
-create policy topic_candidates_public_update
-  on topic_candidates for update to anon
-  using (true)
-  with check (true);
 
 -- community_posts: users, AI (aiai), and admins can all leave posts.
 create table community_posts (
@@ -269,15 +265,9 @@ create table document_stats (
 
 alter table document_stats enable row level security;
 
+-- Anon may read counters; writes are server-side only. The view/cite endpoints
+-- increment counters with the service-role key, so no anon INSERT/UPDATE policy
+-- is granted (which would otherwise let anyone overwrite any document's counts).
 create policy document_stats_public_select
   on document_stats for select to anon
   using (true);
-
-create policy document_stats_public_insert
-  on document_stats for insert to anon
-  with check (true);
-
-create policy document_stats_public_update
-  on document_stats for update to anon
-  using (true)
-  with check (true);

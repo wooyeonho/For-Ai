@@ -88,9 +88,6 @@ export default function AdminGeneratePage() {
   const [adminSecret, setAdminSecret] = useState("");
 
   useEffect(() => {
-    const saved = localStorage.getItem("forai_admin_secret");
-    if (saved) setAdminSecret(saved);
-
     async function loadProviders() {
       try {
         if (!adminSecret) { setProvidersLoading(false); return; }
@@ -109,11 +106,6 @@ export default function AdminGeneratePage() {
 
     loadProviders();
   }, [adminSecret]);
-
-  function saveAdminSecret(value: string) {
-    setAdminSecret(value);
-    localStorage.setItem("forai_admin_secret", value);
-  }
 
   function toggleProvider(key: string) {
     setSelectedProviders((prev) =>
@@ -149,7 +141,6 @@ export default function AdminGeneratePage() {
         setError(msg);
         if (res.status === 401) {
           setAdminSecret("");
-          localStorage.removeItem("forai_admin_secret");
         }
       } else {
         setResult(data);
@@ -183,19 +174,21 @@ export default function AdminGeneratePage() {
               type="password"
               value={adminSecret}
               onChange={(e) => setAdminSecret(e.target.value)}
-              onBlur={(e) => { if (e.target.value) saveAdminSecret(e.target.value); }}
               placeholder="ADMIN_SECRET 입력"
               style={{ flex: 1, padding: "8px 12px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 }}
             />
             {adminSecret && (
               <button
-                onClick={() => { setAdminSecret(""); localStorage.removeItem("forai_admin_secret"); }}
+                onClick={() => setAdminSecret("")}
                 style={{ padding: "8px 12px", border: "1px solid #fca5a5", borderRadius: 6, background: "#fff", color: "#dc2626", fontSize: 12, cursor: "pointer" }}
               >
                 초기화
               </button>
             )}
           </div>
+          <p style={{ margin: "6px 0 0", fontSize: 11, color: "#6b7280" }}>
+            보안을 위해 인증키는 브라우저에 저장되지 않습니다. 새로고침 시 다시 입력하세요.
+          </p>
         </div>
 
         {/* Topic input */}

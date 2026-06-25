@@ -33,11 +33,38 @@ function rateLimited(request: Request): boolean {
   return bucket.count > RATE_LIMIT_MAX;
 }
 
+// Reject browser-originated cross-site requests. Browsers set Sec-Fetch-Site
+// automatically and it cannot be forged by a cross-site attacker; the Origin
+// header is a fallback for older browsers. A request with neither header is a
+// non-browser client (curl/server-to-server), which is not a CSRF vector.
+function sameOriginOk(request: Request): boolean {
+  const secFetchSite = request.headers.get("sec-fetch-site");
+  if (secFetchSite) {
+    return secFetchSite === "same-origin" || secFetchSite === "same-site" || secFetchSite === "none";
+  }
+  const origin = request.headers.get("origin");
+  if (origin) {
+    try {
+      const host = request.headers.get("host") ?? "";
+      return new URL(origin).host === host;
+    } catch {
+      return false;
+    }
+  }
+  return true;
+}
+
 function csrfValid(request: Request): boolean {
   if (request.method === "GET" || request.method === "HEAD" || request.method === "OPTIONS") return true;
+  // Block cross-site browser forgeries regardless of token.
+  if (!sameOriginOk(request)) return false;
   const token = request.headers.get("x-admin-csrf") ?? "";
+  // When a CSRF secret is configured, require an exact match (strongest).
   if (ADMIN_CSRF_SECRET) return token === ADMIN_CSRF_SECRET;
-  return token === "1";
+  // Otherwise require the custom header to be present at all — this forces a
+  // CORS preflight for cross-origin callers — combined with the same-origin
+  // check above. The literal value is not treated as a secret.
+  return token.length > 0;
 }
 
 export function supabaseAdmin(): SupabaseClient | null {
