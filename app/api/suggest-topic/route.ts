@@ -1,15 +1,9 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { createHash } from "crypto";
+import { extractIp, makeContributorHash } from "@/lib/contributor-hash";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const SUPABASE_ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
-
-function contributorHash(req: Request): string {
-  const ip = req.headers.get("x-forwarded-for")?.split(",")[0] ?? "unknown";
-  const ua = req.headers.get("user-agent") ?? "";
-  return createHash("sha256").update(ip + ua).digest("hex").slice(0, 16);
-}
 
 export async function POST(request: Request) {
   const body = await request.json();
@@ -19,6 +13,7 @@ export async function POST(request: Request) {
   const suggestedSlug = String(body.suggested_slug ?? "").trim() || null;
   const reason      = String(body.reason      ?? "").trim();
   const sourceUrl   = String(body.source_url  ?? "").trim() || null;
+  const relatedUrl  = String(body.related_url ?? "").trim() || null;
   const aiContext   = String(body.ai_context  ?? "").trim() || null;
 
   if (!question || !category || !reason) {
@@ -28,13 +23,24 @@ export async function POST(request: Request) {
     );
   }
 
-  const hash = contributorHash(request);
+  const hash = makeContributorHash(extractIp(request), process.env.CONTRIBUTOR_SALT ?? "");
 
   // Try to save to topic_candidates
   let storage: "db" | "stub" = "stub";
   if (SUPABASE_URL && SUPABASE_ANON) {
     try {
       const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+      const { error: suggestionError } = await sb.from("topic_suggestions").insert({
+        contributor_hash: hash,
+        question,
+        category,
+        reason,
+        related_url: relatedUrl,
+        source_url: sourceUrl,
+        status: "new",
+      });
+      if (!suggestionError) storage = "db";
+
       const { error } = await sb.from("topic_candidates").insert({
         source: "user_suggested",
         status: "new",

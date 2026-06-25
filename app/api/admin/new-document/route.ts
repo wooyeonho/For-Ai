@@ -27,7 +27,8 @@ export async function POST(request: Request) {
   const entity_id = String(body.entity_id ?? "").trim();
   const slug = String(body.slug ?? "").trim();
   const lang = String(body.lang ?? "").trim();
-  const country = String(body.country ?? "").trim();
+  const country = String(body.country ?? "").trim().toUpperCase();
+  const jurisdiction = String(body.jurisdiction ?? country).trim().toUpperCase() || country;
   const title = String(body.title ?? "").trim();
   const category = String(body.category ?? "").trim();
   const template = String(body.template ?? "fact-sheet").trim() || "fact-sheet";
@@ -79,7 +80,7 @@ export async function POST(request: Request) {
       field_path: cl.field_path,
       claim_text: cl.claim_text || cl.field_path,
       claim_value: "확인 필요",
-      jurisdiction: country,
+      jurisdiction,
       confidence: "low" as const,
       status: "needs_review" as const,
     }));

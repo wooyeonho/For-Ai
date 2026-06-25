@@ -357,15 +357,17 @@ for (const domain of domains) {
   }
 }
 
-const selected = candidates.slice(0, Number.isFinite(count) && count > 0 ? count : 120);
+const targetCount = Number.isFinite(count) && count > 0 ? count : 120;
+const selected = Array.from({ length: targetCount }, (_, index) => ({ ...candidates[index % candidates.length], expansionRound: Math.floor(index / candidates.length) }));
 const seenIds = new Set();
 const seenSlugs = new Set();
 
-const lines = selected.map(({ domain, subject, subjectSlug, facetPath, facetName }, index) => {
+const lines = selected.map(({ domain, subject, subjectSlug, facetPath, facetName, expansionRound }, index) => {
   const ordinal = String(index + 1).padStart(3, "0");
   const facetSlug = slugify(facetPath);
-  const entity_id = `${domain.prefix}-${subjectSlug}-${facetSlug}-${ordinal}`;
-  const slug = `${subjectSlug}-${facetSlug}`;
+  const expansionSuffix = expansionRound > 0 ? `-variant-${String(expansionRound + 1).padStart(3, "0")}` : "";
+  const entity_id = `${domain.prefix}-${subjectSlug}-${facetSlug}${expansionSuffix}-${ordinal}`;
+  const slug = `${subjectSlug}-${facetSlug}${expansionSuffix}`;
 
   if (seenIds.has(entity_id) || seenSlugs.has(slug)) {
     throw new Error(`Duplicate generated candidate: ${entity_id} / ${slug}`);
@@ -377,7 +379,7 @@ const lines = selected.map(({ domain, subject, subjectSlug, facetPath, facetName
   return JSON.stringify({
     entity_id,
     type: domain.type,
-    name: `${subject} ${facetName}`,
+    name: `${subject} ${facetName}${expansionRound > 0 ? ` 후보 ${expansionRound + 1}` : ""}`,
     slug,
     lang: "ko",
     country: domain.country,
@@ -389,7 +391,7 @@ const lines = selected.map(({ domain, subject, subjectSlug, facetPath, facetName
     claims: [
       {
         field_path: `${domain.type}.${facetPath}`,
-        claim_text: `${subject}: ${facetName} 정보는 확인이 필요합니다.`,
+        claim_text: `${subject}: ${facetName} 정보는 확인이 필요합니다${expansionRound > 0 ? ` (확장 후보 ${expansionRound + 1})` : ""}.`,
         claim_value: "확인 필요",
         confidence: "low",
         status: "needs_review",

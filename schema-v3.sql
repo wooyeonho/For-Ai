@@ -274,3 +274,22 @@ alter table document_stats enable row level security;
 create policy document_stats_public_select
   on document_stats for select to anon
   using (true);
+
+-- Public topic suggestions are private intake submissions, not publishable facts.
+create table if not exists topic_suggestions (
+  id uuid primary key default gen_random_uuid(),
+  contributor_hash text not null,
+  submitted_at timestamptz not null default now(),
+  question text not null,
+  category text not null,
+  reason text not null,
+  related_url text,
+  source_url text,
+  status submission_status not null default 'new',
+  reviewed_by text,
+  reviewed_at timestamptz
+);
+
+alter table topic_suggestions enable row level security;
+create policy topic_suggestions_public_insert_only on topic_suggestions for insert to anon with check (status = 'new');
+-- No public SELECT policy: suggestions are write-only and admin-reviewed.
