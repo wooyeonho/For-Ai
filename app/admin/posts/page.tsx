@@ -15,6 +15,7 @@ interface Post {
 
 const AUTHOR_ICON: Record<string, string> = { user: "👤", ai: "✦", admin: "🛡️" };
 const STATUS_STYLE: Record<string, { bg: string; color: string }> = {
+  pending: { bg: "#dbeafe", color: "#1d4ed8" },
   published: { bg: "#dcfce7", color: "#15803d" },
   hidden: { bg: "#fef9c3", color: "#a16207" },
   spam: { bg: "#fee2e2", color: "#b91c1c" },
@@ -25,7 +26,7 @@ export default function AdminPostsPage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [secret, setSecret] = useState("");
-  const [statusFilter, setStatusFilter] = useState("published");
+  const [statusFilter, setStatusFilter] = useState("pending");
   const [authorFilter, setAuthorFilter] = useState("all");
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
 
@@ -125,7 +126,7 @@ export default function AdminPostsPage() {
             + 관리자 글 작성
           </button>
           <div style={{ flex: 1 }} />
-          {["published", "hidden", "spam", "deleted", "all"].map((s) => (
+          {["pending", "published", "hidden", "spam", "deleted", "all"].map((s) => (
             <button key={s} onClick={() => setStatusFilter(s)}
               style={{ padding: "5px 14px", borderRadius: 20, fontSize: 12, cursor: "pointer", border: statusFilter === s ? "none" : "1px solid #d1d5db", background: statusFilter === s ? "#111827" : "#fff", color: statusFilter === s ? "#fff" : "#374151" }}>
               {s}

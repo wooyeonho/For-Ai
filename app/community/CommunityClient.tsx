@@ -68,7 +68,7 @@ export default function CommunityClient({ documents }: { documents: { id: string
       });
       const d = await r.json();
       if (r.ok) {
-        flash("글이 등록되었습니다!");
+        flash(d.message ?? "글이 등록되었습니다. 검토 후 게시됩니다.");
         setContent("");
         setAuthorName("");
         setDocumentId("");

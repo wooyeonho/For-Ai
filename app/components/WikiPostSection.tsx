@@ -20,6 +20,7 @@ export function WikiPostSection({ documentId }: { documentId: string }) {
   const [content, setContent] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [msgOk, setMsgOk] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -48,13 +49,15 @@ export function WikiPostSection({ documentId }: { documentId: string }) {
           content: content.trim(),
         }),
       });
+      const d = await r.json();
       if (r.ok) {
         setContent("");
         setShowForm(false);
-        setMsg(null);
+        setMsgOk(true);
+        setMsg(d.message ?? "검토 후 게시됩니다.");
         load();
       } else {
-        const d = await r.json();
+        setMsgOk(false);
         setMsg(d.error ?? "등록 실패");
       }
     } catch { setMsg("네트워크 오류"); }
@@ -86,7 +89,7 @@ export function WikiPostSection({ documentId }: { documentId: string }) {
           <textarea value={content} onChange={(e) => setContent(e.target.value)} required
             placeholder="의견이나 정보를 남겨주세요..."
             style={{ width: "100%", minHeight: 60, padding: 8, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 13, resize: "vertical", marginBottom: 8 }} />
-          {msg && <p style={{ fontSize: 12, color: "#dc2626", marginBottom: 8 }}>{msg}</p>}
+          {msg && !msgOk && <p style={{ fontSize: 12, color: "#dc2626", marginBottom: 8 }}>{msg}</p>}
           <div style={{ display: "flex", gap: 6 }}>
             <button type="submit" disabled={submitting}
               style={{ padding: "6px 16px", background: submitting ? "#9ca3af" : "#2563eb", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, cursor: submitting ? "not-allowed" : "pointer" }}>
@@ -98,6 +101,10 @@ export function WikiPostSection({ documentId }: { documentId: string }) {
             </button>
           </div>
         </form>
+      )}
+
+      {msg && msgOk && !showForm && (
+        <p style={{ fontSize: 12, color: "#15803d", marginTop: 12 }}>{msg}</p>
       )}
 
       {loading ? (

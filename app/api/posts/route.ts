@@ -83,16 +83,25 @@ export async function POST(request: Request) {
   const ip = extractIp(request);
   const contributorHash = makeContributorHash(ip, CONTRIBUTOR_SALT);
 
+  // Public submissions land as 'pending' and require admin approval in
+  // /admin/posts before they become visible. Admin/AI posts created through the
+  // service-role /api/admin/posts route publish directly.
   const { data, error } = await sb.from("community_posts").insert({
     document_id: documentId,
     author_type: authorType,
     author_name: authorName,
     content,
     contributor_hash: contributorHash,
-    status: "published",
+    status: "pending",
   }).select("id, created_at").single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  return NextResponse.json({ success: true, id: data.id, created_at: data.created_at }, { status: 201 });
+  return NextResponse.json({
+    success: true,
+    id: data.id,
+    created_at: data.created_at,
+    status: "pending",
+    message: "검토 후 게시됩니다.",
+  }, { status: 201 });
 }
