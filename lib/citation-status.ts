@@ -76,7 +76,12 @@ export function getDocumentCitationStatus(
   const verifiedClaims = claimStatuses.filter(({ status }) => status.isCitationReady).length;
   const totalClaims = bundle.claims.length;
   const unverifiedClaims = totalClaims - verifiedClaims;
-  const isVerifiedDocument = totalClaims > 0 && verifiedClaims === totalClaims;
+  // A document is citable only when a human has approved it (status verified/
+  // published) AND every claim is citation-ready. Claim-level verification alone
+  // is not enough — "human approval before verified" (principle #6). Unapproved
+  // docs (ai_draft, needs_review) stay discoverable but are never can_cite=true.
+  const isHumanApproved = bundle.document.status === "verified" || bundle.document.status === "published";
+  const isVerifiedDocument = isHumanApproved && totalClaims > 0 && verifiedClaims === totalClaims;
 
   // Freshness is bound by the oldest verification among citation-ready claims:
   // if the weakest link is stale, the citable answer is stale.

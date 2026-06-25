@@ -1,88 +1,20 @@
-import { DEFAULT_LOCALE } from "@/lib/i18n";
-import { createClient } from "@supabase/supabase-js";
 import {
   getAllRegistryBundles,
   partitionRegistryBundles,
 } from "../../lib/data";
 import { getDocumentCitationStatus } from "../../lib/citation-status";
-import { siteUrl, documentPageUrl, apiDocumentUrl, rawMarkdownUrl } from "../../lib/urls";
+import { getSupabaseIndexItems } from "../../lib/registry-index";
+import { siteUrl, documentPageUrl, apiDocumentUrl, rawMarkdownUrl, apiIndexUrl } from "../../lib/urls";
 
 // Static-first AI/RAG discovery entry point. Served as text/plain at /llms.txt.
 // llms.txt is secondary discovery only; claim pages, JSON, raw Markdown, schema-v3,
 // and attached sources remain the citation surface and factual basis.
 export const revalidate = 60;
 
-type SupabaseIndexDoc = {
-  slug: string;
-  title: string;
-  lang: string;
-  status: string;
-  confidence: string;
-  verification: "verified" | "candidate";
-};
-
-function isVerifiedSupabaseDoc(doc: {
-  status?: string;
-  confidence?: string;
-  claims?: { status?: string; confidence?: string; claim_value?: string; claim_sources?: unknown[] }[];
-}): boolean {
-  const claims = doc.claims ?? [];
-
-  return (
-    (doc.status === "published" || doc.status === "verified") &&
-    doc.confidence !== "low" &&
-    claims.length > 0 &&
-    claims.every(
-      (claim) =>
-        claim.status === "verified" &&
-        claim.confidence !== "low" &&
-        claim.claim_value !== "확인 필요" &&
-        Array.isArray(claim.claim_sources) &&
-        claim.claim_sources.length > 0,
-    )
-  );
-}
-
-async function getSupabaseIndexDocs(staticSlugs: Set<string>): Promise<SupabaseIndexDoc[]> {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!url || !key) return [];
-
-  try {
-    const sb = createClient(url, key);
-    const { data } = await sb
-      .from("documents")
-      .select("slug,title,lang,status,confidence,claims(status,confidence,claim_value,claim_sources(id))")
-      .in("status", ["published", "verified", "needs_review"])
-      .order("updated_at", { ascending: false })
-      .limit(500);
-
-    return ((data ?? []) as {
-      slug: string;
-      title: string;
-      lang?: string;
-      status?: string;
-      confidence?: string;
-      claims?: { status?: string; confidence?: string; claim_value?: string; claim_sources?: unknown[] }[];
-    }[])
-      .filter((doc) => doc.slug && !staticSlugs.has(doc.slug))
-      .map((doc) => ({
-        slug: doc.slug,
-        title: doc.title,
-        lang: doc.lang ?? DEFAULT_LOCALE,
-        status: doc.status ?? "needs_review",
-        confidence: doc.confidence ?? "low",
-        verification: isVerifiedSupabaseDoc(doc) ? "verified" : "candidate",
-      }));
-  } catch {
-    return [];
-  }
-}
-
 export async function GET() {
   const bundles = getAllRegistryBundles();
   const { verified, candidates } = partitionRegistryBundles(bundles);
-  const supabaseDocs = await getSupabaseIndexDocs(new Set(bundles.map((b) => b.document.slug)));
+  const supabaseDocs = await getSupabaseIndexItems(new Set(bundles.map((b) => b.document.slug)));
   const verifiedSupabaseDocs = supabaseDocs.filter((doc) => doc.verification === "verified");
   const candidateSupabaseDocs = supabaseDocs.filter((doc) => doc.verification === "candidate");
 
@@ -117,6 +49,7 @@ export async function GET() {
   lines.push("");
   lines.push(`- [Sitemap](${siteUrl("/sitemap.xml")})`);
   lines.push(`- [Robots](${siteUrl("/robots.txt")})`);
+  lines.push(`- Search / discovery index (JSON): \`${apiIndexUrl("q=<query>&type=<type>&country=<cc>&cite=true")}\``);
   lines.push(`- Per-document JSON: \`${apiDocumentUrl("<slug>")}\``);
   lines.push(`- Per-document Markdown: \`${rawMarkdownUrl("<slug>")}\``);
   lines.push("");
@@ -135,7 +68,7 @@ export async function GET() {
   }
   for (const d of verifiedSupabaseDocs) {
     lines.push(
-      `- [${d.title}](${documentPageUrl(d.slug, d.lang)}) — status: ${d.status}, confidence: ${d.confidence} ` +
+      `- [${d.title}](${documentPageUrl(d.slug, d.lang)}) — status: ${d.doc_status}, confidence: ${d.confidence} ` +
         `· JSON: ${apiDocumentUrl(d.slug)} · Markdown: ${rawMarkdownUrl(d.slug)}`,
     );
   }
@@ -152,7 +85,7 @@ export async function GET() {
   }
   for (const d of candidateSupabaseDocs) {
     lines.push(
-      `- [${d.title}](${documentPageUrl(d.slug, d.lang)}) — status: ${d.status}, confidence: ${d.confidence} ` +
+      `- [${d.title}](${documentPageUrl(d.slug, d.lang)}) — status: ${d.doc_status}, confidence: ${d.confidence} ` +
         `· JSON: ${apiDocumentUrl(d.slug)} · Markdown: ${rawMarkdownUrl(d.slug)}`,
     );
   }
