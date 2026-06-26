@@ -13,6 +13,7 @@
   --success-bg: #e6f4ed;
   --danger-bg: #fde8e8;
   --warning-bg: #fff7df;
+  --glass-border: rgba(212, 228, 250, 0.1);
 }
 
 * {
@@ -44,11 +45,19 @@ a {
 /* Panels */
 .registry-panel,
 .claim-card,
-.notice-box {
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 8px;
+.notice-box,
+.license-notice,
+.goal-metric-card {
+  background: linear-gradient(180deg, rgba(18, 33, 49, 0.82), rgba(13, 28, 45, 0.72));
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--glass-border);
+  border-top-color: rgba(212, 228, 250, 0.14);
+  border-radius: 4px;
   padding: 20px;
+}
+
+.registry-panel {
+  border-radius: 8px;
 }
 
 .registry-panel + .registry-panel {
@@ -186,7 +195,6 @@ h2 {
 /* Claim Card */
 .claim-card {
   padding: 16px;
-  border-radius: 6px;
 }
 
 .claim-card-header {
@@ -330,8 +338,7 @@ h2 {
 
 /* License Notice */
 .license-notice {
-  border-top: 2px solid var(--line);
-  border-radius: 0 0 8px 8px;
+  border-radius: 4px;
 }
 
 .license-code {
@@ -1204,6 +1211,7 @@ details.technical-meta dd {
     --danger: #f87171;
     --warning-bg: #1c1409;
     --warning: #fbbf24;
+    --glass-border: rgba(212, 228, 250, 0.1);
   }
 
   .site-header {
@@ -1245,7 +1253,7 @@ details.technical-meta dd {
 .goal-hero { background: linear-gradient(135deg, #ffffff 0%, #eef5ff 100%); }
 .goal-two-column { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
 .goal-metric-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-top: 14px; }
-.goal-metric-card { border: 1px solid var(--line); border-radius: 10px; padding: 14px; background: #fbfdff; min-height: 118px; display: flex; flex-direction: column; gap: 6px; }
+.goal-metric-card { padding: 14px; min-height: 118px; display: flex; flex-direction: column; gap: 6px; }
 .goal-metric-card span { color: var(--muted); font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; }
 .goal-metric-card strong { font-size: 1.8rem; line-height: 1; color: var(--accent); }
 .goal-metric-card small { color: var(--muted); line-height: 1.35; }
