@@ -10,6 +10,7 @@
   --warning: #7a4c00;
   --success: #15613a;
   --danger: #9f1b1e;
+  --focus-glow: 0 0 0 3px rgba(36, 65, 95, 0.22);
   --success-bg: #e6f4ed;
   --danger-bg: #fde8e8;
   --warning-bg: #fff7df;
@@ -378,22 +379,49 @@ h2 {
 
 .form-field input,
 .form-field textarea,
-.form-field select {
-  padding: 10px 12px;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  background: var(--panel);
-  font-size: 0.9rem;
+.form-field select,
+.registry-form input,
+.registry-form textarea,
+.registry-form select,
+input,
+textarea,
+select {
+  background: rgba(1, 15, 31, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 4px;
   color: var(--text);
   font-family: inherit;
+}
+
+.form-field input,
+.form-field textarea,
+.form-field select {
+  padding: 10px 12px;
+  font-size: 0.9rem;
   resize: vertical;
 }
 
 .form-field input:focus,
 .form-field textarea:focus,
-.form-field select:focus {
+.form-field select:focus,
+.registry-form input:focus,
+.registry-form textarea:focus,
+.registry-form select:focus,
+input:focus,
+textarea:focus,
+select:focus {
   outline: none;
   border-color: var(--accent);
+  box-shadow: var(--focus-glow);
+}
+
+.form-field input::placeholder,
+.form-field textarea::placeholder,
+.registry-form input::placeholder,
+.registry-form textarea::placeholder,
+input::placeholder,
+textarea::placeholder {
+  color: rgba(185, 202, 203, 0.62);
 }
 
 .form-submit {
@@ -454,10 +482,6 @@ h2 {
 .registry-form select,
 .registry-form textarea {
   width: 100%;
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  background: #fff;
-  color: var(--text);
   font: inherit;
   padding: 10px 12px;
 }
@@ -1202,6 +1226,7 @@ details.technical-meta dd {
     --success: #4ade80;
     --danger-bg: #2d0a0a;
     --danger: #f87171;
+    --focus-glow: 0 0 0 3px rgba(99, 102, 241, 0.28);
     --warning-bg: #1c1409;
     --warning: #fbbf24;
   }
@@ -1210,13 +1235,6 @@ details.technical-meta dd {
     background: rgba(26, 29, 39, 0.88);
   }
 
-  .registry-form input,
-  .registry-form select,
-  .registry-form textarea {
-    background: var(--bg);
-    color: var(--text);
-    border-color: var(--line);
-  }
 
   .badge-medium {
     background: #1a2d3d;
