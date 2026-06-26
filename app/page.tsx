@@ -3,6 +3,7 @@ import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
 import { getAllRegistryBundles, isVerifiedDocumentBundle, partitionRegistryBundles } from "../lib/data";
 import type { RegistryDocumentBundle } from "../lib/types";
+import AgentExportButton from "./components/AgentExportButton";
 import HomeSearch from "./components/HomeSearch";
 
 interface DocItem {
@@ -27,6 +28,52 @@ export const metadata: Metadata = {
   description:
     "A global claim-level fact registry where AI, search engines, and humans cite the same facts from the same verified sources. Every claim has confidence, sources, and verification status.",
 };
+
+function agentExportPayload(b: RegistryDocumentBundle) {
+  return {
+    entity: {
+      id: b.entity.id,
+      type: b.entity.type,
+      canonical_name: b.entity.canonical_name,
+      country: b.entity.country,
+      region: b.entity.region,
+      city: b.entity.city,
+    },
+    document: {
+      id: b.document.id,
+      entity_id: b.document.entity_id,
+      slug: b.document.slug,
+      lang: b.document.lang,
+      title: b.document.title,
+      category: b.document.category,
+      status: b.document.status,
+      confidence: b.document.confidence,
+      last_verified_at: b.document.last_verified_at,
+      summary: b.listing?.summary ?? null,
+      url: `/en/wiki/${b.document.slug}`,
+    },
+    claims: b.claims.map((claim) => ({
+      id: claim.id,
+      entity_id: claim.entity_id,
+      document_id: claim.document_id,
+      field_path: claim.field_path,
+      claim_text: claim.claim_text,
+      claim_value: claim.claim_value,
+      jurisdiction: claim.jurisdiction,
+      confidence: claim.confidence,
+      status: claim.status,
+      last_verified_at: claim.last_verified_at,
+      sources: claim.sources.map((source) => ({
+        id: source.id,
+        source_type: source.source_type,
+        title: source.title,
+        url: source.url,
+        citation: source.citation,
+        observed_at: source.observed_at,
+      })),
+    })),
+  };
+}
 
 function statusBadge(status: string): { className: string; label: string } {
   switch (status) {
@@ -362,17 +409,29 @@ export default async function HomePage() {
             <ul className="registry-index">
               {verifiedDocuments.map((b) => {
                 const badge = statusBadge(b.document.status);
+                const payload = agentExportPayload(b);
                 return (
-                  <li key={b.document.slug} className="registry-row">
+                  <li key={b.document.slug} className="registry-row fact-card">
                     <div className="registry-row-main">
                       <Link href={`/en/wiki/${b.document.slug}`} className="registry-row-title">
                         {b.document.title}
                       </Link>
                       <span className="registry-row-entity">{b.entity.canonical_name}</span>
+                      {b.listing?.summary ? <p className="fact-card-summary">{b.listing.summary}</p> : null}
+                      <ul className="fact-card-claims" aria-label={`Claims for ${b.document.title}`}>
+                        {b.claims.map((claim) => (
+                          <li key={claim.id}>
+                            <span>{claim.claim_text}</span>
+                            <span className="badge">{claim.status}</span>
+                            <span className="badge">confidence: {claim.confidence}</span>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
                     <div className="registry-row-meta">
                       <span className={badge.className}>{badge.label}</span>
                       <span className="badge">{b.entity.type}</span>
+                      <AgentExportButton payload={payload} />
                     </div>
                   </li>
                 );
@@ -383,23 +442,35 @@ export default async function HomePage() {
 
         <h3>Candidates &middot; Needs Review ({candidateDocuments.length})</h3>
         <ul className="registry-index">
-          {candidateDocuments.map((b) => {
-            const badge = statusBadge(b.document.status);
-            return (
-              <li key={b.document.slug} className="registry-row">
-                <div className="registry-row-main">
-                  <Link href={`/en/wiki/${b.document.slug}`} className="registry-row-title">
-                    {b.document.title}
-                  </Link>
-                  <span className="registry-row-entity">{b.entity.canonical_name}</span>
-                </div>
-                <div className="registry-row-meta">
-                  <span className={badge.className}>{badge.label}</span>
-                  <span className="badge">{b.entity.type}</span>
-                </div>
-              </li>
-            );
-          })}
+              {candidateDocuments.map((b) => {
+                const badge = statusBadge(b.document.status);
+                const payload = agentExportPayload(b);
+                return (
+                  <li key={b.document.slug} className="registry-row fact-card">
+                    <div className="registry-row-main">
+                      <Link href={`/en/wiki/${b.document.slug}`} className="registry-row-title">
+                        {b.document.title}
+                      </Link>
+                      <span className="registry-row-entity">{b.entity.canonical_name}</span>
+                      {b.listing?.summary ? <p className="fact-card-summary">{b.listing.summary}</p> : null}
+                      <ul className="fact-card-claims" aria-label={`Claims for ${b.document.title}`}>
+                        {b.claims.map((claim) => (
+                          <li key={claim.id}>
+                            <span>{claim.claim_text}</span>
+                            <span className="badge">{claim.status}</span>
+                            <span className="badge">confidence: {claim.confidence}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div className="registry-row-meta">
+                      <span className={badge.className}>{badge.label}</span>
+                      <span className="badge">{b.entity.type}</span>
+                      <AgentExportButton payload={payload} />
+                    </div>
+                  </li>
+                );
+              })}
         </ul>
       </section>
     </div>
