@@ -1,6 +1,5 @@
 import { DEFAULT_LOCALE } from "./i18n";
 import { createClient } from "@supabase/supabase-js";
-import { DEFAULT_LOCALE } from "./i18n/locales";
 
 export type SupabaseDocumentIndexItem = {
   slug: string;

@@ -63,9 +63,6 @@ export type Claim = {
   jurisdiction: string | null;
   confidence: Confidence;
   status: ClaimStatus;
-  // Optional ISO jurisdiction (e.g. "KR", "US-CA", "EU") for facts that differ by
-  // country/region. When null, the claim inherits the document/entity country.
-  jurisdiction?: string | null;
   last_verified_at: string | null;
   created_at: string | null;
   updated_at: string | null;
