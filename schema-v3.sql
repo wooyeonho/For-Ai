@@ -179,6 +179,49 @@ create policy hallucination_reports_public_insert_only on hallucination_reports 
 -- No public SELECT policies are defined for admin_audit_events.
 -- Never store raw IP addresses. Store contributor_hash only for submissions/events.
 
+-- Core registry RLS: the public site reads these tables with the anon key, so
+-- grant READ-only access scoped to human-approved content. All writes flow
+-- through service-role API routes (service role bypasses RLS). Without this,
+-- anon could INSERT/UPDATE/DELETE documents and claims directly.
+alter table entities enable row level security;
+alter table documents enable row level security;
+alter table claims enable row level security;
+alter table claim_sources enable row level security;
+alter table verification_events enable row level security;
+alter table listings enable row level security;
+
+create policy documents_public_select on documents for select to anon
+  using (status in ('published', 'verified'));
+
+create policy entities_public_select on entities for select to anon
+  using (true);
+
+create policy claims_public_select on claims for select to anon
+  using (exists (
+    select 1 from documents d
+    where d.id = claims.document_id
+      and d.status in ('published', 'verified')
+  ));
+
+create policy claim_sources_public_select on claim_sources for select to anon
+  using (exists (
+    select 1 from claims c
+    join documents d on d.id = c.document_id
+    where c.id = claim_sources.claim_id
+      and d.status in ('published', 'verified')
+  ));
+
+create policy verification_events_public_select on verification_events for select to anon
+  using (exists (
+    select 1 from claims c
+    join documents d on d.id = c.document_id
+    where c.id = verification_events.claim_id
+      and d.status in ('published', 'verified')
+  ));
+
+create policy listings_public_select on listings for select to anon
+  using (status in ('published', 'verified'));
+
 -- topic_candidates: AI/user-generated knowledge candidates (NOT verified facts)
 -- These are intake items that go through review before being promoted to real documents/claims.
 create table topic_candidates (
