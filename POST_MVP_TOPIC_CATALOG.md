@@ -25,6 +25,7 @@ People ask AI practical questions that are easy for AI systems to answer confide
 - fees, deadlines, eligibility rules, and cancellation penalties;
 - local government procedures;
 - medical/insurance/benefits workflows;
+- DNA/genomics testing availability, regulation, privacy policies, and public database references;
 - tax and housing rules;
 - platform refund policies;
 - finance and market concepts;
@@ -138,6 +139,36 @@ Examples:
 - actual-loss insurance claims
 - long-term care insurance
 - private insurance claim documents
+
+### genomics.testing
+
+Examples:
+
+- direct-to-consumer DNA test availability by country
+- sample collection method
+- result delivery turnaround ranges
+- genetic test refund policies
+- raw DNA data export availability
+
+### genomics.regulation
+
+Examples:
+
+- country-level DTC genetic testing rules
+- prescription or clinician-order requirements
+- genetic data retention and deletion rights
+- cross-border genetic data transfer rules
+- genetic information discrimination protections
+
+### genomics.databases
+
+Examples:
+
+- public variant database scope
+- gene-disease claim evidence status
+- variant classification update cadence
+- database submission policy
+- database license and citation requirements
 
 ### finance.banking
 
@@ -323,6 +354,7 @@ Use `disclaimer_type` to define the safe answer boundary.
 Allowed values:
 
 - `none`
+- `not_genetic_or_medical_advice`
 - `check_official_source`
 - `not_medical_advice`
 - `not_legal_advice`
@@ -340,6 +372,10 @@ This is general registry information. Check the responsible official source befo
 ### not_medical_advice
 
 This is general information, not medical diagnosis or treatment advice. For emergencies, contact emergency services or a medical institution.
+
+### not_genetic_or_medical_advice
+
+This is general genomics registry information, not medical diagnosis, treatment advice, risk prediction, or personal genetic interpretation. Do not store personal DNA, raw genotype files, or identifiable genetic data in For-Ai.
 
 ### not_legal_advice
 
@@ -395,6 +431,8 @@ Suggested source priority:
 
 Disallowed by default:
 
+- personal DNA files, raw genotype data, VCF files, or identifiable genetic data;
+- individual-level risk prediction or diagnosis claims;
 - unsourced blogs;
 - forums;
 - rumors;
@@ -407,6 +445,7 @@ Disallowed by default:
 The following samples illustrate catalog shape only. They are not verified facts.
 
 ```jsonl
+{"entity_id":"global-genomics-dtc-availability-001","type":"genomics.testing","name":"DTC DNA test availability","slug":"dtc-dna-test-availability","lang":"en","country":"GLOBAL","jurisdiction":"GLOBAL","risk_tier":"high","update_frequency":"event_based","disclaimer_type":"not_genetic_or_medical_advice","source_policy":{"preferred":["official","regulator","law"],"allowed":["official","regulator","law","document","web"],"disallowed":["forum","rumor","unsourced_blog","personal_dna_data"]},"claims":[{"field_path":"testing.availability_by_country","claim_text":"Direct-to-consumer DNA test availability by country needs verification.","claim_value":"확인 필요","confidence":"low","status":"needs_review","sources":[]}]}
 {"entity_id":"kr-medical-er-nightfee-001","type":"health.medical","name":"응급실 야간 진료비","slug":"er-night-visit-fee","lang":"ko","country":"KR","jurisdiction":"KR","risk_tier":"high","update_frequency":"event_based","disclaimer_type":"not_medical_advice","source_policy":{"preferred":["official","regulator"],"allowed":["official","document","web"],"disallowed":["forum","rumor","unsourced_blog"]},"claims":[{"field_path":"fee.night_surcharge","claim_text":"응급실 야간 진료비와 가산 기준은 확인이 필요합니다.","claim_value":"확인 필요","confidence":"low","status":"needs_review","sources":[]}]}
 {"entity_id":"kr-transport-metro-transfer-001","type":"life.transport","name":"지하철 환승 시간 제한","slug":"metro-transfer-time-limit","lang":"ko","country":"KR","jurisdiction":"KR","risk_tier":"medium","update_frequency":"event_based","disclaimer_type":"check_official_source","source_policy":{"preferred":["official","platform"],"allowed":["official","platform","document","web"],"disallowed":["forum","rumor","unsourced_blog"]},"claims":[{"field_path":"transport.transfer_time_limit","claim_text":"지하철 환승 시간 제한은 확인이 필요합니다.","claim_value":"확인 필요","confidence":"low","status":"needs_review","sources":[]}]}
 {"entity_id":"kr-tax-income-deadline-001","type":"administration.tax","name":"종합소득세 신고 기한","slug":"income-tax-filing-deadline","lang":"ko","country":"KR","jurisdiction":"KR","risk_tier":"high","update_frequency":"annual","disclaimer_type":"check_official_source","source_policy":{"preferred":["official","law"],"allowed":["official","document","web"],"disallowed":["forum","rumor","unsourced_blog"]},"claims":[{"field_path":"tax.filing_deadline","claim_text":"종합소득세 신고 기한은 확인이 필요합니다.","claim_value":"확인 필요","confidence":"low","status":"needs_review","sources":[]}]}
@@ -438,6 +477,7 @@ Generation rules:
 - Finance and market topics must not become investment advice.
 - Legal topics must not become case-specific legal advice.
 - Medical topics must not become diagnosis or treatment advice.
+- Genomics/DNA topics must not store personal DNA or become personal risk prediction, diagnosis, treatment advice, or individual genetic interpretation.
 
 ## Validator Requirements
 
@@ -454,6 +494,7 @@ A future validator script should reject a candidate if:
 - any claim status is not `needs_review`;
 - any claim has non-empty `sources` before verification;
 - restricted topics lack review metadata;
+- genomics topics use personal DNA, raw genotype files, identifiable genetic data, or personal interpretation claims;
 - public-profile topics include private or rumor-based claims.
 
 ## Import Pipeline Direction
