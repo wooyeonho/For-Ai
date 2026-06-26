@@ -9,7 +9,24 @@ export const metadata: Metadata = {
 };
 
 const lifecycle = [
-  "AI/user generated question", "internal_candidate", "topic_candidates persistence", "admin/source review", "public_unverified", "source-backed verification", "verified claim", "sitemap/API/AI citation",
+  "AI/user generated question",
+  "internal_candidate",
+  "topic_candidates persistence",
+  "admin/source review",
+  "public_unverified",
+  "source-backed verification",
+  "verified claim",
+  "sitemap/API/AI citation",
+];
+
+const protocolFields = [
+  ["entity_id", "global-entity-stable-id"],
+  ["document_id", "locale-specific-document-id"],
+  ["claim.field_path", "documents.data render path only; claim remains canonical"],
+  ["claim_sources", "source records required before verification"],
+  ["verification_events", "human review trail before verified status"],
+  ["verification_status", "확인 필요 / Needs verification"],
+  ["confidence", "low"],
 ];
 
 export default function GoalPage() {
@@ -41,7 +58,28 @@ export default function GoalPage() {
 
       <section className="registry-panel"><h2>Current Registry State</h2><p>Verified claims are intentionally low until source-backed verification is implemented.</p><div className="goal-metric-grid">{cards.map(([label, value, detail]) => <div className="goal-metric-card" key={label}><span>{label}</span><strong>{value}</strong><small>{detail}</small></div>)}</div></section>
 
-      <section className="registry-panel"><h2>Data lifecycle</h2><ol className="goal-pipeline">{lifecycle.map((step) => <li key={step}>{step}</li>)}</ol></section>
+      <section className="registry-panel">
+        <h2>Claim Lifecycle</h2>
+        <p>The public protocol mirrors the canonical pipeline; generated records stay unverified until source-backed human review.</p>
+        <ol className="goal-pipeline">{lifecycle.map((step) => <li key={step}>{step}</li>)}</ol>
+      </section>
+
+      <section className="registry-panel">
+        <h2>Verification Protocol</h2>
+        <p>Schema-aligned examples must describe verification state, not fake signatures, block numbers, IPFS URLs, or yield mechanics.</p>
+        <div className="goal-code-panel" aria-label="Schema-aligned verification protocol fields">
+          <div className="goal-code-line"><span>{"{"}</span></div>
+          {protocolFields.map(([field, value]) => (
+            <div className="goal-code-line" key={field}>
+              <code>{`"${field}"`}</code>
+              <span>:</span>
+              <span>{`"${value}"`}</span>
+            </div>
+          ))}
+          <div className="goal-code-line"><span>{"}"}</span></div>
+        </div>
+        <p className="goal-protocol-actions">Unverified public examples stay labeled <strong>확인 필요 / Needs verification</strong> with <strong>low</strong> confidence until claim_sources and verification_events support a verified claim.</p>
+      </section>
 
       <section className="goal-two-column">
         <div className="registry-panel"><h2>AI may cite</h2><ul><li>claims with status <code>verified</code></li><li>claims with source-backed <code>claim_sources</code></li><li>claims with <code>last_verified_at</code></li><li>pages intentionally included in verified sitemap policy</li></ul></div>
