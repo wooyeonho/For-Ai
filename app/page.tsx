@@ -191,6 +191,16 @@ export default async function HomePage() {
         </div>
       </section>
 
+      <aside className="truth-sidebar" aria-label="Home dashboard navigation">
+        <p className="truth-sidebar-label">Dashboard</p>
+        <nav className="truth-sidebar-nav" aria-label="Truth registry dashboard">
+          <Link href="#registry">Registry</Link>
+          <Link href="/api-docs">API Access</Link>
+          <Link href="/suggest-topic">Suggest Topic</Link>
+          <Link href="/community">Community</Link>
+        </nav>
+      </aside>
+
       {/* Trust / stats */}
       <section className="stat-strip" aria-label="Registry stats">
         <div className="stat">
