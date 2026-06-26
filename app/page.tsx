@@ -195,7 +195,7 @@ export default async function HomePage() {
           Unverified information is never guessed — it stays as <strong>&ldquo;Needs verification&rdquo;</strong>.
         </p>
         <div className="hero-cta-row">
-          <Link href="#registry" className="btn btn-primary">
+          <Link href="/#registry" className="btn btn-primary">
             Browse Registry
           </Link>
           <Link href="/api-docs" className="btn btn-secondary">
@@ -240,7 +240,7 @@ export default async function HomePage() {
         <h2 className="section-title">Three audiences, one source of truth</h2>
         <div className="audience-grid">
           <article className="audience-card" id="developers">
-            <div className="audience-icon" aria-hidden>
+            <div className="audience-icon" aria-hidden="true">
               {"</>"}
             </div>
             <h3>Developers</h3>
@@ -265,7 +265,7 @@ export default async function HomePage() {
           </article>
 
           <article className="audience-card">
-            <div className="audience-icon" aria-hidden>
+            <div className="audience-icon" aria-hidden="true">
               &#9783;
             </div>
             <h3>People</h3>
@@ -273,7 +273,7 @@ export default async function HomePage() {
               Find source-backed answers to questions AI often gets wrong. If something is outdated or incorrect, report it with one click — no login required.
             </p>
             <div className="audience-links">
-              <Link href="#registry" className="text-link">
+              <Link href="/#registry" className="text-link">
                 Browse Registry
               </Link>
               <Link href="/suggest-topic" className="text-link">
@@ -283,7 +283,7 @@ export default async function HomePage() {
           </article>
 
           <article className="audience-card" id="ai-systems">
-            <div className="audience-icon" aria-hidden>
+            <div className="audience-icon" aria-hidden="true">
               &#10022;
             </div>
             <h3>AI &amp; Crawlers</h3>
@@ -437,7 +437,7 @@ export default async function HomePage() {
                       <span className="registry-row-entity">{b.entity.canonical_name}</span>
                     </div>
                     <div className="registry-row-meta">
-                      <span className={badge.className}>{badge.label}</span>
+                      <span className={badge.className}>Status: {badge.label}</span>
                       <span className="badge">{b.entity.type}</span>
                     </div>
                   </li>
@@ -460,7 +460,7 @@ export default async function HomePage() {
                   <span className="registry-row-entity">{b.entity.canonical_name}</span>
                 </div>
                 <div className="registry-row-meta">
-                  <span className={badge.className}>{badge.label}</span>
+                  <span className={badge.className}>Status: {badge.label}</span>
                   <span className="badge">{b.entity.type}</span>
                 </div>
               </li>

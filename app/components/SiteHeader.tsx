@@ -28,9 +28,9 @@ export function SiteHeader() {
           aria-expanded={open}
           onClick={() => setOpen((v) => !v)}
         >
-          <span className="nav-toggle-bar" />
-          <span className="nav-toggle-bar" />
-          <span className="nav-toggle-bar" />
+          <span className="nav-toggle-bar" aria-hidden="true" />
+          <span className="nav-toggle-bar" aria-hidden="true" />
+          <span className="nav-toggle-bar" aria-hidden="true" />
         </button>
       </div>
       {open && (
