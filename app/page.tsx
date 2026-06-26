@@ -164,204 +164,136 @@ export default async function HomePage() {
   });
   const { verified: verifiedDocuments, candidates: candidateDocuments } = partitionRegistryBundles(sorted);
 
+  const mostCitedDocuments = popularDocs.length > 0 ? popularDocs : [];
+  const dailyVerified = verifiedDocuments.slice(0, 3);
+  const mostCitedFallback = verifiedDocuments.slice(0, 4);
+
   return (
-    <div className="home">
-      {/* Hero */}
-      <section className="hero">
-        <p className="hero-eyebrow">Global Fact Registry for AI, Search & Humans</p>
-        <h1 className="hero-title">
-          Every fact at the <span className="hero-accent">claim level</span>,
-          <br />
-          with sources and verification.
-        </h1>
-        <p className="hero-sub">
-          Every claim carries confidence, sources, and verification status.
-          Unverified information is never guessed — it stays as <strong>&ldquo;Needs verification&rdquo;</strong>.
-        </p>
-        <div className="hero-cta-row">
-          <Link href="#registry" className="btn btn-primary">
-            Browse Registry
-          </Link>
-          <Link href="/api-docs" className="btn btn-secondary">
-            API Docs
-          </Link>
-          <Link href="/suggest-topic" className="btn btn-secondary">
-            Suggest Topic
-          </Link>
+    <main className="home home-dashboard">
+      <section className="home-hero-panel" aria-labelledby="home-title">
+        <div className="home-hero-copy">
+          <p className="section-eyebrow">Global Fact Registry for AI Citation</p>
+          <h1 id="home-title" className="hero-title">
+            Source-backed facts that AI can cite at the claim level.
+          </h1>
+          <p className="hero-sub">
+            For-Ai structures facts into documents, claims, sources, and verification events.
+            Unknown information remains <strong>Needs verification</strong> until humans approve traceable sources.
+          </p>
+          <div className="hero-cta-row">
+            <Link href="#daily-intelligence" className="btn btn-primary">
+              Daily Intelligence
+            </Link>
+            <Link href="#registry" className="btn btn-secondary">
+              Browse Registry
+            </Link>
+            <Link href={exampleSlug ? `/api/documents/${exampleSlug}` : "/api-docs"} className="btn btn-secondary">
+              API Docs
+            </Link>
+          </div>
         </div>
-      </section>
 
-      {/* Trust / stats */}
-      <section className="stat-strip" aria-label="Registry stats">
-        <div className="stat">
-          <span className="stat-num">{bundles.length}</span>
-          <span className="stat-label">Documents</span>
-        </div>
-        <div className="stat">
-          <span className="stat-num">{totalClaims}</span>
-          <span className="stat-label">Total Claims</span>
-        </div>
-        <div className="stat">
-          <span className="stat-num">{verifiedClaims}</span>
-          <span className="stat-label">Verified Claims</span>
-        </div>
-        <div className="stat">
-          <span className="stat-num">{categories}</span>
-          <span className="stat-label">Categories</span>
-        </div>
-        <p className="stat-note">
-          Verified {verifiedClaims} · Needs review {needsReviewClaims} ({verifiedPct}% verified). We mark what we don&apos;t know.
-        </p>
-      </section>
-
-      {/* 3 audience entry points */}
-      <section className="section">
-        <p className="section-eyebrow">Who uses For-Ai</p>
-        <h2 className="section-title">Three audiences, one source of truth</h2>
-        <div className="audience-grid">
-          <article className="audience-card" id="developers">
-            <div className="audience-icon" aria-hidden>
-              {"</>"}
-            </div>
-            <h3>Developers</h3>
-            <p>
-              Fetch structured facts via JSON, Markdown, or JSON-LD. Every claim includes confidence and sources — ready for RAG pipelines and AI agents to cite directly.
-            </p>
-            <div className="audience-links">
-              {exampleSlug ? (
-                <>
-                  <Link href={`/api/documents/${exampleSlug}`} className="mono-link">
-                    GET /api/documents/{exampleSlug}
-                  </Link>
-                  <Link href={`/raw/${exampleSlug}.md`} className="mono-link">
-                    GET /raw/{exampleSlug}.md
-                  </Link>
-                </>
-              ) : null}
-              <Link href="/api-docs" className="text-link">
-                Full API Documentation
-              </Link>
-            </div>
-          </article>
-
-          <article className="audience-card">
-            <div className="audience-icon" aria-hidden>
-              &#9783;
-            </div>
-            <h3>People</h3>
-            <p>
-              Find source-backed answers to questions AI often gets wrong. If something is outdated or incorrect, report it with one click — no login required.
-            </p>
-            <div className="audience-links">
-              <Link href="#registry" className="text-link">
-                Browse Registry
-              </Link>
-              <Link href="/suggest-topic" className="text-link">
-                Suggest a Topic
-              </Link>
-            </div>
-          </article>
-
-          <article className="audience-card" id="ai-systems">
-            <div className="audience-icon" aria-hidden>
-              &#10022;
-            </div>
-            <h3>AI &amp; Crawlers</h3>
-            <p>
-              Check <code>confidence</code>, <code>status</code>, and <code>sources</code> before citing.
-              Never cite unverified (&ldquo;Needs verification&rdquo;) claims as facts. Each document embeds JSON-LD in raw HTML.
-            </p>
-            <div className="audience-links">
-              <Link href="/llms.txt" className="mono-link">
-                /llms.txt
-              </Link>
-              <Link href="/sitemap.xml" className="mono-link">
-                /sitemap.xml
-              </Link>
-              {exampleSlug ? (
-                <Link href={`/diagnostics/${exampleSlug}`} className="text-link">
-                  AI-readiness diagnostics
-                </Link>
-              ) : null}
-            </div>
-          </article>
-        </div>
-      </section>
-
-      {/* How it works */}
-      <section className="section">
-        <p className="section-eyebrow">How it works</p>
-        <h2 className="section-title">No guessing. Only verification.</h2>
-        <ol className="steps">
-          <li className="step">
-            <span className="step-num">1</span>
+        <aside className="network-status-card" aria-label="Network status">
+          <p className="network-kicker">NETWORK STATUS</p>
+          <strong className="network-score">{verifiedPct}%</strong>
+          <span className="network-label">Confidence</span>
+          <dl className="network-metrics">
             <div>
-              <h3>Claim registered</h3>
-              <p>
-                Every fact starts as <code>Needs verification</code> / <code>confidence: low</code> / <code>status: needs_review</code> / no sources. AI-generated candidates follow the same rule.
-              </p>
+              <dt>Verified</dt>
+              <dd>{verifiedClaims}</dd>
             </div>
-          </li>
-          <li className="step">
-            <span className="step-num">2</span>
             <div>
-              <h3>Source attached &amp; verified</h3>
-              <p>
-                Official, regulatory, or platform sources are attached with observation timestamps. Verification events record the full audit trail.
-              </p>
+              <dt>Needs Review</dt>
+              <dd>{needsReviewClaims}</dd>
             </div>
-          </li>
-          <li className="step">
-            <span className="step-num">3</span>
             <div>
-              <h3>Promoted to verified</h3>
-              <p>
-                Only after human review does a claim become <code>verified</code> with <code>confidence: medium/high</code>. AI-generated content is never published as verified fact without source backing.
-              </p>
+              <dt>Categories</dt>
+              <dd>{categories}</dd>
             </div>
-          </li>
-        </ol>
+          </dl>
+        </aside>
       </section>
 
-      {/* Popular — by AI citation count and views */}
-      {popularDocs.length > 0 && (
-        <section className="section">
-          <p className="section-eyebrow">Most cited</p>
-          <h2 className="section-title">Popular by AI citations &amp; views</h2>
-          <ul className="registry-index">
-            {popularDocs.map((d, i) => (
-              <li key={d.document_id} className="registry-row">
-                <div className="registry-row-main">
-                  <Link href={`/en/wiki/${d.slug}`} className="registry-row-title">
-                    {i + 1}. {d.title}
-                  </Link>
-                </div>
-                <div className="registry-row-meta">
-                  <span className="badge" title="AI citations">AI {d.ai_citation_count}</span>
-                  <span className="badge" title="Views">{d.view_count} views</span>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+      <section className="intelligence-grid" id="daily-intelligence" aria-label="Daily verified intelligence">
+        <div className="intelligence-column intelligence-column-large">
+          <div className="section-heading-row">
+            <div>
+              <p className="section-eyebrow">Daily Verified Intelligence</p>
+              <h2 className="section-title">Recently verified registry cards</h2>
+            </div>
+            <span className="badge badge-verified">Verified</span>
+          </div>
+          <div className="daily-card-list">
+            {dailyVerified.map((b) => {
+              const badge = statusBadge(b.document.status);
+              const primaryClaim = b.claims[0];
+              const claimBadge = statusBadge(primaryClaim?.status ?? b.document.status);
+              return (
+                <article className="intelligence-card" key={b.document.slug}>
+                  <div className="intelligence-card-main">
+                    <Link href={`/en/wiki/${b.document.slug}`} className="intelligence-title">
+                      {b.document.title}
+                    </Link>
+                    <p>{b.listing?.summary ?? primaryClaim?.claim_text ?? b.entity.canonical_name}</p>
+                  </div>
+                  <div className="intelligence-meta">
+                    <span className={badge.className}>{badge.label}</span>
+                    <span className={claimBadge.className}>{claimBadge.label}</span>
+                    <span className={`badge badge-${primaryClaim?.confidence ?? b.document.confidence}`}>
+                      Confidence {primaryClaim?.confidence ?? b.document.confidence}
+                    </span>
+                  </div>
+                </article>
+              );
+            })}
+          </div>
+        </div>
 
-      {/* Search */}
+        <aside className="intelligence-column" aria-labelledby="most-cited-title">
+          <p className="section-eyebrow">Most Cited by AI</p>
+          <h2 id="most-cited-title" className="section-title">Citation demand</h2>
+          <ol className="cited-list">
+            {mostCitedDocuments.length > 0
+              ? mostCitedDocuments.slice(0, 4).map((d) => (
+                  <li key={d.document_id}>
+                    <Link href={`/en/wiki/${d.slug}`}>{d.title}</Link>
+                    <span>{d.ai_citation_count} AI citations · {d.view_count} views</span>
+                  </li>
+                ))
+              : mostCitedFallback.map((b) => {
+                  const badge = statusBadge(b.document.status);
+                  return (
+                    <li key={b.document.slug}>
+                      <Link href={`/en/wiki/${b.document.slug}`}>{b.document.title}</Link>
+                      <span><span className={badge.className}>{badge.label}</span></span>
+                    </li>
+                  );
+                })}
+          </ol>
+        </aside>
+      </section>
+
       <section className="section">
         <HomeSearch docs={docs} />
       </section>
 
-      {/* Registry index */}
-      <section className="section" id="registry">
-        <p className="section-eyebrow">Registry</p>
-        <h2 className="section-title">Registered Documents ({bundles.length})</h2>
+      <section className="section registry-dashboard" id="registry">
+        <div className="section-heading-row">
+          <div>
+            <p className="section-eyebrow">Registry</p>
+            <h2 className="section-title">Claim-level documents ({bundles.length})</h2>
+          </div>
+          <Link href="/suggest-topic" className="btn btn-secondary">Suggest Topic</Link>
+        </div>
 
         {verifiedDocuments.length > 0 && (
-          <>
+          <div className="registry-group">
             <h3>Verified ({verifiedDocuments.length})</h3>
             <ul className="registry-index">
               {verifiedDocuments.map((b) => {
                 const badge = statusBadge(b.document.status);
+                const representativeClaim = b.claims[0];
+                const claimBadge = statusBadge(representativeClaim?.status ?? b.document.status);
                 return (
                   <li key={b.document.slug} className="registry-row">
                     <div className="registry-row-main">
@@ -372,36 +304,46 @@ export default async function HomePage() {
                     </div>
                     <div className="registry-row-meta">
                       <span className={badge.className}>{badge.label}</span>
-                      <span className="badge">{b.entity.type}</span>
+                      <span className={claimBadge.className}>{claimBadge.label}</span>
+                      <span className={`badge badge-${representativeClaim?.confidence ?? b.document.confidence}`}>
+                        Confidence {representativeClaim?.confidence ?? b.document.confidence}
+                      </span>
                     </div>
                   </li>
                 );
               })}
             </ul>
-          </>
+          </div>
         )}
 
-        <h3>Candidates &middot; Needs Review ({candidateDocuments.length})</h3>
-        <ul className="registry-index">
-          {candidateDocuments.map((b) => {
-            const badge = statusBadge(b.document.status);
-            return (
-              <li key={b.document.slug} className="registry-row">
-                <div className="registry-row-main">
-                  <Link href={`/en/wiki/${b.document.slug}`} className="registry-row-title">
-                    {b.document.title}
-                  </Link>
-                  <span className="registry-row-entity">{b.entity.canonical_name}</span>
-                </div>
-                <div className="registry-row-meta">
-                  <span className={badge.className}>{badge.label}</span>
-                  <span className="badge">{b.entity.type}</span>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+        <div className="registry-group">
+          <h3>Candidates · Needs Review ({candidateDocuments.length})</h3>
+          <ul className="registry-index">
+            {candidateDocuments.map((b) => {
+              const badge = statusBadge(b.document.status);
+              const representativeClaim = b.claims.find((claim) => claim.status === "needs_review") ?? b.claims[0];
+              const claimBadge = statusBadge(representativeClaim?.status ?? b.document.status);
+              return (
+                <li key={b.document.slug} className="registry-row">
+                  <div className="registry-row-main">
+                    <Link href={`/en/wiki/${b.document.slug}`} className="registry-row-title">
+                      {b.document.title}
+                    </Link>
+                    <span className="registry-row-entity">{b.entity.canonical_name}</span>
+                  </div>
+                  <div className="registry-row-meta">
+                    <span className={badge.className}>{badge.label}</span>
+                    <span className={claimBadge.className}>{claimBadge.label}</span>
+                    <span className={`badge badge-${representativeClaim?.confidence ?? b.document.confidence}`}>
+                      Confidence {representativeClaim?.confidence ?? b.document.confidence}
+                    </span>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
       </section>
-    </div>
+    </main>
   );
 }
