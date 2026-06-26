@@ -13,6 +13,7 @@
   --success-bg: #e6f4ed;
   --danger-bg: #fde8e8;
   --warning-bg: #fff7df;
+  --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
 }
 
 * {
@@ -115,38 +116,46 @@ h2 {
 /* Badges */
 .badge {
   display: inline-block;
-  border: 1px solid var(--line);
-  border-radius: 4px;
+  border: 1px solid rgba(183, 200, 225, 0.28);
+  border-radius: 2px;
   padding: 2px 8px;
-  background: var(--soft);
-  font-size: 0.78rem;
-  font-weight: 500;
+  background: rgba(183, 200, 225, 0.08);
+  color: var(--text);
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  line-height: 1.5;
+  text-transform: uppercase;
 }
 
 .badge-low,
-.badge-review {
-  border-color: #e4c36b;
-  background: var(--warning-bg);
-  color: var(--warning);
+.badge-warning {
+  border-color: rgba(245, 190, 92, 0.34);
+  background: rgba(245, 190, 92, 0.12);
+  color: #8a5a14;
 }
 
+.badge-review,
 .badge-medium {
-  border-color: #7bb5e0;
-  background: #e8f4fd;
-  color: #1a5276;
+  border-color: rgba(183, 200, 225, 0.34);
+  background: rgba(183, 200, 225, 0.12);
+  color: #526276;
 }
 
 .badge-high,
-.badge-verified {
-  border-color: #7bc47f;
-  background: var(--success-bg);
-  color: var(--success);
+.badge-verified,
+.badge-pass {
+  border-color: rgba(0, 242, 255, 0.45);
+  background: rgba(0, 242, 255, 0.15);
+  color: #006b73;
 }
 
-.badge-disputed {
-  border-color: #e07b7b;
-  background: var(--danger-bg);
-  color: var(--danger);
+.badge-disputed,
+.badge-danger {
+  border-color: rgba(255, 180, 171, 0.42);
+  background: rgba(255, 180, 171, 0.14);
+  color: #9f1b1e;
 }
 
 /* Direct Answer Box */
@@ -500,12 +509,6 @@ h2 {
 .diagnostics-list li:last-child {
   border-bottom: 0;
   padding-bottom: 0;
-}
-
-.badge-pass {
-  border-color: #9bc5a8;
-  background: #f0fbf3;
-  color: #276738;
 }
 
 .document-list {
@@ -1218,10 +1221,39 @@ details.technical-meta dd {
     border-color: var(--line);
   }
 
+  .badge {
+    border-color: rgba(183, 200, 225, 0.28);
+    background: rgba(183, 200, 225, 0.08);
+    color: var(--text);
+  }
+
+  .badge-low,
+  .badge-warning {
+    border-color: rgba(245, 190, 92, 0.36);
+    background: rgba(245, 190, 92, 0.12);
+    color: #f5be5c;
+  }
+
+  .badge-review,
   .badge-medium {
-    background: #1a2d3d;
-    color: #7bb5e0;
-    border-color: #2d4a62;
+    border-color: rgba(183, 200, 225, 0.34);
+    background: rgba(183, 200, 225, 0.12);
+    color: #b7c8e1;
+  }
+
+  .badge-high,
+  .badge-verified,
+  .badge-pass {
+    border-color: rgba(0, 242, 255, 0.45);
+    background: rgba(0, 242, 255, 0.15);
+    color: #00f2ff;
+  }
+
+  .badge-disputed,
+  .badge-danger {
+    border-color: rgba(255, 180, 171, 0.42);
+    background: rgba(255, 180, 171, 0.14);
+    color: #ffb4ab;
   }
 
   .hero-accent {
