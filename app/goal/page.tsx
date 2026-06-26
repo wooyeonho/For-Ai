@@ -26,7 +26,7 @@ export default function GoalPage() {
   ];
 
   return (
-    <article className="goal-dashboard">
+    <article className="goal-dashboard goal-dashboard-dark">
       <header className="registry-panel goal-hero">
         <p className="eyebrow">For-Ai Mission Control</p>
         <h1>GYEOL은 AI가 인용할 수 있는 사실을 claim 단위로 검증 가능하게 만드는 레지스트리입니다.</h1>
@@ -39,7 +39,19 @@ export default function GoalPage() {
         <div className="registry-panel"><h2>GYEOL is not</h2><ul><li>AI wiki</li><li>generated answer farm</li><li>unsourced encyclopedia</li><li>legal/medical/financial advice engine</li><li>SEO content farm</li></ul></div>
       </section>
 
-      <section className="registry-panel"><h2>Current Registry State</h2><p>Verified claims are intentionally low until source-backed verification is implemented.</p><div className="goal-metric-grid">{cards.map(([label, value, detail]) => <div className="goal-metric-card" key={label}><span>{label}</span><strong>{value}</strong><small>{detail}</small></div>)}</div></section>
+      <section className="registry-panel goal-registry-state">
+        <h2>Current Registry State</h2>
+        <p>Verified claims are intentionally low until source-backed verification is implemented.</p>
+        <div className="goal-metric-grid goal-metric-grid-bento">
+          {cards.map(([label, value, detail], index) => (
+            <div className={`goal-metric-card goal-metric-card-bento goal-metric-card-${index + 1}`} key={label}>
+              <span>{label}</span>
+              <strong>{value}</strong>
+              <small>{detail}</small>
+            </div>
+          ))}
+        </div>
+      </section>
 
       <section className="registry-panel"><h2>Data lifecycle</h2><ol className="goal-pipeline">{lifecycle.map((step) => <li key={step}>{step}</li>)}</ol></section>
 
