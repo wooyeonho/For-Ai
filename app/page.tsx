@@ -163,6 +163,10 @@ export default async function HomePage() {
     return r !== 0 ? r : a.document.title.localeCompare(b.document.title, "ko");
   });
   const { verified: verifiedDocuments, candidates: candidateDocuments } = partitionRegistryBundles(sorted);
+  const factCardBundles = [
+    ...verifiedDocuments.slice(0, 3),
+    ...candidateDocuments.slice(0, Math.max(0, 6 - verifiedDocuments.slice(0, 3).length)),
+  ];
 
   return (
     <div className="home">
@@ -214,6 +218,56 @@ export default async function HomePage() {
         </p>
       </section>
 
+
+      {/* Fact cards */}
+      <section className="section" aria-labelledby="fact-card-title">
+        <p className="section-eyebrow">Fact Cards</p>
+        <h2 className="section-title" id="fact-card-title">Live registry documents, not demo facts</h2>
+        <div className="fact-card-grid">
+          {factCardBundles.map((b) => {
+            const isVerifiedStatus = b.document.status === "verified" || b.document.status === "published";
+            const badge = statusBadge(b.document.status);
+            const verifiedClaimCount = b.claims.filter((claim) => claim.status === "verified").length;
+            const reviewClaimCount = b.claims.length - verifiedClaimCount;
+
+            return (
+              <article className="fact-card" key={b.document.slug}>
+                <div className="fact-card-header">
+                  <span className="fact-card-type">{b.entity.type}</span>
+                  {isVerifiedStatus ? (
+                    <span className="badge badge-verified">VERIFIED</span>
+                  ) : (
+                    <span className={badge.className}>
+                      {badge.label === "Needs Review" || badge.label === "Draft" ? badge.label : "Needs verification"}
+                    </span>
+                  )}
+                </div>
+                <h3 className="fact-card-title">
+                  <Link href={`/en/wiki/${b.document.slug}`}>{b.document.title}</Link>
+                </h3>
+                <p className="fact-card-entity">{b.entity.canonical_name}</p>
+                <dl className="fact-card-metrics">
+                  <div>
+                    <dt>Total claims</dt>
+                    <dd>{b.claims.length}</dd>
+                  </div>
+                  <div>
+                    <dt>Verified</dt>
+                    <dd>{verifiedClaimCount}</dd>
+                  </div>
+                  <div>
+                    <dt>Needs review</dt>
+                    <dd>{reviewClaimCount}</dd>
+                  </div>
+                </dl>
+                <p className="fact-card-status">
+                  Document status: <strong>{isVerifiedStatus ? "Verified" : badge.label}</strong>
+                </p>
+              </article>
+            );
+          })}
+        </div>
+      </section>
       {/* 3 audience entry points */}
       <section className="section">
         <p className="section-eyebrow">Who uses For-Ai</p>
