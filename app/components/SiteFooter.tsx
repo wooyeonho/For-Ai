@@ -8,19 +8,19 @@ export function SiteFooter() {
         <div className="footer-brand">
           <span className="brand-mark">For-Ai</span>
           <p className="footer-tagline">
-            A global fact registry where AI, search engines, and humans cite the same facts from the same verified sources. Unverified claims are never presented as truth.
+            AI가 인용할 수 있는 글로벌 사실 레지스트리 — claim-level facts with confidence, sources, and verification status.
           </p>
         </div>
 
         <div className="footer-col">
-          <p className="footer-col-title">For Humans</p>
+          <p className="footer-col-title">Use</p>
           <Link href="/#registry">Browse Registry</Link>
           <Link href="/suggest-topic">Suggest Topic</Link>
           <Link href="/community">Community</Link>
         </div>
 
         <div className="footer-col">
-          <p className="footer-col-title">For Machines</p>
+          <p className="footer-col-title">Machine-readable</p>
           <Link href="/llms.txt">llms.txt</Link>
           <Link href="/api-docs">API Docs</Link>
           <Link href="/sitemap.xml">sitemap.xml</Link>

@@ -9,7 +9,7 @@ export const metadata: Metadata = {
     default: "For-Ai",
     template: "%s — For-Ai",
   },
-  description: "Local fact registry for AI, search engines, and humans.",
+  description: "A global claim-level fact registry for AI citation, search engines, and humans.",
   metadataBase: new URL(siteUrl("/")),
   openGraph: {
     siteName: "For-Ai",

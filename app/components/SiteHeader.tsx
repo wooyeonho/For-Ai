@@ -12,13 +12,13 @@ export function SiteHeader() {
       <div className="site-header-inner">
         <Link href="/" className="brand" aria-label="For-Ai home" onClick={close}>
           <span className="brand-mark">For-Ai</span>
-          <span className="brand-sub">Global Fact Registry</span>
+          <span className="brand-sub">AI Citation Registry</span>
         </Link>
         <nav className="site-nav" aria-label="Main menu">
           <Link href="/#registry">Registry</Link>
           <Link href="/api-docs">API</Link>
           <Link href="/community">Community</Link>
-          <Link href="/suggest-topic">Suggest</Link>
+          <Link href="/suggest-topic" className="site-nav-cta">Suggest</Link>
           <LanguageSelector />
         </nav>
         <button

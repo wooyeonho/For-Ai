@@ -165,9 +165,23 @@ export default async function HomePage() {
   const { verified: verifiedDocuments, candidates: candidateDocuments } = partitionRegistryBundles(sorted);
 
   return (
-    <div className="home">
-      {/* Hero */}
-      <section className="hero">
+    <div className="home registry-dashboard">
+      <aside className="status-rail" aria-label="Registry status summary">
+        <p className="status-rail-kicker">Live registry</p>
+        <div className="status-rail-metric">
+          <span>{verifiedPct}%</span>
+          <small>verified claims</small>
+        </div>
+        <div className="status-rail-stack">
+          <span>Verified {verifiedClaims}</span>
+          <span>Needs review {needsReviewClaims}</span>
+          <span>{categories} domains</span>
+        </div>
+      </aside>
+
+      <div className="dashboard-main">
+        {/* Hero */}
+        <section className="hero">
         <p className="hero-eyebrow">Global Fact Registry for AI, Search & Humans</p>
         <h1 className="hero-title">
           Every fact at the <span className="hero-accent">claim level</span>,
@@ -351,8 +365,8 @@ export default async function HomePage() {
         <HomeSearch docs={docs} />
       </section>
 
-      {/* Registry index */}
-      <section className="section" id="registry">
+        {/* Registry index */}
+        <section className="section" id="registry">
         <p className="section-eyebrow">Registry</p>
         <h2 className="section-title">Registered Documents ({bundles.length})</h2>
 
@@ -401,7 +415,21 @@ export default async function HomePage() {
             );
           })}
         </ul>
-      </section>
+        </section>
+      </div>
+
+      <aside className="dashboard-side-panel" aria-label="Registry operating model">
+        <p className="section-eyebrow">Operating model</p>
+        <h2>Claim-level truth</h2>
+        <ul>
+          <li>Unknown facts stay marked as Needs verification.</li>
+          <li>Documents render static-first for crawlers and people.</li>
+          <li>Claims become verified only with traceable sources.</li>
+        </ul>
+        <Link href="/api-docs" className="text-link">
+          Machine access guide
+        </Link>
+      </aside>
     </div>
   );
 }
