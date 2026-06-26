@@ -47,13 +47,13 @@ export default function SuggestTopicForm() {
         <p className="eyebrow">토픽 제안</p>
         <h1>제안 접수 완료</h1>
       </header>
-      <section className="registry-panel" style={{ background: "#f0fdf4", borderLeft: "3px solid #16a34a" }}>
+      <section className="registry-panel semantic-panel semantic-panel-success">
         <h2>감사합니다!</h2>
         <p>토픽 제안이 검토 대기열에 등록되었습니다. 관리자 검토 후 승인되면 레지스트리에 추가됩니다.</p>
-        <p style={{ marginTop: 12 }}>
+        <p className="suggest-topic-actions">
           <button
             onClick={() => { setSubmitted(false); setQuestion(""); setCategory(""); setReason(""); setSourceUrl(""); setAiContext(""); }}
-            style={{ padding: "8px 16px", background: "#16a34a", color: "#fff", border: "none", borderRadius: 8, cursor: "pointer", fontSize: 14 }}
+            className="semantic-button semantic-button-success"
           >
             다른 토픽 제안하기
           </button>
@@ -106,7 +106,7 @@ export default function SuggestTopicForm() {
             />
           </label>
           {error && (
-            <div style={{ padding: "10px 14px", background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, fontSize: 13, color: "#b91c1c" }}>
+            <div className="semantic-alert semantic-alert-danger">
               {error}
             </div>
           )}

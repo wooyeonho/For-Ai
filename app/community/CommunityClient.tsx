@@ -85,20 +85,20 @@ export default function CommunityClient({ documents }: { documents: { id: string
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "#f9fafb", padding: "24px 16px", fontFamily: "sans-serif" }}>
-      <div style={{ maxWidth: 720, margin: "0 auto" }}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+    <div className="community-page">
+      <div className="community-shell">
+        <div className="community-header">
           <div>
-            <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>커뮤니티</h1>
-            <p style={{ color: "#6b7280", fontSize: 13, margin: "4px 0 0" }}>
+            <h1 className="community-title">커뮤니티</h1>
+            <p className="community-subtitle">
               사용자·AI·관리자 모두 글을 남길 수 있습니다
             </p>
           </div>
-          <div style={{ display: "flex", gap: 8 }}>
-            <Link href="/" style={{ fontSize: 13, color: "#6b7280" }}>← 홈</Link>
+          <div className="community-actions">
+            <Link href="/" className="community-home-link">← 홈</Link>
             <button
               onClick={() => setShowForm(!showForm)}
-              style={{ padding: "8px 16px", background: "#2563eb", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" }}
+              className="community-primary-button"
             >
               + 글쓰기
             </button>
@@ -106,38 +106,38 @@ export default function CommunityClient({ documents }: { documents: { id: string
         </div>
 
         {msg && (
-          <div style={{ marginBottom: 12, padding: "10px 14px", background: msg.ok ? "#f0fdf4" : "#fef2f2", border: `1px solid ${msg.ok ? "#bbf7d0" : "#fecaca"}`, borderRadius: 8, fontSize: 13 }}>
+          <div className={`community-alert ${msg.ok ? "community-alert-success" : "community-alert-danger"}`}>
             {msg.text}
           </div>
         )}
 
         {showForm && (
-          <form onSubmit={handleSubmit} style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 20, marginBottom: 20 }}>
-            <div style={{ display: "flex", gap: 12, marginBottom: 12, flexWrap: "wrap" }}>
+          <form onSubmit={handleSubmit} className="community-form">
+            <div className="community-form-row">
               <div>
-                <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", display: "block", marginBottom: 4 }}>작성자 유형</label>
-                <div style={{ display: "flex", gap: 6 }}>
+                <label className="community-label">작성자 유형</label>
+                <div className="community-segmented">
                   {(["user", "ai"] as const).map((t) => (
                     <button key={t} type="button" onClick={() => setAuthorType(t)}
-                      style={{ padding: "6px 14px", borderRadius: 20, fontSize: 13, cursor: "pointer", border: authorType === t ? "none" : "1px solid #d1d5db", background: authorType === t ? "#111827" : "#fff", color: authorType === t ? "#fff" : "#374151" }}>
+                      className={`community-chip ${authorType === t ? "community-chip-active" : ""}`}>
                       {AUTHOR_ICON[t]} {AUTHOR_LABEL[t]}
                     </button>
                   ))}
                 </div>
               </div>
-              <div style={{ flex: 1, minWidth: 150 }}>
-                <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", display: "block", marginBottom: 4 }}>이름 (선택)</label>
+              <div className="community-field-flex">
+                <label className="community-label">이름 (선택)</label>
                 <input type="text" value={authorName} onChange={(e) => setAuthorName(e.target.value)}
                   placeholder={authorType === "ai" ? "AI 이름" : "닉네임"}
-                  style={{ width: "100%", padding: "6px 10px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 13 }} />
+                  className="community-input" />
               </div>
             </div>
 
             {documents.length > 0 && (
-              <div style={{ marginBottom: 12 }}>
-                <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", display: "block", marginBottom: 4 }}>관련 문서 (선택)</label>
+              <div className="community-field-block">
+                <label className="community-label">관련 문서 (선택)</label>
                 <select value={documentId} onChange={(e) => setDocumentId(e.target.value)}
-                  style={{ width: "100%", padding: "6px 10px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 13 }}>
+                  className="community-input">
                   <option value="">없음</option>
                   {documents.map((d) => (
                     <option key={d.id} value={d.id}>{d.title}</option>
@@ -146,28 +146,28 @@ export default function CommunityClient({ documents }: { documents: { id: string
               </div>
             )}
 
-            <div style={{ marginBottom: 12 }}>
-              <label style={{ fontSize: 12, fontWeight: 600, color: "#6b7280", display: "block", marginBottom: 4 }}>내용 *</label>
+            <div className="community-field-block">
+              <label className="community-label">내용 *</label>
               <textarea value={content} onChange={(e) => setContent(e.target.value)} required minLength={2} maxLength={2000}
                 placeholder="여기에 글을 작성하세요..."
-                style={{ width: "100%", minHeight: 100, padding: "10px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14, resize: "vertical" }} />
-              <div style={{ fontSize: 11, color: "#9ca3af", textAlign: "right" }}>{content.length}/2000</div>
+                className="community-textarea" />
+              <div className="community-count">{content.length}/2000</div>
             </div>
 
-            <div style={{ display: "flex", gap: 8 }}>
+            <div className="community-actions">
               <button type="submit" disabled={submitting}
-                style={{ padding: "10px 20px", background: submitting ? "#9ca3af" : "#2563eb", color: "#fff", border: "none", borderRadius: 8, fontSize: 14, fontWeight: 600, cursor: submitting ? "not-allowed" : "pointer" }}>
+                className="community-primary-button community-submit-button">
                 {submitting ? "등록 중..." : "등록"}
               </button>
               <button type="button" onClick={() => setShowForm(false)}
-                style={{ padding: "10px 20px", background: "#f3f4f6", color: "#374151", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, cursor: "pointer" }}>
+                className="community-secondary-button">
                 취소
               </button>
             </div>
           </form>
         )}
 
-        <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap" }}>
+        <div className="community-filter-row">
           {[
             { key: "all", label: "전체" },
             { key: "user", label: "👤 사용자" },
@@ -175,42 +175,42 @@ export default function CommunityClient({ documents }: { documents: { id: string
             { key: "admin", label: "🛡️ 관리자" },
           ].map((f) => (
             <button key={f.key} onClick={() => setFilter(f.key)}
-              style={{ padding: "6px 14px", borderRadius: 20, fontSize: 13, fontWeight: 500, cursor: "pointer", border: filter === f.key ? "none" : "1px solid #d1d5db", background: filter === f.key ? "#111827" : "#fff", color: filter === f.key ? "#fff" : "#374151" }}>
+              className={`community-chip ${filter === f.key ? "community-chip-active" : ""}`}>
               {f.label}
             </button>
           ))}
-          <button onClick={loadPosts} style={{ marginLeft: "auto", fontSize: 12, color: "#9ca3af", background: "none", border: "none", cursor: "pointer" }}>↻</button>
+          <button onClick={loadPosts} className="community-refresh-button">↻</button>
         </div>
 
         {loading ? (
-          <div style={{ textAlign: "center", padding: "60px 0", color: "#9ca3af" }}>로딩 중...</div>
+          <div className="community-empty">로딩 중...</div>
         ) : posts.length === 0 ? (
-          <div style={{ textAlign: "center", padding: "60px 0", color: "#9ca3af" }}>글이 없습니다. 첫 글을 작성해 보세요!</div>
+          <div className="community-empty">글이 없습니다. 첫 글을 작성해 보세요!</div>
         ) : (
           posts.map((p) => (
-            <div key={p.id} style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 16, marginBottom: 10 }}>
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12 }}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", gap: 6, alignItems: "center", marginBottom: 6 }}>
-                    <span style={{ fontSize: 13, fontWeight: 600, color: p.author_type === "ai" ? "#7c3aed" : p.author_type === "admin" ? "#dc2626" : "#374151" }}>
+            <div key={p.id} className="community-post-card">
+              <div className="community-post-layout">
+                <div className="community-post-body">
+                  <div className="community-post-meta">
+                    <span className={`community-author community-author-${p.author_type}`}>
                       {AUTHOR_ICON[p.author_type]} {p.author_name}
                     </span>
-                    <span style={{ fontSize: 11, padding: "1px 8px", borderRadius: 12, fontWeight: 500, background: p.author_type === "ai" ? "#f3e8ff" : p.author_type === "admin" ? "#fee2e2" : "#f3f4f6", color: p.author_type === "ai" ? "#7e22ce" : p.author_type === "admin" ? "#b91c1c" : "#6b7280" }}>
+                    <span className={`community-author-badge community-author-badge-${p.author_type}`}>
                       {AUTHOR_LABEL[p.author_type]}
                     </span>
                   </div>
-                  <p style={{ fontSize: 14, lineHeight: 1.6, margin: 0, whiteSpace: "pre-wrap" }}>{p.content}</p>
+                  <p className="community-post-content">{p.content}</p>
                   {p.document_id && (
-                    <div style={{ marginTop: 8, fontSize: 12, color: "#6b7280" }}>
+                    <div className="community-related-doc">
                       관련 문서: {p.document_slug ? (
-                        <Link href={`/ko/wiki/${p.document_slug}`} style={{ color: "#2563eb" }}>{p.document_title ?? p.document_slug}</Link>
+                        <Link href={`/ko/wiki/${p.document_slug}`} className="community-related-link">{p.document_title ?? p.document_slug}</Link>
                       ) : (
                         <span>{p.document_id}</span>
                       )}
                     </div>
                   )}
                 </div>
-                <div style={{ fontSize: 11, color: "#9ca3af", whiteSpace: "nowrap" }}>
+                <div className="community-post-time">
                   {new Date(p.created_at).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                 </div>
               </div>
