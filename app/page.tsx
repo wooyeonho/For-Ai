@@ -48,6 +48,23 @@ function statusRank(b: RegistryDocumentBundle): number {
   return 2;
 }
 
+function confidenceLabel(b: RegistryDocumentBundle): string {
+  const verifiedClaim = b.claims.find(
+    (claim) =>
+      claim.status === "verified" &&
+      claim.confidence !== "low" &&
+      claim.claim_value !== "확인 필요" &&
+      claim.sources.length > 0,
+  );
+
+  if (verifiedClaim) return `Confidence: ${verifiedClaim.confidence}`;
+  if (b.document.status === "verified" || b.document.status === "published") {
+    return b.document.confidence === "low" ? "Not enough data" : `Confidence: ${b.document.confidence}`;
+  }
+
+  return "Needs verification";
+}
+
 async function getAllDocs(): Promise<DocItem[]> {
   const staticDocs: DocItem[] = getAllRegistryBundles().map((b) => ({
     slug: b.document.slug,
@@ -151,7 +168,6 @@ export default async function HomePage() {
   const totalClaims = claims.length;
   const verifiedClaims = claims.filter((c) => c.status === "verified").length;
   const needsReviewClaims = totalClaims - verifiedClaims;
-  const categories = new Set(bundles.map((b) => b.entity.type)).size;
   const verifiedPct = totalClaims ? Math.round((verifiedClaims / totalClaims) * 100) : 0;
 
   const example =
@@ -206,11 +222,15 @@ export default async function HomePage() {
           <span className="stat-label">Verified Claims</span>
         </div>
         <div className="stat">
-          <span className="stat-num">{categories}</span>
-          <span className="stat-label">Categories</span>
+          <span className="stat-num">{needsReviewClaims}</span>
+          <span className="stat-label">Needs Review</span>
+        </div>
+        <div className="stat">
+          <span className="stat-num">{verifiedPct}%</span>
+          <span className="stat-label">Verified Percentage</span>
         </div>
         <p className="stat-note">
-          Verified {verifiedClaims} · Needs review {needsReviewClaims} ({verifiedPct}% verified). We mark what we don&apos;t know.
+          These figures are calculated from the current registry bundles. We mark what we don&apos;t know.
         </p>
       </section>
 
@@ -323,11 +343,34 @@ export default async function HomePage() {
         </ol>
       </section>
 
-      {/* Popular — by AI citation count and views */}
-      {popularDocs.length > 0 && (
-        <section className="section">
-          <p className="section-eyebrow">Most cited</p>
-          <h2 className="section-title">Popular by AI citations &amp; views</h2>
+      <section className="section">
+        <p className="section-eyebrow">Daily Verified Intelligence</p>
+        <h2 className="section-title">Recently available verified documents</h2>
+        <ul className="registry-index">
+          {verifiedDocuments.slice(0, 5).map((b) => {
+            const badge = statusBadge(b.document.status);
+            return (
+              <li key={b.document.slug} className="registry-row">
+                <div className="registry-row-main">
+                  <Link href={`/en/wiki/${b.document.slug}`} className="registry-row-title">
+                    {b.document.title}
+                  </Link>
+                  <span className="registry-row-entity">{b.entity.canonical_name}</span>
+                </div>
+                <div className="registry-row-meta">
+                  <span className={badge.className}>{badge.label}</span>
+                  <span className="badge">{confidenceLabel(b)}</span>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      </section>
+
+      <section className="section">
+        <p className="section-eyebrow">Most Cited by AI</p>
+        <h2 className="section-title">Citation stats from registry telemetry</h2>
+        {popularDocs.length > 0 ? (
           <ul className="registry-index">
             {popularDocs.map((d, i) => (
               <li key={d.document_id} className="registry-row">
@@ -337,14 +380,37 @@ export default async function HomePage() {
                   </Link>
                 </div>
                 <div className="registry-row-meta">
-                  <span className="badge" title="AI citations">AI {d.ai_citation_count}</span>
-                  <span className="badge" title="Views">{d.view_count} views</span>
+                  <span className="badge" title="AI citations">AI citations: {d.ai_citation_count}</span>
+                  <span className="badge" title="Views">Views: {d.view_count}</span>
+                  <span className="badge">Not enough data</span>
                 </div>
               </li>
             ))}
           </ul>
-        </section>
-      )}
+        ) : verifiedDocuments.length > 0 ? (
+          <ul className="registry-index">
+            {verifiedDocuments.slice(0, 3).map((b) => {
+              const badge = statusBadge(b.document.status);
+              return (
+                <li key={b.document.slug} className="registry-row">
+                  <div className="registry-row-main">
+                    <Link href={`/en/wiki/${b.document.slug}`} className="registry-row-title">
+                      {b.document.title}
+                    </Link>
+                    <span className="registry-row-entity">Citation stats are not available yet</span>
+                  </div>
+                  <div className="registry-row-meta">
+                    <span className={badge.className}>{badge.label}</span>
+                    <span className="badge">{confidenceLabel(b)}</span>
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        ) : (
+          <p className="stat-note">Citation stats are not available yet.</p>
+        )}
+      </section>
 
       {/* Search */}
       <section className="section">
