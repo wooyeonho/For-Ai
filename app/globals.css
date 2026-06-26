@@ -23,7 +23,7 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-family: var(--font-sans);
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
 }
@@ -32,6 +32,11 @@ a {
   color: var(--accent);
   text-decoration-thickness: 1px;
   text-underline-offset: 3px;
+}
+
+code,
+pre {
+  font-family: var(--font-mono);
 }
 
 /* Layout */
@@ -63,6 +68,7 @@ a {
   letter-spacing: 0.04em;
   text-transform: uppercase;
   font-weight: 500;
+  font-family: var(--font-mono);
 }
 
 h1 {
@@ -108,7 +114,7 @@ h2 {
 .meta-item dd {
   margin: 0;
   font-size: 0.9rem;
-  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  font-family: var(--font-mono);
   word-break: break-all;
 }
 
@@ -121,6 +127,7 @@ h2 {
   background: var(--soft);
   font-size: 0.78rem;
   font-weight: 500;
+  font-family: var(--font-mono);
 }
 
 .badge-low,
@@ -259,7 +266,7 @@ h2 {
 
 .verification-value {
   color: var(--text);
-  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-family: var(--font-mono);
   margin-right: 8px;
 }
 
@@ -314,7 +321,7 @@ h2 {
   border-radius: 6px;
   background: var(--soft);
   font-size: 0.85rem;
-  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-family: var(--font-mono);
   text-decoration: none;
   color: var(--accent);
   transition: border-color 0.15s;
@@ -335,7 +342,7 @@ h2 {
 }
 
 .license-code {
-  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-family: var(--font-mono);
   font-size: 0.85rem;
   color: var(--muted);
   margin: 4px 0;
@@ -903,7 +910,7 @@ h2 {
   border-radius: 4px;
   padding: 1px 5px;
   font-size: 0.82em;
-  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-family: var(--font-mono);
   color: var(--text);
 }
 
@@ -916,7 +923,7 @@ h2 {
 }
 
 .mono-link {
-  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-family: var(--font-mono);
   font-size: 0.8rem;
   color: var(--accent);
   text-decoration: none;
@@ -994,7 +1001,7 @@ h2 {
   border-radius: 4px;
   padding: 1px 5px;
   font-size: 0.82em;
-  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-family: var(--font-mono);
 }
 
 /* Registry index ---------------------------------------------------------- */
@@ -1134,7 +1141,7 @@ h2 {
   gap: 8px;
   color: var(--muted);
   font-size: 0.78rem;
-  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-family: var(--font-mono);
 }
 
 /* Claim text primary: human-readable sentence first in ClaimCard */
@@ -1176,7 +1183,7 @@ details.technical-meta dl {
   grid-template-columns: auto 1fr;
   gap: 4px 16px;
   font-size: 0.8rem;
-  font-family: ui-monospace, SFMono-Regular, monospace;
+  font-family: var(--font-mono);
   color: var(--muted);
 }
 details.technical-meta dt {
