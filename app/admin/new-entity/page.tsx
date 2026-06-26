@@ -7,7 +7,7 @@ export default function NewEntityPage() {
   const [id, setId] = useState("");
   const [type, setType] = useState("");
   const [canonicalName, setCanonicalName] = useState("");
-  const [country, setCountry] = useState("KR");
+  const [country, setCountry] = useState("");
   const [region, setRegion] = useState("");
   const [city, setCity] = useState("");
   const [loading, setLoading] = useState(false);
@@ -29,7 +29,7 @@ export default function NewEntityPage() {
           id: id.trim(),
           type: type.trim(),
           canonical_name: canonicalName.trim(),
-          country: country.trim() || "KR",
+          country: country.trim().toUpperCase(),
           region: region.trim() || null,
           city: city.trim() || null,
         }),
@@ -107,7 +107,7 @@ export default function NewEntityPage() {
           <label>Country <span aria-label="필수">*</span>
             <input
               type="text" value={country} onChange={e => setCountry(e.target.value)} required
-              placeholder="KR"
+              placeholder="ISO code — KR, US, JP, FR…"
             />
           </label>
           <label>Region (선택)

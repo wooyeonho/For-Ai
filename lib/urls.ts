@@ -16,6 +16,18 @@ export function rawMarkdownUrl(slug: string): string {
   return siteUrl(`/raw/${slug}.md`);
 }
 
+export function entityPageUrl(entityId: string, lang = "en"): string {
+  return siteUrl(`/${lang}/entity/${encodeURIComponent(entityId)}`);
+}
+
+export function apiEntityUrl(entityId: string): string {
+  return siteUrl(`/api/entities/${encodeURIComponent(entityId)}`);
+}
+
+export function apiIndexUrl(query = ""): string {
+  return siteUrl(`/api/index${query ? `?${query}` : ""}`);
+}
+
 export function llmsTxtUrl(): string {
   return siteUrl("/llms.txt");
 }
