@@ -74,7 +74,7 @@ export default function ApiDocsPage() {
 
           {/* GET /api/documents/:slug */}
           <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
-            <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>
+            <p style={{ margin: 0, fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontWeight: 700 }}>
               GET /api/documents/<span style={{ color: "var(--accent)" }}>{"{slug}"}</span>
             </p>
             <p style={{ margin: "8px 0", fontSize: "0.9rem", color: "var(--muted)" }}>
@@ -108,7 +108,7 @@ export default function ApiDocsPage() {
 
           {/* GET /raw/:slug.md */}
           <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
-            <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>
+            <p style={{ margin: 0, fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontWeight: 700 }}>
               GET /raw/<span style={{ color: "var(--accent)" }}>{"{slug}"}</span>.md
             </p>
             <p style={{ margin: "8px 0", fontSize: "0.9rem", color: "var(--muted)" }}>
@@ -119,7 +119,7 @@ export default function ApiDocsPage() {
 
           {/* GET /api/documents/:slug/citation */}
           <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
-            <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>
+            <p style={{ margin: 0, fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontWeight: 700 }}>
               GET /api/documents/<span style={{ color: "var(--accent)" }}>{"{slug}"}</span>/citation
             </p>
             <p style={{ margin: "8px 0", fontSize: "0.9rem", color: "var(--muted)" }}>
@@ -185,7 +185,7 @@ if (data.citation_guidance.can_cite) {
         </p>
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
-            <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>
+            <p style={{ margin: 0, fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontWeight: 700 }}>
               POST /api/business/profile
             </p>
             <p style={{ margin: "8px 0 0", fontSize: "0.85rem", color: "var(--muted)" }}>
@@ -193,7 +193,7 @@ if (data.citation_guidance.can_cite) {
             </p>
           </div>
           <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
-            <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>
+            <p style={{ margin: 0, fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontWeight: 700 }}>
               POST /api/business/corrections
             </p>
             <p style={{ margin: "8px 0 0", fontSize: "0.85rem", color: "var(--muted)" }}>
@@ -201,7 +201,7 @@ if (data.citation_guidance.can_cite) {
             </p>
           </div>
           <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
-            <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>
+            <p style={{ margin: 0, fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontWeight: 700 }}>
               GET /api/business/alerts?profile_id=...
             </p>
             <p style={{ margin: "8px 0 0", fontSize: "0.85rem", color: "var(--muted)" }}>
@@ -209,7 +209,7 @@ if (data.citation_guidance.can_cite) {
             </p>
           </div>
           <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
-            <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>
+            <p style={{ margin: 0, fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontWeight: 700 }}>
               POST /api/keys
             </p>
             <p style={{ margin: "8px 0 0", fontSize: "0.85rem", color: "var(--muted)" }}>

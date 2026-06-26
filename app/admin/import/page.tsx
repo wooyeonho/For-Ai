@@ -115,7 +115,7 @@ export default function AdminImportPage() {
               value={jsonlText} onChange={e => setJsonlText(e.target.value)} required
               placeholder={JSONL_PLACEHOLDER}
               rows={8}
-              style={{ fontFamily: "monospace", fontSize: 12 }}
+              style={{ fontFamily: "ui-monospace, SFMono-Regular, Menlo, monospace", fontSize: 12 }}
             />
           </label>
           {parseError && (

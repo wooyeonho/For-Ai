@@ -220,8 +220,8 @@ export default async function HomePage() {
         <h2 className="section-title">Three audiences, one source of truth</h2>
         <div className="audience-grid">
           <article className="audience-card" id="developers">
-            <div className="audience-icon" aria-hidden>
-              {"</>"}
+            <div className="audience-icon audience-icon-badge" aria-hidden>
+              DEV
             </div>
             <h3>Developers</h3>
             <p>
@@ -245,8 +245,8 @@ export default async function HomePage() {
           </article>
 
           <article className="audience-card">
-            <div className="audience-icon" aria-hidden>
-              &#9783;
+            <div className="audience-icon audience-icon-symbol" aria-hidden>
+              ◉
             </div>
             <h3>People</h3>
             <p>
@@ -263,8 +263,8 @@ export default async function HomePage() {
           </article>
 
           <article className="audience-card" id="ai-systems">
-            <div className="audience-icon" aria-hidden>
-              &#10022;
+            <div className="audience-icon audience-icon-badge" aria-hidden>
+              AI
             </div>
             <h3>AI &amp; Crawlers</h3>
             <p>
