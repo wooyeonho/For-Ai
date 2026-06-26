@@ -30,6 +30,7 @@ const UPDATE_FREQUENCIES = new Set([
 
 const DISCLAIMER_TYPES = new Set([
   "none", "check_official_source", "not_medical_advice",
+  "not_genetic_or_medical_advice",
   "not_legal_advice", "not_financial_advice", "personal_case_depends",
   "realtime_data_required", "public_profile_only",
 ]);
@@ -122,6 +123,26 @@ function validateSafetyRules(entry, line) {
   if (medicalPrefixes.some((p) => type.startsWith(p))) {
     if (disclaimer !== "not_medical_advice" && disclaimer !== "check_official_source") {
       fail(line, `type "${type}" requires disclaimer_type "not_medical_advice" or "check_official_source", got "${disclaimer}"`);
+    }
+  }
+
+
+  const genomicsPrefixes = ["genomics."];
+  if (genomicsPrefixes.some((p) => type.startsWith(p))) {
+    if (disclaimer !== "not_genetic_or_medical_advice") {
+      fail(line, `type "${type}" requires disclaimer_type "not_genetic_or_medical_advice", got "${disclaimer}"`);
+    }
+    for (let i = 0; i < entry.claims.length; i++) {
+      const text = (entry.claims[i].claim_text + " " + entry.claims[i].field_path).toLowerCase();
+      const banned = [
+        "personal_dna", "raw_genotype", "vcf", "individual_risk",
+        "diagnosis", "treatment", "therapy_recommendation", "identifiable_genetic_data",
+      ];
+      for (const word of banned) {
+        if (text.includes(word)) {
+          fail(line, `claim[${i}] genomics topics must not include "${word}" topics`);
+        }
+      }
     }
   }
 

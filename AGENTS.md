@@ -60,6 +60,7 @@ For-Ai covers ALL knowledge domains where AI might cite inaccurately:
 - **Commerce** — refund policies, delivery terms, pricing
 - **Government** — document fees, processing times, requirements
 - **Healthcare** — facility hours, service availability (not medical advice)
+- **Genomics & DNA** — genetic testing availability, regulation, public variant database references, privacy policies (not medical advice; no personal DNA storage)
 - **Education** — admission deadlines, tuition, requirements
 - **Real Estate** — regulations, fees, procedures
 - **Food & Dining** — hours, menus, pricing, allergens
