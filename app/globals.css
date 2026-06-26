@@ -1253,3 +1253,93 @@ details.technical-meta dd {
 .goal-pipeline li { counter-increment: pipeline; border: 1px solid var(--line); border-radius: 999px; padding: 10px 12px; background: var(--soft); font-size: 0.85rem; }
 .goal-pipeline li::before { content: counter(pipeline); display: inline-grid; place-items: center; width: 20px; height: 20px; margin-right: 8px; border-radius: 50%; background: var(--accent); color: #fff; font-size: 0.72rem; }
 @media (max-width: 760px) { .goal-two-column, .goal-metric-grid, .goal-pipeline { grid-template-columns: 1fr; } }
+
+.goal-terminal-panel {
+  border: 1px solid #1f3f2f;
+  border-radius: 12px;
+  background: #08130f;
+  color: #d7f7df;
+  padding: 18px;
+  box-shadow: inset 0 0 0 1px rgba(122, 196, 127, 0.12), 0 18px 40px rgba(8, 19, 15, 0.18);
+}
+
+.goal-terminal-panel h2 {
+  color: #f0fff4;
+  margin-bottom: 6px;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+}
+
+.goal-terminal-panel p {
+  color: #a8d9b8;
+  margin: 0 0 14px;
+}
+
+.goal-terminal-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  color: #7bc47f;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.goal-feed {
+  display: grid;
+  gap: 0;
+  overflow: hidden;
+  border: 1px solid #214f36;
+  border-radius: 8px;
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
+}
+
+.goal-feed-row {
+  display: grid;
+  grid-template-columns: minmax(150px, 1.1fr) minmax(72px, 0.45fr) minmax(220px, 1.7fr);
+  gap: 12px;
+  align-items: center;
+  padding: 10px 12px;
+  border-bottom: 1px solid #173825;
+  background: rgba(12, 35, 24, 0.72);
+  color: #d7f7df;
+  font-size: 0.86rem;
+}
+
+.goal-feed-row:last-child {
+  border-bottom: 0;
+}
+
+.goal-feed-heading {
+  background: #10291b;
+  color: #7bc47f;
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.goal-feed-label {
+  color: #f0fff4;
+  font-weight: 700;
+}
+
+.goal-feed-row strong {
+  color: #9ff0a7;
+  font-size: 1rem;
+}
+
+@media (max-width: 760px) {
+  .goal-terminal-header,
+  .goal-feed-row {
+    grid-template-columns: 1fr;
+  }
+
+  .goal-terminal-header {
+    display: grid;
+  }
+
+  .goal-feed-heading {
+    display: none;
+  }
+}

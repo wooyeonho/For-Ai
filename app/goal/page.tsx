@@ -24,6 +24,13 @@ export default function GoalPage() {
     ["High-risk candidates", metrics.highRiskCandidates, "must not be cited before review"],
     ["Realtime candidates", metrics.realtimeCandidates, "freshness-sensitive topics"],
   ];
+  const citationFeed = [
+    ["Verified claims", metrics.verifiedClaims, "cite only after source-backed verification"],
+    ["Citation-ready claims", metrics.citationReadyClaims, "verified + claim_sources + last_verified_at"],
+    ["Needs-review claims", metrics.needsReviewClaims, "do not cite; show 확인 필요 / low confidence"],
+    ["High-risk candidates", metrics.highRiskCandidates, "medical/legal/finance/realtime candidates require review"],
+    ["Realtime candidates", metrics.realtimeCandidates, "freshness-sensitive facts require current sources"],
+  ];
 
   return (
     <article className="goal-dashboard">
@@ -40,6 +47,8 @@ export default function GoalPage() {
       </section>
 
       <section className="registry-panel"><h2>Current Registry State</h2><p>Verified claims are intentionally low until source-backed verification is implemented.</p><div className="goal-metric-grid">{cards.map(([label, value, detail]) => <div className="goal-metric-card" key={label}><span>{label}</span><strong>{value}</strong><small>{detail}</small></div>)}</div></section>
+
+      <section className="goal-terminal-panel" aria-labelledby="citation-readiness-feed"><div className="goal-terminal-header"><span>registry://citation-policy</span><span>static snapshot</span></div><h2 id="citation-readiness-feed">Citation Readiness Feed</h2><p>Only verified, source-backed claims with verification timestamps are citation-ready. Candidate queues and needs-review claims remain non-citable.</p><div className="goal-feed" role="table" aria-label="Citation readiness metrics"><div className="goal-feed-row goal-feed-heading" role="row"><span className="goal-feed-label" role="columnheader">Signal</span><span role="columnheader">Count</span><span role="columnheader">Citation policy</span></div>{citationFeed.map(([label, value, detail]) => <div className="goal-feed-row" role="row" key={label}><span className="goal-feed-label" role="cell">{label}</span><strong role="cell">{value}</strong><span role="cell">{detail}</span></div>)}</div></section>
 
       <section className="registry-panel"><h2>Data lifecycle</h2><ol className="goal-pipeline">{lifecycle.map((step) => <li key={step}>{step}</li>)}</ol></section>
 
