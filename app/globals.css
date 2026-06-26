@@ -13,6 +13,7 @@
   --success-bg: #e6f4ed;
   --danger-bg: #fde8e8;
   --warning-bg: #fff7df;
+  --focus-glow: 0 0 0 3px rgba(0, 242, 255, 0.28);
 }
 
 * {
@@ -275,19 +276,24 @@ h2 {
   display: inline-flex;
   align-items: center;
   padding: 8px 16px;
-  border: 1px solid var(--line);
-  border-radius: 6px;
-  background: var(--panel);
+  border: 1px solid rgba(0, 242, 255, 0.55);
+  border-radius: 4px;
+  background: rgba(0, 242, 255, 0.06);
   font-size: 0.85rem;
   font-weight: 500;
   text-decoration: none;
-  color: var(--text);
+  color: #e1fdff;
   transition: border-color 0.15s, background 0.15s;
 }
 
 .cta-link:hover {
-  border-color: var(--accent);
-  background: var(--soft);
+  border-color: #e1fdff;
+  background: rgba(0, 242, 255, 0.14);
+}
+
+.cta-link:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-glow);
 }
 
 .cta-correction {
@@ -399,18 +405,24 @@ h2 {
 .form-submit {
   align-self: flex-start;
   padding: 10px 24px;
-  border: none;
-  border-radius: 6px;
-  background: var(--accent);
-  color: #fff;
+  border: 1px solid #00f2ff;
+  border-radius: 4px;
+  background: #00f2ff;
+  color: #002022;
   font-size: 0.9rem;
   font-weight: 600;
   cursor: pointer;
-  transition: opacity 0.15s;
+  transition: border-color 0.15s, background 0.15s;
 }
 
 .form-submit:hover {
-  opacity: 0.85;
+  border-color: #e1fdff;
+  background: #5ff8ff;
+}
+
+.form-submit:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-glow);
 }
 
 .submission-success {
@@ -469,14 +481,25 @@ h2 {
 
 .registry-form button {
   width: fit-content;
-  border: 1px solid var(--accent);
-  border-radius: 8px;
-  background: var(--accent);
-  color: #fff;
+  border: 1px solid #00f2ff;
+  border-radius: 4px;
+  background: #00f2ff;
+  color: #002022;
   cursor: pointer;
   font: inherit;
   font-weight: 700;
   padding: 10px 14px;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.registry-form button:hover {
+  border-color: #e1fdff;
+  background: #5ff8ff;
+}
+
+.registry-form button:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-glow);
 }
 
 .success-box {
@@ -621,17 +644,29 @@ h2 {
   width: 40px;
   height: 40px;
   padding: 8px;
-  background: none;
-  border: 1px solid var(--line);
-  border-radius: 8px;
+  background: rgba(0, 242, 255, 0.06);
+  border: 1px solid rgba(0, 242, 255, 0.55);
+  border-radius: 4px;
+  color: #e1fdff;
   cursor: pointer;
+  transition: border-color 0.15s, background 0.15s;
+}
+
+.nav-toggle:hover {
+  border-color: #e1fdff;
+  background: rgba(0, 242, 255, 0.14);
+}
+
+.nav-toggle:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-glow);
 }
 
 .nav-toggle-bar {
   display: block;
   height: 2px;
   width: 100%;
-  background: var(--text);
+  background: currentColor;
   border-radius: 2px;
 }
 
@@ -757,7 +792,7 @@ h2 {
   align-items: center;
   gap: 6px;
   padding: 11px 20px;
-  border-radius: 8px;
+  border-radius: 4px;
   font-size: 0.92rem;
   font-weight: 600;
   text-decoration: none;
@@ -770,23 +805,35 @@ h2 {
 }
 
 .btn-primary {
-  background: var(--accent);
-  color: #fff;
+  background: #00f2ff;
+  color: #002022;
+  border-color: #00f2ff;
 }
 
 .btn-primary:hover {
-  background: #1b324a;
+  border-color: #e1fdff;
+  background: #5ff8ff;
+}
+
+.btn-primary:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-glow);
 }
 
 .btn-secondary {
-  background: var(--panel);
-  color: var(--text);
-  border-color: var(--line);
+  background: rgba(0, 242, 255, 0.06);
+  color: #e1fdff;
+  border-color: rgba(0, 242, 255, 0.55);
 }
 
 .btn-secondary:hover {
-  border-color: var(--accent);
-  background: var(--soft);
+  border-color: #e1fdff;
+  background: rgba(0, 242, 255, 0.14);
+}
+
+.btn-secondary:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-glow);
 }
 
 /* Stat strip -------------------------------------------------------------- */
