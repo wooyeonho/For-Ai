@@ -32,7 +32,7 @@ export function buildDocumentMetadata(
   const lang = locale ?? document.lang ?? DEFAULT_LOCALE;
   const title = document.title;
   const ogTitle = `${document.title} — For-Ai`;
-  const description = `${entity.canonical_name} ${document.template} 정보. 신뢰도: ${document.confidence}. For-Ai claim registry.`;
+  const description = `${entity.canonical_name} — ${document.template}. Confidence: ${document.confidence}. For-Ai claim registry.`;
   const url = documentPageUrl(document.slug, lang);
 
   const hreflang: Record<string, string> = {};
