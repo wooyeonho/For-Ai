@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { getTranslations } from "../../lib/i18n";
 import type { SupportedLocale } from "../../lib/i18n";
 
@@ -15,6 +15,8 @@ interface DocItem {
 
 export default function HomeSearch({ docs, locale = "ko" }: { docs: DocItem[]; locale?: string }) {
   const [query, setQuery] = useState("");
+  const resultsRef = useRef<HTMLDivElement>(null);
+  const firstResultRef = useRef<HTMLAnchorElement>(null);
   const t = getTranslations(locale as SupportedLocale);
   const q = query.trim().toLowerCase();
   const filtered = q
@@ -26,92 +28,79 @@ export default function HomeSearch({ docs, locale = "ko" }: { docs: DocItem[]; l
       )
     : docs;
 
+  const executeSearch = () => {
+    if (firstResultRef.current) {
+      firstResultRef.current.scrollIntoView({ behavior: "smooth", block: "center" });
+      firstResultRef.current.focus({ preventScroll: true });
+      return;
+    }
+
+    resultsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+  };
+
   return (
-    <>
-      <input
-        type="search"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        placeholder={t.home.searchPlaceholder}
-        style={{
-          width: "100%",
-          padding: "10px 14px",
-          border: "1px solid var(--line)",
-          borderRadius: 8,
-          fontSize: 15,
-          outline: "none",
-          boxSizing: "border-box",
-          marginBottom: 20,
-          background: "var(--panel)",
-          color: "var(--text)",
-        }}
-      />
-      {filtered.length === 0 ? (
-        <div>
-          {query ? (
-            <p style={{ color: "var(--muted)" }}>
-              &quot;{query}&quot; — {t.home.noResults}.{" "}
-              <Link
-                href={`/suggest-topic?q=${encodeURIComponent(query)}`}
-                style={{ color: "var(--accent)" }}
-              >
-                {t.home.suggestFirst}
-              </Link>{" "}
-              <button
-                onClick={() => setQuery("")}
-                style={{
-                  background: "none",
-                  border: "none",
-                  color: "var(--muted)",
-                  cursor: "pointer",
-                  fontSize: 14,
-                  padding: 0,
-                  marginLeft: 8,
-                  minHeight: "auto",
-                }}
-              >
-                {t.home.resetSearch}
-              </button>
-            </p>
-          ) : (
-            <p style={{ color: "var(--muted)" }}>
-              {t.home.noDocs}{" "}
-              <Link href="/suggest-topic" style={{ color: "var(--accent)" }}>
-                {t.home.suggestFirst}
-              </Link>
-            </p>
-          )}
+    <section className="truth-command-panel" aria-label="Truth Engine search">
+      <div className="truth-command-header">
+        <span className="truth-command-kicker">Truth Engine</span>
+        <span className="truth-command-status">
+          {filtered.length}/{docs.length} claims
+        </span>
+      </div>
+
+      <div className="truth-command-input-row">
+        <input
+          className="truth-command-input"
+          type="search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder={t.home.searchPlaceholder}
+        />
+        <div className="truth-command-actions" aria-label="Search actions">
+          <button className="truth-command-button ghost" type="button" onClick={() => setQuery("")}>CLEAR</button>
+          <button className="truth-command-button primary" type="button" onClick={executeSearch}>EXECUTE</button>
         </div>
-      ) : (
-        <>
-          <h2>
-            {t.home.registeredDocs} ({filtered.length}
-            {query ? ` / ${docs.length}` : ""})
-          </h2>
-          <ul className="document-list">
-            {filtered.map((d) => (
-              <li key={d.slug}>
-                <Link href={`/${locale}/wiki/${d.slug}`}>{d.title}</Link>
-                {d.category && <span className="meta-label"> — {d.category}</span>}
-                {d.source === "supabase" && (
-                  <span
-                    style={{
-                      fontSize: 10,
-                      marginLeft: 6,
-                      padding: "1px 6px",
-                      background: "#f3e8ff",
-                      color: "#7e22ce",
-                      borderRadius: 10,
-                    }}
+      </div>
+
+      <div ref={resultsRef} className="truth-command-output">
+        {filtered.length === 0 ? (
+          <div className="truth-empty-state">
+            {query ? (
+              <p>
+                &quot;{query}&quot; — {t.home.noResults}.{" "}
+                <Link href={`/suggest-topic?q=${encodeURIComponent(query)}`}>{t.home.suggestFirst}</Link>
+              </p>
+            ) : (
+              <p>
+                {t.home.noDocs} <Link href="/suggest-topic">{t.home.suggestFirst}</Link>
+              </p>
+            )}
+          </div>
+        ) : (
+          <>
+            <div className="truth-results-heading">
+              <h2>
+                {t.home.registeredDocs} ({filtered.length}
+                {query ? ` / ${docs.length}` : ""})
+              </h2>
+            </div>
+            <ul className="truth-search-results">
+              {filtered.map((d, index) => (
+                <li key={d.slug} className="truth-search-result">
+                  <Link
+                    ref={index === 0 ? firstResultRef : undefined}
+                    href={`/${locale}/wiki/${d.slug}`}
+                    className="truth-result-link"
                   >
-                    new
-                  </span>
-                )}
-              </li>
-            ))}
-          </ul>
-        </>
-      )}
-    </>
+                    {d.title}
+                  </Link>
+                  {d.category && <span className="truth-result-meta"> — {d.category}</span>}
+                  {d.source === "supabase" && <span className="truth-result-badge">new</span>}
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+      </div>
+    </section>
   );
 }
