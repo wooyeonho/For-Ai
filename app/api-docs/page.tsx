@@ -237,6 +237,119 @@ if (data.citation_guidance.can_cite) {
         </ul>
       </section>
 
+      {/* SDK Examples */}
+      <section className="registry-panel" aria-labelledby="sdk-examples">
+        <h2 id="sdk-examples">SDK Examples</h2>
+        <p style={{ fontSize: "0.9rem", color: "var(--muted)", lineHeight: 1.7, marginBottom: 16 }}>
+          Ready-to-use examples for integrating For-Ai into your AI pipeline.
+          Full source available in <code>/examples/</code> on GitHub.
+        </p>
+
+        <h3 style={{ fontSize: "0.95rem", marginBottom: 8 }}>Python</h3>
+        <pre style={{ background: "var(--soft)", borderRadius: 6, padding: "10px 14px", fontSize: "0.8rem", overflowX: "auto" }}>{`import requests
+
+BASE = "https://for-ai-e4mm.vercel.app"
+KEY = "forai_free_your_key"
+
+# Check if a document is safe to cite
+res = requests.get(f"{BASE}/api/documents/seoul-metro-base-fare",
+                   headers={"X-API-Key": KEY})
+data = res.json()
+
+if data["citation_guidance"]["can_cite"]:
+    verified = [c for c in data["claims"] if c["citation_ready"]]
+    print(f"Safe to cite: {len(verified)} verified claims")`}</pre>
+
+        <h3 style={{ fontSize: "0.95rem", marginTop: 20, marginBottom: 8 }}>TypeScript / JavaScript</h3>
+        <pre style={{ background: "var(--soft)", borderRadius: 6, padding: "10px 14px", fontSize: "0.8rem", overflowX: "auto" }}>{`const res = await fetch(
+  "https://for-ai-e4mm.vercel.app/api/documents/seoul-metro-base-fare",
+  { headers: { "X-API-Key": "forai_free_your_key" } }
+);
+const { claims, citation_guidance } = await res.json();
+
+if (citation_guidance.can_cite) {
+  const verified = claims.filter(c => c.citation_ready);
+  // Safe to use in AI responses
+}`}</pre>
+
+        <h3 style={{ fontSize: "0.95rem", marginTop: 20, marginBottom: 8 }}>cURL</h3>
+        <pre style={{ background: "var(--soft)", borderRadius: 6, padding: "10px 14px", fontSize: "0.8rem", overflowX: "auto" }}>{`# Get JSON-LD citation
+curl -H "X-API-Key: forai_free_..." \\
+  https://for-ai-e4mm.vercel.app/api/cite/seoul-metro-base-fare
+
+# Get raw markdown for LLM context injection
+curl https://for-ai-e4mm.vercel.app/raw/seoul-metro-base-fare.md`}</pre>
+      </section>
+
+      {/* Webhooks */}
+      <section className="registry-panel" aria-labelledby="webhooks">
+        <h2 id="webhooks">Webhooks</h2>
+        <p style={{ fontSize: "0.9rem", color: "var(--muted)", lineHeight: 1.7 }}>
+          Subscribe to verification events to keep your AI system in sync.
+          Webhooks are signed with HMAC-SHA256 for payload integrity.
+        </p>
+
+        <h3 style={{ fontSize: "0.95rem", marginTop: 16, marginBottom: 8 }}>Available Events</h3>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.85rem" }}>
+          <thead>
+            <tr style={{ borderBottom: "2px solid var(--line)", textAlign: "left" }}>
+              <th style={{ padding: "6px 10px" }}>Event</th>
+              <th style={{ padding: "6px 10px" }}>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[
+              ["claim.verified", "A claim passed human verification"],
+              ["claim.updated", "A claim value or confidence changed"],
+              ["claim.disputed", "A claim was flagged for dispute"],
+              ["document.published", "A new document was published"],
+              ["document.updated", "A document was modified"],
+              ["entity.created", "A new entity was registered"],
+              ["business_profile.verified", "A business profile was verified"],
+              ["correction.accepted", "A business correction was accepted"],
+              ["correction.rejected", "A business correction was rejected"],
+            ].map(([event, desc]) => (
+              <tr key={event} style={{ borderBottom: "1px solid var(--line)" }}>
+                <td style={{ padding: "6px 10px", fontFamily: "monospace" }}>{event}</td>
+                <td style={{ padding: "6px 10px", color: "var(--muted)" }}>{desc}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        <h3 style={{ fontSize: "0.95rem", marginTop: 20, marginBottom: 8 }}>Payload Format</h3>
+        <pre style={{ background: "var(--soft)", borderRadius: 6, padding: "10px 14px", fontSize: "0.8rem", overflowX: "auto" }}>{`POST /your-webhook-url
+Headers:
+  Content-Type: application/json
+  X-ForAi-Event: claim.verified
+  X-ForAi-Signature: sha256=<hmac_hex>
+  X-ForAi-Delivery: <uuid>
+
+Body:
+{
+  "event": "claim.verified",
+  "timestamp": "2026-06-25T10:00:00Z",
+  "data": {
+    "claim_id": "...",
+    "entity_id": "...",
+    "field_path": "base_fare",
+    "new_confidence": "high"
+  }
+}`}</pre>
+
+        <h3 style={{ fontSize: "0.95rem", marginTop: 20, marginBottom: 8 }}>Signature Verification</h3>
+        <pre style={{ background: "var(--soft)", borderRadius: 6, padding: "10px 14px", fontSize: "0.8rem", overflowX: "auto" }}>{`import hmac, hashlib
+
+def verify_signature(payload: bytes, signature: str, secret: str) -> bool:
+    expected = hmac.new(secret.encode(), payload, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(f"sha256={expected}", signature)`}</pre>
+
+        <p style={{ fontSize: "0.85rem", color: "var(--muted)", marginTop: 12 }}>
+          Webhooks auto-disable after 10 consecutive delivery failures.
+          Re-activate via the API or admin dashboard.
+        </p>
+      </section>
+
       <nav className="registry-panel" aria-labelledby="api-nav">
         <h2 id="api-nav">More</h2>
         <ul className="link-list">
