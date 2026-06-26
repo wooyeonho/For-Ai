@@ -50,15 +50,15 @@ function vClaim(
 // Helper: build document
 // ---------------------------------------------------------------------------
 function makeDoc(id: string, entity: Entity, slug: string, title: string,
-  category: string, template: string): Document {
+  category: string, template: string, lang: string = "ko"): Document {
   return {
-    id, entity_id: entity.id, slug, lang: "ko", country: entity.country, title, category, template,
+    id, entity_id: entity.id, slug, lang, country: entity.country, title, category, template,
     status: "ai_draft", confidence: "low", last_verified_at: null,
     license_code: "forai-data-license-v0.1",
     data: {
       direct_answer: "확인 필요",
-      locale_path: `/ko/wiki/${slug}`,
-      canonical_path: `/ko/wiki/${slug}`,
+      locale_path: `/${lang}/wiki/${slug}`,
+      canonical_path: `/${lang}/wiki/${slug}`,
       machine_readable: { api_url: `/api/documents/${slug}`, raw_markdown_url: `/raw/${slug}.md` },
       license_notice: "For-Ai Data License v0.1 placeholder.",
     },
@@ -78,8 +78,9 @@ function bundle(
   entity: Entity, docId: string, slug: string, title: string,
   category: string, template: string,
   claims: Array<{ id: string; fieldPath: string; text: string }>,
+  lang: string = "ko",
 ): RegistryDocumentBundle {
-  const d = makeDoc(docId, entity, slug, title, category, template);
+  const d = makeDoc(docId, entity, slug, title, category, template, lang);
   return {
     entity, document: d,
     claims: claims.map(c => claimStub(c.id, d.id, entity.id, c.fieldPath, c.text)),
@@ -958,13 +959,13 @@ const b53 = bundle(e53, "doc-kr-product-food-br-mint-choco-ko", "baskin-robbins-
 // ===========================================================================
 // 54. 루브르 박물관 운영시간 — place_attraction (글로벌)
 // ===========================================================================
-const e54: Entity = { id: "fr-place-attraction-louvre-001", type: "place_attraction", canonical_name: "루브르 박물관 (Musée du Louvre)", country: "FR", region: "Île-de-France", city: "Paris", created_at: null, updated_at: null };
-const b54 = bundle(e54, "doc-fr-place-louvre-hours-ko", "louvre-museum-opening-hours",
-  "루브르 박물관 운영시간 및 휴관일", "place_attraction", "venue-hours", [
-  { id: "claim-louvre-hours-weekday", fieldPath: "hours.weekday", text: "루브르 박물관 평일 운영시간은 확인이 필요합니다." },
-  { id: "claim-louvre-closed-day", fieldPath: "hours.closed_day", text: "루브르 박물관 정기 휴관일은 확인이 필요합니다. AI는 자주 틀립니다." },
-  { id: "claim-louvre-ticket-adult", fieldPath: "fee.adult_entry", text: "루브르 박물관 성인 입장료(유로)는 확인이 필요합니다." },
-]);
+const e54: Entity = { id: "fr-place-attraction-louvre-001", type: "place_attraction", canonical_name: "Louvre Museum (Musée du Louvre)", country: "FR", region: "Île-de-France", city: "Paris", created_at: null, updated_at: null };
+const b54 = bundle(e54, "doc-fr-place-louvre-hours-en", "louvre-museum-opening-hours",
+  "Louvre Museum — opening hours & closing days", "place_attraction", "venue-hours", [
+  { id: "claim-louvre-hours-weekday", fieldPath: "hours.weekday", text: "Louvre Museum weekday opening hours need verification." },
+  { id: "claim-louvre-closed-day", fieldPath: "hours.closed_day", text: "The Louvre's regular closing day needs verification — AI often gets this wrong." },
+  { id: "claim-louvre-ticket-adult", fieldPath: "fee.adult_entry", text: "Louvre Museum adult admission fee (EUR) needs verification." },
+], "en");
 
 // ===========================================================================
 // 55. 도로교통법 어린이 카시트 의무 — law_statute
@@ -976,6 +977,28 @@ const b55 = bundle(e55, "doc-kr-law-statute-child-seat-ko", "kr-road-traffic-act
   { id: "claim-childseat-penalty", fieldPath: "law.penalty", text: "카시트 미착용 시 과태료 금액은 확인이 필요합니다." },
   { id: "claim-childseat-exception", fieldPath: "law.exception", text: "카시트 착용 의무 예외 사항(차종·상황)은 확인이 필요합니다." },
 ]);
+
+// ===========================================================================
+// 56. California driver's license renewal fee — US (global proof, English)
+// ===========================================================================
+const e56: Entity = { id: "us-gov-ca-dmv-license-001", type: "government_service", canonical_name: "California DMV — driver's license renewal", country: "US", region: "California", city: "Sacramento", created_at: null, updated_at: null };
+const b56 = bundle(e56, "doc-us-ca-dmv-license-renewal-en", "ca-drivers-license-renewal-fee",
+  "California driver's license renewal fee & rules", "government_service", "fact-sheet", [
+  { id: "claim-cadmv-renewal-fee", fieldPath: "fee.renewal", text: "The California DMV driver's license renewal fee (USD) needs verification." },
+  { id: "claim-cadmv-renewal-cycle", fieldPath: "rule.renewal_cycle_years", text: "The California driver's license renewal cycle (years) needs verification." },
+  { id: "claim-cadmv-online-eligibility", fieldPath: "rule.online_eligibility", text: "Eligibility for online renewal in California needs verification." },
+], "en");
+
+// ===========================================================================
+// 57. Japan Rail Pass (JR Pass) price — JP (global proof, English)
+// ===========================================================================
+const e57: Entity = { id: "jp-transport-jr-pass-001", type: "transport_pass", canonical_name: "Japan Rail Pass (JR Pass)", country: "JP", region: null, city: null, created_at: null, updated_at: null };
+const b57 = bundle(e57, "doc-jp-jr-pass-price-en", "japan-rail-pass-price",
+  "Japan Rail Pass (JR Pass) — price & validity", "transport_pass", "fact-sheet", [
+  { id: "claim-jrpass-7day-ordinary", fieldPath: "price.7day_ordinary", text: "The 7-day ordinary JR Pass price (JPY) needs verification." },
+  { id: "claim-jrpass-eligibility", fieldPath: "rule.eligibility", text: "JR Pass purchase eligibility (foreign tourists) needs verification." },
+  { id: "claim-jrpass-shinkansen-coverage", fieldPath: "rule.shinkansen_coverage", text: "Which Shinkansen services the JR Pass covers needs verification — AI often gets this wrong." },
+], "en");
 
 // ===========================================================================
 // Backward-compatible exports
@@ -995,4 +1018,5 @@ export const allRegistryBundles: RegistryDocumentBundle[] = [
   b33, b34, b35, b36, b37, b38, b39, b40,
   b41, b42, b43, b44, b45, b46, b47, b48,
   b49, b50, b51, b52, b53, b54, b55,
+  b56, b57,
 ];
