@@ -1,7 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
-import { getAllRegistryBundles, isVerifiedDocumentBundle, partitionRegistryBundles } from "../lib/data";
+import {
+  getAllRegistryBundles,
+  isVerifiedDocumentBundle,
+  partitionRegistryBundles,
+} from "../lib/data";
 import type { RegistryDocumentBundle } from "../lib/types";
 import HomeSearch from "./components/HomeSearch";
 
@@ -43,7 +47,8 @@ function statusBadge(status: string): { className: string; label: string } {
 }
 
 function statusRank(b: RegistryDocumentBundle): number {
-  if (b.document.status === "verified" || b.document.status === "published") return 0;
+  if (b.document.status === "verified" || b.document.status === "published")
+    return 0;
   if (b.document.status === "needs_review") return 1;
   return 2;
 }
@@ -55,7 +60,9 @@ async function getAllDocs(): Promise<DocItem[]> {
     category: undefined,
     summary: b.listing?.summary ?? undefined,
     source: "static" as const,
-    verification: isVerifiedDocumentBundle(b) ? "verified" as const : "candidate" as const,
+    verification: isVerifiedDocumentBundle(b)
+      ? ("verified" as const)
+      : ("candidate" as const),
   }));
   const staticSlugs = new Set(staticDocs.map((d) => d.slug));
   let sbDocs: DocItem[] = [];
@@ -66,39 +73,55 @@ async function getAllDocs(): Promise<DocItem[]> {
       const sb = createClient(url, key);
       const { data } = await sb
         .from("registry_documents")
-        .select("slug,title,category,status,confidence,registry_claims(status,confidence,claim_value)")
+        .select(
+          "slug,title,category,status,confidence,registry_claims(status,confidence,claim_value)",
+        )
         .in("status", ["published", "verified", "needs_review"])
         .order("created_at", { ascending: false })
         .limit(500);
       sbDocs = (data ?? [])
         .filter((d: { slug: string }) => !staticSlugs.has(d.slug))
-        .map((d: { slug: string; title: string; category?: string; status?: string; confidence?: string; registry_claims?: { status?: string; confidence?: string; claim_value?: string }[] }) => {
-          const claims = d.registry_claims ?? [];
-          const verification =
-            (d.status === "published" || d.status === "verified") &&
-            d.confidence !== "low" &&
-            claims.length > 0 &&
-            claims.every((claim) =>
-              claim.status === "verified" &&
-              claim.confidence !== "low" &&
-              claim.claim_value !== "확인 필요",
-            )
-              ? "verified"
-              : "candidate";
+        .map(
+          (d: {
+            slug: string;
+            title: string;
+            category?: string;
+            status?: string;
+            confidence?: string;
+            registry_claims?: {
+              status?: string;
+              confidence?: string;
+              claim_value?: string;
+            }[];
+          }) => {
+            const claims = d.registry_claims ?? [];
+            const verification =
+              (d.status === "published" || d.status === "verified") &&
+              d.confidence !== "low" &&
+              claims.length > 0 &&
+              claims.every(
+                (claim) =>
+                  claim.status === "verified" &&
+                  claim.confidence !== "low" &&
+                  claim.claim_value !== "확인 필요",
+              )
+                ? "verified"
+                : "candidate";
 
-          const firstVerifiedValue = claims.find(
-            (c) => c.claim_value && c.claim_value !== "확인 필요",
-          )?.claim_value;
+            const firstVerifiedValue = claims.find(
+              (c) => c.claim_value && c.claim_value !== "확인 필요",
+            )?.claim_value;
 
-          return {
-            slug: d.slug,
-            title: d.title,
-            category: d.category ?? "",
-            summary: firstVerifiedValue ?? undefined,
-            source: "supabase" as const,
-            verification,
-          };
-        });
+            return {
+              slug: d.slug,
+              title: d.title,
+              category: d.category ?? "",
+              summary: firstVerifiedValue ?? undefined,
+              source: "supabase" as const,
+              verification,
+            };
+          },
+        );
     } catch {
       /* Supabase unavailable — use static only */
     }
@@ -125,17 +148,30 @@ async function getPopularDocs(): Promise<PopularDoc[]> {
       .select("id, slug, title")
       .in("id", docIds);
 
-    const docMap = new Map((docs ?? []).map((d: { id: string; slug: string; title: string }) => [d.id, d]));
-    return stats.map((s: { document_id: string; view_count: number; ai_citation_count: number }) => {
-      const doc = docMap.get(s.document_id);
-      return {
-        document_id: s.document_id,
-        view_count: s.view_count,
-        ai_citation_count: s.ai_citation_count,
-        slug: doc?.slug,
-        title: doc?.title,
-      };
-    }).filter((d: PopularDoc) => d.slug);
+    const docMap = new Map(
+      (docs ?? []).map((d: { id: string; slug: string; title: string }) => [
+        d.id,
+        d,
+      ]),
+    );
+    return stats
+      .map(
+        (s: {
+          document_id: string;
+          view_count: number;
+          ai_citation_count: number;
+        }) => {
+          const doc = docMap.get(s.document_id);
+          return {
+            document_id: s.document_id,
+            view_count: s.view_count,
+            ai_citation_count: s.ai_citation_count,
+            slug: doc?.slug,
+            title: doc?.title,
+          };
+        },
+      )
+      .filter((d: PopularDoc) => d.slug);
   } catch {
     return [];
   }
@@ -145,76 +181,164 @@ export const revalidate = 60;
 
 export default async function HomePage() {
   const bundles = getAllRegistryBundles();
-  const [docs, popularDocs] = await Promise.all([getAllDocs(), getPopularDocs()]);
+  const [docs, popularDocs] = await Promise.all([
+    getAllDocs(),
+    getPopularDocs(),
+  ]);
 
   const claims = bundles.flatMap((b) => b.claims);
   const totalClaims = claims.length;
   const verifiedClaims = claims.filter((c) => c.status === "verified").length;
   const needsReviewClaims = totalClaims - verifiedClaims;
   const categories = new Set(bundles.map((b) => b.entity.type)).size;
-  const verifiedPct = totalClaims ? Math.round((verifiedClaims / totalClaims) * 100) : 0;
+  const verifiedPct = totalClaims
+    ? Math.round((verifiedClaims / totalClaims) * 100)
+    : 0;
 
   const example =
-    bundles.find((b) => b.claims.some((c) => c.status === "verified")) ?? bundles[0];
+    bundles.find((b) => b.claims.some((c) => c.status === "verified")) ??
+    bundles[0];
   const exampleSlug = example?.document.slug ?? "";
 
   const sorted = [...bundles].sort((a, b) => {
     const r = statusRank(a) - statusRank(b);
     return r !== 0 ? r : a.document.title.localeCompare(b.document.title, "ko");
   });
-  const { verified: verifiedDocuments, candidates: candidateDocuments } = partitionRegistryBundles(sorted);
+  const { verified: verifiedDocuments, candidates: candidateDocuments } =
+    partitionRegistryBundles(sorted);
 
   return (
-    <div className="home">
-      {/* Hero */}
-      <section className="hero">
-        <p className="hero-eyebrow">Global Fact Registry for AI, Search & Humans</p>
-        <h1 className="hero-title">
-          Every fact at the <span className="hero-accent">claim level</span>,
-          <br />
-          with sources and verification.
-        </h1>
-        <p className="hero-sub">
-          Every claim carries confidence, sources, and verification status.
-          Unverified information is never guessed — it stays as <strong>&ldquo;Needs verification&rdquo;</strong>.
-        </p>
-        <div className="hero-cta-row">
-          <Link href="#registry" className="btn btn-primary">
-            Browse Registry
+    <div className="registry-dashboard">
+      <section
+        className="dashboard-shell"
+        aria-label="For-Ai registry overview"
+      >
+        <aside className="dashboard-sidebar" aria-label="Registry navigation">
+          <Link href="/" className="dashboard-brand" aria-label="For-Ai home">
+            <span className="dashboard-brand-mark">F</span>
+            <span>
+              <strong>For-Ai</strong>
+              <small>Claim-level fact registry</small>
+            </span>
           </Link>
-          <Link href="/api-docs" className="btn btn-secondary">
-            API Docs
-          </Link>
-          <Link href="/suggest-topic" className="btn btn-secondary">
-            Suggest Topic
-          </Link>
+
+          <nav className="dashboard-nav" aria-label="Dashboard sections">
+            <Link
+              href="#registry"
+              className="dashboard-nav-item dashboard-nav-item-active"
+            >
+              Registry
+            </Link>
+            <Link href="#developers" className="dashboard-nav-item">
+              Developers
+            </Link>
+            <Link href="#ai-systems" className="dashboard-nav-item">
+              AI systems
+            </Link>
+            <Link href="/community" className="dashboard-nav-item">
+              Community
+            </Link>
+          </nav>
+
+          <div className="impact-panel">
+            <span className="pulse-dot" aria-hidden="true" />
+            <p>
+              <strong>{verifiedClaims}</strong> verified claims are
+              citation-ready. Unknowns remain marked as Needs verification.
+            </p>
+          </div>
+        </aside>
+
+        <div className="dashboard-main">
+          <header className="dashboard-topbar">
+            <p>AI가 인용할 수 있는 글로벌 사실 레지스트리</p>
+            <div className="dashboard-topbar-actions">
+              <Link href="/api-docs" className="dashboard-link">
+                API Docs
+              </Link>
+              <Link
+                href="/suggest-topic"
+                className="dashboard-link dashboard-link-primary"
+              >
+                Suggest Topic
+              </Link>
+            </div>
+          </header>
+
+          <div className="dashboard-hero-grid">
+            <section className="glass-panel dashboard-hero">
+              <p className="dashboard-eyebrow">
+                Global Fact Registry for AI, Search &amp; Humans
+              </p>
+              <h1>
+                Every fact at the <span>claim level</span>, with sources and
+                human verification.
+              </h1>
+              <p className="dashboard-copy">
+                Every claim carries confidence, sources, and verification
+                status. Unverified information is never guessed — it stays as{" "}
+                <strong>Needs verification</strong>.
+              </p>
+              <div className="dashboard-cta-row">
+                <Link
+                  href="#registry"
+                  className="dashboard-button dashboard-button-primary"
+                >
+                  Browse Registry
+                </Link>
+                <Link
+                  href={`/en/wiki/${exampleSlug}`}
+                  className="dashboard-button dashboard-button-secondary"
+                >
+                  View Example
+                </Link>
+              </div>
+            </section>
+
+            <section
+              className="glass-panel fact-stream"
+              aria-label="Live registry metrics"
+            >
+              <div className="fact-stream-header">
+                <span className="pulse-dot" aria-hidden="true" />
+                <p>Registry signal</p>
+              </div>
+              <div className="fact-card">
+                <span>{bundles.length}</span>
+                <p>Documents indexed for AI-readable citation</p>
+              </div>
+              <div className="fact-card">
+                <span>{totalClaims}</span>
+                <p>Total claim records with explicit status</p>
+              </div>
+              <div className="fact-card">
+                <span>{verifiedPct}%</span>
+                <p>Verified ratio · {needsReviewClaims} claims need review</p>
+              </div>
+            </section>
+          </div>
+
+          <section className="dashboard-stats" aria-label="Registry stats">
+            <div className="glass-panel dashboard-stat-card">
+              <span>{bundles.length}</span>
+              <p>Documents</p>
+            </div>
+            <div className="glass-panel dashboard-stat-card">
+              <span>{totalClaims}</span>
+              <p>Total Claims</p>
+            </div>
+            <div className="glass-panel dashboard-stat-card">
+              <span>{verifiedClaims}</span>
+              <p>Verified Claims</p>
+            </div>
+            <div className="glass-panel dashboard-stat-card">
+              <span>{categories}</span>
+              <p>Categories</p>
+            </div>
+          </section>
         </div>
       </section>
 
-      {/* Trust / stats */}
-      <section className="stat-strip" aria-label="Registry stats">
-        <div className="stat">
-          <span className="stat-num">{bundles.length}</span>
-          <span className="stat-label">Documents</span>
-        </div>
-        <div className="stat">
-          <span className="stat-num">{totalClaims}</span>
-          <span className="stat-label">Total Claims</span>
-        </div>
-        <div className="stat">
-          <span className="stat-num">{verifiedClaims}</span>
-          <span className="stat-label">Verified Claims</span>
-        </div>
-        <div className="stat">
-          <span className="stat-num">{categories}</span>
-          <span className="stat-label">Categories</span>
-        </div>
-        <p className="stat-note">
-          Verified {verifiedClaims} · Needs review {needsReviewClaims} ({verifiedPct}% verified). We mark what we don&apos;t know.
-        </p>
-      </section>
-
-      {/* 3 audience entry points */}
       <section className="section">
         <p className="section-eyebrow">Who uses For-Ai</p>
         <h2 className="section-title">Three audiences, one source of truth</h2>
@@ -225,12 +349,17 @@ export default async function HomePage() {
             </div>
             <h3>Developers</h3>
             <p>
-              Fetch structured facts via JSON, Markdown, or JSON-LD. Every claim includes confidence and sources — ready for RAG pipelines and AI agents to cite directly.
+              Fetch structured facts via JSON, Markdown, or JSON-LD. Every claim
+              includes confidence and sources — ready for RAG pipelines and AI
+              agents to cite directly.
             </p>
             <div className="audience-links">
               {exampleSlug ? (
                 <>
-                  <Link href={`/api/documents/${exampleSlug}`} className="mono-link">
+                  <Link
+                    href={`/api/documents/${exampleSlug}`}
+                    className="mono-link"
+                  >
                     GET /api/documents/{exampleSlug}
                   </Link>
                   <Link href={`/raw/${exampleSlug}.md`} className="mono-link">
@@ -250,7 +379,9 @@ export default async function HomePage() {
             </div>
             <h3>People</h3>
             <p>
-              Find source-backed answers to questions AI often gets wrong. If something is outdated or incorrect, report it with one click — no login required.
+              Find source-backed answers to questions AI often gets wrong. If
+              something is outdated or incorrect, report it with one click — no
+              login required.
             </p>
             <div className="audience-links">
               <Link href="#registry" className="text-link">
@@ -268,8 +399,10 @@ export default async function HomePage() {
             </div>
             <h3>AI &amp; Crawlers</h3>
             <p>
-              Check <code>confidence</code>, <code>status</code>, and <code>sources</code> before citing.
-              Never cite unverified (&ldquo;Needs verification&rdquo;) claims as facts. Each document embeds JSON-LD in raw HTML.
+              Check <code>confidence</code>, <code>status</code>, and{" "}
+              <code>sources</code> before citing. Never cite unverified
+              (&ldquo;Needs verification&rdquo;) claims as facts. Each document
+              embeds JSON-LD in raw HTML.
             </p>
             <div className="audience-links">
               <Link href="/llms.txt" className="mono-link">
@@ -279,7 +412,10 @@ export default async function HomePage() {
                 /sitemap.xml
               </Link>
               {exampleSlug ? (
-                <Link href={`/diagnostics/${exampleSlug}`} className="text-link">
+                <Link
+                  href={`/diagnostics/${exampleSlug}`}
+                  className="text-link"
+                >
                   AI-readiness diagnostics
                 </Link>
               ) : null}
@@ -298,7 +434,9 @@ export default async function HomePage() {
             <div>
               <h3>Claim registered</h3>
               <p>
-                Every fact starts as <code>Needs verification</code> / <code>confidence: low</code> / <code>status: needs_review</code> / no sources. AI-generated candidates follow the same rule.
+                Every fact starts as <code>Needs verification</code> /{" "}
+                <code>confidence: low</code> / <code>status: needs_review</code>{" "}
+                / no sources. AI-generated candidates follow the same rule.
               </p>
             </div>
           </li>
@@ -307,7 +445,9 @@ export default async function HomePage() {
             <div>
               <h3>Source attached &amp; verified</h3>
               <p>
-                Official, regulatory, or platform sources are attached with observation timestamps. Verification events record the full audit trail.
+                Official, regulatory, or platform sources are attached with
+                observation timestamps. Verification events record the full
+                audit trail.
               </p>
             </div>
           </li>
@@ -316,7 +456,10 @@ export default async function HomePage() {
             <div>
               <h3>Promoted to verified</h3>
               <p>
-                Only after human review does a claim become <code>verified</code> with <code>confidence: medium/high</code>. AI-generated content is never published as verified fact without source backing.
+                Only after human review does a claim become{" "}
+                <code>verified</code> with <code>confidence: medium/high</code>.
+                AI-generated content is never published as verified fact without
+                source backing.
               </p>
             </div>
           </li>
@@ -332,13 +475,20 @@ export default async function HomePage() {
             {popularDocs.map((d, i) => (
               <li key={d.document_id} className="registry-row">
                 <div className="registry-row-main">
-                  <Link href={`/en/wiki/${d.slug}`} className="registry-row-title">
+                  <Link
+                    href={`/en/wiki/${d.slug}`}
+                    className="registry-row-title"
+                  >
                     {i + 1}. {d.title}
                   </Link>
                 </div>
                 <div className="registry-row-meta">
-                  <span className="badge" title="AI citations">AI {d.ai_citation_count}</span>
-                  <span className="badge" title="Views">{d.view_count} views</span>
+                  <span className="badge" title="AI citations">
+                    AI {d.ai_citation_count}
+                  </span>
+                  <span className="badge" title="Views">
+                    {d.view_count} views
+                  </span>
                 </div>
               </li>
             ))}
@@ -354,7 +504,9 @@ export default async function HomePage() {
       {/* Registry index */}
       <section className="section" id="registry">
         <p className="section-eyebrow">Registry</p>
-        <h2 className="section-title">Registered Documents ({bundles.length})</h2>
+        <h2 className="section-title">
+          Registered Documents ({bundles.length})
+        </h2>
 
         {verifiedDocuments.length > 0 && (
           <>
@@ -365,10 +517,15 @@ export default async function HomePage() {
                 return (
                   <li key={b.document.slug} className="registry-row">
                     <div className="registry-row-main">
-                      <Link href={`/en/wiki/${b.document.slug}`} className="registry-row-title">
+                      <Link
+                        href={`/en/wiki/${b.document.slug}`}
+                        className="registry-row-title"
+                      >
                         {b.document.title}
                       </Link>
-                      <span className="registry-row-entity">{b.entity.canonical_name}</span>
+                      <span className="registry-row-entity">
+                        {b.entity.canonical_name}
+                      </span>
                     </div>
                     <div className="registry-row-meta">
                       <span className={badge.className}>{badge.label}</span>
@@ -388,10 +545,15 @@ export default async function HomePage() {
             return (
               <li key={b.document.slug} className="registry-row">
                 <div className="registry-row-main">
-                  <Link href={`/en/wiki/${b.document.slug}`} className="registry-row-title">
+                  <Link
+                    href={`/en/wiki/${b.document.slug}`}
+                    className="registry-row-title"
+                  >
                     {b.document.title}
                   </Link>
-                  <span className="registry-row-entity">{b.entity.canonical_name}</span>
+                  <span className="registry-row-entity">
+                    {b.entity.canonical_name}
+                  </span>
                 </div>
                 <div className="registry-row-meta">
                   <span className={badge.className}>{badge.label}</span>
