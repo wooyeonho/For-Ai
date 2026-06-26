@@ -165,9 +165,22 @@ export default async function HomePage() {
   const { verified: verifiedDocuments, candidates: candidateDocuments } = partitionRegistryBundles(sorted);
 
   return (
-    <div className="home">
+    <div className="home registry-dashboard">
+      <section className="dashboard-status-bar" aria-label="Registry dashboard navigation">
+        <div>
+          <p className="dashboard-kicker">FOR-AI REGISTRY OS</p>
+          <strong>Claim-level verification dashboard</strong>
+        </div>
+        <nav className="dashboard-quick-links" aria-label="Dashboard quick links">
+          <Link href="#registry">Registry Index</Link>
+          <Link href="#query-ledger">Query Ledger</Link>
+          <Link href="/api-docs">API Docs</Link>
+          <Link href="/suggest-topic">Suggest Topic</Link>
+        </nav>
+      </section>
+
       {/* Hero */}
-      <section className="hero">
+      <section className="hero dashboard-hero">
         <p className="hero-eyebrow">Global Fact Registry for AI, Search & Humans</p>
         <h1 className="hero-title">
           Every fact at the <span className="hero-accent">claim level</span>,
@@ -347,28 +360,79 @@ export default async function HomePage() {
       )}
 
       {/* Search */}
-      <section className="section">
+      <section className="section glass-panel query-ledger" id="query-ledger">
+        <div className="panel-heading-row">
+          <div>
+            <p className="section-eyebrow">Query Ledger</p>
+            <h2 className="section-title">Search claim-backed documents</h2>
+          </div>
+          <span className="ledger-status">RAW HTML READY</span>
+        </div>
         <HomeSearch docs={docs} />
       </section>
 
       {/* Registry index */}
       <section className="section" id="registry">
-        <p className="section-eyebrow">Registry</p>
-        <h2 className="section-title">Registered Documents ({bundles.length})</h2>
+        <div className="panel-heading-row">
+          <div>
+            <p className="section-eyebrow">Registry</p>
+            <h2 className="section-title">Registry index ({bundles.length})</h2>
+          </div>
+          <div className="registry-tools" aria-label="Machine-readable registry links">
+            <Link href="/llms.txt" className="mono-link">/llms.txt</Link>
+            <Link href="/sitemap.xml" className="mono-link">/sitemap.xml</Link>
+            {exampleSlug ? (
+              <Link href={`/diagnostics/${exampleSlug}`} className="text-link">Diagnostics</Link>
+            ) : null}
+          </div>
+        </div>
 
-        {verifiedDocuments.length > 0 && (
-          <>
-            <h3>Verified ({verifiedDocuments.length})</h3>
-            <ul className="registry-index">
-              {verifiedDocuments.map((b) => {
+        <div className="stream-grid">
+          <div className="stream-panel live-stream">
+            <div className="stream-panel-header">
+              <p className="section-eyebrow">Live Verification Stream</p>
+              <span className="stream-count">{verifiedDocuments.length}</span>
+            </div>
+            {verifiedDocuments.length > 0 ? (
+              <ul className="stream-list">
+                {verifiedDocuments.map((b) => {
+                  const badge = statusBadge(b.document.status);
+                  return (
+                    <li key={b.document.slug} className="stream-card">
+                      <div className="stream-card-copy">
+                        <Link href={`/en/wiki/${b.document.slug}`} className="stream-card-title">
+                          {b.document.title}
+                        </Link>
+                        <span>{b.entity.canonical_name}</span>
+                      </div>
+                      <div className="registry-row-meta">
+                        <span className={badge.className}>{badge.label}</span>
+                        <span className="badge">{b.entity.type}</span>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <p className="empty-stream">No verified documents yet.</p>
+            )}
+          </div>
+
+          <div className="stream-panel pending-stream">
+            <div className="stream-panel-header">
+              <p className="section-eyebrow">Pending / Needs Review</p>
+              <span className="stream-count warning">{candidateDocuments.length}</span>
+            </div>
+            <ul className="stream-list">
+              {candidateDocuments.map((b) => {
                 const badge = statusBadge(b.document.status);
                 return (
-                  <li key={b.document.slug} className="registry-row">
-                    <div className="registry-row-main">
-                      <Link href={`/en/wiki/${b.document.slug}`} className="registry-row-title">
+                  <li key={b.document.slug} className="stream-card">
+                    <div className="stream-card-copy">
+                      <Link href={`/en/wiki/${b.document.slug}`} className="stream-card-title">
                         {b.document.title}
                       </Link>
-                      <span className="registry-row-entity">{b.entity.canonical_name}</span>
+                      <span>{b.entity.canonical_name}</span>
                     </div>
                     <div className="registry-row-meta">
                       <span className={badge.className}>{badge.label}</span>
@@ -378,29 +442,8 @@ export default async function HomePage() {
                 );
               })}
             </ul>
-          </>
-        )}
-
-        <h3>Candidates &middot; Needs Review ({candidateDocuments.length})</h3>
-        <ul className="registry-index">
-          {candidateDocuments.map((b) => {
-            const badge = statusBadge(b.document.status);
-            return (
-              <li key={b.document.slug} className="registry-row">
-                <div className="registry-row-main">
-                  <Link href={`/en/wiki/${b.document.slug}`} className="registry-row-title">
-                    {b.document.title}
-                  </Link>
-                  <span className="registry-row-entity">{b.entity.canonical_name}</span>
-                </div>
-                <div className="registry-row-meta">
-                  <span className={badge.className}>{badge.label}</span>
-                  <span className="badge">{b.entity.type}</span>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+          </div>
+        </div>
       </section>
     </div>
   );
