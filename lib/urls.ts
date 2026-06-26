@@ -16,7 +16,7 @@ export function rawMarkdownUrl(slug: string): string {
   return siteUrl(`/raw/${slug}.md`);
 }
 
-export function entityPageUrl(entityId: string, lang = "ko"): string {
+export function entityPageUrl(entityId: string, lang = "en"): string {
   return siteUrl(`/${lang}/entity/${encodeURIComponent(entityId)}`);
 }
 

@@ -154,7 +154,7 @@ export function buildDocumentJsonLd(bundle: RegistryDocumentBundle): object {
 
 export function buildEntityMetadata(profile: EntityProfile, locale?: string): Metadata {
   const { entity, summary } = profile;
-  const lang = locale ?? "ko";
+  const lang = locale ?? DEFAULT_LOCALE;
   const title = entity.canonical_name;
   const description =
     `${entity.canonical_name} — For-Ai fact registry. ` +
@@ -164,7 +164,7 @@ export function buildEntityMetadata(profile: EntityProfile, locale?: string): Me
 
   const hreflang: Record<string, string> = {};
   for (const l of SUPPORTED_LOCALES) hreflang[l] = entityPageUrl(entity.id, l);
-  hreflang["x-default"] = entityPageUrl(entity.id, "ko");
+  hreflang["x-default"] = entityPageUrl(entity.id, DEFAULT_LOCALE);
 
   return {
     title,
@@ -175,14 +175,15 @@ export function buildEntityMetadata(profile: EntityProfile, locale?: string): Me
   };
 }
 
-export function buildEntityJsonLd(profile: EntityProfile): object {
+export function buildEntityJsonLd(profile: EntityProfile, locale?: string): object {
   const { entity, documents, summary } = profile;
+  const lang = locale ?? DEFAULT_LOCALE;
   const node: Record<string, unknown> = {
     "@context": "https://schema.org",
     "@type": schemaTypeForEntity(entity.type),
     name: entity.canonical_name,
     identifier: entity.id,
-    url: entityPageUrl(entity.id, "ko"),
+    url: entityPageUrl(entity.id, lang),
     address: {
       "@type": "PostalAddress",
       addressCountry: entity.country,

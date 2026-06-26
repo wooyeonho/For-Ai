@@ -55,8 +55,8 @@ function maybePruneMap() {
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Rate-limit public document API (not admin endpoints)
-  if (pathname.startsWith("/api/documents/") || pathname.startsWith("/raw/")) {
+  // Rate-limit public API endpoints (not admin endpoints)
+  if (pathname.startsWith("/api/documents/") || pathname.startsWith("/raw/") || pathname.startsWith("/api/index") || pathname.startsWith("/api/entities/")) {
     maybePruneMap();
     const hasApiKey = !!request.headers.get("x-api-key");
     const ip = getClientIp(request);

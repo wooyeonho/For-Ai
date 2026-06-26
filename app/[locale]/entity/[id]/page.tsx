@@ -44,7 +44,7 @@ export default async function EntityProfilePage({
   const { entity, documents, summary } = profile;
   const t = getTranslations(locale as SupportedLocale);
   const el = getEntityLabels(locale as SupportedLocale);
-  const jsonLd = buildEntityJsonLd(profile);
+  const jsonLd = buildEntityJsonLd(profile, locale);
 
   return (
     <article>
