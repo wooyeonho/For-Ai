@@ -25,7 +25,7 @@ export function ClaimCard({ claim, locale }: { claim: ClaimWithSources; locale?:
 
       {/* Technical label + badges — de-emphasized */}
       <div className="claim-card-header">
-        <span className="eyebrow" style={{ fontSize: "0.75rem", opacity: 0.55 }}>
+        <span className="eyebrow claim-field-path">
           {claim.field_path}
         </span>
         <div className="claim-badges">
