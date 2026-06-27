@@ -1,0 +1,87 @@
+{
+  "entity_id": "kr-transport-seoul-city-bus-fare-001",
+  "slug": "seoul-city-bus-fare",
+  "type": "transport.bus",
+  "name": "서울 시내버스 기본요금 (2025년)",
+  "lang": "ko",
+  "country": "KR",
+  "jurisdiction": "KR",
+  "risk_tier": "low",
+  "update_frequency": "event_based",
+  "disclaimer_type": "check_official_source",
+  "last_verified_at": "2026-06-27",
+  "claims": [
+    {
+      "claim_id": "seoul-bus-fare-trunk-branch-adult-card",
+      "field_path": "fare.trunk_branch_adult_card",
+      "claim_text": "서울 간선·지선 시내버스 성인 교통카드 기본요금 (10km 이내)",
+      "claim_value": "1,500원",
+      "confidence": "high",
+      "status": "verified",
+      "last_verified_at": "2026-06-27",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "서울특별시 교통 요금 안내",
+          "url": "https://news.seoul.go.kr/traffic/traffic_price",
+          "observed_at": "2026-06-27",
+          "note": "서울특별시 교통정책과 공식 교통요금 안내 페이지에 명시된 시내버스 교통카드 기본요금 (시내버스 1,500원 - 마을버스 1,200원 환승 차액 예시로 확인). 공공누리 제4유형."
+        }
+      ],
+      "verification_event": {
+        "event_type": "source_verified",
+        "actor": "ai-source-fetch",
+        "verified_at": "2026-06-27",
+        "note": "서울특별시 공식 교통요금 안내 페이지(news.seoul.go.kr)에서 직접 확인. 2026-06-27 기준. 최종 사람 승인 대기."
+      }
+    },
+    {
+      "claim_id": "seoul-bus-fare-village-adult-card",
+      "field_path": "fare.village_adult_card",
+      "claim_text": "서울 마을버스 성인 교통카드 기본요금 (10km 이내)",
+      "claim_value": "1,200원",
+      "confidence": "high",
+      "status": "verified",
+      "last_verified_at": "2026-06-27",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "서울특별시 교통 요금 안내",
+          "url": "https://news.seoul.go.kr/traffic/traffic_price",
+          "observed_at": "2026-06-27",
+          "note": "서울특별시 교통정책과 공식 교통요금 안내 페이지에 명시된 마을버스 교통카드 기본요금. 조조할인 예시(06:30 이전 마을버스 첫 승차 960원 = 1,200원의 80%)로 교차 확인. 공공누리 제4유형."
+        }
+      ],
+      "verification_event": {
+        "event_type": "source_verified",
+        "actor": "ai-source-fetch",
+        "verified_at": "2026-06-27",
+        "note": "서울특별시 공식 교통요금 안내 페이지(news.seoul.go.kr)에서 직접 확인. 2026-06-27 기준. 최종 사람 승인 대기."
+      }
+    },
+    {
+      "claim_id": "seoul-bus-fare-early-morning-discount",
+      "field_path": "policy.early_morning_discount_rate",
+      "claim_text": "서울 대중교통 조조할인율 (첫차~06:30 첫 승차, 교통카드)",
+      "claim_value": "기본요금의 20% 할인",
+      "confidence": "high",
+      "status": "verified",
+      "last_verified_at": "2026-06-27",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "서울특별시 교통 요금 안내",
+          "url": "https://news.seoul.go.kr/traffic/traffic_price",
+          "observed_at": "2026-06-27",
+          "note": "서울특별시 교통정책과 공식 안내: 교통카드로 오전 6시 30분 이전 대중교통 첫 승차 시 해당 수단 기본요금에서 20% 할인. 공공누리 제4유형."
+        }
+      ],
+      "verification_event": {
+        "event_type": "source_verified",
+        "actor": "ai-source-fetch",
+        "verified_at": "2026-06-27",
+        "note": "서울특별시 공식 교통요금 안내 페이지(news.seoul.go.kr)에서 직접 확인. 2026-06-27 기준. 최종 사람 승인 대기."
+      }
+    }
+  ]
+}

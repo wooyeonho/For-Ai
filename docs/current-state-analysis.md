@@ -1,6 +1,27 @@
 For-Ai 현재 상태 통합 분석
 실리콘밸리 개발자·디자이너·소비자 AI·인간·투자자 관점
 
+---
+
+업데이트 (2026-06-27)
+
+이전 분석은 verified claim을 "거의 0"으로 추정했으나, 실측 결과를 보정한다.
+
+- 시드 토픽: 55개 (KR·JP·US·UK·India로 글로벌 확장됨)
+- 시드 claim: 132개 — 전부 placeholder("확인 필요"). 즉 verified-seed-set.json은 검증 데이터가 아니라 검증 대기열(backlog)이다.
+- data/verified-claims/ 의 실제 citation-ready claim: 기존 9개 (seoul-metro-base-fare, passport-reissue-fee, move-in-report-deadline 3개 문서) → 이번에 KR 교통 vertical을 공식 출처로 채워 17개로 증가.
+
+이번에 추가된 공식 출처 기반 citation-ready 문서 (출처: 서울특별시 공식 교통정보, news.seoul.go.kr, 공공누리 제4유형, 2026-06-27 확인):
+- seoul-city-bus-fare — 간선·지선 1,500원 / 마을 1,200원 / 조조할인 20%
+- seoul-transit-transfer-rule — 환승 인정 30분(주간)·60분(심야), 최대 5회 승차
+- seoul-taxi-base-fare — 중형 1.6km/4,800원, 모범·대형 3km/7,000원
+
+KTX 환불 위약금은 코레일 공식 페이지가 자동 조회를 차단(403)하여 verified로 승격하지 않고 후속 후보로 남긴다. "공식 출처를 직접 확인하지 못하면 verified로 올리지 않는다"는 원칙을 따른다.
+
+큰 그림은 동일하다: 계약은 우수하나 검증된 사실의 절대량이 여전히 작다(시드 132개 대비 citation-ready 17개, 약 13%). 다음 레버리지는 검증 큐 UI와 인용 계측이다.
+
+---
+
 핵심 결론
 
 계약은 거의 완벽하다. 선반은 아직 비었다.
