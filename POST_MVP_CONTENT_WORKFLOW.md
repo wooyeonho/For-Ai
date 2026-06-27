@@ -1,8 +1,8 @@
 # Post-MVP Content Workflow Design
 
-This document defines the structured content flow for GYEOL: how topics enter the registry, how they are reviewed, and how claims become verified.
+This document defines the structured content flow for For-Ai: how topics enter the registry, how they are reviewed, and how claims become verified.
 
-GYEOL is not a wiki or a free-form bulletin board. Every piece of content must map to the schema-v3 structure: `entities → documents → claims → claim_sources → verification_events`.
+For-Ai is not a wiki or a free-form bulletin board. Every piece of content must map to the schema-v3 structure: `entities → documents → claims → claim_sources → verification_events`.
 
 ## Principles
 

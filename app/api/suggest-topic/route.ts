@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { extractIp, makeContributorHash } from "@/lib/contributor-hash";
+import { makeContributorHashForRequest } from "@/lib/contributor-hash";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const SUPABASE_ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
@@ -23,7 +23,13 @@ export async function POST(request: Request) {
     );
   }
 
-  const hash = makeContributorHash(extractIp(request), process.env.CONTRIBUTOR_SALT ?? "");
+  let hash: string;
+  try {
+    hash = makeContributorHashForRequest(request);
+  } catch (error) {
+    console.error('[suggest-topic] Contributor salt missing:', error);
+    return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+  }
 
   // Try to save to topic_candidates
   let storage: "db" | "stub" = "stub";

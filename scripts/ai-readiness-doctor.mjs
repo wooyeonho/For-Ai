@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * GYEOL AI-readiness doctor ("LazyCodex"-style P0 loop, self-hosted).
+ * For-Ai AI-readiness doctor ("LazyCodex"-style P0 loop, self-hosted).
  *
  * Runs a set of world-class P0 standards checks against the repository and
  * prints a scored report. Exit code 0 when every P0 check passes, 1 otherwise.
@@ -210,7 +210,7 @@ if (WITH_BUILD) {
 
 // --- run -------------------------------------------------------------------
 
-console.log("GYEOL AI-readiness doctor\n");
+console.log("For-Ai AI-readiness doctor\n");
 let passed = 0;
 const failures = [];
 for (const c of checks) {

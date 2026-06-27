@@ -1,6 +1,6 @@
 # Deployment Checklist
 
-Goal 8 deployment checklist for the static-first GYEOL MVP.
+Goal 8 deployment checklist for the static-first For-Ai MVP.
 
 ## Required checks
 

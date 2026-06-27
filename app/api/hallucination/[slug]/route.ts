@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createServerClient, isSupabaseConfigured } from '@/lib/supabase-server';
-import { makeContributorHash, extractIp } from '@/lib/contributor-hash';
+import { makeContributorHashForRequest } from '@/lib/contributor-hash';
 import { getDocumentBySlug } from '@/lib/data';
 
 export async function POST(
@@ -27,11 +27,13 @@ export async function POST(
   const entityId = doc?.entity_id ?? null;
 
   // Generate contributor hash — never store raw IP
-  const ip = extractIp(request);
-  const contributorHash = makeContributorHash(
-    ip,
-    process.env.CONTRIBUTOR_SALT ?? ''
-  );
+  let contributorHash: string;
+  try {
+    contributorHash = makeContributorHashForRequest(request);
+  } catch (error) {
+    console.error('[hallucination] Contributor salt missing:', error);
+    return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+  }
 
   if (isSupabaseConfigured()) {
     try {
