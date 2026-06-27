@@ -10,6 +10,9 @@ import tokyoMetroFare from "../data/verified-claims/tokyo-metro-fare.json";
 import seoulCityBusFare from "../data/verified-claims/seoul-city-bus-fare.json";
 import seoulTransitTransferRule from "../data/verified-claims/seoul-transit-transfer-rule.json";
 import seoulTaxiBaseFare from "../data/verified-claims/seoul-taxi-base-fare.json";
+import residentIdReissueFee from "../data/verified-claims/resident-id-reissue-fee.json";
+import vehicleTaxPaymentPeriod from "../data/verified-claims/vehicle-tax-payment-period.json";
+import incomeTaxFilingPeriod from "../data/verified-claims/income-tax-filing-period.json";
 
 type VerifiedClaimFile = typeof seoulMetroFare;
 
@@ -23,6 +26,9 @@ const verifiedFiles: VerifiedClaimFile[] = [
   seoulCityBusFare as unknown as VerifiedClaimFile,
   seoulTransitTransferRule as unknown as VerifiedClaimFile,
   seoulTaxiBaseFare as unknown as VerifiedClaimFile,
+  residentIdReissueFee as unknown as VerifiedClaimFile,
+  vehicleTaxPaymentPeriod as unknown as VerifiedClaimFile,
+  incomeTaxFilingPeriod as unknown as VerifiedClaimFile,
 ];
 
 function toRegistryBundle(file: VerifiedClaimFile): RegistryDocumentBundle {

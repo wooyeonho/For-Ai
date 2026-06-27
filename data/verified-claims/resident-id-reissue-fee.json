@@ -1,0 +1,63 @@
+{
+  "entity_id": "kr-administration-resident-id-reissue-fee-001",
+  "slug": "resident-id-reissue-fee",
+  "type": "administration.documents",
+  "name": "주민등록증 재발급 수수료·처리기간",
+  "lang": "ko",
+  "country": "KR",
+  "jurisdiction": "KR",
+  "risk_tier": "low",
+  "update_frequency": "event_based",
+  "disclaimer_type": "check_official_source",
+  "last_verified_at": "2026-06-28",
+  "claims": [
+    {
+      "claim_id": "resident-id-reissue-fee-fee-reissue",
+      "field_path": "fee.reissue",
+      "claim_text": "주민등록증 재발급 수수료는?",
+      "claim_value": "5,000원 (IC칩 미포함) / 10,000원 (IC칩 포함)",
+      "confidence": "high",
+      "status": "verified",
+      "last_verified_at": "2026-06-28",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "정부24 — 주민등록증 재발급 신청 민원안내",
+          "url": "https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=13100000018",
+          "observed_at": "2026-06-28",
+          "note": "정부24 공식 민원안내: 수수료 IC칩 미포함 5,000원 / IC칩 포함 10,000원. 담당기관 행정안전부 주민과. 근거 주민등록법 제27조·시행령 제40조."
+        }
+      ],
+      "verification_event": {
+        "event_type": "source_verified",
+        "actor": "ai-source-fetch",
+        "verified_at": "2026-06-28",
+        "note": "정부24(gov.kr) 공식 민원안내 페이지에서 직접 확인. 2026-06-28 기준. 최종 사람 승인 대기."
+      }
+    },
+    {
+      "claim_id": "resident-id-reissue-fee-processing-days",
+      "field_path": "processing.days",
+      "claim_text": "주민등록증 재발급 소요 기간은?",
+      "claim_value": "총 14일 (법정 처리기간)",
+      "confidence": "high",
+      "status": "verified",
+      "last_verified_at": "2026-06-28",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "정부24 — 주민등록증 재발급 신청 민원안내",
+          "url": "https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=13100000018",
+          "observed_at": "2026-06-28",
+          "note": "정부24 공식 민원안내: 처리기간 총 14일. 일부 지자체는 즉시발급 서비스를 제공할 수 있으나 법정 처리기간은 14일."
+        }
+      ],
+      "verification_event": {
+        "event_type": "source_verified",
+        "actor": "ai-source-fetch",
+        "verified_at": "2026-06-28",
+        "note": "정부24(gov.kr) 공식 민원안내 페이지에서 직접 확인. 2026-06-28 기준. 최종 사람 승인 대기."
+      }
+    }
+  ]
+}

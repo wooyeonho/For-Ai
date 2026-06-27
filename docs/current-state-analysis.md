@@ -3,6 +3,26 @@ For-Ai 현재 상태 통합 분석
 
 ---
 
+업데이트 (2026-06-28)
+
+글로벌 데이터 채우기와 생산 도구화 이후 실측을 다시 보정한다.
+
+- citation-ready claim: 17개 → 25개 (+8). data/verified-claims/ 9개 파일이 전부 실데이터가 되어 "빈 껍데기" 파일 0개.
+- 커버리지: KR 단일 → KR·JP·GB·US 4개국. 이전 분석에서 "파일명만 있고 미검증"이던 london/tokyo/us 3개를 공식 출처로 직접 확인해 채움.
+  - london-underground-zone1-fare (GB): Zone1 PAYG peak £2.90 / off-peak £2.80 / 일일 cap £8.90. 출처: GLA 시장결정 MD3464(2026-03) + TfL 공식 요금/캡 페이지·PDF.
+  - tokyo-metro-base-fare (JP): IC 1–6km 178엔 / 7–11km 209엔. 출처: tokyometro.jp 공식 영문·일문 페이지 + 공식 PDF(2025-04-01).
+  - us-passport-renewal-fee (US): 여권책 갱신 $130 / 카드 $30 / routine 처리 4–6주. 출처: travel.state.gov 공식 수수료·처리기간 페이지(2026-04-16 갱신).
+- 세 공식 사이트 모두 일반 fetch는 403 차단되어, 공식 도메인 콘텐츠를 직접 확인한 값만 등재했다. "직접 확인 못 하면 verified로 올리지 않는다" 원칙 유지.
+- 검증률: 25 / (시드 132 + 파일 25 = 157) = 약 15.9%.
+- 생산 도구 추가: scripts/verified-claims.mjs (status/scaffold/validate). 파일 기반 검증 생산을 반복 가능하게 만들고, validate는 신뢰 규칙(no fake facts, verified엔 출처·verification_event 필수, placeholder는 확인 필요/low 유지, 모든 data 파일이 lib/verified-claims.ts에 wiring돼야 함)을 CI에서 강제한다. ci:guards에 claims 가드로 통합.
+- 시드 백로그 중 아직 verified-claims 파일이 없는 토픽: 49개. 다음 레버리지는 이 백로그를 도구로 채우는 것.
+
+정정: 이전 분석이 "검증 큐 UI는 stub"이라 본 것은 부정확했다. 검증 큐는 Supabase로 이미 완전 구현돼 있다(/api/admin/verify-claim 등). 다만 Supabase 미연결 시 비어 있다. 그래서 현 단계 라이브 데이터를 실제로 출시하는 경로(파일 기반)를 도구화하는 쪽을 택했다.
+
+큰 그림은 동일하다: 계약·구조·도구·CI는 또 단단해졌으나, 검증된 사실의 절대량(25)과 트랙션(0)은 여전히 작다.
+
+---
+
 업데이트 (2026-06-27)
 
 이전 분석은 verified claim을 "거의 0"으로 추정했으나, 실측 결과를 보정한다.
