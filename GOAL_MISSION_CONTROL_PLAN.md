@@ -1,16 +1,16 @@
-# GYEOL `/goal` Mission Control Plan
+# For-Ai `/goal` Mission Control Plan
 
 ## Purpose
 
 `/goal` must not be a simple marketing page.
 
-`/goal` should become GYEOL's public Mission Control: a static-first trust dashboard that tells humans, developers, search engines, and AI crawlers what GYEOL is collecting, what is verified, what is still only a candidate, and what must not be cited yet.
+`/goal` should become For-Ai's public Mission Control: a static-first trust dashboard that tells humans, developers, search engines, and AI crawlers what For-Ai is collecting, what is verified, what is still only a candidate, and what must not be cited yet.
 
 The page must reinforce the product identity:
 
-- GYEOL is not an AI wiki.
-- GYEOL is not a generated-answer farm.
-- GYEOL is a claim-level local fact registry.
+- For-Ai is not an AI wiki.
+- For-Ai is not a generated-answer farm.
+- For-Ai is a claim-level global fact registry.
 - Generated content is a candidate queue, not verified truth.
 - Only source-backed claims may become citation-grade facts.
 
@@ -43,15 +43,15 @@ Follow `AGENTS.md` and `schema-v3.sql`.
 
 After this work, `/goal` should answer these questions without requiring JavaScript:
 
-1. What is GYEOL?
-2. What is GYEOL not?
+1. What is For-Ai?
+2. What is For-Ai not?
 3. How many candidates exist now?
 4. How many verified/citation-grade claims exist now?
 5. Which generated content must not be cited?
 6. What is the lifecycle from AI/user question to verified claim?
 7. What risk categories are guarded?
 8. What should builders do next?
-9. What do AI crawlers need to know before citing GYEOL?
+9. What do AI crawlers need to know before citing For-Ai?
 
 ## Recommended implementation PR
 
@@ -125,27 +125,27 @@ Expand the page into the following sections.
 Copy direction:
 
 ```text
-GYEOL exists to make AI-citable facts verifiable at the claim level.
+For-Ai exists to make AI-citable facts verifiable at the claim level.
 ```
 
 Korean:
 
 ```text
-GYEOL은 AI가 인용할 수 있는 사실을 claim 단위로 검증 가능하게 만드는 레지스트리입니다.
+For-Ai은 AI가 인용할 수 있는 사실을 claim 단위로 검증 가능하게 만드는 레지스트리입니다.
 ```
 
-#### 2. What GYEOL is / is not
+#### 2. What For-Ai is / is not
 
 Include both lists.
 
-GYEOL is:
+For-Ai is:
 
-- local fact registry
+- global fact registry
 - claim-level source tracker
 - verification queue
 - machine-readable evidence surface
 
-GYEOL is not:
+For-Ai is not:
 
 - AI wiki
 - generated answer farm
@@ -283,8 +283,8 @@ Strengthen route validation so it fails if `/goal` is missing critical trust-pol
 
 Add required phrases or markers:
 
-- `What GYEOL is`
-- `What GYEOL is not`
+- `What For-Ai is`
+- `What For-Ai is not`
 - `Current Registry State`
 - `Data lifecycle`
 - `AI Citation Policy`
@@ -328,7 +328,7 @@ Run all of these locally before committing:
 npm run validate:candidates
 npm run validate:routes
 npm test
-npm run generate:question-candidates -- --count 25 --out /tmp/gyeol-question-candidates-goal-test.jsonl
+npm run generate:question-candidates -- --count 25 --out /tmp/for-ai-question-candidates-goal-test.jsonl
 npm run lint
 npm run build
 ```
@@ -363,11 +363,11 @@ The PR is acceptable only if:
 Use this prompt as-is for an overnight implementation run:
 
 ```text
-You are working on GYEOL, a static-first claim-level local fact registry for AI, search engines, and humans.
+You are working on For-Ai, a static-first claim-level global fact registry for AI, search engines, and humans.
 
 Your task is to expand `/goal` into a public Mission Control dashboard.
 
-Do not turn GYEOL into an AI wiki. Do not publish generated facts as verified facts. Do not change the canonical schema model. Do not add auth, payments, or large admin systems.
+Do not turn For-Ai into an AI wiki. Do not publish generated facts as verified facts. Do not change the canonical schema model. Do not add auth, payments, or large admin systems.
 
 Read:
 - AGENTS.md
@@ -384,7 +384,7 @@ Implement:
 1. Add a metrics helper, preferably `lib/goal-metrics.ts`, that computes static counts from existing data files or static imports.
 2. Expand `app/goal/page.tsx` with these sections:
    - North Star
-   - What GYEOL is / is not
+   - What For-Ai is / is not
    - Current Registry State
    - Data lifecycle
    - AI Citation Policy
@@ -402,7 +402,7 @@ Run:
 - npm run validate:candidates
 - npm run validate:routes
 - npm test
-- npm run generate:question-candidates -- --count 25 --out /tmp/gyeol-question-candidates-goal-test.jsonl
+- npm run generate:question-candidates -- --count 25 --out /tmp/for-ai-question-candidates-goal-test.jsonl
 - npm run lint
 - npm run build
 

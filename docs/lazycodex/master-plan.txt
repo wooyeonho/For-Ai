@@ -1,4 +1,4 @@
-$ulw-plan "You are improving GYEOL, a local fact registry for AI, search engines, and humans. GYEOL is not an AI wiki.
+$ulw-plan "You are improving For-Ai, a global fact registry for AI, search engines, and humans. For-Ai is not an AI wiki.
 
 Non-negotiable rules:
 - Static-first rendering is mandatory.
@@ -8,7 +8,7 @@ Non-negotiable rules:
 - entity_id is mandatory from MVP.
 - English slug is stable.
 - Display titles are language-specific.
-- GYEOL is claim-level.
+- For-Ai is claim-level.
 - Canonical structure: entities -> documents -> claims -> claim_sources -> verification_events.
 - documents.data is rendering convenience only.
 - No fake facts.

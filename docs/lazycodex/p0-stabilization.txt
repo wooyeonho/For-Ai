@@ -1,4 +1,4 @@
-$ulw-plan "Create a P0 stabilization plan for GYEOL. Focus only on Korean mojibake, route mismatch, static-first gaps, lint/build stability, and preserving schema-v3 claim-level model. Do not edit code."
+$ulw-plan "Create a P0 stabilization plan for For-Ai. Focus only on Korean mojibake, route mismatch, static-first gaps, lint/build stability, and preserving schema-v3 claim-level model. Do not edit code."
 
 $ulw-loop "Fix Korean mojibake in visible UI/SEO/diagnostics strings. Run lint and build. Stop when both pass."
 

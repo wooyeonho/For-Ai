@@ -1,6 +1,6 @@
 # Post-MVP Roadmap
 
-GYEOL `v0.1.0-mvp` is the static-first baseline for the local fact registry.
+For-Ai `v0.1.0-mvp` is the static-first baseline for the global fact registry.
 This document is planning-only. It does not change runtime behavior, schema, seeded facts, or deployment configuration.
 
 ## Current MVP Baseline
@@ -105,7 +105,7 @@ Out of scope:
 
 ## Phase 4: AI/Search Indexing Validation
 
-Validate that GYEOL is useful to crawlers, search engines, and AI systems.
+Validate that For-Ai is useful to crawlers, search engines, and AI systems.
 
 Scope:
 

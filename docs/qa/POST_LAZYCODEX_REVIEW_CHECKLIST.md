@@ -9,9 +9,9 @@ Use this checklist for CI and human review after LazyCodex or another coding age
 - Confirm generated large artifacts are not committed.
 - Confirm the change does not add payment, user accounts, complex auth, a chatbot UI, or a large admin system.
 
-## GYEOL product invariants
+## For-Ai product invariants
 
-- GYEOL is presented as a local fact registry, not an AI wiki.
+- For-Ai is presented as a global fact registry, not an AI wiki.
 - `schema-v3.sql` remains the source of truth.
 - The schema model remains `entities -> documents -> claims -> claim_sources -> verification_events`.
 - `documents.data` remains rendering convenience only.

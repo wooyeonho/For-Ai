@@ -1,6 +1,6 @@
-# CODEX_AGENT.md — GYEOL용 Codex 작업 지시문
+# CODEX_AGENT.md — For-Ai용 Codex 작업 지시문
 
-이 문서는 **Codex(및 Devin 등 샌드박스 에이전트)** 가 GYEOL 저장소에서
+이 문서는 **Codex(및 Devin 등 샌드박스 에이전트)** 가 For-Ai 저장소에서
 "LazyCodex 스타일"의 자가 점검·수정 루프를 **안전하게** 돌리기 위한 운영
 지시문입니다. `AGENTS.md`(제품 비전·불변 규칙)를 먼저 읽고, 이 문서의
 가드레일을 반드시 지키세요.
@@ -9,7 +9,7 @@
 
 ## 0. 절대 규칙 (AGENTS.md 요약 + 추가)
 
-- GYEOL은 AI 위키가 아니라 **claim 단위 로컬 팩트 레지스트리**다.
+- For-Ai은 AI 위키가 아니라 **claim 단위 글로벌 팩트 레지스트리**다.
 - `schema-v3.sql`이 Source of Truth. 다른 DB 모델을 만들지 말 것.
 - 정적 우선(static-first). 핵심 문서 내용은 JS 없이 raw HTML에서 읽혀야 한다.
 - 검증되지 않은 사실은 **반드시** `확인 필요` / `confidence: low` /

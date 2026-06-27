@@ -1,6 +1,6 @@
 # Post-MVP Topic Catalog Design
 
-This document defines how GYEOL can grow from one MVP seed document into 10,000+ AI-useful topic candidates without inventing facts.
+This document defines how For-Ai can grow from one MVP seed document into 10,000+ AI-useful topic candidates without inventing facts.
 
 It is planning-only. It does not add runtime routes, persistence, schema changes, Supabase integration, or verified real-world values.
 
@@ -32,7 +32,7 @@ People ask AI practical questions that are easy for AI systems to answer confide
 - public-profile information about notable people;
 - school, labor, travel, telecom, and consumer rules.
 
-GYEOL should catalog those questions as claim-level registry topics, then verify them with official or otherwise acceptable sources.
+For-Ai should catalog those questions as claim-level registry topics, then verify them with official or otherwise acceptable sources.
 
 ## Topic JSONL Format
 

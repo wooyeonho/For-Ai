@@ -1,1 +1,1 @@
-Design a source trust policy for GYEOL. Distinguish official, law, regulator, platform, news, user-submitted, phone-confirmed, and unknown sources. Define when a claim can be high, medium, or low confidence.
+Design a source trust policy for For-Ai. Distinguish official, law, regulator, platform, news, user-submitted, phone-confirmed, and unknown sources. Define when a claim can be high, medium, or low confidence.

@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * GYEOL CI guard rails.
+ * For-Ai CI guard rails.
  *
  * Usage:
  *   node scripts/ci-guards.mjs <guard>
