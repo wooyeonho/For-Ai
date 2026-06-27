@@ -2,36 +2,62 @@
   "entity_id": "jp-transport-tokyo-metro-fare-001",
   "slug": "tokyo-metro-base-fare",
   "type": "transport.metro",
-  "name": "Tokyo Metro Base Fare (2025)",
+  "name": "Tokyo Metro Base Fare (2026)",
   "lang": "ja",
   "country": "JP",
   "jurisdiction": "JP",
   "risk_tier": "low",
   "update_frequency": "event_based",
   "disclaimer_type": "check_official_source",
-  "last_verified_at": "2026-06-25",
+  "last_verified_at": "2026-06-27",
   "claims": [
     {
       "claim_id": "tokyo-metro-ic-1-6km",
       "field_path": "fare.ic_1_6km",
       "claim_text": "Tokyo Metro IC card fare for 1-6km",
-      "claim_value": "확인 필요",
-      "confidence": "low",
-      "status": "needs_review",
-      "last_verified_at": null,
-      "sources": [],
-      "verification_event": null
+      "claim_value": "178 yen (adult)",
+      "confidence": "high",
+      "status": "verified",
+      "last_verified_at": "2026-06-27",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "Tokyo Metro — Regular Tickets (Fares)",
+          "url": "https://www.tokyometro.jp/lang_en/ticket/types/regular/index.html",
+          "observed_at": "2026-06-27",
+          "note": "Official Tokyo Metro fare table: 1km-6km adult IC card fare 178 yen (paper ticket 180 yen). Includes 10 yen railway station barrier-free fee. Cross-checked against official PASMO fare page and official PDF information_20250401.pdf (effective 2025-04-01)."
+        }
+      ],
+      "verification_event": {
+        "event_type": "source_verified",
+        "actor": "ai-source-fetch",
+        "verified_at": "2026-06-27",
+        "note": "Read directly from tokyometro.jp official fare pages (EN + JP) and official PDF. 2026-06-27 기준. 최종 사람 승인 대기."
+      }
     },
     {
       "claim_id": "tokyo-metro-ic-7-11km",
       "field_path": "fare.ic_7_11km",
       "claim_text": "Tokyo Metro IC card fare for 7-11km",
-      "claim_value": "확인 필요",
-      "confidence": "low",
-      "status": "needs_review",
-      "last_verified_at": null,
-      "sources": [],
-      "verification_event": null
+      "claim_value": "209 yen (adult)",
+      "confidence": "high",
+      "status": "verified",
+      "last_verified_at": "2026-06-27",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "Tokyo Metro — Regular Tickets (Fares)",
+          "url": "https://www.tokyometro.jp/lang_en/ticket/types/regular/index.html",
+          "observed_at": "2026-06-27",
+          "note": "Official Tokyo Metro fare table: 7km-11km adult IC card fare 209 yen (paper ticket 210 yen). Includes 10 yen railway station barrier-free fee. Cross-checked against official PASMO fare page and official PDF information_20250401.pdf (effective 2025-04-01)."
+        }
+      ],
+      "verification_event": {
+        "event_type": "source_verified",
+        "actor": "ai-source-fetch",
+        "verified_at": "2026-06-27",
+        "note": "Read directly from tokyometro.jp official fare pages (EN + JP) and official PDF. 2026-06-27 기준. 최종 사람 승인 대기."
+      }
     }
   ]
 }
