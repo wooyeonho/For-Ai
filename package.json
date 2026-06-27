@@ -7,6 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
+    "test": "rm -rf .tmp/citation-status-test && tsc --module commonjs --target ES2020 --moduleResolution node --esModuleInterop --skipLibCheck --noEmit false --outDir .tmp/citation-status-test lib/citation-status.ts test/citation-status.test.ts && node --test .tmp/citation-status-test/test/citation-status.test.js",
     "generate:question-candidates": "node scripts/generate-question-candidates.mjs",
     "generate:seed-candidates": "node scripts/seed-to-candidates.mjs",
     "ci:guards": "node scripts/ci-guards.mjs all",
@@ -18,7 +19,10 @@
     "ai:lazycodex:doctor": "node scripts/ai-readiness-doctor.mjs",
     "ai:prompt": "node scripts/print-ai-prompt.mjs",
     "check:mojibake": "node scripts/check-mojibake.mjs",
-    "doctor:ai-readiness": "node scripts/doctor-ai-readiness.mjs"
+    "doctor:ai-readiness": "node scripts/doctor-ai-readiness.mjs",
+    "claims:apply": "node scripts/verified-claims.mjs apply",
+    "claims:generate-payloads": "node scripts/verified-claims.mjs generate-payloads",
+    "claims:batch": "node scripts/verified-claims.mjs batch"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.8",

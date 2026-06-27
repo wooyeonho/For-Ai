@@ -1,0 +1,99 @@
+name: Claims Ops Autopilot
+
+on:
+  workflow_dispatch:
+    inputs:
+      limit:
+        description: "Maximum backlog payload templates to generate"
+        required: false
+        default: "10"
+      country:
+        description: "Optional country filter, e.g. KR"
+        required: false
+        default: ""
+      category:
+        description: "Optional category prefix filter, e.g. finance"
+        required: false
+        default: ""
+      strict:
+        description: "Fail if generated or existing payloads are incomplete"
+        required: false
+        type: boolean
+        default: false
+  schedule:
+    # Every Monday at 02:17 UTC. GitHub may delay scheduled workflows.
+    - cron: "17 2 * * 1"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: claims-ops-autopilot
+  cancel-in-progress: false
+
+jobs:
+  prepare-claims-batch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+
+      - name: Generate backlog payload templates
+        env:
+          LIMIT: ${{ github.event.inputs.limit || '10' }}
+          COUNTRY: ${{ github.event.inputs.country || '' }}
+          CATEGORY: ${{ github.event.inputs.category || '' }}
+        run: |
+          set -euo pipefail
+          args=(--out data/claim-payloads --limit "$LIMIT")
+          if [ -n "$COUNTRY" ]; then args+=(--country "$COUNTRY"); fi
+          if [ -n "$CATEGORY" ]; then args+=(--category "$CATEGORY"); fi
+          npm run claims:generate-payloads -- "${args[@]}"
+
+      - name: Apply completed payloads
+        env:
+          STRICT: ${{ github.event.inputs.strict || 'false' }}
+        run: |
+          set -euo pipefail
+          args=(data/claim-payloads)
+          if [ "$STRICT" = "true" ]; then args+=(--strict); fi
+          npm run claims:batch -- "${args[@]}"
+
+      - name: Validate claims
+        run: npm run claims:validate
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+      - name: Create pull request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          branch: automation/claims-ops-autopilot
+          delete-branch: true
+          title: "chore: prepare claims backlog batch"
+          commit-message: "chore: prepare claims backlog batch"
+          body: |
+            ## Summary
+            - Generated editable payload templates for seed backlog topics.
+            - Applied any completed payloads already present in `data/claim-payloads`.
+            - Ran claims validation, lint, and build.
+
+            ## Safety
+            - This workflow does not invent claim values.
+            - Incomplete payload templates are skipped by default unless `strict` is enabled.
+            - Humans must review official source URLs, observed dates, and claim values before merging.
