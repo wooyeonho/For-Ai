@@ -90,7 +90,7 @@ created_at          timestamptz
 ### 규칙 (AGENTS.md 필수 준수)
 - **절대 raw IP를 저장하지 않는다**
 - `contributor_hash = sha256(IP + CONTRIBUTOR_SALT).slice(0, 16)`
-- SALT는 환경 변수 `CONTRIBUTOR_SALT`로 관리 (Vercel secret)
+- SALT는 환경 변수 `CONTRIBUTOR_SALT`로 관리 (Vercel secret, public submission routes require it)
 
 ### 구현 위치
 `lib/contributor-hash.ts` (신규 파일, v0.2.0에서 생성):
@@ -109,8 +109,9 @@ export function makeContributorHash(ip: string, salt: string): string {
 ### Next.js Route Handler에서 사용
 
 ```typescript
-const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
-const contributorHash = makeContributorHash(ip, process.env.CONTRIBUTOR_SALT ?? '');
+import { makeContributorHashForRequest } from '@/lib/contributor-hash';
+
+const contributorHash = makeContributorHashForRequest(request);
 ```
 
 ---
@@ -125,7 +126,7 @@ const contributorHash = makeContributorHash(ip, process.env.CONTRIBUTOR_SALT ?? 
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
    - `SUPABASE_SERVICE_ROLE_KEY` (server-side write용, client 노출 금지)
-   - `CONTRIBUTOR_SALT` (random 32자 이상)
+   - `CONTRIBUTOR_SALT` (required, random 32자 이상)
 
 ### 4.2 시드 데이터 migration
 

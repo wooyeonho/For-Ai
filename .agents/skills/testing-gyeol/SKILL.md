@@ -39,7 +39,7 @@ npx next dev -p 3000
 - `NEXT_PUBLIC_SUPABASE_URL` — Supabase DB connection
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` — Supabase public read
 - `SUPABASE_SERVICE_ROLE_KEY` — Supabase server write
-- `CONTRIBUTOR_SALT` — (optional) used for contributor hash generation
+- `CONTRIBUTOR_SALT` — required for contributor hash generation in public submission routes
 
 ## Test Areas
 
