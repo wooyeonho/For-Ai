@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * GYEOL route smoke test.
+ * For-Ai route smoke test.
  *
  * Usage:
  *   node scripts/smoke-test-routes.mjs [BASE_URL]

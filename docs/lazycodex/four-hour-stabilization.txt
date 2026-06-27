@@ -1,8 +1,8 @@
-$ulw-loop "Run a bounded 4-hour GYEOL stabilization session.
+$ulw-loop "Run a bounded 4-hour For-Ai stabilization session.
 
 Product guardrails:
-- GYEOL is not an AI wiki.
-- GYEOL is a local fact registry for AI, search engines, and humans.
+- For-Ai is not an AI wiki.
+- For-Ai is a global fact registry for AI, search engines, and humans.
 - schema-v3.sql is the source of truth.
 - Do not invent facts or venue details.
 - Unknown facts must remain '확인 필요' with low confidence.

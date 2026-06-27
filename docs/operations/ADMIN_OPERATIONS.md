@@ -1,10 +1,10 @@
 # Admin Operations
 
-This is the canonical admin operations document for GYEOL. Keep this file as the latest operational source when reconciling admin documentation PRs.
+This is the canonical admin operations document for For-Ai. Keep this file as the latest operational source when reconciling admin documentation PRs.
 
 ## Product guardrails
 
-- GYEOL is a local fact registry for AI, search engines, and humans, not an AI wiki.
+- For-Ai is a global fact registry for AI, search engines, and humans, not an AI wiki.
 - `schema-v3.sql` is the source of truth.
 - Keep the canonical factual model: `entities -> documents -> claims -> claim_sources -> verification_events`.
 - `entity_id` is mandatory from MVP; English slugs are stable; display titles are language-specific.

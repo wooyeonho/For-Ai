@@ -1,5 +1,5 @@
--- GYEOL schema v3
--- Source of truth for the GYEOL local fact registry.
+-- For-Ai schema v3
+-- Source of truth for the For-Ai global fact registry.
 -- The canonical claim-level structure is:
 -- entities -> documents -> claims -> claim_sources -> verification_events
 
@@ -35,7 +35,7 @@ create table documents (
   status document_status not null default 'ai_draft',
   confidence confidence_level not null default 'low',
   last_verified_at timestamptz,
-  license_code text not null default 'gyeol-data-license-v0.1',
+  license_code text not null default 'for-ai-data-license-v0.1',
   data jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),

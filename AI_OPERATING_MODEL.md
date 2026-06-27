@@ -1,6 +1,6 @@
-# GYEOL AI Operating Model
+# For-Ai AI Operating Model
 
-This document defines how to operate LazyCodex, Claude, and Devin on the GYEOL repository without drifting away from the product identity or MVP constraints.
+This document defines how to operate LazyCodex, Claude, and Devin on the For-Ai repository without drifting away from the product identity or MVP constraints.
 
 ## Core conclusion
 
@@ -14,13 +14,13 @@ The most important operating rule is:
 
 > Do not run LazyCodex with broad goals. Use small scope, explicit completion criteria, and lint/build verification.
 
-## Non-negotiable GYEOL guardrails
+## Non-negotiable For-Ai guardrails
 
 Repeat these rules in prompts for every AI tool:
 
 ```text
-GYEOL is not an AI wiki.
-GYEOL is a local fact registry for AI, search engines, and humans.
+For-Ai is not an AI wiki.
+For-Ai is a global fact registry for AI, search engines, and humans.
 
 schema-v3.sql is the source of truth.
 Do not invent a different database model.
@@ -77,7 +77,7 @@ $init-deep
 Start by asking for a plan only:
 
 ```text
-$ulw-plan "Review this repository as an AI-readable local fact registry. Create a prioritized implementation plan to fix P0 issues first: Korean encoding/mojibake, machine-readable route mismatches, static-first rendering gaps, and claim/source trust consistency. Do not edit code yet. Write the plan clearly with acceptance criteria."
+$ulw-plan "Review this repository as an AI-readable global fact registry. Create a prioritized implementation plan to fix P0 issues first: Korean encoding/mojibake, machine-readable route mismatches, static-first rendering gaps, and claim/source trust consistency. Do not edit code yet. Write the plan clearly with acceptance criteria."
 ```
 
 After reviewing the plan, execute it:
@@ -106,9 +106,9 @@ Use Claude for big-picture review rather than direct implementation:
 Recommended Claude prompt:
 
 ```text
-You are reviewing GYEOL as a Silicon Valley product strategist, senior infrastructure engineer, and seed-stage investor.
+You are reviewing For-Ai as a Silicon Valley product strategist, senior infrastructure engineer, and seed-stage investor.
 
-GYEOL is a local fact registry for AI, search engines, and humans. It is not an AI wiki. Its canonical model is entities -> documents -> claims -> claim_sources -> verification_events. Static-first rendering is mandatory. Unknown facts must show "확인 필요" with low confidence.
+For-Ai is a global fact registry for AI, search engines, and humans. It is not an AI wiki. Its canonical model is entities -> documents -> claims -> claim_sources -> verification_events. Static-first rendering is mandatory. Unknown facts must show "확인 필요" with low confidence.
 
 Review:
 1. Is this a real AI-era product opportunity?
@@ -140,8 +140,8 @@ Audit and clean up this repository after multiple AI-assisted development passes
 
 Goals:
 1. Preserve the product identity:
-   - GYEOL is not an AI wiki.
-   - GYEOL is a local fact registry for AI, search engines, and humans.
+   - For-Ai is not an AI wiki.
+   - For-Ai is a global fact registry for AI, search engines, and humans.
    - schema-v3.sql is the source of truth.
    - Do not invent a new database model.
    - Keep canonical structure: entities -> documents -> claims -> claim_sources -> verification_events.
@@ -196,7 +196,7 @@ npm run ai:prompt -- devin:final-cleanup
 
 ## Four-hour LazyCodex session protocol
 
-LazyCodex can run for a long session, but GYEOL should still treat that session as a bounded stabilization window, not an open-ended product rewrite. Use the checked-in prompt below when you want a longer run:
+LazyCodex can run for a long session, but For-Ai should still treat that session as a bounded stabilization window, not an open-ended product rewrite. Use the checked-in prompt below when you want a longer run:
 
 ```bash
 npm run ai:prompt -- lazycodex:four-hour
@@ -244,7 +244,7 @@ $ulw-loop "Improve the whole repo"
 Plan first:
 
 ```text
-$ulw-plan "Create a P0 stabilization plan for GYEOL. Focus only on Korean mojibake, route mismatch, static-first gaps, lint/build stability, and preserving schema-v3 claim-level model. Do not edit code."
+$ulw-plan "Create a P0 stabilization plan for For-Ai. Focus only on Korean mojibake, route mismatch, static-first gaps, lint/build stability, and preserving schema-v3 claim-level model. Do not edit code."
 ```
 
 Then execute with one small loop at a time:
@@ -268,7 +268,7 @@ $ulw-loop "Improve AI-readiness outputs for registry documents: JSON API, raw ma
 Claude review prompt:
 
 ```text
-Review whether GYEOL's machine-readable outputs are sufficient for AI crawlers, RAG systems, and search engines. Identify missing metadata, trust signals, and citation requirements.
+Review whether For-Ai's machine-readable outputs are sufficient for AI crawlers, RAG systems, and search engines. Identify missing metadata, trust signals, and citation requirements.
 ```
 
 ### Phase 3 — data trust policy
@@ -276,19 +276,19 @@ Review whether GYEOL's machine-readable outputs are sufficient for AI crawlers, 
 Ask Claude for policy first:
 
 ```text
-Design a source trust policy for GYEOL. Distinguish official, law, regulator, platform, news, user-submitted, phone-confirmed, and unknown sources. Define when a claim can be high, medium, or low confidence.
+Design a source trust policy for For-Ai. Distinguish official, law, regulator, platform, news, user-submitted, phone-confirmed, and unknown sources. Define when a claim can be high, medium, or low confidence.
 ```
 
 Then ask LazyCodex for an implementation plan:
 
 ```text
-$ulw-plan "Implement the source trust policy in the existing GYEOL codebase without changing schema-v3 unless absolutely necessary. Identify required type updates, validation helpers, and UI labels."
+$ulw-plan "Implement the source trust policy in the existing For-Ai codebase without changing schema-v3 unless absolutely necessary. Identify required type updates, validation helpers, and UI labels."
 ```
 
 ### Phase 4 — Devin cleanup
 
 ```text
-Clean up this repository after LazyCodex and Claude passes. Preserve GYEOL's product identity and schema-v3. Ensure lint/build pass, docs match implementation, machine-readable routes are correct, and no fake facts or raw IP storage were introduced.
+Clean up this repository after LazyCodex and Claude passes. Preserve For-Ai's product identity and schema-v3. Ensure lint/build pass, docs match implementation, machine-readable routes are correct, and no fake facts or raw IP storage were introduced.
 ```
 
 ## Branching model
@@ -321,12 +321,12 @@ Do not build these during the MVP:
 - Large auth systems.
 - Advertising systems.
 
-The priority is proving that GYEOL can be a reliable claim-level fact registry.
+The priority is proving that For-Ai can be a reliable claim-level fact registry.
 
 ## Master LazyCodex planning prompt
 
 ```text
-$ulw-plan "You are improving GYEOL, a local fact registry for AI, search engines, and humans. GYEOL is not an AI wiki.
+$ulw-plan "You are improving For-Ai, a global fact registry for AI, search engines, and humans. For-Ai is not an AI wiki.
 
 Non-negotiable rules:
 - Static-first rendering is mandatory.
@@ -336,7 +336,7 @@ Non-negotiable rules:
 - entity_id is mandatory from MVP.
 - English slug is stable.
 - Display titles are language-specific.
-- GYEOL is claim-level.
+- For-Ai is claim-level.
 - Canonical structure: entities -> documents -> claims -> claim_sources -> verification_events.
 - documents.data is rendering convenience only.
 - No fake facts.

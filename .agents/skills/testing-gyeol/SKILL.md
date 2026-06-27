@@ -1,9 +1,9 @@
 ---
-name: testing-gyeol
-description: Test the GYEOL global fact registry end-to-end. Use when verifying i18n routing, language selector, multi-AI generation, wiki page rendering, community posts, or admin management.
+name: testing-for-ai
+description: Test the For-Ai global fact registry end-to-end. Use when verifying i18n routing, language selector, multi-AI generation, wiki page rendering, community posts, or admin management.
 ---
 
-# Testing GYEOL
+# Testing For-Ai
 
 ## Environment Setup
 

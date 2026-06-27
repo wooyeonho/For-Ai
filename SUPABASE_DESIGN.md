@@ -1,4 +1,4 @@
-# GYEOL v0.2.0 — Supabase Persistence 설계 문서
+# For-Ai v0.2.0 — Supabase Persistence 설계 문서
 
 **작성일:** 2026-06-21  
 **대상 버전:** v0.2.0  

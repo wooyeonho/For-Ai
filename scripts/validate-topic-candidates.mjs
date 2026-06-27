@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * GYEOL topic candidate JSONL validator.
+ * For-Ai topic candidate JSONL validator.
  *
  * Usage:
  *   node scripts/validate-topic-candidates.mjs <path-to-jsonl>

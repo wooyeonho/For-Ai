@@ -2,8 +2,8 @@ Audit and clean up this repository after multiple AI-assisted development passes
 
 Goals:
 1. Preserve the product identity:
-   - GYEOL is not an AI wiki.
-   - GYEOL is a local fact registry for AI, search engines, and humans.
+   - For-Ai is not an AI wiki.
+   - For-Ai is a global fact registry for AI, search engines, and humans.
    - schema-v3.sql is the source of truth.
    - Do not invent a new database model.
    - Keep canonical structure: entities -> documents -> claims -> claim_sources -> verification_events.
