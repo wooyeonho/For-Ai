@@ -5,8 +5,16 @@ import { createHash } from 'crypto';
  * Raw IPs are NEVER stored. (AGENTS.md rule: use contributor_hash only)
  *
  * @param ip   - Extracted from x-forwarded-for or similar header
- * @param salt - process.env.CONTRIBUTOR_SALT (Vercel secret, required in production)
+ * @param salt - process.env.CONTRIBUTOR_SALT (Vercel secret, required for public submissions)
  */
+export function getContributorSalt(): string {
+  const salt = process.env.CONTRIBUTOR_SALT?.trim();
+  if (!salt) {
+    throw new Error('CONTRIBUTOR_SALT is required to generate contributor_hash');
+  }
+  return salt;
+}
+
 export function makeContributorHash(ip: string, salt: string): string {
   return createHash('sha256')
     .update(ip + salt)
@@ -24,4 +32,8 @@ export function extractIp(request: Request): string {
     request.headers.get('x-real-ip') ??
     'unknown'
   );
+}
+
+export function makeContributorHashForRequest(request: Request): string {
+  return makeContributorHash(extractIp(request), getContributorSalt());
 }
