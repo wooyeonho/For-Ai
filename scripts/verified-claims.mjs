@@ -13,6 +13,10 @@
  *                       file. Exits non-zero on any violation (CI-ready).
  *   apply <payload>      Turn a reviewed payload into a verified-claims file,
  *                       wire it into lib/verified-claims.ts, then validate.
+ *   generate-payloads   Create fillable payload templates in data/payloads/
+ *                       for all pending seed topics (not yet in verified-claims).
+ *   batch <dir>         Apply all filled .json payload files in a directory.
+ *                       Skips files with TODO placeholders or errors.
  *
  * Trust rules enforced by `validate` (see AGENTS.md):
  *   - No fake facts: a claim_value of "확인 필요" can never be verified or above
@@ -24,7 +28,7 @@
  *     versa), so filling a file actually reaches the live site.
  */
 
-import { readFileSync, writeFileSync, readdirSync, existsSync } from "node:fs";
+import { readFileSync, writeFileSync, readdirSync, existsSync, mkdirSync } from "node:fs";
 import { join, basename } from "node:path";
 
 const ROOT = process.cwd();
@@ -437,10 +441,10 @@ function buildAppliedFile(payload, topic) {
       status: "verified",
       last_verified_at: applied.last_verified_at ?? verifiedAt,
       sources: applied.sources,
-      verification_event: applied.verification_event ?? {
-        event_type: "source_verified",
-        verified_at: applied.last_verified_at ?? verifiedAt,
-        note: applied.verification_note ?? `Verified from ${applied.sources.length} source(s).`,
+      verification_event: {
+        event_type: applied.verification_event?.event_type ?? "source_verified",
+        verified_at: applied.verification_event?.verified_at ?? applied.last_verified_at ?? verifiedAt,
+        note: applied.verification_event?.note ?? applied.verification_note ?? `Verified from ${applied.sources.length} source(s).`,
       },
     };
   });
@@ -527,16 +531,209 @@ function cmdApply(args) {
 }
 
 // ---------------------------------------------------------------------------
+// generate-payloads
+// ---------------------------------------------------------------------------
+
+const PAYLOADS_DIR = join(ROOT, "data", "payloads");
+
+function cmdGeneratePayloads(args) {
+  const opts = parseArgs(args);
+  const filterCountry = opts.country ?? null;
+  const filterCategory = opts.category ?? null;
+
+  if (!existsSync(SEED_PATH)) {
+    console.error(`seed file not found: ${SEED_PATH}`);
+    process.exit(1);
+  }
+  const seed = readJson(SEED_PATH);
+  const existingFiles = listClaimFiles().map((p) => readJson(p).slug);
+  const existingSet = new Set(existingFiles);
+
+  let pending = seed.filter((t) => !existingSet.has(t.slug));
+  if (filterCountry) pending = pending.filter((t) => (t.country ?? "KR") === filterCountry);
+  if (filterCategory) pending = pending.filter((t) => (t.category ?? "").startsWith(filterCategory));
+
+  if (pending.length === 0) {
+    console.log("No pending seed topics to generate payloads for.");
+    if (filterCountry || filterCategory) console.log(`  (filtered by country=${filterCountry ?? "*"}, category=${filterCategory ?? "*"})`);   
+    return;
+  }
+
+  mkdirSync(PAYLOADS_DIR, { recursive: true });
+  let created = 0;
+  for (const topic of pending) {
+    const outPath = join(PAYLOADS_DIR, `${topic.slug}.json`);
+    if (existsSync(outPath) && !opts.force) continue;
+
+    const country = topic.country ?? "KR";
+    const lang = topic.lang ?? (country === "KR" ? "ko" : "en");
+
+    const payload = {
+      slug: topic.slug,
+      country,
+      lang,
+      verified_at: "YYYY-MM-DD",
+      _meta: {
+        title: topic.title,
+        category: topic.category,
+        why_people_ask_ai: topic.why_people_ask_ai,
+        why_ai_gets_wrong: topic.why_ai_gets_wrong,
+        required_source_types: [...new Set((topic.claims ?? []).map((c) => c.required_source_type).filter(Boolean))],
+        instructions: "Fill each claim below with the real value from an official source. Set verified_at to the date you confirmed the value. Do NOT guess — if you cannot confirm from an official source, delete this file.",
+      },
+      claims: (topic.claims ?? []).map((c) => ({
+        field_path: c.field_path,
+        claim_value: "TODO: fill from official source",
+        confidence: "high",
+        claim_text: c.question ?? c.claim_text ?? c.field_path,
+        sources: [{
+          source_type: c.required_source_type ?? "official",
+          title: "TODO: official source page title",
+          url: "TODO: https://...",
+          observed_at: "YYYY-MM-DD",
+          note: "TODO: how the value was confirmed",
+        }],
+        verification_event: {
+          note: "TODO: verification context",
+        },
+      })),
+    };
+
+    writeFileSync(outPath, `${JSON.stringify(payload, null, 2)}\n`, "utf8");
+    created++;
+  }
+
+  console.log("=== generate-payloads ===");
+  console.log(`created ${created} payload template(s) in data/payloads/`);
+  console.log(`total pending: ${pending.length} topic(s)`);
+  if (created < pending.length) console.log(`skipped ${pending.length - created} existing file(s) (use --force to overwrite)`);
+  console.log(`\nNext steps:`);
+  console.log(`  1. Fill each TODO field with real values from official sources`);
+  console.log(`  2. Set verified_at to the confirmation date`);
+  console.log(`  3. Delete files you cannot verify from official sources`);
+  console.log(`  4. Run: npm run claims:batch -- data/payloads/`);
+}
+
+// ---------------------------------------------------------------------------
+// batch
+// ---------------------------------------------------------------------------
+
+function cmdBatch(args) {
+  const opts = parseArgs(args);
+  const dir = opts._[0];
+  if (!dir) {
+    console.error("usage: npm run claims:batch -- <payloads-dir> [--force] [--no-validate]");
+    console.error("\nApplies all .json payload files in the directory sequentially.");
+    console.error("Skips files with TODO values or invalid structure (reports them).");
+    process.exit(1);
+  }
+  if (!existsSync(dir)) {
+    console.error(`directory not found: ${dir}`);
+    process.exit(1);
+  }
+
+  const files = readdirSync(dir).filter((f) => f.endsWith(".json")).sort();
+  if (files.length === 0) {
+    console.error(`no .json files found in ${dir}`);
+    process.exit(1);
+  }
+
+  const seed = readJson(SEED_PATH);
+  const results = { applied: [], skipped: [], errored: [] };
+
+  for (const file of files) {
+    const payloadPath = join(dir, file);
+    const slug = file.replace(/\.json$/, "");
+    try {
+      const payload = readJson(payloadPath);
+      if (!payload.slug) payload.slug = slug;
+
+      // Skip files that still have TODO placeholders
+      const raw = readFileSync(payloadPath, "utf8");
+      if (raw.includes('"TODO:')) {
+        results.skipped.push({ file, reason: "contains TODO placeholders" });
+        continue;
+      }
+      if (raw.includes('"YYYY-MM-DD"')) {
+        results.skipped.push({ file, reason: "contains unfilled date (YYYY-MM-DD)" });
+        continue;
+      }
+
+      if (!Array.isArray(payload.claims) || payload.claims.length === 0) {
+        results.skipped.push({ file, reason: "empty or missing claims array" });
+        continue;
+      }
+
+      const topic = topicForSlug(seed, payload.slug);
+      if (!topic) {
+        results.errored.push({ file, error: `seed topic "${payload.slug}" not found` });
+        continue;
+      }
+
+      const outPath = join(CLAIMS_DIR, `${payload.slug}.json`);
+      if (existsSync(outPath) && !opts.force) {
+        results.skipped.push({ file, reason: `${payload.slug}.json already exists (use --force)` });
+        continue;
+      }
+
+      // Validate payload claims before applying
+      for (const [i, c] of payload.claims.entries()) {
+        ensurePayloadClaim(c, i);
+      }
+
+      const outFile = buildAppliedFile(payload, topic);
+      writeFileSync(outPath, `${JSON.stringify(outFile, null, 2)}\n`, "utf8");
+      wireLoaderForSlug(payload.slug);
+      const verifiedCount = outFile.claims.filter((c) => c.status === "verified").length;
+      results.applied.push({ file, slug: payload.slug, claims: verifiedCount });
+    } catch (e) {
+      results.errored.push({ file, error: e.message });
+    }
+  }
+
+  // Report
+  console.log("=== batch apply results ===");
+  console.log(`\napplied: ${results.applied.length}`);
+  for (const r of results.applied) {
+    console.log(`  ✓ ${r.slug} — ${r.claims} verified claim(s)`);
+  }
+  if (results.skipped.length > 0) {
+    console.log(`\nskipped: ${results.skipped.length}`);
+    for (const r of results.skipped) {
+      console.log(`  ⊘ ${r.file} — ${r.reason}`);
+    }
+  }
+  if (results.errored.length > 0) {
+    console.log(`\nerrored: ${results.errored.length}`);
+    for (const r of results.errored) {
+      console.log(`  ✗ ${r.file} — ${r.error}`);
+    }
+  }
+
+  const totalNew = results.applied.reduce((s, r) => s + r.claims, 0);
+  console.log(`\ntotal new verified claims: ${totalNew}`);
+
+  if (results.applied.length > 0 && !opts["no-validate"]) {
+    console.log("\nrunning validate...\n");
+    cmdValidate();
+  }
+
+  if (results.errored.length > 0) process.exit(1);
+}
+
+// ---------------------------------------------------------------------------
 
 function main() {
   const [cmd, ...rest] = process.argv.slice(2);
   switch (cmd) {
     case "validate": return cmdValidate();
     case "apply": return cmdApply(rest);
+    case "batch": return cmdBatch(rest);
+    case "generate-payloads": return cmdGeneratePayloads(rest);
     case "status": return cmdStatus();
     case "scaffold": return cmdScaffold(rest);
     default:
-      console.error("usage: node scripts/verified-claims.mjs <status|scaffold|apply|validate>");
+      console.error("usage: node scripts/verified-claims.mjs <status|scaffold|apply|batch|generate-payloads|validate>");
       process.exit(1);
   }
 }
