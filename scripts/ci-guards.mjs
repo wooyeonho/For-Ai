@@ -9,8 +9,9 @@
  *   route      - fail if a stale `/api/document` (singular) path appears in app/ or lib/.
  *   mojibake   - fail if UTF-8-as-Latin-1 mojibake appears in app/ or lib/.
  *   artifacts  - fail if build/dependency output or oversized generated dumps are committed.
+ *   claims     - fail if any verified-claims file violates the trust rules (delegates to verified-claims.mjs validate).
  *   diff-size  - fail if a PR changes an unexpected number of files (full-repo-rewrite guard).
- *   all        - run route + mojibake + artifacts (and diff-size when a base SHA is available).
+ *   all        - run route + mojibake + artifacts + claims (and diff-size when a base SHA is available).
  *
  * Exit code 0 = pass, 1 = a guard failed, 2 = usage/internal error.
  */
@@ -158,6 +159,17 @@ function guardArtifacts() {
   console.log("artifact guard: ok");
 }
 
+function guardClaims() {
+  try {
+    const out = execFileSync("node", ["scripts/verified-claims.mjs", "validate"], { encoding: "utf-8" });
+    process.stdout.write(`${out.trim()}\n`);
+    console.log("claims guard: ok");
+  } catch (e) {
+    const detail = `${e.stdout ?? ""}${e.stderr ?? ""}`.trim();
+    fail([`claims guard FAILED: verified-claims trust rules violated.`, detail]);
+  }
+}
+
 function guardDiffSize() {
   const base = process.env.BASE_SHA;
   if (!base) {
@@ -225,17 +237,19 @@ const guards = {
   route: guardRoute,
   mojibake: guardMojibake,
   artifacts: guardArtifacts,
+  claims: guardClaims,
   "diff-size": guardDiffSize,
   all() {
     guardRoute();
     guardMojibake();
     guardArtifacts();
+    guardClaims();
     guardDiffSize();
   },
 };
 
 if (!guard || !guards[guard]) {
-  console.error(`Usage: node scripts/ci-guards.mjs <route|mojibake|artifacts|diff-size|all>`);
+  console.error(`Usage: node scripts/ci-guards.mjs <route|mojibake|artifacts|claims|diff-size|all>`);
   process.exit(2);
 }
 
