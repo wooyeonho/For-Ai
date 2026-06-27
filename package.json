@@ -12,6 +12,7 @@
     "ci:guards": "node scripts/ci-guards.mjs all",
     "claims:status": "node scripts/verified-claims.mjs status",
     "claims:scaffold": "node scripts/verified-claims.mjs scaffold",
+    "claims:apply": "node scripts/verified-claims.mjs apply",
     "claims:validate": "node scripts/verified-claims.mjs validate",
     "ai:doctor": "node scripts/ai-readiness-doctor.mjs",
     "ai:lazycodex:install": "npx lazycodex-ai install",

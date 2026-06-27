@@ -4,11 +4,14 @@
  * verified-claims.mjs — file-based verified-claim production tooling.
  *
  * Makes the manual workflow (fetch official source -> fill claim -> verified
- * claims JSON) repeatable and safe. Three subcommands:
+ * claims JSON) repeatable and safe. Four subcommands:
  *
  *   status              Show backlog vs citation-ready progress.
  *   scaffold <seed>     Generate a fillable verified-claims/<slug>.json skeleton
  *                       from a seed topic in data/verified-seed-set.json.
+ *   apply <json-file>   Scaffold + fill claims from a pre-built JSON payload,
+ *                       auto-wire into lib/verified-claims.ts, and validate.
+ *                       Designed for AI-agent batch workflows.
  *   validate            Enforce For-Ai trust rules across every verified-claims
  *                       file. Exits non-zero on any violation (CI-ready).
  *
@@ -336,6 +339,225 @@ function cmdScaffold(args) {
 }
 
 // ---------------------------------------------------------------------------
+// apply — one-shot: scaffold + fill + wire + validate
+// ---------------------------------------------------------------------------
+
+function slugToCamelCase(slug) {
+  return slug.replace(/-([a-z])/g, (_, ch) => ch.toUpperCase()).replace(/[^a-zA-Z0-9]/g, "");
+}
+
+function wireLoaderImport(slug) {
+  if (!existsSync(LOADER_PATH)) {
+    console.error(`lib/verified-claims.ts not found — cannot auto-wire`);
+    return false;
+  }
+  const loader = readFileSync(LOADER_PATH, "utf8");
+  const jsonFile = `${slug}.json`;
+
+  if (loader.includes(`verified-claims/${jsonFile}`)) {
+    return true; // already wired
+  }
+
+  const camel = slugToCamelCase(slug);
+  const importLine = `import ${camel} from "../data/verified-claims/${jsonFile}";`;
+  const arrayEntry = `  ${camel} as unknown as VerifiedClaimFile,`;
+
+  // Insert import after the last existing import from verified-claims
+  const importRegex = /^import .+ from "\.\.\/(data\/verified-claims\/[\w.-]+\.json)";$/gm;
+  let lastImportEnd = 0;
+  let match;
+  while ((match = importRegex.exec(loader)) !== null) {
+    lastImportEnd = match.index + match[0].length;
+  }
+  if (lastImportEnd === 0) {
+    console.error(`Could not find existing verified-claims imports in lib/verified-claims.ts`);
+    return false;
+  }
+
+  let updated = loader.slice(0, lastImportEnd) + "\n" + importLine + loader.slice(lastImportEnd);
+
+  // Insert into verifiedFiles array — before the closing ];
+  const arrayCloseRegex = /^(const verifiedFiles[^;]*\[\n(?:.*\n)*?)(\];)/m;
+  const arrayMatch = arrayCloseRegex.exec(updated);
+  if (arrayMatch) {
+    const insertPos = arrayMatch.index + arrayMatch[1].length;
+    updated = updated.slice(0, insertPos) + arrayEntry + "\n" + updated.slice(insertPos);
+  } else {
+    // Fallback: find the last entry in the array and insert after it
+    const lastEntryRegex = /( +\w+ as unknown as VerifiedClaimFile,\n)/g;
+    let lastEntry;
+    while ((match = lastEntryRegex.exec(updated)) !== null) {
+      lastEntry = match;
+    }
+    if (lastEntry) {
+      const insertPos = lastEntry.index + lastEntry[0].length;
+      updated = updated.slice(0, insertPos) + arrayEntry + "\n" + updated.slice(insertPos);
+    } else {
+      console.error(`Could not find verifiedFiles array in lib/verified-claims.ts`);
+      return false;
+    }
+  }
+
+  writeFileSync(LOADER_PATH, updated, "utf8");
+  return true;
+}
+
+function cmdApply(args) {
+  const inputPath = args[0];
+  if (!inputPath) {
+    console.error("usage: npm run claims:apply -- <payload.json>");
+    console.error("");
+    console.error("payload.json format:");
+    console.error(JSON.stringify({
+      slug: "metro-transfer-time-limit",
+      name: "Optional display name override",
+      country: "KR",
+      lang: "ko",
+      last_verified_at: "2026-06-28",
+      claims: [{
+        field_path: "transfer.time_limit_minutes",
+        claim_value: "30분",
+        confidence: "high",
+        claim_text: "Optional override for claim question text",
+        sources: [{
+          source_type: "official",
+          title: "Source page title",
+          url: "https://example.gov/page",
+          observed_at: "2026-06-28",
+          note: "How the value was confirmed"
+        }],
+        verification_event: {
+          note: "Verification context"
+        }
+      }]
+    }, null, 2));
+    process.exit(1);
+  }
+
+  let payload;
+  try {
+    payload = readJson(inputPath);
+  } catch (e) {
+    console.error(`Failed to read payload: ${e.message}`);
+    process.exit(1);
+  }
+
+  const slug = payload.slug;
+  if (!slug) {
+    console.error("payload must have a 'slug' field");
+    process.exit(1);
+  }
+  if (!Array.isArray(payload.claims) || payload.claims.length === 0) {
+    console.error("payload must have a non-empty 'claims' array");
+    process.exit(1);
+  }
+
+  const today = new Date().toISOString().slice(0, 10);
+  const verifiedAt = payload.last_verified_at ?? today;
+
+  // Look up seed topic for metadata defaults
+  let seedTopic = null;
+  if (existsSync(SEED_PATH)) {
+    const seeds = readJson(SEED_PATH);
+    seedTopic = seeds.find((t) => t.slug === slug);
+  }
+
+  const country = payload.country ?? seedTopic?.country ?? "XX";
+  const lang = payload.lang ?? seedTopic?.lang ?? (country === "KR" ? "ko" : "en");
+  const type = payload.type ?? seedTopic?.category ?? "topic.unknown";
+  const entityId = payload.entity_id ?? seedTopic?.entity_id ?? slugToEntityId(country, type, slug);
+  const name = payload.name ?? seedTopic?.title ?? slug;
+  const riskTier = payload.risk_tier ?? seedTopic?.risk_tier ?? "low";
+  const updateFrequency = payload.update_frequency ?? seedTopic?.update_frequency ?? "event_based";
+  const disclaimerType = payload.disclaimer_type ?? seedTopic?.disclaimer_type ?? "check_official_source";
+
+  // Build seed claim lookup for merging (match by field_path)
+  const seedClaimMap = new Map();
+  if (seedTopic?.claims) {
+    for (const sc of seedTopic.claims) {
+      seedClaimMap.set(sc.field_path, sc);
+    }
+  }
+
+  // Build claims array
+  const filledClaims = payload.claims.map((pc) => {
+    const seedClaim = seedClaimMap.get(pc.field_path);
+    const claimId = pc.claim_id ?? `${slug}-${String(pc.field_path ?? "field").replace(/\./g, "-")}`;
+    const claimText = pc.claim_text ?? seedClaim?.question ?? seedClaim?.claim_text ?? pc.field_path;
+    const confidence = pc.confidence ?? "high";
+    const status = pc.claim_value && pc.claim_value !== PLACEHOLDER ? "verified" : "needs_review";
+    const claimVerifiedAt = pc.last_verified_at ?? verifiedAt;
+
+    const sources = (pc.sources ?? []).map((s) => ({
+      source_type: s.source_type ?? "official",
+      title: s.title ?? "",
+      url: s.url ?? "",
+      observed_at: s.observed_at ?? claimVerifiedAt,
+      note: s.note ?? "",
+    }));
+
+    const verificationEvent = status === "verified" && sources.length > 0
+      ? {
+          event_type: "source_verified",
+          actor: pc.verification_event?.actor ?? "ai-source-fetch",
+          verified_at: claimVerifiedAt,
+          note: pc.verification_event?.note ?? `공식 출처에서 직접 확인. ${claimVerifiedAt} 기준. 최종 사람 승인 대기.`,
+        }
+      : null;
+
+    return {
+      claim_id: claimId,
+      field_path: pc.field_path,
+      claim_text: claimText,
+      claim_value: pc.claim_value ?? PLACEHOLDER,
+      confidence: status === "verified" ? confidence : "low",
+      status,
+      last_verified_at: status === "verified" ? claimVerifiedAt : null,
+      sources,
+      verification_event: verificationEvent,
+    };
+  });
+
+  const outFile = {
+    entity_id: entityId,
+    slug,
+    type,
+    name,
+    lang,
+    country,
+    jurisdiction: payload.jurisdiction ?? country,
+    risk_tier: riskTier,
+    update_frequency: updateFrequency,
+    disclaimer_type: disclaimerType,
+    last_verified_at: filledClaims.some((c) => c.status === "verified") ? verifiedAt : null,
+    claims: filledClaims,
+  };
+
+  // Write the file
+  const outPath = join(CLAIMS_DIR, `${slug}.json`);
+  const isNew = !existsSync(outPath);
+  writeFileSync(outPath, `${JSON.stringify(outFile, null, 2)}\n`, "utf8");
+  console.log(`${isNew ? "created" : "updated"} ${outPath}`);
+  console.log(`  claims: ${filledClaims.length}, verified: ${filledClaims.filter((c) => c.status === "verified").length}`);
+
+  // Auto-wire into loader
+  const wired = wireLoaderImport(slug);
+  if (wired) {
+    console.log(`  wired into lib/verified-claims.ts`);
+  } else {
+    console.error(`  ⚠ could not auto-wire — manual wiring needed`);
+  }
+
+  // Run validate
+  console.log("\nrunning validate...\n");
+  try {
+    cmdValidate();
+  } catch {
+    // cmdValidate calls process.exit on failure, which is fine
+  }
+}
+
+// ---------------------------------------------------------------------------
 
 function main() {
   const [cmd, ...rest] = process.argv.slice(2);
@@ -343,8 +565,9 @@ function main() {
     case "validate": return cmdValidate();
     case "status": return cmdStatus();
     case "scaffold": return cmdScaffold(rest);
+    case "apply": return cmdApply(rest);
     default:
-      console.error("usage: node scripts/verified-claims.mjs <status|scaffold|validate>");
+      console.error("usage: node scripts/verified-claims.mjs <status|scaffold|apply|validate>");
       process.exit(1);
   }
 }
