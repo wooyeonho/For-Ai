@@ -2,47 +2,86 @@
   "entity_id": "us-gov-state-dept-passport-001",
   "slug": "us-passport-renewal-fee",
   "type": "government.documents",
-  "name": "US Passport Renewal Fee (2025)",
+  "name": "US Passport Renewal Fee (2026)",
   "lang": "en",
   "country": "US",
   "jurisdiction": "US",
   "risk_tier": "low",
   "update_frequency": "event_based",
   "disclaimer_type": "check_official_source",
-  "last_verified_at": "2026-06-25",
+  "last_verified_at": "2026-06-27",
   "claims": [
     {
       "claim_id": "us-passport-book-renewal-fee",
       "field_path": "fee.passport_book_renewal",
       "claim_text": "US passport book renewal fee (adult, by mail)",
-      "claim_value": "확인 필요",
-      "confidence": "low",
-      "status": "needs_review",
-      "last_verified_at": null,
-      "sources": [],
-      "verification_event": null
+      "claim_value": "$130",
+      "confidence": "high",
+      "status": "verified",
+      "last_verified_at": "2026-06-27",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "U.S. Department of State — Passport Fees",
+          "url": "https://travel.state.gov/content/travel/en/passports/how-apply/fees.html",
+          "observed_at": "2026-06-27",
+          "note": "Official fees page lists the adult passport book application fee as $130. Renewal by mail (Form DS-82) pays the application fee only; the $35 acceptance facility fee does not apply to mail renewals. Confirmed 2026-06-27."
+        }
+      ],
+      "verification_event": {
+        "event_type": "source_verified",
+        "actor": "ai-source-fetch",
+        "verified_at": "2026-06-27",
+        "note": "Read directly from travel.state.gov official Passport Fees page. 2026-06-27 기준. 최종 사람 승인 대기."
+      }
     },
     {
       "claim_id": "us-passport-card-renewal-fee",
       "field_path": "fee.passport_card_renewal",
       "claim_text": "US passport card renewal fee (adult, by mail)",
-      "claim_value": "확인 필요",
-      "confidence": "low",
-      "status": "needs_review",
-      "last_verified_at": null,
-      "sources": [],
-      "verification_event": null
+      "claim_value": "$30",
+      "confidence": "high",
+      "status": "verified",
+      "last_verified_at": "2026-06-27",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "U.S. Department of State — Passport Fees",
+          "url": "https://travel.state.gov/content/travel/en/passports/how-apply/fees.html",
+          "observed_at": "2026-06-27",
+          "note": "Official fees page lists the adult passport card application fee as $30. Renewal by mail (Form DS-82) pays the application fee only; the $35 acceptance facility fee does not apply to mail renewals. Confirmed 2026-06-27."
+        }
+      ],
+      "verification_event": {
+        "event_type": "source_verified",
+        "actor": "ai-source-fetch",
+        "verified_at": "2026-06-27",
+        "note": "Read directly from travel.state.gov official Passport Fees page. 2026-06-27 기준. 최종 사람 승인 대기."
+      }
     },
     {
       "claim_id": "us-passport-processing-time-routine",
       "field_path": "processing.routine_weeks",
       "claim_text": "US passport routine processing time in weeks",
-      "claim_value": "확인 필요",
-      "confidence": "low",
-      "status": "needs_review",
-      "last_verified_at": null,
-      "sources": [],
-      "verification_event": null
+      "claim_value": "4-6 weeks",
+      "confidence": "high",
+      "status": "verified",
+      "last_verified_at": "2026-06-27",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "U.S. Department of State — Get Your Processing Time",
+          "url": "https://travel.state.gov/content/travel/en/passports/how-apply/processing-times.html",
+          "observed_at": "2026-06-27",
+          "note": "Official processing times page (Last Updated April 16, 2026) states routine processing takes 4-6 weeks and expedited 2-3 weeks. Mailing time (up to 2 weeks each way) is separate. Processing time changes seasonally with demand."
+        }
+      ],
+      "verification_event": {
+        "event_type": "source_verified",
+        "actor": "ai-source-fetch",
+        "verified_at": "2026-06-27",
+        "note": "Read directly from travel.state.gov official Processing Times page. 2026-06-27 기준. Seasonal value — re-verify regularly. 최종 사람 승인 대기."
+      }
     }
   ]
 }
