@@ -1,0 +1,63 @@
+{
+  "entity_id": "kr-transport-seoul-taxi-fare-001",
+  "slug": "seoul-taxi-base-fare",
+  "type": "transport.taxi",
+  "name": "서울 택시 기본요금 (2023년 조정)",
+  "lang": "ko",
+  "country": "KR",
+  "jurisdiction": "KR",
+  "risk_tier": "low",
+  "update_frequency": "event_based",
+  "disclaimer_type": "check_official_source",
+  "last_verified_at": "2026-06-27",
+  "claims": [
+    {
+      "claim_id": "seoul-taxi-medium-base-fare",
+      "field_path": "fare.medium_base",
+      "claim_text": "서울 중형택시 기본요금 (2023.2.1 조정)",
+      "claim_value": "1.6km까지 4,800원",
+      "confidence": "high",
+      "status": "verified",
+      "last_verified_at": "2026-06-27",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "서울특별시 택시 요금 안내",
+          "url": "https://news.seoul.go.kr/traffic/traffic_price",
+          "observed_at": "2026-06-27",
+          "note": "서울특별시 교통정책과 공식 택시요금표: 중형택시 2023.2.1 조정 기본요금 1.6km/4,800원, 이후요금 131m당 100원, 시간요금 30초당 100원. 공공누리 제4유형."
+        }
+      ],
+      "verification_event": {
+        "event_type": "source_verified",
+        "actor": "ai-source-fetch",
+        "verified_at": "2026-06-27",
+        "note": "서울특별시 공식 교통요금 안내 페이지(news.seoul.go.kr) 택시 요금표에서 직접 확인. 2026-06-27 기준. 최종 사람 승인 대기."
+      }
+    },
+    {
+      "claim_id": "seoul-taxi-deluxe-large-base-fare",
+      "field_path": "fare.deluxe_large_base",
+      "claim_text": "서울 모범·대형택시 기본요금 (2023.2.1 조정)",
+      "claim_value": "3km까지 7,000원",
+      "confidence": "high",
+      "status": "verified",
+      "last_verified_at": "2026-06-27",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "서울특별시 택시 요금 안내",
+          "url": "https://news.seoul.go.kr/traffic/traffic_price",
+          "observed_at": "2026-06-27",
+          "note": "서울특별시 교통정책과 공식 택시요금표: 모범 및 대형택시 2023.2.1 조정 기본요금 3km/7,000원, 이후요금 151m당 100원, 시간요금 36초당 100원. 공공누리 제4유형."
+        }
+      ],
+      "verification_event": {
+        "event_type": "source_verified",
+        "actor": "ai-source-fetch",
+        "verified_at": "2026-06-27",
+        "note": "서울특별시 공식 교통요금 안내 페이지(news.seoul.go.kr) 택시 요금표에서 직접 확인. 2026-06-27 기준. 최종 사람 승인 대기."
+      }
+    }
+  ]
+}
