@@ -4,13 +4,15 @@
  * verified-claims.mjs — file-based verified-claim production tooling.
  *
  * Makes the manual workflow (fetch official source -> fill claim -> verified
- * claims JSON) repeatable and safe. Three subcommands:
+ * claims JSON) repeatable and safe. Four subcommands:
  *
  *   status              Show backlog vs citation-ready progress.
  *   scaffold <seed>     Generate a fillable verified-claims/<slug>.json skeleton
  *                       from a seed topic in data/verified-seed-set.json.
  *   validate            Enforce For-Ai trust rules across every verified-claims
  *                       file. Exits non-zero on any violation (CI-ready).
+ *   apply <payload>      Turn a reviewed payload into a verified-claims file,
+ *                       wire it into lib/verified-claims.ts, then validate.
  *
  * Trust rules enforced by `validate` (see AGENTS.md):
  *   - No fake facts: a claim_value of "확인 필요" can never be verified or above
@@ -335,16 +337,206 @@ function cmdScaffold(args) {
   console.log("  4. Run: npm run claims:validate");
 }
 
+
+// ---------------------------------------------------------------------------
+// apply
+// ---------------------------------------------------------------------------
+
+function parseArgs(args) {
+  const opts = { _: [] };
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i];
+    if (arg.startsWith("--")) {
+      const key = arg.slice(2);
+      if (key === "force" || key === "no-validate") opts[key] = true;
+      else { opts[key] = args[i + 1]; i++; }
+    } else {
+      opts._.push(arg);
+    }
+  }
+  return opts;
+}
+
+function claimIdFor(slug, fieldPath) {
+  return `${slug}-${String(fieldPath ?? "field").replace(/\./g, "-")}`;
+}
+
+function topicForSlug(seed, slug) {
+  return seed.find((t) => t.slug === slug);
+}
+
+function ensurePayloadClaim(c, index) {
+  const missing = [];
+  if (!c.field_path) missing.push("field_path");
+  if (c.claim_value === undefined || c.claim_value === "") missing.push("claim_value");
+  if (!c.confidence) missing.push("confidence");
+  if (!Array.isArray(c.sources) || c.sources.length === 0) missing.push("sources");
+  if (missing.length > 0) {
+    throw new Error(`payload claim[${index}] missing ${missing.join(", ")}`);
+  }
+  if (c.claim_value === PLACEHOLDER) {
+    throw new Error(`payload claim[${index}] cannot use placeholder claim_value for apply; keep scaffolds for unknown facts`);
+  }
+  if (!VALID_CONFIDENCE.has(c.confidence)) {
+    throw new Error(`payload claim[${index}] invalid confidence "${c.confidence}"`);
+  }
+  if (!VERIFIED_CONFIDENCE.has(c.confidence)) {
+    throw new Error(`payload claim[${index}] must use confidence medium/high for verified facts`);
+  }
+  for (const [j, src] of c.sources.entries()) {
+    if (!VALID_SOURCE_TYPE.has(src.source_type)) {
+      throw new Error(`payload claim[${index}] source[${j}] invalid source_type "${src.source_type}"`);
+    }
+    if (!src.url && !src.title) {
+      throw new Error(`payload claim[${index}] source[${j}] needs url or title`);
+    }
+    if (!src.observed_at) {
+      throw new Error(`payload claim[${index}] source[${j}] needs observed_at`);
+    }
+  }
+}
+
+function buildAppliedFile(payload, topic) {
+  const country = payload.country ?? topic.country ?? "XX";
+  const lang = payload.lang ?? topic.lang ?? (country === "KR" ? "ko" : "en");
+  const type = payload.category ?? topic.category ?? "topic.unknown";
+  const entityId = payload.entity_id ?? topic.entity_id ?? slugToEntityId(country, type, payload.slug);
+  const appliedByField = new Map(payload.claims.map((c, i) => {
+    ensurePayloadClaim(c, i);
+    return [c.field_path, c];
+  }));
+  const verifiedAt = payload.verified_at ?? new Date().toISOString().slice(0, 10);
+
+  const seedClaims = topic.claims ?? [];
+  const unknownFields = [...appliedByField.keys()].filter((field) => !seedClaims.some((c) => c.field_path === field));
+  if (unknownFields.length > 0) {
+    throw new Error(`payload has field_path not found in seed "${payload.slug}": ${unknownFields.join(", ")}`);
+  }
+
+  const claims = seedClaims.map((seedClaim) => {
+    const applied = appliedByField.get(seedClaim.field_path);
+    if (!applied) {
+      return {
+        claim_id: claimIdFor(payload.slug, seedClaim.field_path),
+        field_path: seedClaim.field_path,
+        claim_text: seedClaim.question ?? seedClaim.claim_text ?? seedClaim.field_path,
+        claim_value: PLACEHOLDER,
+        confidence: "low",
+        status: "needs_review",
+        last_verified_at: null,
+        sources: [],
+        verification_event: null,
+      };
+    }
+    return {
+      claim_id: applied.claim_id ?? claimIdFor(payload.slug, seedClaim.field_path),
+      field_path: seedClaim.field_path,
+      claim_text: applied.claim_text ?? seedClaim.question ?? seedClaim.claim_text ?? seedClaim.field_path,
+      claim_value: applied.claim_value,
+      confidence: applied.confidence,
+      status: "verified",
+      last_verified_at: applied.last_verified_at ?? verifiedAt,
+      sources: applied.sources,
+      verification_event: applied.verification_event ?? {
+        event_type: "source_verified",
+        verified_at: applied.last_verified_at ?? verifiedAt,
+        note: applied.verification_note ?? `Verified from ${applied.sources.length} source(s).`,
+      },
+    };
+  });
+
+  const verifiedDates = claims.filter((c) => c.status === "verified").map((c) => c.last_verified_at).filter(Boolean).sort();
+  return {
+    entity_id: entityId,
+    slug: payload.slug,
+    type,
+    name: payload.name ?? topic.title ?? payload.slug,
+    lang,
+    country,
+    jurisdiction: payload.jurisdiction ?? topic.jurisdiction ?? country,
+    risk_tier: payload.risk_tier ?? topic.risk_tier ?? "low",
+    update_frequency: payload.update_frequency ?? topic.update_frequency ?? "event_based",
+    disclaimer_type: payload.disclaimer_type ?? topic.disclaimer_type ?? "check_official_source",
+    last_verified_at: verifiedDates.at(-1) ?? null,
+    claims,
+  };
+}
+
+function importNameFor(slug, usedNames) {
+  let base = slug.replace(/-([a-z0-9])/g, (_, ch) => ch.toUpperCase()).replace(/[^a-zA-Z0-9]/g, "");
+  if (!base || /^[0-9]/.test(base)) base = `claim${base}`;
+  let name = base;
+  let n = 2;
+  while (usedNames.has(name)) name = `${base}${n++}`;
+  usedNames.add(name);
+  return name;
+}
+
+function wireLoaderForSlug(slug) {
+  let loader = readFileSync(LOADER_PATH, "utf8");
+  const jsonPath = `../data/verified-claims/${slug}.json`;
+  if (loader.includes(jsonPath)) return false;
+
+  const usedNames = new Set([...loader.matchAll(/^import\s+([a-zA-Z0-9_$]+)\s+from\s+"\.\.\/data\/verified-claims\/[^\n]+$/gm)].map((m) => m[1]));
+  const name = importNameFor(slug, usedNames);
+  const importLine = `import ${name} from "${jsonPath}";`;
+  const importMatches = [...loader.matchAll(/^import\s+[^\n]+\.json";$/gm)];
+  if (importMatches.length === 0) throw new Error("could not find verified-claims JSON imports in lib/verified-claims.ts");
+  const lastImport = importMatches.at(-1);
+  loader = `${loader.slice(0, lastImport.index + lastImport[0].length)}\n${importLine}${loader.slice(lastImport.index + lastImport[0].length)}`;
+
+  const arrayStart = loader.indexOf("const verifiedFiles: VerifiedClaimFile[] = [");
+  if (arrayStart === -1) throw new Error("could not find verifiedFiles array in lib/verified-claims.ts");
+  const arrayEnd = loader.indexOf("];", arrayStart);
+  if (arrayEnd === -1) throw new Error("could not find end of verifiedFiles array in lib/verified-claims.ts");
+  loader = `${loader.slice(0, arrayEnd)}  ${name} as unknown as VerifiedClaimFile,\n${loader.slice(arrayEnd)}`;
+  writeFileSync(LOADER_PATH, loader, "utf8");
+  return true;
+}
+
+function cmdApply(args) {
+  const opts = parseArgs(args);
+  const payloadPath = opts._[0];
+  if (!payloadPath) {
+    console.error("usage: npm run claims:apply -- <payload.json> [--force] [--no-validate]");
+    process.exit(1);
+  }
+  if (!existsSync(payloadPath)) {
+    console.error(`payload not found: ${payloadPath}`);
+    process.exit(1);
+  }
+  const payload = readJson(payloadPath);
+  if (!payload.slug) throw new Error("payload missing slug");
+  if (!Array.isArray(payload.claims) || payload.claims.length === 0) throw new Error("payload claims must be a non-empty array");
+  const seed = readJson(SEED_PATH);
+  const topic = topicForSlug(seed, payload.slug);
+  if (!topic) throw new Error(`seed topic "${payload.slug}" not found in verified-seed-set.json`);
+
+  const outPath = join(CLAIMS_DIR, `${payload.slug}.json`);
+  if (existsSync(outPath) && !opts.force) {
+    console.error(`refusing to overwrite existing ${outPath} (use --force)`);
+    process.exit(1);
+  }
+  const file = buildAppliedFile(payload, topic);
+  writeFileSync(outPath, `${JSON.stringify(file, null, 2)}\n`, "utf8");
+  const wired = wireLoaderForSlug(payload.slug);
+
+  console.log(`applied ${payload.claims.length} verified claim(s) to ${outPath}`);
+  console.log(wired ? `wired ${payload.slug} into lib/verified-claims.ts` : `${payload.slug} was already wired in lib/verified-claims.ts`);
+  if (!opts["no-validate"]) cmdValidate();
+}
+
 // ---------------------------------------------------------------------------
 
 function main() {
   const [cmd, ...rest] = process.argv.slice(2);
   switch (cmd) {
     case "validate": return cmdValidate();
+    case "apply": return cmdApply(rest);
     case "status": return cmdStatus();
     case "scaffold": return cmdScaffold(rest);
     default:
-      console.error("usage: node scripts/verified-claims.mjs <status|scaffold|validate>");
+      console.error("usage: node scripts/verified-claims.mjs <status|scaffold|apply|validate>");
       process.exit(1);
   }
 }
