@@ -28,10 +28,7 @@ export async function POST(
 
   // Generate contributor hash — never store raw IP
   const ip = extractIp(request);
-  const contributorHash = makeContributorHash(
-    ip,
-    process.env.CONTRIBUTOR_SALT ?? ''
-  );
+  const contributorHash = makeContributorHash(ip);
 
   if (isSupabaseConfigured()) {
     try {

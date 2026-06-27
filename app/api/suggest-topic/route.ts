@@ -23,7 +23,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const hash = makeContributorHash(extractIp(request), process.env.CONTRIBUTOR_SALT ?? "");
+  const hash = makeContributorHash(extractIp(request));
 
   // Try to save to topic_candidates
   let storage: "db" | "stub" = "stub";

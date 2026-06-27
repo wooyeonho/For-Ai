@@ -4,7 +4,6 @@ import { extractIp, makeContributorHash } from "@/lib/contributor-hash";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
-const CONTRIBUTOR_SALT = process.env.CONTRIBUTOR_SALT ?? "for-ai-default-salt";
 
 function supabaseAnon() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL ?? SUPABASE_URL;
@@ -81,7 +80,7 @@ export async function POST(request: Request) {
   const documentId = body.document_id ? String(body.document_id).trim() : null;
 
   const ip = extractIp(request);
-  const contributorHash = makeContributorHash(ip, CONTRIBUTOR_SALT);
+  const contributorHash = makeContributorHash(ip);
 
   // Public submissions land as 'pending' and require admin approval in
   // /admin/posts before they become visible. Admin/AI posts created through the
