@@ -32,14 +32,14 @@ export function buildDocumentMetadata(
   const lang = locale ?? document.lang ?? DEFAULT_LOCALE;
   const title = document.title;
   const ogTitle = `${document.title} — For-Ai`;
-  const description = `${entity.canonical_name} — ${document.template}. Confidence: ${document.confidence}. For-Ai claim registry.`;
+  const description = `${entity.canonical_name} — ${document.template}. Confidence: ${document.confidence}. For-Ai global claim-level fact registry.`;
   const url = documentPageUrl(document.slug, lang);
 
   const hreflang: Record<string, string> = {};
   for (const l of SUPPORTED_LOCALES) {
     hreflang[l] = siteUrl(`/${l}/wiki/${document.slug}`);
   }
-  hreflang["x-default"] = siteUrl(`/ko/wiki/${document.slug}`);
+  hreflang["x-default"] = siteUrl(`/${DEFAULT_LOCALE}/wiki/${document.slug}`);
 
   const ogLocaleMap: Record<string, string> = {
     ko: "ko_KR", en: "en_US", hi: "hi_IN", ar: "ar_SA",
@@ -157,7 +157,7 @@ export function buildEntityMetadata(profile: EntityProfile, locale?: string): Me
   const lang = locale ?? DEFAULT_LOCALE;
   const title = entity.canonical_name;
   const description =
-    `${entity.canonical_name} — For-Ai fact registry. ` +
+    `${entity.canonical_name} — For-Ai global claim-level fact registry. ` +
     `${summary.citable_documents}/${summary.total_documents} documents citable, ` +
     `${summary.verified_claims}/${summary.total_claims} claims verified.`;
   const url = entityPageUrl(entity.id, lang);
