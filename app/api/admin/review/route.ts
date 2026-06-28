@@ -1,25 +1,9 @@
+import { logAdminAuditEvent, requireAdmin, supabaseAdmin } from "@/lib/admin-api";
 import { DEFAULT_LOCALE } from "@/lib/i18n";
 import { NextResponse } from "next/server";
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { documentPageUrl } from "../../../../lib/urls";
 
-const ADMIN_SECRET = process.env.ADMIN_SECRET ?? "";
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
-
-type SupabaseAdminClient = SupabaseClient;
-
-function supabaseAdmin() {
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) return null;
-  return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-}
-
-function authorized(request: Request): boolean {
-  const auth = request.headers.get("x-admin-secret");
-  return !ADMIN_SECRET || auth === ADMIN_SECRET;
-}
+type SupabaseAdminClient = NonNullable<ReturnType<typeof supabaseAdmin>>;
 
 async function countRows(
   sb: SupabaseAdminClient,
@@ -39,7 +23,8 @@ function publicDocumentLink(doc: { slug?: string | null; lang?: string | null })
 }
 
 export async function GET(request: Request) {
-  if (!authorized(request)) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  const adminError = requireAdmin(request, "admin.review.read");
+  if (adminError) return adminError;
   const sb = supabaseAdmin();
   if (!sb) return NextResponse.json({ error: "SUPABASE_SERVICE_ROLE_KEY not configured" }, { status: 500 });
 
@@ -87,11 +72,12 @@ export async function GET(request: Request) {
     if (docsError) throw docsError;
 
     // Citation pickup: which documents AI/users actually engage with.
-    const { data: statsRows } = await sb
+    const { data: statsRows, error: statsError } = await sb
       .from("document_stats")
       .select("document_id, view_count, ai_citation_count")
       .order("ai_citation_count", { ascending: false })
       .limit(200);
+    if (statsError) throw statsError;
     const stats = statsRows ?? [];
     const totalViews = stats.reduce((sum, r) => sum + Number(r.view_count ?? 0), 0);
     const totalCitations = stats.reduce((sum, r) => sum + Number(r.ai_citation_count ?? 0), 0);
@@ -99,10 +85,11 @@ export async function GET(request: Request) {
     const topIds = topStats.map((r) => r.document_id);
     const titleById = new Map<string, { title?: string | null; slug?: string | null; lang?: string | null }>();
     if (topIds.length > 0) {
-      const { data: topDocs } = await sb
+      const { data: topDocs, error: topDocsError } = await sb
         .from("documents")
         .select("id, title, slug, lang")
         .in("id", topIds);
+      if (topDocsError) throw topDocsError;
       for (const d of topDocs ?? []) titleById.set(d.id, d);
     }
     const topCited = topStats.map((r) => {
@@ -114,6 +101,18 @@ export async function GET(request: Request) {
         ai_citation_count: Number(r.ai_citation_count ?? 0),
         public_url: doc ? publicDocumentLink(doc) : null,
       };
+    });
+
+    await logAdminAuditEvent(sb, request, "admin.review.read", {
+      candidates_new: candidatesNew,
+      candidates_approved: candidatesApproved,
+      claims_needs_review: claimsNeedsReview,
+      claims_verified: claimsVerified,
+      documents_verified: documentsVerified,
+      priority_claims_count: priorityClaims?.length ?? 0,
+      approved_candidates_count: approvedCandidates?.length ?? 0,
+      verified_documents_count: verifiedDocuments?.length ?? 0,
+      top_cited_count: topCited.length,
     });
 
     return NextResponse.json({
@@ -145,6 +144,7 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "admin review query failed";
+    await logAdminAuditEvent(sb, request, "admin.review.read_failed", { error: message });
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
