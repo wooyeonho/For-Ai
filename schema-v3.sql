@@ -231,6 +231,7 @@ create table topic_candidates (
   source         text not null default 'ai_generated'
                  check (source in ('ai_generated','user_suggested','admin_created')),
   lang           text not null default 'ko',
+  country        text not null default 'global',
   title          text not null,
   slug           text not null unique,
   category       text not null,
@@ -251,6 +252,7 @@ create table topic_candidates (
   promoted_at    timestamptz
 );
 
+create index topic_candidates_country_idx  on topic_candidates(country);
 create index topic_candidates_status_idx   on topic_candidates(status);
 create index topic_candidates_category_idx on topic_candidates(category);
 create index topic_candidates_created_idx  on topic_candidates(created_at desc);

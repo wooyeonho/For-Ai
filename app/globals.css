@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
 :root {
   color-scheme: light;
   --bg: #f7f8fa;
@@ -1734,6 +1735,17 @@ details.technical-meta dd {
   padding: 20px;
 }
 
+.community-form-notice {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: 8px;
+  color: #92400e;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  margin-bottom: 14px;
+  padding: 10px 12px;
+}
+
 .community-form-row {
   display: flex;
   flex-wrap: wrap;
@@ -1887,4 +1899,226 @@ details.technical-meta dd {
 .community-post-time {
   font-size: 0.6875rem;
   white-space: nowrap;
+}
+
+
+/* ============================================================================
+   For-Ai — Design reskin (drop-in)
+   프로토타입(For-Ai.dc.html)의 통일 디자인을 기존 코드에 입히는 오버라이드.
+
+   적용법 (코드/마크업 변경 0, 기능 회귀 0):
+   1) app/globals.css 의 "맨 위 첫 줄"에 폰트 import 추가:
+        @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+   2) 이 파일 내용 전체를 app/globals.css 의 "맨 아래"에 그대로 붙여넣기.
+      (CSS는 같은 선택자라면 뒤에 온 규칙이 이깁니다. :root 변수를 재정의하므로
+       var(--accent) 등을 쓰는 거의 모든 화면이 자동으로 새 팔레트로 바뀝니다.)
+
+   되돌리려면: 붙여넣은 이 블록과 1)의 import 한 줄만 지우면 원상복구.
+   ========================================================================== */
+
+/* ── 1. 토큰 재정의 (종이톤 + 잉크/네이비 + 시맨틱) ───────────────────────── */
+:root {
+  color-scheme: light;
+  --bg: #f2f1ec;          /* 따뜻한 종이 배경 */
+  --panel: #ffffff;
+  --text: #19191a;        /* 잉크 */
+  --muted: #74746e;
+  --line: #e5e3db;        /* 카드 외곽 */
+  --soft: #efede7;        /* 칩 배경 · hover */
+  --accent: #1a2236;      /* 네이비 — 링크·숫자·nav CTA */
+  --warning: #8a5a14;     /* 확인 필요(텍스트) */
+  --warning-bg: #fbf3e2;
+  --success: #15613a;     /* 검증됨 */
+  --success-bg: #e7f0e9;
+  --danger: #9f1b1e;      /* 분쟁/불가 */
+  --danger-bg: #f8eaea;
+  --glass-border: var(--line);
+  --font-mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  --focus-glow: 0 0 0 3px rgba(42, 79, 184, 0.20);
+  --max: 1080px;          /* 살짝 넓힘(프로토타입 감성) */
+  --radius: 14px;
+  --shadow: 0 1px 2px rgba(20, 20, 16, 0.04);
+  --ink: #19191a;         /* 1차 버튼 */
+  --paper: #f2f1ec;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: "IBM Plex Sans KR", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.6;
+}
+
+::selection { background: #e7dcc0; }
+
+/* ── 2. 헤더 / 브랜드 로고칩 ──────────────────────────────────────────────── */
+.site-header {
+  background: rgba(242, 241, 236, 0.82);
+  border-bottom: 1px solid #e2e0d8;
+}
+.brand-mark {
+  position: relative;
+  padding-left: 36px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+.brand-mark::before {
+  content: "F";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 27px;
+  height: 27px;
+  border-radius: 7px;
+  background: #1a2236;
+  color: #f2f1ec;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 14px;
+  display: grid;
+  place-items: center;
+}
+.brand-sub {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #8c8b82;
+}
+.site-nav a { font-weight: 500; }
+.site-nav a:hover { background: #eae8e1; color: var(--text); }
+
+/* ── 3. 1차 버튼 = 잉크(검정) · 시안(#00f2ff) 전부 교체 ──────────────────── */
+.btn-primary,
+.form-submit,
+.registry-form button,
+.community-primary-button,
+.semantic-button-success {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
+}
+.btn-primary:hover,
+.form-submit:hover,
+.registry-form button:hover {
+  background: #2a2a2c;
+  border-color: #2a2a2c;
+}
+.semantic-button-success { background: var(--success); border-color: var(--success); }
+.community-primary-button { border-radius: 8px; }
+.community-chip-active { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+
+/* 2차 버튼 */
+.btn-secondary {
+  background: var(--panel);
+  color: var(--text);
+  border-color: #d9d7ce;
+}
+.btn-secondary:hover { border-color: #b9b7ad; background: var(--panel); }
+
+/* 햄버거 토글 — 시안 제거 */
+.nav-toggle {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  color: var(--text);
+}
+.nav-toggle:hover { border-color: #b9b7ad; background: var(--soft); }
+
+/* ── 4. 배지 = 시맨틱 3색(녹/황/적) ──────────────────────────────────────── */
+.badge {
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--soft);
+  color: var(--muted);
+  text-transform: none;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+.badge-high, .badge-verified, .badge-pass {
+  border-color: #c2dcc9;
+  background: #e7f0e9;
+  color: #15613a;
+}
+.badge-low, .badge-warning {
+  border-color: #ebd9ae;
+  background: #fbf3e2;
+  color: #8a5a14;
+}
+.badge-review, .badge-medium {
+  border-color: var(--line);
+  background: var(--soft);
+  color: #56554e;
+}
+.badge-disputed, .badge-danger {
+  border-color: #e8c4c4;
+  background: #f8eaea;
+  color: #9f1b1e;
+}
+
+/* ── 5. 패널 / 카드 / 라운드 ─────────────────────────────────────────────── */
+.registry-panel { border-radius: 16px; border-color: var(--line); box-shadow: var(--shadow); }
+.claim-card { border-radius: 14px; }
+.audience-card, .step, .registry-index, .stat-strip { border-radius: 16px; }
+.stat-num { color: #1a2236; letter-spacing: -0.02em; }
+
+/* eyebrow / 모노 라벨 */
+.eyebrow, .meta-label, .section-eyebrow, .hero-eyebrow, .footer-col-title {
+  font-family: var(--font-mono);
+  letter-spacing: 0.1em;
+  color: #9a998f;
+}
+
+/* 직접 답변 좌측 강조바: 상태색이 더 잘 보이게 */
+.direct-answer-box { border-inline-start-color: var(--warning); }
+
+/* 형광펜 하이라이트 */
+.hero-accent {
+  background: linear-gradient(180deg, transparent 62%, #e7d3a0 62%);
+  padding: 0 2px;
+}
+.hero-sub strong { color: #8a5a14; }
+
+/* CTA 링크(정정/환각) 점 색 유지하되 톤 정리 */
+.cta-correction { border-color: #b9c7e0; }
+.cta-hallucination { border-color: #e4c98a; }
+
+/* 인용 가능 배너 */
+.can-cite-banner { background: #e7f0e9; border-color: #c2dcc9; color: #15613a; }
+
+/* ── 6. 푸터 ─────────────────────────────────────────────────────────────── */
+.site-footer { background: #efede7; border-top: 1px solid #e2e0d8; }
+.site-footer-base { font-family: var(--font-mono); color: #9a998f; }
+
+/* ── 7. 관리자 / Mission Control 톤 정리 ─────────────────────────────────── */
+.goal-hero { background: linear-gradient(135deg, #ffffff 0%, #f2f1ec 100%); }
+.goal-metric-card strong { color: #1a2236; }
+.goal-pipeline li::before, .step-num { background: #1a2236; }
+
+/* ── 8. 다크 모드: 종이톤 다크 변형(반쪽 깨짐 방지) ───────────────────────── */
+@media (prefers-color-scheme: dark) {
+  :root {
+    color-scheme: dark;
+    --bg: #15161b;
+    --panel: #1e1f26;
+    --text: #e7e5de;
+    --muted: #a8a79d;
+    --line: #2c2d35;
+    --soft: #23242b;
+    --accent: #9db8e8;
+    --warning: #d89a52;
+    --warning-bg: #2a2316;
+    --success: #8fb58c;
+    --success-bg: #16241b;
+    --danger: #d87a6e;
+    --danger-bg: #2a1717;
+    --ink: #e7e5de;
+    --paper: #15161b;
+    --focus-glow: 0 0 0 3px rgba(157, 184, 232, 0.25);
+  }
+  .site-header { background: rgba(21, 22, 27, 0.85); }
+  .badge-high, .badge-verified, .badge-pass { border-color: #2f4a36; background: #16241b; color: #8fb58c; }
+  .badge-low, .badge-warning { border-color: #4a3a1c; background: #2a2316; color: #d89a52; }
+  .badge-disputed, .badge-danger { border-color: #4a2a27; background: #2a1717; color: #d87a6e; }
+  .hero-accent { background: linear-gradient(180deg, transparent 64%, rgba(231, 211, 160, 0.18) 64%); }
 }

@@ -37,45 +37,59 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
   }
 
-  // Try to save to topic_candidates
-  let storage: "db" | "stub" = "stub";
-  if (SUPABASE_URL && SUPABASE_ANON) {
-    try {
-      const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
-      const { error: suggestionError } = await sb.from("topic_suggestions").insert({
-        contributor_hash: hash,
-        question,
-        category,
-        reason,
-        related_url: relatedUrl,
-        source_url: sourceUrl,
-        status: "new",
-      });
-      if (!suggestionError) storage = "db";
+  // Supabase must be configured for durable storage
+  if (!SUPABASE_URL || !SUPABASE_ANON) {
+    return NextResponse.json(
+      { accepted: false, error: "DB not configured — submission was not stored" },
+      { status: 503 }
+    );
+  }
 
-      const { error } = await sb.from("topic_candidates").insert({
-        source: "user_suggested",
-        status: "new",
-        lang: "ko",
-        title: question,
-        slug: suggestedSlug ?? question.toLowerCase().replace(/[^a-z0-9가-힣]+/g, "-").slice(0, 80),
-        category,
-        risk_tier: "medium",
-        why_people_ask_ai: reason,
-        why_ai_gets_wrong: aiContext,
-        claims: [{
-          field_path: "claim.main",
-          question,
-          placeholder_value: "확인 필요",
-          required_source_type: sourceUrl ? "official" : "document",
-        }],
-        source_hints: sourceUrl ? [{ url: sourceUrl, title: "제보자 제출", hint_type: "official" }] : [],
-        contributor_hash: hash,
-      });
-      if (!error) storage = "db";
-    } catch {
-      // fallback to stub — don't fail the user
-    }
+  const lang = String(body.lang ?? "en").trim().slice(0, 5);
+
+  let storage: "db" | "none" = "none";
+  try {
+    const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+    const { error: suggestionError } = await sb.from("topic_suggestions").insert({
+      contributor_hash: hash,
+      question,
+      category,
+      reason,
+      related_url: relatedUrl,
+      source_url: sourceUrl,
+      status: "new",
+    });
+
+    const { error } = await sb.from("topic_candidates").insert({
+      source: "user_suggested",
+      status: "new",
+      lang,
+      title: question,
+      slug: suggestedSlug ?? question.toLowerCase().replace(/[^a-z0-9가-힣]+/g, "-").slice(0, 80),
+      category,
+      risk_tier: "medium",
+      why_people_ask_ai: reason,
+      why_ai_gets_wrong: aiContext,
+      claims: [{
+        field_path: "claim.main",
+        question,
+        placeholder_value: "확인 필요",
+        required_source_type: sourceUrl ? "official" : "document",
+      }],
+      source_hints: sourceUrl ? [{ url: sourceUrl, title: "제보자 제출", hint_type: "official" }] : [],
+      contributor_hash: hash,
+    });
+
+    if (!suggestionError || !error) storage = "db";
+  } catch {
+    // DB write failed
+  }
+
+  if (storage === "none") {
+    return NextResponse.json(
+      { accepted: false, error: "Failed to save suggestion — please try again later" },
+      { status: 500 }
+    );
   }
 
   return NextResponse.json({

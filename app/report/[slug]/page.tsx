@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getRegistryBundleBySlug } from "../../../lib/data";
 import { getRegistryBundleFromSupabase } from "../../../lib/supabase-documents";
 import { createReportSubmissionStub } from "../../../lib/submission-stubs";
+import { REPORT_MESSAGE_MAX_LENGTH } from "../../../lib/submission-limits";
 
 export const metadata: Metadata = {
   title: "정정 제보",
@@ -83,7 +84,7 @@ export default async function ReportPage({
           </label>
           <label>
             정정 요청 내용
-            <textarea name="message" required minLength={5} placeholder="어떤 claim이 정정되어야 하는지 적어주세요." />
+            <textarea name="message" required minLength={5} maxLength={REPORT_MESSAGE_MAX_LENGTH} placeholder="어떤 claim이 정정되어야 하는지 적어주세요." />
           </label>
           <input type="hidden" name="contributor_hash" value="local-stub-contributor-hash" />
           <button type="submit">정정 요청 제출</button>

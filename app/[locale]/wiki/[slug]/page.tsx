@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { getRegistryBundleBySlug, getAllRegistryBundles } from "../../../../lib/data";
 import { buildDocumentMetadata, buildDocumentJsonLd } from "../../../../lib/seo";
 import { siteUrl } from "../../../../lib/urls";
-import { SUPPORTED_LOCALES, isValidLocale, getTranslations } from "../../../../lib/i18n";
+import { SUPPORTED_LOCALES, LOCALE_CONFIG, isValidLocale, getTranslations } from "../../../../lib/i18n";
 import type { SupportedLocale } from "../../../../lib/i18n";
 import { getEntityLabels } from "../../../../lib/i18n/entity-labels";
 import type { RegistryDocumentBundle } from "../../../../lib/types";
@@ -173,7 +173,11 @@ export default async function WikiDocumentPage({
         <h2 id="lang-switch">{t.wiki.otherLanguages}</h2>
         <ul className="link-list" style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
           {SUPPORTED_LOCALES.filter((l) => l !== locale).map((l) => (
-            <li key={l}><Link href={`/${l}/wiki/${slug}`}>{l.toUpperCase()}</Link></li>
+            <li key={l}>
+              <Link href={`/${l}/wiki/${slug}`}>
+                {LOCALE_CONFIG[l].flag} {LOCALE_CONFIG[l].nativeName}
+              </Link>
+            </li>
           ))}
         </ul>
       </nav>

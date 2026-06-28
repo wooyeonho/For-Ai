@@ -21,6 +21,58 @@ Goal 8 deployment checklist for the static-first For-Ai MVP.
 - `/sitemap.xml`
 - `/robots.txt`
 
+
+## Production Supabase feature release checklist
+
+Use this checklist before marking the community, topic suggestions, and candidate review features as production-ready. These checks must be performed against the actual deployed production URL, not only against local development.
+
+### 1. Vercel / deployment environment variables
+
+Confirm all required runtime secrets are configured in the production deployment environment:
+
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `ADMIN_SECRET`
+- `CONTRIBUTOR_SALT`
+
+Notes:
+
+- `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are required for public Supabase reads and browser-safe client paths.
+- `SUPABASE_SERVICE_ROLE_KEY` is required only on trusted server-side routes; never expose it to client code.
+- `ADMIN_SECRET` gates admin APIs and admin-only UI actions.
+- `CONTRIBUTOR_SALT` is required so public submissions store only `contributor_hash` and never raw IP addresses.
+
+### 2. Supabase SQL Editor migrations
+
+In the Supabase SQL Editor, confirm these migrations have been applied to the production database, in dependency order where applicable:
+
+- `supabase/migrations/20260622_topic_candidates.sql`
+- `supabase/migrations/20260623_topic_candidates_consensus.sql`
+- `supabase/migrations/20260624_community_and_stats.sql`
+- `supabase/migrations/20260625_topic_suggestions.sql`
+- `supabase/migrations/20260625_post_moderation.sql`
+- `supabase/migrations/20260625_lock_rls.sql`
+
+Minimum table/policy smoke checks after migration:
+
+- `topic_candidates` exists and supports public topic suggestions plus admin review operations.
+- `community_posts` exists with moderation-aware public insert/select behavior.
+- `document_stats` exists for view and AI citation counters.
+- RLS remains enabled; public read is not allowed for edits, reports, or hallucination reports.
+
+### 3. Production URL manual route checks
+
+After deployment, open each route once on the actual production URL and confirm it renders or responds as expected:
+
+- `/community` — community page loads, post list/form renders, and public submit path does not expose raw IPs.
+- `/suggest-topic` — topic suggestion form loads and can submit a pending candidate.
+- `/admin/posts` — admin password flow loads; authenticated admin can review/manage posts.
+- `/admin/candidates` — admin password flow loads; authenticated admin can review topic candidates.
+- `/api/posts` — public posts API responds without leaking server secrets or unpublished moderation data.
+
+Record the production URL, date/time, checker, and result before closing the release.
+
 ## Privacy and scope checks
 
 - Do not store raw IP addresses.

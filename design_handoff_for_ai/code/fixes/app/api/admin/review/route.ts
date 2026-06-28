@@ -1,9 +1,18 @@
-import { logAdminAuditEvent, requireAdmin, supabaseAdmin } from "@/lib/admin-api";
-import { DEFAULT_LOCALE } from "@/lib/i18n";
 import { NextResponse } from "next/server";
+import { DEFAULT_LOCALE } from "@/lib/i18n";
+import {
+  requireAdmin,
+  supabaseAdmin,
+  missingSupabaseAdminEnv,
+} from "../../../../lib/admin-api";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { documentPageUrl } from "../../../../lib/urls";
 
-type SupabaseAdminClient = NonNullable<ReturnType<typeof supabaseAdmin>>;
+// ⚠️ B4 FIX: 이 파일은 예전에 자체 authorized() (fail-open: ADMIN_SECRET 이 비면 누구나 통과)
+// 와 자체 supabaseAdmin() 을 두고 있었습니다. 이제 lib/admin-api.ts 의 공용
+// requireAdmin()(rate-limit + fail-closed secret + CSRF)와 supabaseAdmin() 을 사용합니다.
+
+type SupabaseAdminClient = SupabaseClient;
 
 async function countRows(
   sb: SupabaseAdminClient,
@@ -23,10 +32,17 @@ function publicDocumentLink(doc: { slug?: string | null; lang?: string | null })
 }
 
 export async function GET(request: Request) {
-  const adminError = requireAdmin(request, "admin.review.read");
-  if (adminError) return adminError;
+  // ── 인증: 공용 헬퍼로 fail-closed (빈/오입력 secret 거부, rate-limit 포함) ──
+  const denied = requireAdmin(request, "admin.review.read");
+  if (denied) return denied;
+
   const sb = supabaseAdmin();
-  if (!sb) return NextResponse.json({ error: "SUPABASE_SERVICE_ROLE_KEY not configured" }, { status: 500 });
+  if (!sb) {
+    return NextResponse.json(
+      { error: "Supabase admin not configured", missing: missingSupabaseAdminEnv() },
+      { status: 500 },
+    );
+  }
 
   try {
     const [
@@ -71,13 +87,11 @@ export async function GET(request: Request) {
       .limit(10);
     if (docsError) throw docsError;
 
-    // Citation pickup: which documents AI/users actually engage with.
-    const { data: statsRows, error: statsError } = await sb
+    const { data: statsRows } = await sb
       .from("document_stats")
       .select("document_id, view_count, ai_citation_count")
       .order("ai_citation_count", { ascending: false })
       .limit(200);
-    if (statsError) throw statsError;
     const stats = statsRows ?? [];
     const totalViews = stats.reduce((sum, r) => sum + Number(r.view_count ?? 0), 0);
     const totalCitations = stats.reduce((sum, r) => sum + Number(r.ai_citation_count ?? 0), 0);
@@ -85,11 +99,10 @@ export async function GET(request: Request) {
     const topIds = topStats.map((r) => r.document_id);
     const titleById = new Map<string, { title?: string | null; slug?: string | null; lang?: string | null }>();
     if (topIds.length > 0) {
-      const { data: topDocs, error: topDocsError } = await sb
+      const { data: topDocs } = await sb
         .from("documents")
         .select("id, title, slug, lang")
         .in("id", topIds);
-      if (topDocsError) throw topDocsError;
       for (const d of topDocs ?? []) titleById.set(d.id, d);
     }
     const topCited = topStats.map((r) => {
@@ -101,18 +114,6 @@ export async function GET(request: Request) {
         ai_citation_count: Number(r.ai_citation_count ?? 0),
         public_url: doc ? publicDocumentLink(doc) : null,
       };
-    });
-
-    await logAdminAuditEvent(sb, request, "admin.review.read", {
-      candidates_new: candidatesNew,
-      candidates_approved: candidatesApproved,
-      claims_needs_review: claimsNeedsReview,
-      claims_verified: claimsVerified,
-      documents_verified: documentsVerified,
-      priority_claims_count: priorityClaims?.length ?? 0,
-      approved_candidates_count: approvedCandidates?.length ?? 0,
-      verified_documents_count: verifiedDocuments?.length ?? 0,
-      top_cited_count: topCited.length,
     });
 
     return NextResponse.json({
@@ -144,7 +145,6 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "admin review query failed";
-    await logAdminAuditEvent(sb, request, "admin.review.read_failed", { error: message });
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

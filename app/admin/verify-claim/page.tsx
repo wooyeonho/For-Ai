@@ -20,6 +20,7 @@ type DocumentRow = {
   title: string;
   status: string;
   confidence: string;
+  lang?: string;
   claims?: ClaimRow[];
 };
 
@@ -151,6 +152,10 @@ export default function VerifyClaimPage() {
       <nav style={{ marginBottom: 24, fontSize: 13 }}><Link href="/admin/review">← Admin</Link></nav>
       <h1>Claim 검증 관리</h1>
       <p style={{ color: "#6b7280" }}>Promoted 문서의 claim에 출처를 붙이고 verified 상태로 승격합니다.</p>
+      <p style={{ color: "#374151", fontSize: 13 }}>
+        승격 전 반드시 <a href="/docs/operations/CLAIM_VERIFICATION_POLICY.md">verified 승격 기준 문서</a>를 확인하세요.
+        AI 생성 후보는 사람이 출처를 검토하기 전까지 verified로 올릴 수 없습니다.
+      </p>
 
       <section className="registry-panel">
         <label style={{ fontWeight: 600 }}>Admin secret</label>
@@ -170,7 +175,7 @@ export default function VerifyClaimPage() {
 
       {documents.map((doc) => (
         <section className="registry-panel" key={doc.id} id={`doc-${doc.slug}`}>
-          <h2><Link href={`/ko/wiki/${doc.slug}`}>{doc.title}</Link></h2>
+          <h2><Link href={`/${doc.lang??"en"}/wiki/${doc.slug}`}>{doc.title}</Link></h2>
           <p className="meta-label">{doc.slug} · {doc.status} · {doc.confidence}</p>
           {(doc.claims ?? []).map((claim) => (
             <div className="claim-card" key={claim.id}>

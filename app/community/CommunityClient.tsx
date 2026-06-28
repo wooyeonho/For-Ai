@@ -16,7 +16,7 @@ interface Post {
 
 const AUTHOR_ICON: Record<string, string> = { user: "👤", ai: "✦", admin: "🛡️" };
 const AUTHOR_LABEL: Record<string, string> = { user: "사용자", ai: "AI", admin: "관리자" };
-const POST_REVIEW_MESSAGE = "글이 검토 대기열에 등록되었습니다. 관리자 승인 후 공개 목록에 표시됩니다.";
+const POST_REVIEW_MESSAGE = "글이 검토 대기열에 등록되었습니다. 관리자 승인 전에는 공개 목록에 표시되지 않습니다. 승인 후 게시됩니다.";
 
 export default function CommunityClient({ documents }: { documents: { id: string; title: string; slug: string }[] }) {
   const [posts, setPosts] = useState<Post[]>([]);
@@ -135,6 +135,9 @@ export default function CommunityClient({ documents }: { documents: { id: string
 
         {showForm && (
           <form onSubmit={handleSubmit} className="community-form">
+            <div className="community-form-notice" role="note">
+              공개 글은 검토 후 게시됩니다. 제출 직후에는 공개 목록에 표시되지 않습니다.
+            </div>
             <div className="community-form-row">
               <div>
                 <label className="community-label">작성자 유형</label>
@@ -231,7 +234,7 @@ export default function CommunityClient({ documents }: { documents: { id: string
                   {p.document_id && (
                     <div className="community-related-doc">
                       관련 문서: {p.document_slug ? (
-                        <Link href={`/ko/wiki/${p.document_slug}`} className="community-related-link">{p.document_title ?? p.document_slug}</Link>
+                        <Link href={`/en/wiki/${p.document_slug}`} className="community-related-link">{p.document_title ?? p.document_slug}</Link>
                       ) : (
                         <span>{p.document_id}</span>
                       )}
