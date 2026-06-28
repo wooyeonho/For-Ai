@@ -19,6 +19,9 @@ export async function GET(_request: Request, { params }: { params: Promise<{ pat
   }
 
   return new NextResponse(renderDocumentMarkdown(bundle), {
-    headers: { "content-type": "text/markdown; charset=utf-8" },
+    headers: {
+      "content-type": "text/markdown; charset=utf-8",
+      "Cache-Control": "public, max-age=60, s-maxage=600, stale-while-revalidate=3600",
+    },
   });
 }

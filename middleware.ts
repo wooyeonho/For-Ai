@@ -9,11 +9,19 @@ const ENV_DEFAULT = process.env.NEXT_PUBLIC_DEFAULT_LOCALE;
 const DEFAULT_LOCALE = ENV_DEFAULT && SUPPORTED_LOCALES.includes(ENV_DEFAULT) ? ENV_DEFAULT : "en";
 
 // In-memory rate limiter (per Edge worker instance; resets on deploy)
-// For production scale, replace with Upstash Redis or similar
+// For production scale, replace with Upstash Redis or similar.
 const rateMap = new Map<string, { count: number; resetAt: number }>();
 const RATE_WINDOW_MS = 60_000;
-const RATE_LIMIT_ANON = 30;  // requests per minute without API key
-const RATE_LIMIT_KEY = 120;  // requests per minute with API key (basic validation)
+const RATE_LIMIT_READ_ANON = 300; // crawler-friendly reads per minute without API key
+const RATE_LIMIT_READ_KEY = 1_200; // crawler-friendly reads per minute with API key
+const RATE_LIMIT_WRITE_ANON = 30; // abusive write/counter protection without API key
+const RATE_LIMIT_WRITE_KEY = 120; // abusive write/counter protection with API key
+
+type RatePolicy = {
+  name: "read" | "write";
+  anonLimit: number;
+  keyedLimit: number;
+};
 
 function getClientIp(request: NextRequest): string {
   return (
@@ -52,18 +60,55 @@ function maybePruneMap() {
   }
 }
 
+function ratePolicyForRequest(request: NextRequest): RatePolicy | null {
+  const { pathname } = request.nextUrl;
+  const isRead = request.method === "GET" || request.method === "HEAD";
+
+  // AI crawlers, search crawlers, and smoke tests need to retrieve many public
+  // registry documents in a burst. Keep read-only surfaces on a separate,
+  // crawler-friendly bucket from write/counter endpoints.
+  if (
+    isRead &&
+    (pathname.startsWith("/api/documents/") ||
+      pathname.startsWith("/raw/") ||
+      pathname.startsWith("/api/index") ||
+      pathname.startsWith("/api/entities/"))
+  ) {
+    return {
+      name: "read",
+      anonLimit: RATE_LIMIT_READ_ANON,
+      keyedLimit: RATE_LIMIT_READ_KEY,
+    };
+  }
+
+  // Counter endpoints and any future non-read public document mutations stay in
+  // the stricter abuse-protection bucket. Per-document counter limits are still
+  // enforced inside the individual route handlers.
+  if (pathname.startsWith("/api/documents/")) {
+    return {
+      name: "write",
+      anonLimit: RATE_LIMIT_WRITE_ANON,
+      keyedLimit: RATE_LIMIT_WRITE_KEY,
+    };
+  }
+
+  return null;
+}
+
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Rate-limit public API endpoints (not admin endpoints)
-  if (pathname.startsWith("/api/documents/") || pathname.startsWith("/raw/") || pathname.startsWith("/api/index") || pathname.startsWith("/api/entities/")) {
+  // Rate-limit public machine-readable endpoints (not admin endpoints).
+  const policy = ratePolicyForRequest(request);
+  if (policy) {
     maybePruneMap();
-    const hasApiKey = !!request.headers.get("x-api-key");
+    const apiKey = request.headers.get("x-api-key");
+    const hasApiKey = !!apiKey;
     const ip = getClientIp(request);
     const rateLimitKey = hasApiKey
-      ? `key:${request.headers.get("x-api-key")?.slice(0, 16)}`
-      : `ip:${ip}`;
-    const limit = hasApiKey ? RATE_LIMIT_KEY : RATE_LIMIT_ANON;
+      ? `${policy.name}:key:${apiKey.slice(0, 16)}`
+      : `${policy.name}:ip:${ip}`;
+    const limit = hasApiKey ? policy.keyedLimit : policy.anonLimit;
     const { allowed, remaining, retryAfter } = checkRateLimit(rateLimitKey, limit);
 
     if (!allowed) {
@@ -76,6 +121,7 @@ export function middleware(request: NextRequest) {
             "Retry-After": String(retryAfter),
             "X-RateLimit-Limit": String(limit),
             "X-RateLimit-Remaining": "0",
+            "X-RateLimit-Policy": policy.name,
           },
         }
       );
@@ -84,6 +130,7 @@ export function middleware(request: NextRequest) {
     const response = NextResponse.next();
     response.headers.set("X-RateLimit-Limit", String(limit));
     response.headers.set("X-RateLimit-Remaining", String(remaining));
+    response.headers.set("X-RateLimit-Policy", policy.name);
     return response;
   }
 
