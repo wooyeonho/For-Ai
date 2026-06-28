@@ -49,3 +49,22 @@ This is the canonical admin operations document for For-Ai. Keep this file as th
 - Keep human/CI review checklists in `docs/qa/POST_LAZYCODEX_REVIEW_CHECKLIST.md`.
 - Keep reusable LazyCodex prompts and templates under `docs/lazycodex/`.
 - Close or hold duplicate prompt/checklist PRs that are not used in the actual operating flow.
+
+## Admin review API authentication checks
+
+`GET /api/admin/review` uses the shared `requireAdmin(request, "admin.review")` guard. That means a missing `ADMIN_SECRET` is a closed configuration: every request returns `401` until the secret is configured, and callers must send the exact value in the `x-admin-secret` header.
+
+Run these curl checks against a local or deployed base URL before operating the review queue:
+
+```bash
+# 1) ADMIN_SECRET not configured on the server: must return 401.
+curl -i "$BASE_URL/api/admin/review"
+
+# 2) ADMIN_SECRET configured, but caller sends the wrong secret: must return 401.
+curl -i -H "x-admin-secret: wrong-secret" "$BASE_URL/api/admin/review"
+
+# 3) ADMIN_SECRET configured, and caller sends the correct secret: should return 200 when Supabase admin env is configured.
+curl -i -H "x-admin-secret: $ADMIN_SECRET" "$BASE_URL/api/admin/review"
+```
+
+If the third check authenticates but the Supabase service role environment is missing, the route may return a server configuration error instead of review data; fix `NEXT_PUBLIC_SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` before use.
