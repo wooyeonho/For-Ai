@@ -147,7 +147,7 @@ export default function VerifyClaimPage() {
   const verifiedCount = allClaims.filter(({ claim }) => claim.status === "verified").length;
 
   return (
-    <main style={{ maxWidth: 960, margin: "0 auto", padding: "40px 20px" }}>
+    <div style={{ maxWidth: 960, margin: "0 auto", padding: "40px 20px" }}>
       <nav style={{ marginBottom: 24, fontSize: 13 }}><Link href="/admin/review">← Admin</Link></nav>
       <h1>Claim 검증 관리</h1>
       <p style={{ color: "#6b7280" }}>Promoted 문서의 claim에 출처를 붙이고 verified 상태로 승격합니다.</p>
@@ -224,6 +224,6 @@ export default function VerifyClaimPage() {
           </div>
         </section>
       )}
-    </main>
+    </div>
   );
 }

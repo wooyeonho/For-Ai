@@ -1,7 +1,9 @@
 import { NextResponse } from "next/server";
 
 import { logAdminAuditEvent, requireAdmin, supabaseAdmin } from "@/lib/admin-api";
+import { siteUrl } from "@/lib/urls";
 
+const SOURCE_CHECK_UA = `For-Ai-SourceCheck/1.0 (+${siteUrl("").replace(/\/+$/, "")})`;
 const FETCH_TIMEOUT_MS = 8000;
 const MAX_BYTES = 1_500_000;
 
@@ -70,7 +72,7 @@ export async function POST(request: Request) {
       method: "GET",
       redirect: "follow",
       signal: controller.signal,
-      headers: { "user-agent": "For-Ai-SourceCheck/1.0 (+https://for-ai-e4mm.vercel.app)" },
+      headers: { "user-agent": SOURCE_CHECK_UA },
     });
     clearTimeout(timeout);
 

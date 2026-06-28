@@ -870,14 +870,14 @@ textarea::placeholder {
 }
 
 .btn-secondary {
-  background: rgba(0, 242, 255, 0.06);
-  color: #e1fdff;
-  border-color: rgba(0, 242, 255, 0.55);
+  background: var(--soft);
+  color: var(--accent);
+  border-color: var(--line);
 }
 
 .btn-secondary:hover {
-  border-color: #e1fdff;
-  background: rgba(0, 242, 255, 0.14);
+  border-color: var(--accent);
+  background: var(--panel);
 }
 
 .btn-secondary:focus-visible {
@@ -1349,6 +1349,17 @@ details.technical-meta dd {
 
   .hero-accent {
     background: linear-gradient(180deg, transparent 64%, rgba(0, 242, 255, 0.14) 64%);
+  }
+
+  .btn-secondary {
+    background: rgba(0, 242, 255, 0.06);
+    color: #e1fdff;
+    border-color: rgba(0, 242, 255, 0.55);
+  }
+
+  .btn-secondary:hover {
+    border-color: #e1fdff;
+    background: rgba(0, 242, 255, 0.14);
   }
 }
 

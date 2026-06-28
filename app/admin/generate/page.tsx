@@ -153,7 +153,7 @@ export default function AdminGeneratePage() {
   }
 
   return (
-    <main style={{ maxWidth: 800, margin: "0 auto", padding: "40px 20px" }}>
+    <div style={{ maxWidth: 800, margin: "0 auto", padding: "40px 20px" }}>
       <nav style={{ marginBottom: 24, fontSize: 13 }}>
         <Link href="/admin/review" style={{ color: "#6b7280" }}>← Admin</Link>
       </nav>
@@ -470,6 +470,6 @@ export default function AdminGeneratePage() {
           )}
         </div>
       )}
-    </main>
+    </div>
   );
 }
