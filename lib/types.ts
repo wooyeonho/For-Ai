@@ -156,7 +156,7 @@ export type RegistryDocumentBundle = {
 };
 
 export type CommunityPostAuthorType = "user" | "ai" | "admin";
-export type CommunityPostStatus = "published" | "hidden" | "spam" | "deleted";
+export type CommunityPostStatus = "pending" | "published" | "hidden" | "spam" | "deleted";
 
 export type CommunityPost = {
   id: string;
