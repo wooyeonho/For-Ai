@@ -4,9 +4,9 @@ export default function NotFound() {
   return (
     <section className="registry-panel">
       <p className="eyebrow">Not found</p>
-      <h1>문서를 찾을 수 없습니다</h1>
-      <p>요청한 문서가 없습니다.</p>
-      <p><Link href="/ko/wiki/myungdong-laluce-parking">명동 라루체 주차 정보</Link></p>
+      <h1>Page not found</h1>
+      <p>요청한 페이지를 찾을 수 없습니다. The page you&apos;re looking for doesn&apos;t exist.</p>
+      <p><Link href="/">← Back to home</Link></p>
     </section>
   );
 }

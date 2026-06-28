@@ -51,7 +51,7 @@ export function ReportForm({
     return (
       <div className="submission-success">
         <p>신고가 접수되었습니다. 검토 후 반영됩니다.</p>
-        <a href={`/ko/wiki/${slug}`} className="cta-link">
+        <a href={`/en/wiki/${slug}`} className="cta-link">
           문서로 돌아가기
         </a>
       </div>
