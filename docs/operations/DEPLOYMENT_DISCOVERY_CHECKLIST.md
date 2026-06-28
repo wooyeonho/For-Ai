@@ -6,6 +6,7 @@ Goal 8 deployment checklist for the static-first For-Ai MVP.
 
 - `npm run lint`
 - `npm run build`
+- community post moderation migration applied (`supabase/migrations/20260625_post_moderation.sql`)
 - `/`
 - `/ko/wiki/myungdong-laluce-parking`
 - `/api/documents/myungdong-laluce-parking`
