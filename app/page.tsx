@@ -201,6 +201,9 @@ export default async function HomePage() {
           <Link href="/api-docs" className="btn btn-secondary">
             API Docs
           </Link>
+          <Link href="/community" className="btn btn-secondary">
+            Community
+          </Link>
           <Link href="/suggest-topic" className="btn btn-secondary">
             Suggest Topic
           </Link>

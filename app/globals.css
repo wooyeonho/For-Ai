@@ -821,7 +821,19 @@ textarea::placeholder {
 .hero-cta-row {
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 10px;
+}
+
+@media (max-width: 560px) {
+  .hero-cta-row {
+    gap: 8px;
+  }
+
+  .hero-cta-row .btn {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
 }
 
 .btn {
