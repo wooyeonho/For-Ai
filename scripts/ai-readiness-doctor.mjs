@@ -137,12 +137,19 @@ check("jsonld", "Document pages emit JSON-LD Dataset + metadata", () => {
 
 check("layout", "Layout sets html lang, title template, header + footer", () => {
   const src = read("app/layout.tsx");
-  const ok =
-    /lang="ko"/.test(src) &&
-    /template:/.test(src) &&
-    /SiteHeader/.test(src) &&
-    /SiteFooter/.test(src);
-  return { ok, detail: ok ? "ok" : "layout missing lang/template/header/footer" };
+  const hasHtmlLang = /<html\b[^>]*\blang=(?:["'][^"']+["']|\{[^}]+\})/.test(src);
+  const hasTitleTemplate = /title\s*:\s*\{[\s\S]*?default\s*:[\s\S]*?template\s*:/.test(src);
+  const hasHeader = /import\s*\{?\s*SiteHeader\s*\}?\s*from/.test(src) && /<SiteHeader\b/.test(src);
+  const hasFooter = /import\s*\{?\s*SiteFooter\s*\}?\s*from/.test(src) && /<SiteFooter\b/.test(src);
+  const missing = [
+    [hasHtmlLang, "html lang"],
+    [hasTitleTemplate, "metadata.title.default/template"],
+    [hasHeader, "SiteHeader import + JSX"],
+    [hasFooter, "SiteFooter import + JSX"],
+  ]
+    .filter(([ok]) => !ok)
+    .map(([, label]) => label);
+  return { ok: missing.length === 0, detail: missing.length ? `missing ${missing.join(", ")}` : "ok" };
 });
 
 check("page-titles", "Public pages expose a title (metadata)", () => {
