@@ -1,6 +1,6 @@
 // lib/ai-providers.ts
 // Multi-AI provider abstraction for For-Ai fact registry
-// Supports: Perplexity, Gemini, GPT, Grok
+// Supports provider keys: perplexity, gemini, gpt, grok (Perplexity, Gemini, OpenAI GPT, xAI Grok)
 
 export type AIProviderKey = "perplexity" | "gemini" | "gpt" | "grok";
 
@@ -32,7 +32,7 @@ export const AI_PROVIDERS: Record<AIProviderKey, AIProviderConfig> = {
   },
   gpt: {
     key: "gpt",
-    label: "GPT-4o",
+    label: "OpenAI GPT-4o",
     model: "gpt-4o",
     endpoint: "https://api.openai.com/v1/chat/completions",
     envKey: "OPENAI_API_KEY",
@@ -40,7 +40,7 @@ export const AI_PROVIDERS: Record<AIProviderKey, AIProviderConfig> = {
   },
   grok: {
     key: "grok",
-    label: "Grok",
+    label: "xAI Grok",
     model: "grok-3-mini",
     endpoint: "https://api.x.ai/v1/chat/completions",
     envKey: "XAI_API_KEY",
