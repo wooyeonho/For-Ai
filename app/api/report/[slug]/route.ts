@@ -16,9 +16,9 @@ export async function POST(
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const message = body.message?.trim();
-  if (!message) {
-    return NextResponse.json({ error: 'message is required' }, { status: 400 });
+  const message = String(body.message ?? '').trim();
+  if (message.length < 5) {
+    return NextResponse.json({ error: 'message is required (min 5 chars)' }, { status: 400 });
   }
 
   // Resolve document + entity from slug (static seed data)
@@ -34,6 +34,8 @@ export async function POST(
     console.error('[report] Contributor salt missing:', error);
     return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
   }
+
+  let storage: 'db' | 'stub' = 'stub';
 
   if (isSupabaseConfigured()) {
     try {
@@ -54,6 +56,8 @@ export async function POST(
           { status: 500 }
         );
       }
+
+      storage = 'db';
     } catch (err) {
       console.error('[report] Unexpected error:', err);
       return NextResponse.json({ error: 'Server error' }, { status: 500 });
@@ -63,5 +67,5 @@ export async function POST(
     console.log('[report] STUB mode — not persisted. slug:', slug, 'message:', message.slice(0, 80));
   }
 
-  return NextResponse.json({ success: true, slug });
+  return NextResponse.json({ accepted: true, success: true, slug, status: 'new', storage, raw_ip_stored: false });
 }

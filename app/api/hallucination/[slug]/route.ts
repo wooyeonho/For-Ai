@@ -16,7 +16,7 @@ export async function POST(
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const aiService = body.ai_service?.trim();
+  const aiService = String(body.ai_service ?? '').trim();
   if (!aiService) {
     return NextResponse.json({ error: 'ai_service is required' }, { status: 400 });
   }
@@ -35,6 +35,15 @@ export async function POST(
     return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
   }
 
+  const prompt = String(body.prompt ?? '').trim() || null;
+  const aiAnswer = String(body.ai_answer ?? '').trim() || null;
+  const expectedCorrection = String(body.expected_correction ?? '').trim() || null;
+  let storage: 'db' | 'stub' = 'stub';
+
+  if (!aiAnswer) {
+    return NextResponse.json({ error: 'ai_answer is required' }, { status: 400 });
+  }
+
   if (isSupabaseConfigured()) {
     try {
       const supabase = createServerClient();
@@ -42,9 +51,9 @@ export async function POST(
         document_id: documentId,
         entity_id: entityId,
         ai_service: aiService,
-        prompt: body.prompt ?? null,
-        ai_answer: body.ai_answer ?? null,
-        expected_correction: body.expected_correction ?? null,
+        prompt,
+        ai_answer: aiAnswer,
+        expected_correction: expectedCorrection,
         contributor_hash: contributorHash,
         status: 'new',
       });
@@ -56,6 +65,8 @@ export async function POST(
           { status: 500 }
         );
       }
+
+      storage = 'db';
     } catch (err) {
       console.error('[hallucination] Unexpected error:', err);
       return NextResponse.json({ error: 'Server error' }, { status: 500 });
@@ -65,5 +76,5 @@ export async function POST(
     console.log('[hallucination] STUB mode — not persisted. slug:', slug, 'ai_service:', aiService);
   }
 
-  return NextResponse.json({ success: true, slug });
+  return NextResponse.json({ accepted: true, success: true, slug, status: 'new', storage, raw_ip_stored: false });
 }

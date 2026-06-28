@@ -2,28 +2,28 @@
 
 import { useState } from "react";
 
-export function HallucinationForm({
-  documentId,
-  entityId,
-  slug,
-}: {
-  documentId: string;
-  entityId: string;
+const SUCCESS_MESSAGE = "접수되었습니다. 검토 대기 상태로 처리되며, 저장소 설정에 따라 DB 또는 안전한 stub으로 기록됩니다.";
+
+type HallucinationFormProps = {
   slug: string;
-}) {
-  const [submitted, setSubmitted] = useState(false);
+};
+
+export function HallucinationForm({ slug }: HallucinationFormProps) {
+  const [status, setStatus] = useState<"idle" | "submitting" | "submitted" | "error">("idle");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = e.currentTarget;
     const formData = new FormData(form);
 
+    setStatus("submitting");
+    setErrorMessage(null);
+
     const response = await fetch(`/api/hallucination/${slug}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        document_id: documentId,
-        entity_id: entityId,
         ai_service: formData.get("ai_service"),
         prompt: formData.get("prompt"),
         ai_answer: formData.get("ai_answer"),
@@ -32,14 +32,21 @@ export function HallucinationForm({
     });
 
     if (response.ok) {
-      setSubmitted(true);
+      setStatus("submitted");
+      form.reset();
+      return;
     }
+
+    const body = await response.json().catch(() => null);
+    setErrorMessage(body?.error ?? "제출 중 오류가 발생했습니다.");
+    setStatus("error");
   }
 
-  if (submitted) {
+  if (status === "submitted") {
     return (
-      <div className="submission-success">
-        <p>AI 오답 신고가 접수되었습니다. 검토 후 반영됩니다.</p>
+      <div className="notice-box success-box" aria-live="polite">
+        <h2>제출되었습니다</h2>
+        <p>{SUCCESS_MESSAGE}</p>
         <a href={`/ko/wiki/${slug}`} className="cta-link">
           문서로 돌아가기
         </a>
@@ -48,51 +55,33 @@ export function HallucinationForm({
   }
 
   return (
-    <form className="report-form" onSubmit={handleSubmit}>
-      <div className="form-field">
-        <label htmlFor="ai_service">AI 서비스</label>
-        <input
-          type="text"
-          id="ai_service"
-          name="ai_service"
-          required
-          placeholder="예: ChatGPT, Claude, Gemini, Perplexity"
-        />
-      </div>
+    <form className="registry-form" onSubmit={handleSubmit}>
+      <label>
+        AI service
+        <input name="ai_service" required placeholder="예: ChatGPT, Claude, Gemini, Perplexity, other" />
+      </label>
 
-      <div className="form-field">
-        <label htmlFor="prompt">질문 (프롬프트)</label>
-        <textarea
-          id="prompt"
-          name="prompt"
-          rows={3}
-          placeholder="AI에게 어떤 질문을 했나요?"
-        />
-      </div>
+      <label>
+        Prompt
+        <textarea name="prompt" rows={3} placeholder="AI에 입력한 질문 또는 프롬프트" />
+      </label>
 
-      <div className="form-field">
-        <label htmlFor="ai_answer">AI의 잘못된 답변</label>
-        <textarea
-          id="ai_answer"
-          name="ai_answer"
-          required
-          rows={4}
-          placeholder="AI가 어떤 답변을 했나요?"
-        />
-      </div>
+      <label>
+        AI answer
+        <textarea name="ai_answer" required rows={4} placeholder="AI가 생성한 잘못된 답변" />
+      </label>
 
-      <div className="form-field">
-        <label htmlFor="expected_correction">올바른 정보</label>
-        <textarea
-          id="expected_correction"
-          name="expected_correction"
-          rows={3}
-          placeholder="실제로 올바른 정보가 무엇인지 알려주세요."
-        />
-      </div>
+      <label>
+        Expected correction
+        <textarea name="expected_correction" rows={3} placeholder="어떤 부분이 잘못되었고 무엇을 확인해야 하는지 적어주세요." />
+      </label>
 
-      <button type="submit" className="form-submit">
-        오답 신고 제출
+      {status === "error" ? (
+        <p className="error-text" role="alert">{errorMessage}</p>
+      ) : null}
+
+      <button type="submit" disabled={status === "submitting"}>
+        {status === "submitting" ? "제출 중..." : "AI 오답 신고 제출"}
       </button>
     </form>
   );
