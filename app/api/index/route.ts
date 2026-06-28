@@ -1,12 +1,16 @@
 import { NextResponse } from "next/server";
 import { getRegistryIndex, type RegistryIndexFilters } from "../../../lib/registry-index";
 import { documentPageUrl, apiDocumentUrl, rawMarkdownUrl, entityPageUrl, apiEntityUrl } from "../../../lib/urls";
+import { checkRateLimit, rateLimitHeaders, rateLimitResponse } from "../../../lib/api-rate-limit";
 
 // Public search / discovery index. Lets an external AI or agent find registry
 // documents by topic, type, country, language, or citation status WITHOUT
 // knowing a slug in advance. Each item reports `can_cite` and machine-readable
-// links. Rate limiting is applied by middleware.ts (30/min anon, 120/min keyed).
+// links. Rate limiting is applied with verified API-key identity when available.
 export async function GET(request: Request) {
+  const rateLimit = await checkRateLimit(request);
+  if (!rateLimit.allowed) return rateLimitResponse(rateLimit);
+
   const url = new URL(request.url);
   const p = url.searchParams;
 
@@ -68,6 +72,7 @@ export async function GET(request: Request) {
     {
       headers: {
         "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
+        ...rateLimitHeaders(rateLimit),
       },
     },
   );

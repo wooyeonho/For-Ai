@@ -24,7 +24,7 @@ interface AuthResult {
   keyId: string | null;
 }
 
-async function authenticateApiKey(request: Request): Promise<AuthResult | null> {
+export async function authenticateApiKey(request: Request): Promise<AuthResult | null> {
   const apiKey = request.headers.get("x-api-key") ?? request.headers.get("authorization")?.replace("Bearer ", "");
   if (!apiKey) return null;
 
