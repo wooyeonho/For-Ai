@@ -3,7 +3,6 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { SUPPORTED_LOCALES, DEFAULT_LOCALE, LOCALE_CONFIG, isValidLocale } from "../../lib/i18n";
 
-const REPRESENTATIVE_WIKI_SLUG = "myungdong-laluce-parking";
 const DOCUMENT_ACTION_ROUTES = new Set(["report", "hallucination", "diagnostics"]);
 
 export function getLocalePath(pathname: string, locale: string): string {
@@ -21,7 +20,8 @@ export function getLocalePath(pathname: string, locale: string): string {
     return `/${locale}/wiki/${identifier}`;
   }
 
-  return `/${locale}/wiki/${REPRESENTATIVE_WIKI_SLUG}`;
+  // Non-locale pages (homepage, api-docs, community, etc.) stay as-is
+  return pathname;
 }
 
 export function LanguageSelector() {

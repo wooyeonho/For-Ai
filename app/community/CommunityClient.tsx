@@ -234,7 +234,7 @@ export default function CommunityClient({ documents }: { documents: { id: string
                   {p.document_id && (
                     <div className="community-related-doc">
                       관련 문서: {p.document_slug ? (
-                        <Link href={`/ko/wiki/${p.document_slug}`} className="community-related-link">{p.document_title ?? p.document_slug}</Link>
+                        <Link href={`/en/wiki/${p.document_slug}`} className="community-related-link">{p.document_title ?? p.document_slug}</Link>
                       ) : (
                         <span>{p.document_id}</span>
                       )}

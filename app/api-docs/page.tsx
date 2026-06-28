@@ -163,7 +163,7 @@ if (data.citation_guidance.can_cite) {
   author       = {{For-Ai Registry}},
   title        = {Document Title},
   year         = {2026},
-  url          = {${BASE}/ko/wiki/your-slug},
+  url          = {${BASE}/en/wiki/your-slug},
   note         = {Last verified: 2026-06-24. License: CC-BY-4.0}
 }`}</pre>
       </section>
