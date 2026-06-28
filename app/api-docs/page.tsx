@@ -355,7 +355,7 @@ def verify_signature(payload: bytes, signature: str, secret: str) -> bool:
         <ul className="link-list">
           <li><Link href="/">Registry home</Link></li>
           <li><Link href="/suggest-topic">Suggest a topic</Link></li>
-          <li><Link href="/admin">Admin panel</Link></li>
+          <li><Link href="/admin/review">Admin panel</Link></li>
         </ul>
       </nav>
     </article>
