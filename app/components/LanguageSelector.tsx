@@ -3,6 +3,16 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { SUPPORTED_LOCALES, LOCALE_CONFIG, isValidLocale } from "../../lib/i18n";
 
+const REPRESENTATIVE_WIKI_SLUG = "myungdong-laluce-parking";
+
+function isLocaleWikiPath(parts: string[]): boolean {
+  return parts.length >= 3 && isValidLocale(parts[0]) && parts[1] === "wiki" && Boolean(parts[2]);
+}
+
+function isLocaleEntityPath(parts: string[]): boolean {
+  return parts.length >= 3 && isValidLocale(parts[0]) && parts[1] === "entity" && Boolean(parts[2]);
+}
+
 export function LanguageSelector() {
   const pathname = usePathname();
 
@@ -10,12 +20,16 @@ export function LanguageSelector() {
   const segments = pathname.split("/").filter(Boolean);
   const currentLocale = segments[0] && isValidLocale(segments[0]) ? segments[0] : "ko";
 
-  // Build path for other locales
+  // Build path for other locales. Only locale-aware wiki/entity routes exist today.
+  // Non-locale pages such as /api-docs, /community, /suggest-topic,
+  // /report/*, /hallucination/*, and /diagnostics/* fall back to a
+  // representative wiki document instead of linking to a missing /{locale} page.
   function getLocalePath(locale: string): string {
-    if (segments[0] && isValidLocale(segments[0])) {
+    if (isLocaleWikiPath(segments) || isLocaleEntityPath(segments)) {
       return "/" + [locale, ...segments.slice(1)].join("/");
     }
-    return `/${locale}`;
+
+    return `/${locale}/wiki/${REPRESENTATIVE_WIKI_SLUG}`;
   }
 
   return (
