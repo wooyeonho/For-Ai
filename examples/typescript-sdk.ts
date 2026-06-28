@@ -53,6 +53,7 @@ async function getCitation(slug: string): Promise<Record<string, unknown> | null
   const res = await fetch(`${BASE_URL}/api/cite/${slug}`, { headers });
   if (res.status === 404) return null;
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  console.log("Rate limit:", getRateLimitInfo(res));
   return res.json();
 }
 

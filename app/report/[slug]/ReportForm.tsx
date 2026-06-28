@@ -12,25 +12,46 @@ export function ReportForm({
   slug: string;
 }) {
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (submitting) return;
+
     const form = e.currentTarget;
     const formData = new FormData(form);
 
-    const response = await fetch(`/api/report/${slug}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        document_id: documentId,
-        entity_id: entityId,
-        report_type: formData.get("report_type"),
-        message: formData.get("message"),
-      }),
-    });
+    setSubmitting(true);
+    setError(null);
 
-    if (response.ok) {
+    try {
+      const response = await fetch(`/api/report/${slug}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          document_id: documentId,
+          entity_id: entityId,
+          report_type: formData.get("report_type"),
+          message: formData.get("message"),
+        }),
+      });
+
+      if (!response.ok) {
+        let message = "신고 접수에 실패했습니다. 잠시 후 다시 시도해 주세요.";
+        const payload = await response.json().catch(() => null) as { error?: string } | null;
+        if (payload?.error) {
+          message = payload.error;
+        }
+        throw new Error(message);
+      }
+
       setSubmitted(true);
+      form.reset();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "신고 접수에 실패했습니다. 잠시 후 다시 시도해 주세요.");
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -47,9 +68,15 @@ export function ReportForm({
 
   return (
     <form className="report-form" onSubmit={handleSubmit}>
+      {error ? (
+        <p className="submission-error" role="alert">
+          {error}
+        </p>
+      ) : null}
+
       <div className="form-field">
         <label htmlFor="report_type">신고 유형</label>
-        <select id="report_type" name="report_type" required>
+        <select id="report_type" name="report_type" required disabled={submitting}>
           <option value="incorrect_fact">사실 오류</option>
           <option value="outdated">정보 업데이트 필요</option>
           <option value="missing_info">누락된 정보</option>
@@ -65,11 +92,12 @@ export function ReportForm({
           required
           rows={5}
           placeholder="어떤 정보가 잘못되었는지, 올바른 정보는 무엇인지 알려주세요."
+          disabled={submitting}
         />
       </div>
 
-      <button type="submit" className="form-submit">
-        신고 제출
+      <button type="submit" className="form-submit" disabled={submitting} aria-busy={submitting}>
+        {submitting ? "제출 중..." : "신고 제출"}
       </button>
     </form>
   );

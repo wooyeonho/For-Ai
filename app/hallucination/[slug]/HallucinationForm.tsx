@@ -12,27 +12,48 @@ export function HallucinationForm({
   slug: string;
 }) {
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    if (submitting) return;
+
     const form = e.currentTarget;
     const formData = new FormData(form);
 
-    const response = await fetch(`/api/hallucination/${slug}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        document_id: documentId,
-        entity_id: entityId,
-        ai_service: formData.get("ai_service"),
-        prompt: formData.get("prompt"),
-        ai_answer: formData.get("ai_answer"),
-        expected_correction: formData.get("expected_correction"),
-      }),
-    });
+    setSubmitting(true);
+    setError(null);
 
-    if (response.ok) {
+    try {
+      const response = await fetch(`/api/hallucination/${slug}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          document_id: documentId,
+          entity_id: entityId,
+          ai_service: formData.get("ai_service"),
+          prompt: formData.get("prompt"),
+          ai_answer: formData.get("ai_answer"),
+          expected_correction: formData.get("expected_correction"),
+        }),
+      });
+
+      if (!response.ok) {
+        let message = "AI 오답 신고 접수에 실패했습니다. 잠시 후 다시 시도해 주세요.";
+        const payload = await response.json().catch(() => null) as { error?: string } | null;
+        if (payload?.error) {
+          message = payload.error;
+        }
+        throw new Error(message);
+      }
+
       setSubmitted(true);
+      form.reset();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "AI 오답 신고 접수에 실패했습니다. 잠시 후 다시 시도해 주세요.");
+    } finally {
+      setSubmitting(false);
     }
   }
 
@@ -49,6 +70,12 @@ export function HallucinationForm({
 
   return (
     <form className="report-form" onSubmit={handleSubmit}>
+      {error ? (
+        <p className="submission-error" role="alert">
+          {error}
+        </p>
+      ) : null}
+
       <div className="form-field">
         <label htmlFor="ai_service">AI 서비스</label>
         <input
@@ -57,6 +84,7 @@ export function HallucinationForm({
           name="ai_service"
           required
           placeholder="예: ChatGPT, Claude, Gemini, Perplexity"
+          disabled={submitting}
         />
       </div>
 
@@ -67,6 +95,7 @@ export function HallucinationForm({
           name="prompt"
           rows={3}
           placeholder="AI에게 어떤 질문을 했나요?"
+          disabled={submitting}
         />
       </div>
 
@@ -78,6 +107,7 @@ export function HallucinationForm({
           required
           rows={4}
           placeholder="AI가 어떤 답변을 했나요?"
+          disabled={submitting}
         />
       </div>
 
@@ -88,11 +118,12 @@ export function HallucinationForm({
           name="expected_correction"
           rows={3}
           placeholder="실제로 올바른 정보가 무엇인지 알려주세요."
+          disabled={submitting}
         />
       </div>
 
-      <button type="submit" className="form-submit">
-        오답 신고 제출
+      <button type="submit" className="form-submit" disabled={submitting} aria-busy={submitting}>
+        {submitting ? "제출 중..." : "오답 신고 제출"}
       </button>
     </form>
   );
