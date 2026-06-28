@@ -109,7 +109,7 @@ export default function AdminReviewPage() {
   }, [secret]);
 
   return (
-    <main style={{ maxWidth: 1080, margin: "0 auto", padding: "40px 20px" }}>
+    <div style={{ maxWidth: 1080, margin: "0 auto", padding: "40px 20px" }}>
       <header className="registry-panel">
         <p className="eyebrow">Admin workflow</p>
         <h1>For-Ai admin review checklist</h1>
@@ -239,6 +239,6 @@ export default function AdminReviewPage() {
           <li><Link href="/admin/import">Bulk import stub</Link></li>
         </ul>
       </nav>
-    </main>
+    </div>
   );
 }

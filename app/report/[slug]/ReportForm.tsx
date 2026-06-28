@@ -12,25 +12,38 @@ export function ReportForm({
   slug: string;
 }) {
   const [submitted, setSubmitted] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = e.currentTarget;
     const formData = new FormData(form);
+    setLoading(true);
+    setError("");
 
-    const response = await fetch(`/api/report/${slug}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        document_id: documentId,
-        entity_id: entityId,
-        report_type: formData.get("report_type"),
-        message: formData.get("message"),
-      }),
-    });
+    try {
+      const response = await fetch(`/api/report/${slug}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          document_id: documentId,
+          entity_id: entityId,
+          report_type: formData.get("report_type"),
+          message: formData.get("message"),
+        }),
+      });
 
-    if (response.ok) {
-      setSubmitted(true);
+      if (response.ok) {
+        setSubmitted(true);
+      } else {
+        const data = await response.json().catch(() => ({}));
+        setError("제출 실패: " + (data?.error ?? response.status));
+      }
+    } catch {
+      setError("네트워크 오류. 잠시 후 다시 시도해 주세요.");
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -68,8 +81,12 @@ export function ReportForm({
         />
       </div>
 
-      <button type="submit" className="form-submit">
-        신고 제출
+      {error && (
+        <div className="semantic-alert semantic-alert-danger">{error}</div>
+      )}
+
+      <button type="submit" className="form-submit" disabled={loading}>
+        {loading ? "제출 중..." : "신고 제출"}
       </button>
     </form>
   );

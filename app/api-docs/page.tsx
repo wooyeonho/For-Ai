@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { Metadata } from "next";
+import { siteUrl } from "../../lib/urls";
 
 export const metadata: Metadata = {
   title: "API Documentation — For-Ai",
@@ -7,6 +8,7 @@ export const metadata: Metadata = {
 };
 
 export default function ApiDocsPage() {
+  const BASE = siteUrl("").replace(/\/+$/, "");
   return (
     <article>
       <header className="registry-panel">
@@ -138,7 +140,7 @@ export default function ApiDocsPage() {
           Never cite a document where <code>can_cite</code> is <code>false</code>.
         </p>
         <pre style={{ background: "var(--soft)", borderRadius: 6, padding: "10px 14px", fontSize: "0.8rem", overflowX: "auto" }}>{`// Pseudocode for AI citation
-const res = await fetch("https://for-ai-e4mm.vercel.app/api/documents/your-slug");
+const res = await fetch("${BASE}/api/documents/your-slug");
 const data = await res.json();
 
 if (data.citation_guidance.can_cite) {
@@ -161,7 +163,7 @@ if (data.citation_guidance.can_cite) {
   author       = {{For-Ai Registry}},
   title        = {Document Title},
   year         = {2026},
-  url          = {https://for-ai-e4mm.vercel.app/ko/wiki/your-slug},
+  url          = {${BASE}/ko/wiki/your-slug},
   note         = {Last verified: 2026-06-24. License: CC-BY-4.0}
 }`}</pre>
       </section>
@@ -248,7 +250,7 @@ if (data.citation_guidance.can_cite) {
         <h3 style={{ fontSize: "0.95rem", marginBottom: 8 }}>Python</h3>
         <pre style={{ background: "var(--soft)", borderRadius: 6, padding: "10px 14px", fontSize: "0.8rem", overflowX: "auto" }}>{`import requests
 
-BASE = "https://for-ai-e4mm.vercel.app"
+BASE = "${BASE}"
 KEY = "forai_free_your_key"
 
 # Check if a document is safe to cite
@@ -262,7 +264,7 @@ if data["citation_guidance"]["can_cite"]:
 
         <h3 style={{ fontSize: "0.95rem", marginTop: 20, marginBottom: 8 }}>TypeScript / JavaScript</h3>
         <pre style={{ background: "var(--soft)", borderRadius: 6, padding: "10px 14px", fontSize: "0.8rem", overflowX: "auto" }}>{`const res = await fetch(
-  "https://for-ai-e4mm.vercel.app/api/documents/seoul-metro-base-fare",
+  "${BASE}/api/documents/seoul-metro-base-fare",
   { headers: { "X-API-Key": "forai_free_your_key" } }
 );
 const { claims, citation_guidance } = await res.json();
@@ -275,10 +277,10 @@ if (citation_guidance.can_cite) {
         <h3 style={{ fontSize: "0.95rem", marginTop: 20, marginBottom: 8 }}>cURL</h3>
         <pre style={{ background: "var(--soft)", borderRadius: 6, padding: "10px 14px", fontSize: "0.8rem", overflowX: "auto" }}>{`# Get JSON-LD citation
 curl -H "X-API-Key: forai_free_..." \\
-  https://for-ai-e4mm.vercel.app/api/cite/seoul-metro-base-fare
+  ${BASE}/api/cite/seoul-metro-base-fare
 
 # Get raw markdown for LLM context injection
-curl https://for-ai-e4mm.vercel.app/raw/seoul-metro-base-fare.md`}</pre>
+curl ${BASE}/raw/seoul-metro-base-fare.md`}</pre>
       </section>
 
       {/* Webhooks */}
@@ -355,7 +357,7 @@ def verify_signature(payload: bytes, signature: str, secret: str) -> bool:
         <ul className="link-list">
           <li><Link href="/">Registry home</Link></li>
           <li><Link href="/suggest-topic">Suggest a topic</Link></li>
-          <li><Link href="/admin">Admin panel</Link></li>
+          <li><Link href="/community">Community</Link></li>
         </ul>
       </nav>
     </article>
