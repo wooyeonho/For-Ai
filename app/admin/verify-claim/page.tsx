@@ -151,6 +151,10 @@ export default function VerifyClaimPage() {
       <nav style={{ marginBottom: 24, fontSize: 13 }}><Link href="/admin/review">← Admin</Link></nav>
       <h1>Claim 검증 관리</h1>
       <p style={{ color: "#6b7280" }}>Promoted 문서의 claim에 출처를 붙이고 verified 상태로 승격합니다.</p>
+      <p style={{ color: "#374151", fontSize: 13 }}>
+        승격 전 반드시 <a href="/docs/operations/CLAIM_VERIFICATION_POLICY.md">verified 승격 기준 문서</a>를 확인하세요.
+        AI 생성 후보는 사람이 출처를 검토하기 전까지 verified로 올릴 수 없습니다.
+      </p>
 
       <section className="registry-panel">
         <label style={{ fontWeight: 600 }}>Admin secret</label>
