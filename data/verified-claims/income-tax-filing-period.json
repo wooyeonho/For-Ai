@@ -1,0 +1,87 @@
+{
+  "entity_id": "kr-finance-income-tax-filing-period-001",
+  "slug": "income-tax-filing-period",
+  "type": "finance.tax",
+  "name": "종합소득세 신고 기간",
+  "lang": "ko",
+  "country": "KR",
+  "jurisdiction": "KR",
+  "risk_tier": "low",
+  "update_frequency": "annual",
+  "disclaimer_type": "check_official_source",
+  "last_verified_at": "2026-06-28",
+  "claims": [
+    {
+      "claim_id": "income-tax-filing-period-period-start_date",
+      "field_path": "period.start_date",
+      "claim_text": "종합소득세 신고 시작일은?",
+      "claim_value": "매년 5월 1일",
+      "confidence": "medium",
+      "status": "verified",
+      "last_verified_at": "2026-06-28",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "국세청 Web-TV — 종합소득세 신고 안내",
+          "url": "https://www.nts.go.kr/webtv/na/ntt/selectNttInfo.do?nttSn=1343270",
+          "observed_at": "2026-06-28",
+          "note": "국세청 공식 자료: \"매년 5월은 종합소득세를 신고·납부하는 달\". 종합소득세 확정신고 기간은 소득세법 제70조에 따라 매년 5월 1일~5월 31일. 공식 자료는 신고월(5월)을 확인하며, 정확한 시작일(5월 1일)은 법정 기준."
+        }
+      ],
+      "verification_event": {
+        "event_type": "source_verified",
+        "actor": "ai-source-fetch",
+        "verified_at": "2026-06-28",
+        "note": "국세청(nts.go.kr) 공식 자료에서 신고월(5월) 직접 확인. 정확 일자는 소득세법 제70조 법정 기준. confidence medium. 최종 사람 승인 대기."
+      }
+    },
+    {
+      "claim_id": "income-tax-filing-period-period-end_date",
+      "field_path": "period.end_date",
+      "claim_text": "종합소득세 신고 마감일은?",
+      "claim_value": "매년 5월 31일 (말일이 공휴일이면 다음 영업일로 연장)",
+      "confidence": "medium",
+      "status": "verified",
+      "last_verified_at": "2026-06-28",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "국세청 Web-TV — 종합소득세 신고 안내",
+          "url": "https://www.nts.go.kr/webtv/na/ntt/selectNttInfo.do?nttSn=1343270",
+          "observed_at": "2026-06-28",
+          "note": "국세청 공식 자료: \"매년 5월은 종합소득세를 신고·납부하는 달\". 확정신고 마감은 소득세법 제70조에 따라 5월 31일. 공식 자료는 신고월(5월)을 확인하며, 정확한 마감일(5월 31일)은 법정 기준. 말일이 공휴일이면 다음 영업일로 연장."
+        }
+      ],
+      "verification_event": {
+        "event_type": "source_verified",
+        "actor": "ai-source-fetch",
+        "verified_at": "2026-06-28",
+        "note": "국세청(nts.go.kr) 공식 자료에서 신고월(5월) 직접 확인. 정확 일자는 소득세법 제70조 법정 기준. confidence medium. 최종 사람 승인 대기."
+      }
+    },
+    {
+      "claim_id": "income-tax-filing-period-period-extended_deadline",
+      "field_path": "period.extended_deadline",
+      "claim_text": "성실신고확인대상자 신고 마감일은?",
+      "claim_value": "6월 30일 (1개월 연장)",
+      "confidence": "high",
+      "status": "verified",
+      "last_verified_at": "2026-06-28",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "국세청 Web-TV — 성실신고 확인 대상자 종합소득세 신고 안내",
+          "url": "https://www.nts.go.kr/webtv/na/ntt/selectNttInfo.do?nttSn=1343270",
+          "observed_at": "2026-06-28",
+          "note": "국세청 공식 자료에서 직접 확인: 성실신고확인대상자는 신고·납부기한 1개월 연장으로 6월 말까지 신고·납부 가능하며, 6월 30일까지 성실신고확인서를 제출하지 않으면 산출세액의 5% 가산세."
+        }
+      ],
+      "verification_event": {
+        "event_type": "source_verified",
+        "actor": "ai-source-fetch",
+        "verified_at": "2026-06-28",
+        "note": "국세청(nts.go.kr) 공식 Web-TV 자료에서 '6월 30일' 직접 확인. 2026-06-28 기준. 최종 사람 승인 대기."
+      }
+    }
+  ]
+}
