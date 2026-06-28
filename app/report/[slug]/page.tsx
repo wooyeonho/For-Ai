@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { getRegistryBundleBySlug } from "../../../lib/data";
-import { createReportSubmissionStub } from "../../../lib/submission-stubs";
+import { saveCorrectionReportForRequest } from "../../../lib/report-storage";
 
 export const metadata: Metadata = {
   title: "정정 제보",
@@ -13,10 +14,10 @@ export default async function ReportPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ submitted?: string }>;
+  searchParams: Promise<{ status?: string; message?: string }>;
 }) {
   const { slug } = await params;
-  const { submitted } = await searchParams;
+  const { status, message } = await searchParams;
   const bundle = getRegistryBundleBySlug(slug);
 
   if (!bundle) {
@@ -34,17 +35,25 @@ export default async function ReportPage({
   async function submitReport(formData: FormData) {
     "use server";
 
-    const fieldPath = String(formData.get("field_path") ?? "").trim() || null;
     const message = String(formData.get("message") ?? "").trim();
-
-    createReportSubmissionStub({
-      document_id: document.id,
-      entity_id: entity.id,
-      field_path: fieldPath,
-      message,
+    const requestHeaders = new Headers(await headers());
+    const syntheticRequest = new Request(`https://for-ai.local/report/${document.slug}`, {
+      headers: requestHeaders,
     });
 
-    redirect(`/report/${document.slug}?submitted=1`);
+    const result = await saveCorrectionReportForRequest(syntheticRequest, {
+      slug: document.slug,
+      message,
+      report_type: "correction",
+    });
+
+    if (!result.ok) {
+      redirect(
+        `/report/${document.slug}?status=error&message=${encodeURIComponent(result.error)}`
+      );
+    }
+
+    redirect(`/report/${document.slug}?status=success`);
   }
 
   return (
@@ -60,10 +69,17 @@ export default async function ReportPage({
         </div>
       </header>
 
-      {submitted === "1" ? (
+      {status === "success" ? (
         <section className="notice-box success-box" aria-live="polite">
-          <h2>제출되었습니다</h2>
-          <p>정정 요청이 접수 대기 상태로 처리되었습니다. 현재 MVP에서는 저장소에 기록하지 않는 안전한 stub 응답입니다.</p>
+          <h2>접수되었습니다</h2>
+          <p>정정 요청이 저장소에 접수되었습니다. 검토 대기 상태로 처리됩니다.</p>
+        </section>
+      ) : null}
+
+      {status === "error" ? (
+        <section className="notice-box" aria-live="polite" role="alert">
+          <h2>접수되지 않았습니다</h2>
+          <p>{message || "정정 요청을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요."}</p>
         </section>
       ) : null}
 
@@ -84,14 +100,13 @@ export default async function ReportPage({
             정정 요청 내용
             <textarea name="message" required minLength={5} placeholder="어떤 claim이 정정되어야 하는지 적어주세요." />
           </label>
-          <input type="hidden" name="contributor_hash" value="local-stub-contributor-hash" />
           <button type="submit">정정 요청 제출</button>
         </form>
       </section>
 
       <section className="notice-box" aria-labelledby="privacy-notice">
         <h2 id="privacy-notice">Privacy notice</h2>
-        <p>Raw IP addresses are never stored. This MVP uses contributor_hash only and does not expose public read access to reports.</p>
+        <p>Raw IP addresses are never stored. The server generates contributor_hash from request metadata only and does not expose public read access to reports.</p>
       </section>
     </article>
   );

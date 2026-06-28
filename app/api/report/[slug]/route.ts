@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createServerClient, isSupabaseConfigured } from '../../../../lib/supabase-server';
-import { makeContributorHashForRequest } from '../../../../lib/contributor-hash';
-import { getDocumentBySlug } from '../../../../lib/data';
+import { saveCorrectionReportForRequest } from '../../../../lib/report-storage';
 
 export async function POST(
   request: Request,
@@ -21,46 +19,14 @@ export async function POST(
     return NextResponse.json({ error: 'message is required' }, { status: 400 });
   }
 
-  // Resolve document + entity from slug (static seed data)
-  const doc = getDocumentBySlug(slug);
-  const documentId = doc?.id ?? null;
-  const entityId = doc?.entity_id ?? null;
+  const result = await saveCorrectionReportForRequest(request, {
+    slug,
+    message,
+    report_type: body.report_type ?? 'correction',
+  });
 
-  // Generate contributor hash — never store raw IP
-  let contributorHash: string;
-  try {
-    contributorHash = makeContributorHashForRequest(request);
-  } catch (error) {
-    console.error('[report] Contributor salt missing:', error);
-    return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
-  }
-
-  if (isSupabaseConfigured()) {
-    try {
-      const supabase = createServerClient();
-      const { error } = await supabase.from('reports').insert({
-        document_id: documentId,
-        entity_id: entityId,
-        report_type: body.report_type ?? 'correction',
-        message,
-        contributor_hash: contributorHash,
-        status: 'new',
-      });
-
-      if (error) {
-        console.error('[report] Supabase insert error:', error.message);
-        return NextResponse.json(
-          { error: 'Failed to save report' },
-          { status: 500 }
-        );
-      }
-    } catch (err) {
-      console.error('[report] Unexpected error:', err);
-      return NextResponse.json({ error: 'Server error' }, { status: 500 });
-    }
-  } else {
-    // Supabase not configured — stub mode (logs only)
-    console.log('[report] STUB mode — not persisted. slug:', slug, 'message:', message.slice(0, 80));
+  if (!result.ok) {
+    return NextResponse.json({ error: result.error }, { status: result.status });
   }
 
   return NextResponse.json({ success: true, slug });
