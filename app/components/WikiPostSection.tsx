@@ -7,9 +7,11 @@ interface Post {
   author_name: string;
   content: string;
   created_at: string;
+  status?: string;
 }
 
 const AUTHOR_ICON: Record<string, string> = { user: "👤", ai: "✦", admin: "🛡️" };
+const POST_REVIEW_MESSAGE = "글이 검토 대기열에 등록되었습니다. 관리자 승인 후 공개 목록에 표시됩니다.";
 
 export function WikiPostSection({ documentId }: { documentId: string }) {
   const [posts, setPosts] = useState<Post[]>([]);
@@ -51,16 +53,34 @@ export function WikiPostSection({ documentId }: { documentId: string }) {
       });
       const d = await r.json();
       if (r.ok) {
+        const submittedContent = content.trim();
+        const submittedAuthorType = authorType;
+        const submittedAuthorName = authorName.trim() || (authorType === "ai" ? "AI" : "익명");
+
         setContent("");
+        setAuthorName("");
         setShowForm(false);
         setMsgOk(true);
-        setMsg(d.message ?? "검토 후 게시됩니다.");
-        load();
+        setMsg(POST_REVIEW_MESSAGE);
+        setPosts((currentPosts) => [
+          {
+            id: d.id ?? `pending-${Date.now()}`,
+            author_type: submittedAuthorType,
+            author_name: submittedAuthorName,
+            content: submittedContent,
+            created_at: d.created_at ?? new Date().toISOString(),
+            status: d.status ?? "pending",
+          },
+          ...currentPosts,
+        ]);
       } else {
         setMsgOk(false);
         setMsg(d.error ?? "등록 실패");
       }
-    } catch { setMsg("네트워크 오류"); }
+    } catch {
+      setMsgOk(false);
+      setMsg("네트워크 오류");
+    }
     setSubmitting(false);
   }
 
@@ -119,6 +139,11 @@ export function WikiPostSection({ documentId }: { documentId: string }) {
                 <span style={{ fontSize: 13, fontWeight: 600, color: p.author_type === "ai" ? "#7c3aed" : p.author_type === "admin" ? "#dc2626" : "#374151" }}>
                   {AUTHOR_ICON[p.author_type]} {p.author_name}
                 </span>
+                {p.status === "pending" && (
+                  <span style={{ fontSize: 11, color: "#92400e", background: "#fef3c7", borderRadius: 999, padding: "1px 8px", fontWeight: 600 }}>
+                    검토 대기
+                  </span>
+                )}
                 <span style={{ fontSize: 11, color: "#9ca3af" }}>
                   {new Date(p.created_at).toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                 </span>

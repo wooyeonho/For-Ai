@@ -16,6 +16,7 @@ interface Post {
 
 const AUTHOR_ICON: Record<string, string> = { user: "👤", ai: "✦", admin: "🛡️" };
 const AUTHOR_LABEL: Record<string, string> = { user: "사용자", ai: "AI", admin: "관리자" };
+const POST_REVIEW_MESSAGE = "글이 검토 대기열에 등록되었습니다. 관리자 승인 후 공개 목록에 표시됩니다.";
 
 export default function CommunityClient({ documents }: { documents: { id: string; title: string; slug: string }[] }) {
   const [posts, setPosts] = useState<Post[]>([]);
@@ -68,12 +69,33 @@ export default function CommunityClient({ documents }: { documents: { id: string
       });
       const d = await r.json();
       if (r.ok) {
-        flash(d.message ?? "글이 등록되었습니다. 검토 후 게시됩니다.");
+        const submittedContent = content.trim();
+        const submittedAuthorType = authorType;
+        const submittedAuthorName = authorName.trim() || (authorType === "ai" ? "AI" : "익명");
+        const submittedDocumentId = documentId || null;
+        const relatedDocument = documents.find((doc) => doc.id === submittedDocumentId);
+
+        flash(POST_REVIEW_MESSAGE);
         setContent("");
         setAuthorName("");
         setDocumentId("");
         setShowForm(false);
-        loadPosts();
+        if (filter === "all" || filter === submittedAuthorType) {
+          setPosts((currentPosts) => [
+            {
+              id: d.id ?? `pending-${Date.now()}`,
+              document_id: submittedDocumentId,
+              author_type: submittedAuthorType,
+              author_name: submittedAuthorName,
+              content: submittedContent,
+              status: d.status ?? "pending",
+              created_at: d.created_at ?? new Date().toISOString(),
+              document_title: relatedDocument?.title,
+              document_slug: relatedDocument?.slug,
+            },
+            ...currentPosts,
+          ]);
+        }
         window.scrollTo({ top: 0, behavior: "smooth" });
       } else {
         flash(d.error ?? "등록 실패", false);
@@ -195,9 +217,15 @@ export default function CommunityClient({ documents }: { documents: { id: string
                     <span className={`community-author community-author-${p.author_type}`}>
                       {AUTHOR_ICON[p.author_type]} {p.author_name}
                     </span>
-                    <span className={`community-author-badge community-author-badge-${p.author_type}`}>
-                      {AUTHOR_LABEL[p.author_type]}
-                    </span>
+                    {p.status === "pending" ? (
+                      <span className="community-author-badge community-author-badge-pending">
+                        검토 대기
+                      </span>
+                    ) : (
+                      <span className={`community-author-badge community-author-badge-${p.author_type}`}>
+                        {AUTHOR_LABEL[p.author_type]}
+                      </span>
+                    )}
                   </div>
                   <p className="community-post-content">{p.content}</p>
                   {p.document_id && (

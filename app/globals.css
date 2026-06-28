@@ -1838,6 +1838,12 @@ details.technical-meta dd {
   background: var(--danger-bg);
 }
 
+.community-author-badge-pending {
+  background: #fef3c7;
+  color: #92400e;
+  font-weight: 600;
+}
+
 .community-post-content {
   font-size: 0.875rem;
   line-height: 1.6;
