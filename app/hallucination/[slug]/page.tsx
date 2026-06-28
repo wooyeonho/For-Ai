@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { getRegistryBundleBySlug } from "../../../lib/data";
+import { getRegistryBundleFromSupabase } from "../../../lib/supabase-documents";
 import { createHallucinationReportStub } from "../../../lib/submission-stubs";
 
 export const metadata: Metadata = {
@@ -17,7 +18,7 @@ export default async function HallucinationPage({
 }) {
   const { slug } = await params;
   const { submitted } = await searchParams;
-  const bundle = getRegistryBundleBySlug(slug);
+  const bundle = getRegistryBundleBySlug(slug) ?? await getRegistryBundleFromSupabase(slug);
 
   if (!bundle) {
     return (
