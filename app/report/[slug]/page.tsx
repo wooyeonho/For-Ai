@@ -1,7 +1,5 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 import { getRegistryBundleBySlug } from "../../../lib/data";
-import { createReportSubmissionStub } from "../../../lib/submission-stubs";
 
 export const metadata: Metadata = {
   title: "정정 제보",
@@ -31,22 +29,6 @@ export default async function ReportPage({
 
   const { entity, document, claims } = bundle;
 
-  async function submitReport(formData: FormData) {
-    "use server";
-
-    const fieldPath = String(formData.get("field_path") ?? "").trim() || null;
-    const message = String(formData.get("message") ?? "").trim();
-
-    createReportSubmissionStub({
-      document_id: document.id,
-      entity_id: entity.id,
-      field_path: fieldPath,
-      message,
-    });
-
-    redirect(`/report/${document.slug}?submitted=1`);
-  }
-
   return (
     <article>
       <header className="registry-panel">
@@ -63,14 +45,35 @@ export default async function ReportPage({
       {submitted === "1" ? (
         <section className="notice-box success-box" aria-live="polite">
           <h2>제출되었습니다</h2>
-          <p>정정 요청이 접수 대기 상태로 처리되었습니다. 현재 MVP에서는 저장소에 기록하지 않는 안전한 stub 응답입니다.</p>
+          <p>정정 요청이 저장소에 접수되었습니다. 검토 후 claim 단위로 반영됩니다.</p>
+        </section>
+      ) : null}
+
+      {submitted === "storage_unconfigured" ? (
+        <section className="notice-box warning-box" aria-live="polite">
+          <h2>접수되지 않았습니다</h2>
+          <p>현재 저장소가 설정되지 않아 접수되지 않았습니다. 운영자에게 Supabase 저장소 설정을 요청해 주세요.</p>
+        </section>
+      ) : null}
+
+      {submitted === "failed" || submitted === "server_error" ? (
+        <section className="notice-box warning-box" aria-live="polite">
+          <h2>저장 실패</h2>
+          <p>정정 요청을 저장하지 못했습니다. 잠시 후 다시 시도하거나 운영자에게 문의해 주세요.</p>
+        </section>
+      ) : null}
+
+      {submitted === "invalid" ? (
+        <section className="notice-box warning-box" aria-live="polite">
+          <h2>제출 내용을 확인해 주세요</h2>
+          <p>요청 본문이 비어 있거나 올바르지 않아 접수되지 않았습니다.</p>
         </section>
       ) : null}
 
       <section className="registry-panel" aria-labelledby="report-form-title">
         <h2 id="report-form-title">정정 요청</h2>
         <p>확인이 필요한 claim에 대해 정정 요청을 남겨주세요. 로그인은 필요하지 않습니다.</p>
-        <form action={submitReport} className="registry-form">
+        <form action={`/api/report/${document.slug}`} method="post" className="registry-form">
           <label>
             Field path 선택 또는 입력
             <select name="field_path" defaultValue="">
@@ -84,7 +87,7 @@ export default async function ReportPage({
             정정 요청 내용
             <textarea name="message" required minLength={5} placeholder="어떤 claim이 정정되어야 하는지 적어주세요." />
           </label>
-          <input type="hidden" name="contributor_hash" value="local-stub-contributor-hash" />
+          <input type="hidden" name="report_type" value="correction" />
           <button type="submit">정정 요청 제출</button>
         </form>
       </section>
