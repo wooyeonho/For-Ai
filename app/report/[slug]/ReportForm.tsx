@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { REPORT_MESSAGE_MAX_LENGTH } from "@/lib/submission-limits";
 
 export function ReportForm({
   documentId,
@@ -77,6 +78,7 @@ export function ReportForm({
           name="message"
           required
           rows={5}
+          maxLength={REPORT_MESSAGE_MAX_LENGTH}
           placeholder="어떤 정보가 잘못되었는지, 올바른 정보는 무엇인지 알려주세요."
         />
       </div>

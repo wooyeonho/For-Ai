@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { getRegistryBundleBySlug } from "../../../lib/data";
 import { getRegistryBundleFromSupabase } from "../../../lib/supabase-documents";
 import { createHallucinationReportStub } from "../../../lib/submission-stubs";
+import { HALLUCINATION_FIELD_MAX_LENGTHS } from "../../../lib/submission-limits";
 
 export const metadata: Metadata = {
   title: "AI 오답 신고",
@@ -73,19 +74,19 @@ export default async function HallucinationPage({
         <form action={submitHallucinationReport} className="registry-form">
           <label>
             AI service
-            <input name="ai_service" required placeholder="예: ChatGPT, Gemini, Perplexity, other" />
+            <input name="ai_service" required maxLength={HALLUCINATION_FIELD_MAX_LENGTHS.ai_service} placeholder="예: ChatGPT, Gemini, Perplexity, other" />
           </label>
           <label>
             Prompt
-            <textarea name="prompt" placeholder="AI에 입력한 질문 또는 프롬프트" />
+            <textarea name="prompt" maxLength={HALLUCINATION_FIELD_MAX_LENGTHS.prompt} placeholder="AI에 입력한 질문 또는 프롬프트" />
           </label>
           <label>
             AI answer
-            <textarea name="ai_answer" placeholder="AI가 생성한 답변" />
+            <textarea name="ai_answer" maxLength={HALLUCINATION_FIELD_MAX_LENGTHS.ai_answer} placeholder="AI가 생성한 답변" />
           </label>
           <label>
             Expected correction
-            <textarea name="expected_correction" placeholder="어떤 부분이 잘못되었고 무엇을 확인해야 하는지 적어주세요." />
+            <textarea name="expected_correction" maxLength={HALLUCINATION_FIELD_MAX_LENGTHS.expected_correction} placeholder="어떤 부분이 잘못되었고 무엇을 확인해야 하는지 적어주세요." />
           </label>
           <input type="hidden" name="contributor_hash" value="local-stub-contributor-hash" />
           <button type="submit">AI 오답 신고 제출</button>

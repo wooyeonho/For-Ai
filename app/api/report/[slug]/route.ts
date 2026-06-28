@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createServerClient, isSupabaseConfigured } from '../../../../lib/supabase-server';
 import { makeContributorHashForRequest } from '../../../../lib/contributor-hash';
 import { getDocumentBySlug } from '../../../../lib/data';
+import { REPORT_MESSAGE_MAX_LENGTH } from '../../../../lib/submission-limits';
 
 export async function POST(
   request: Request,
@@ -18,7 +19,18 @@ export async function POST(
 
   const message = body.message?.trim();
   if (!message) {
-    return NextResponse.json({ error: 'message is required' }, { status: 400 });
+    return NextResponse.json({ error: 'message is required', code: 'MESSAGE_REQUIRED' }, { status: 400 });
+  }
+
+  if (message.length > REPORT_MESSAGE_MAX_LENGTH) {
+    return NextResponse.json(
+      {
+        error: `message must be ${REPORT_MESSAGE_MAX_LENGTH} characters or fewer`,
+        code: 'MESSAGE_TOO_LONG',
+        max_length: REPORT_MESSAGE_MAX_LENGTH,
+      },
+      { status: 400 }
+    );
   }
 
   // Resolve document + entity from slug (static seed data)

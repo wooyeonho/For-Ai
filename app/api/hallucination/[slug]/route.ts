@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createServerClient, isSupabaseConfigured } from '@/lib/supabase-server';
 import { makeContributorHashForRequest } from '@/lib/contributor-hash';
 import { getDocumentBySlug } from '@/lib/data';
+import { HALLUCINATION_FIELD_MAX_LENGTHS, type HallucinationFieldName } from '@/lib/submission-limits';
 
 export async function POST(
   request: Request,
@@ -18,7 +19,29 @@ export async function POST(
 
   const aiService = body.ai_service?.trim();
   if (!aiService) {
-    return NextResponse.json({ error: 'ai_service is required' }, { status: 400 });
+    return NextResponse.json({ error: 'ai_service is required', code: 'AI_SERVICE_REQUIRED' }, { status: 400 });
+  }
+
+  const normalizedBody: Record<HallucinationFieldName, string> = {
+    ai_service: aiService,
+    prompt: body.prompt?.trim() ?? '',
+    ai_answer: body.ai_answer?.trim() ?? '',
+    expected_correction: body.expected_correction?.trim() ?? '',
+  };
+
+  for (const field of Object.keys(HALLUCINATION_FIELD_MAX_LENGTHS) as HallucinationFieldName[]) {
+    const maxLength = HALLUCINATION_FIELD_MAX_LENGTHS[field];
+    if (normalizedBody[field].length > maxLength) {
+      return NextResponse.json(
+        {
+          error: `${field} must be ${maxLength} characters or fewer`,
+          code: `${field.toUpperCase()}_TOO_LONG`,
+          field,
+          max_length: maxLength,
+        },
+        { status: 400 }
+      );
+    }
   }
 
   // Resolve document + entity from slug (static seed data)
@@ -42,9 +65,9 @@ export async function POST(
         document_id: documentId,
         entity_id: entityId,
         ai_service: aiService,
-        prompt: body.prompt ?? null,
-        ai_answer: body.ai_answer ?? null,
-        expected_correction: body.expected_correction ?? null,
+        prompt: normalizedBody.prompt || null,
+        ai_answer: normalizedBody.ai_answer || null,
+        expected_correction: normalizedBody.expected_correction || null,
         contributor_hash: contributorHash,
         status: 'new',
       });

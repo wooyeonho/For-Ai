@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { HALLUCINATION_FIELD_MAX_LENGTHS } from "@/lib/submission-limits";
 
 export function HallucinationForm({
   documentId,
@@ -69,6 +70,7 @@ export function HallucinationForm({
           id="ai_service"
           name="ai_service"
           required
+          maxLength={HALLUCINATION_FIELD_MAX_LENGTHS.ai_service}
           placeholder="예: ChatGPT, Claude, Gemini, Perplexity"
         />
       </div>
@@ -79,6 +81,7 @@ export function HallucinationForm({
           id="prompt"
           name="prompt"
           rows={3}
+          maxLength={HALLUCINATION_FIELD_MAX_LENGTHS.prompt}
           placeholder="AI에게 어떤 질문을 했나요?"
         />
       </div>
@@ -90,6 +93,7 @@ export function HallucinationForm({
           name="ai_answer"
           required
           rows={4}
+          maxLength={HALLUCINATION_FIELD_MAX_LENGTHS.ai_answer}
           placeholder="AI가 어떤 답변을 했나요?"
         />
       </div>
@@ -100,6 +104,7 @@ export function HallucinationForm({
           id="expected_correction"
           name="expected_correction"
           rows={3}
+          maxLength={HALLUCINATION_FIELD_MAX_LENGTHS.expected_correction}
           placeholder="실제로 올바른 정보가 무엇인지 알려주세요."
         />
       </div>
