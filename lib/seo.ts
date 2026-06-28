@@ -18,7 +18,7 @@ function schemaTypeForEntity(entityType: string): "Place" | "Product" | "Organiz
 export function getRegistryDocumentPaths(bundle: RegistryDocumentBundle) {
   const { document } = bundle;
   return {
-    canonicalPath: `/ko/wiki/${document.slug}`,
+    canonicalPath: `/${document.lang ?? "en"}/wiki/${document.slug}`,
     apiPath: `/api/documents/${document.slug}`,
     rawMarkdownPath: `/raw/${document.slug}.md`,
   };

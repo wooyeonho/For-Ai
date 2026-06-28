@@ -47,7 +47,7 @@ export default async function DiagnosticsPage({ params }: { params: Promise<{ sl
   })();
 
   const checklist = [
-    { label: "Static document route", detail: `/ko/wiki/${document.slug}`, pass: true },
+    { label: "Static document route", detail: `/${document.lang ?? "en"}/wiki/${document.slug}`, pass: true },
     { label: "JSON API route", detail: paths.apiPath, pass: true },
     { label: "Raw Markdown route", detail: paths.rawMarkdownPath, pass: true },
     { label: "Canonical entity_id", detail: entity.id, pass: Boolean(document.entity_id) },

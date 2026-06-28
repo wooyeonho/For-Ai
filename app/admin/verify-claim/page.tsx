@@ -20,6 +20,7 @@ type DocumentRow = {
   title: string;
   status: string;
   confidence: string;
+  lang?: string;
   claims?: ClaimRow[];
 };
 
@@ -174,7 +175,7 @@ export default function VerifyClaimPage() {
 
       {documents.map((doc) => (
         <section className="registry-panel" key={doc.id} id={`doc-${doc.slug}`}>
-          <h2><Link href={`/ko/wiki/${doc.slug}`}>{doc.title}</Link></h2>
+          <h2><Link href={`/${doc.lang??"en"}/wiki/${doc.slug}`}>{doc.title}</Link></h2>
           <p className="meta-label">{doc.slug} · {doc.status} · {doc.confidence}</p>
           {(doc.claims ?? []).map((claim) => (
             <div className="claim-card" key={claim.id}>
