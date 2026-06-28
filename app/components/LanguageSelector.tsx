@@ -1,21 +1,39 @@
 "use client";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { SUPPORTED_LOCALES, LOCALE_CONFIG, isValidLocale } from "../../lib/i18n";
+import { SUPPORTED_LOCALES, DEFAULT_LOCALE, LOCALE_CONFIG, isValidLocale } from "../../lib/i18n";
+
+const REPRESENTATIVE_WIKI_SLUG = "myungdong-laluce-parking";
+const DOCUMENT_ACTION_ROUTES = new Set(["report", "hallucination", "diagnostics"]);
+
+export function getLocalePath(pathname: string, locale: string): string {
+  const segments = pathname.split("/").filter(Boolean);
+
+  if (segments[0] && isValidLocale(segments[0])) {
+    const [, route, identifier] = segments;
+    if ((route === "wiki" || route === "entity") && identifier) {
+      return "/" + [locale, ...segments.slice(1)].join("/");
+    }
+  }
+
+  const [route, identifier] = segments;
+  if (route && DOCUMENT_ACTION_ROUTES.has(route) && identifier) {
+    return `/${locale}/wiki/${identifier}`;
+  }
+
+  return `/${locale}/wiki/${REPRESENTATIVE_WIKI_SLUG}`;
+}
 
 export function LanguageSelector() {
   const pathname = usePathname();
 
   // Extract current locale from path
   const segments = pathname.split("/").filter(Boolean);
-  const currentLocale = segments[0] && isValidLocale(segments[0]) ? segments[0] : "ko";
+  const currentLocale = segments[0] && isValidLocale(segments[0]) ? segments[0] : DEFAULT_LOCALE;
 
   // Build path for other locales
-  function getLocalePath(locale: string): string {
-    if (segments[0] && isValidLocale(segments[0])) {
-      return "/" + [locale, ...segments.slice(1)].join("/");
-    }
-    return `/${locale}`;
+  function getPathForLocale(locale: string): string {
+    return getLocalePath(pathname, locale);
   }
 
   return (
@@ -54,7 +72,7 @@ export function LanguageSelector() {
           {SUPPORTED_LOCALES.map((locale) => (
             <li key={locale}>
               <Link
-                href={getLocalePath(locale)}
+                href={getPathForLocale(locale)}
                 style={{
                   display: "block",
                   padding: "6px 14px",
