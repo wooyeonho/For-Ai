@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server";
 
 import { logAdminAuditEvent, requireAdmin, supabaseAdmin } from "@/lib/admin-api";
-import { DEFAULT_LOCALE } from "@/lib/i18n/locales";
+import { DEFAULT_LOCALE, LOCALE_CONFIG, isValidLocale } from "@/lib/i18n/locales";
+
+function defaultCountryForLang(lang: string): string {
+  return isValidLocale(lang) ? LOCALE_CONFIG[lang].country : "global";
+}
 
 export async function GET(request: Request) {
   const adminError = requireAdmin(request, "candidates.read");
@@ -47,6 +51,7 @@ export async function POST(request: Request) {
     slug: String(r.slug ?? "").trim(),
     category: String(r.category ?? "").trim(),
     lang: String(r.lang ?? DEFAULT_LOCALE).trim() || DEFAULT_LOCALE,
+    country: String(r.country ?? "").trim() || defaultCountryForLang(String(r.lang ?? DEFAULT_LOCALE).trim() || DEFAULT_LOCALE),
     source: "admin_created",
     status: "new",
     subcategory: r.subcategory ? String(r.subcategory) : null,

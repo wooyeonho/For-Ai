@@ -9,7 +9,7 @@ import {
 } from "../../../../lib/ai-providers";
 import { buildConsensus, type ConsensusCandidate } from "../../../../lib/consensus";
 import { logAdminAuditEvent, missingSupabaseAdminEnv, requireAdmin, supabaseAdmin } from "@/lib/admin-api";
-import { DEFAULT_LOCALE } from "@/lib/i18n/locales";
+import { DEFAULT_LOCALE, LOCALE_CONFIG, isValidLocale } from "@/lib/i18n/locales";
 
 function buildPrompt(topic: string, count: number, lang: string) {
   const langInstructions: Record<string, string> = {
@@ -55,11 +55,16 @@ ${instruction}
   ],
   "source_hints": [
     { "url": "https://실제url", "title": "출처명" }
-  ]
+  ],
+  "country": "ISO 3166-1 alpha-2 country code or global"
 }
 
 ${count}개를 JSON 배열로만. 설명 없이 JSON만.
 `.trim();
+}
+
+function defaultCountryForLang(lang: string): string {
+  return isValidLocale(lang) ? LOCALE_CONFIG[lang].country : "global";
 }
 
 function buildSystemPrompt(lang: string): string {
@@ -130,6 +135,7 @@ function parseCandidatesFromResponse(
         ...c,
         source: "ai_generated",
         lang,
+        country: String(c.country ?? "").trim() || defaultCountryForLang(lang),
         status: "new",
         generation_model: `${response.provider}/${response.model}`,
         claims: ((c.claims ?? []) as Record<string, unknown>[]).map((cl) => ({
