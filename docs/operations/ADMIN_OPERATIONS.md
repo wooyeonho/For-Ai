@@ -36,11 +36,14 @@ This is the canonical admin operations document for For-Ai. Keep this file as th
 
 ## Claim verification rules
 
+Detailed verified promotion criteria live in `docs/operations/CLAIM_VERIFICATION_POLICY.md`.
+
 - Use official or otherwise acceptable sources before changing a claim value from `확인 필요`.
 - Add a `claim_sources` record for the source used.
 - Add a `verification_events` record for the review action.
 - Do not upgrade confidence without explicit source evidence.
 - Do not use `documents.data` as canonical factual truth; it is rendering convenience only.
+- Never promote AI-generated candidates to `verified` without human source review.
 
 ## Merge guidance for documentation PRs
 
