@@ -69,7 +69,7 @@ Acceptance criteria:
 Search for hardcoded Korean document links and locale fields:
 
 ```bash
-rg '(/ko/wiki|lang: "ko")' app lib --include='*.ts' --include='*.tsx'
+rg '(/ko/wiki|lang: "ko")' app lib -g '*.ts' -g '*.tsx'
 ```
 
 Expected findings (still present as of 2026-06-28, require fixes):
@@ -82,6 +82,7 @@ Expected findings (still present as of 2026-06-28, require fixes):
 | `app/admin/candidates/page.tsx` | `/ko/wiki/${c.slug}` | `documentPageUrl(c.slug, "ko")` (admin-only, lower priority) |
 | `app/admin/verify-claim/page.tsx` | `/ko/wiki/${doc.slug}` | `documentPageUrl(doc.slug, doc.lang ?? "ko")` |
 | `app/diagnostics/[slug]/page.tsx` | `/ko/wiki/${document.slug}` | `documentPageUrl(document.slug, locale)` |
+| `lib/seo.ts` | `canonicalPath: \`/ko/wiki/${document.slug}\`` | `documentPageUrl(document.slug, document.lang ?? DEFAULT_LOCALE)` |
 
 For each result, decide whether it is a sample fixture or a production bug. Production links must use `documentPageUrl`.
 
@@ -90,14 +91,10 @@ For each result, decide whether it is a sample fixture or a production bug. Prod
 Search for stub language and success responses:
 
 ```bash
-rg '(stub|accepted: true|storage.*none)' app lib --include='*.ts' --include='*.tsx'
+rg '(stub|accepted: true|storage.*none)' app lib -g '*.ts' -g '*.tsx'
 ```
 
-Key risk (confirmed as of 2026-06-28):
-
-- `app/api/suggest-topic/route.ts` — returns `accepted: true` when Supabase insert fails. The `storage` field reveals the actual outcome but the UI may not check it. Fix: return `accepted: false` with `error: "SERVER_UNCONFIGURED"` when `storage !== "db"`.
-
-For each remaining result, classify as:
+For each result, classify as:
 
 - Safe explicit fixture/test stub.
 - Internal admin draft response.

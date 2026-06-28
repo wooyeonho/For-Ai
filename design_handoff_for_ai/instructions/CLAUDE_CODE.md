@@ -26,7 +26,7 @@ Only after all functional audit items pass, address visual/layout issues.
 | Contributor hashing | `makeContributorHashForRequest(request)` from `lib/contributor-hash` |
 | Rate limiting | Per-route via `checkRateLimit` / `authenticateApiKey` from `lib/api-rate-limit` |
 | Community moderation | `status: "pending"` default, enforced by RLS |
-| Locale-aware document URLs | `documentPageUrl(slug, locale)` from `lib/urls.ts` |
+| Locale-aware document URLs | `documentPageUrl(slug, locale)` from `lib/urls.ts` — also used in `lib/seo.ts` `getRegistryDocumentPaths` |
 | Submission length limits | `lib/submission-limits.ts` constants, enforced at API and form |
 | Topic suggestion honesty | Returns `accepted: false, error: "SERVER_UNCONFIGURED"` when DB unavailable |
 
