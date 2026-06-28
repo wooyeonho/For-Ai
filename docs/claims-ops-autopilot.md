@@ -25,6 +25,12 @@ The workflow does **not** search the web, infer claim values, or mark unknown fa
 
 Incomplete generated templates are skipped by default.
 
+## Payload directories
+
+- Claims Ops automation writes generated templates to `data/claim-payloads` and batch-applies that same directory. This mirrors `.github/workflows/claims-ops.yml`, which runs `npm run claims:generate-payloads -- --out data/claim-payloads` followed by `npm run claims:batch -- data/claim-payloads`.
+- Local manual use of `npm run claims:generate-payloads` keeps its default output at `data/payloads`; run `npm run claims:batch -- data/payloads` for that manual path.
+- When documenting the automated workflow, use `data/claim-payloads`; when documenting local manual commands without `--out`, use `data/payloads`.
+
 ## Manual run examples
 
 Generate up to 10 templates for the default backlog:

@@ -13,8 +13,9 @@
  *                       file. Exits non-zero on any violation (CI-ready).
  *   apply <payload>      Turn a reviewed payload into a verified-claims file,
  *                       wire it into lib/verified-claims.ts, then validate.
- *   generate-payloads   Create fillable payload templates in data/payloads/
- *                       for all pending seed topics (not yet in verified-claims).
+ *   generate-payloads   Create fillable payload templates in data/payloads/ by
+ *                       default, or another directory passed with --out.
+ *                       The Claims Ops workflow uses data/claim-payloads/.
  *   batch <dir>         Apply all filled .json payload files in a directory.
  *                       Skips files with TODO placeholders or errors.
  *
@@ -29,7 +30,7 @@
  */
 
 import { readFileSync, writeFileSync, readdirSync, existsSync, mkdirSync } from "node:fs";
-import { join, basename } from "node:path";
+import { join, basename, relative, resolve } from "node:path";
 
 const ROOT = process.cwd();
 const CLAIMS_DIR = join(ROOT, "data", "verified-claims");
@@ -540,6 +541,8 @@ function cmdGeneratePayloads(args) {
   const opts = parseArgs(args);
   const filterCountry = opts.country ?? null;
   const filterCategory = opts.category ?? null;
+  const payloadsDir = opts.out ? resolve(ROOT, opts.out) : PAYLOADS_DIR;
+  const payloadsLabel = relative(ROOT, payloadsDir) || ".";
 
   if (!existsSync(SEED_PATH)) {
     console.error(`seed file not found: ${SEED_PATH}`);
@@ -559,10 +562,10 @@ function cmdGeneratePayloads(args) {
     return;
   }
 
-  mkdirSync(PAYLOADS_DIR, { recursive: true });
+  mkdirSync(payloadsDir, { recursive: true });
   let created = 0;
   for (const topic of pending) {
-    const outPath = join(PAYLOADS_DIR, `${topic.slug}.json`);
+    const outPath = join(payloadsDir, `${topic.slug}.json`);
     if (existsSync(outPath) && !opts.force) continue;
 
     const country = topic.country ?? "KR";
@@ -604,14 +607,14 @@ function cmdGeneratePayloads(args) {
   }
 
   console.log("=== generate-payloads ===");
-  console.log(`created ${created} payload template(s) in data/payloads/`);
+  console.log(`created ${created} payload template(s) in ${payloadsLabel}/`);
   console.log(`total pending: ${pending.length} topic(s)`);
   if (created < pending.length) console.log(`skipped ${pending.length - created} existing file(s) (use --force to overwrite)`);
   console.log(`\nNext steps:`);
   console.log(`  1. Fill each TODO field with real values from official sources`);
   console.log(`  2. Set verified_at to the confirmation date`);
   console.log(`  3. Delete files you cannot verify from official sources`);
-  console.log(`  4. Run: npm run claims:batch -- data/payloads/`);
+  console.log(`  4. Run: npm run claims:batch -- ${payloadsLabel}/`);
 }
 
 // ---------------------------------------------------------------------------
