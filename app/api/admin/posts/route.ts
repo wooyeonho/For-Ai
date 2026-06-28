@@ -49,7 +49,7 @@ export async function PATCH(request: Request) {
 
   const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
 
-  if (body.status && ["published", "hidden", "spam", "deleted"].includes(String(body.status))) {
+  if (body.status && ["pending", "published", "hidden", "spam", "deleted"].includes(String(body.status))) {
     updates.status = String(body.status);
   }
   if (typeof body.content === "string") {
