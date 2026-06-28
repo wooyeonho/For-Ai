@@ -12,8 +12,8 @@ const PROVIDER_ICONS: Record<string, string> = {
 const FALLBACK_PROVIDERS = [
   { key: "perplexity", label: "Perplexity (웹 검색)", icon: "🔍" },
   { key: "gemini", label: "Gemini 2.0", icon: "✦" },
-  { key: "gpt", label: "GPT-4o", icon: "◎" },
-  { key: "grok", label: "Grok", icon: "⚡" },
+  { key: "gpt", label: "OpenAI GPT-4o", icon: "◎" },
+  { key: "grok", label: "xAI Grok", icon: "⚡" },
 ];
 
 const CATEGORY_PRESETS = [
@@ -284,7 +284,7 @@ export default function AdminGeneratePage() {
           {providersLoading && <p style={{ marginTop: 8, fontSize: 12, color: "#6b7280" }}>사용 가능한 provider 확인 중...</p>}
           {!providersLoading && availableProviders.length === 0 && (
             <p style={{ marginTop: 8, fontSize: 12, color: "#b45309" }}>
-              사용 가능한 provider가 없습니다. 배포 환경변수에 PERPLEXITY_API_KEY 등 provider API key를 설정해야 합니다.
+              사용 가능한 provider가 없습니다. 배포 환경변수에 PERPLEXITY_API_KEY, GOOGLE_GEMINI_API_KEY, OPENAI_API_KEY, XAI_API_KEY 중 최소 1개를 설정해야 합니다.
               {providersError && ` (${providersError})`}
             </p>
           )}
