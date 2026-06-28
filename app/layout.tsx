@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { DEFAULT_LOCALE } from "../lib/i18n";
 import { siteUrl } from "../lib/urls";
 import { SiteHeader } from "./components/SiteHeader";
 import { SiteFooter } from "./components/SiteFooter";
@@ -9,18 +10,18 @@ export const metadata: Metadata = {
     default: "For-Ai",
     template: "%s — For-Ai",
   },
-  description: "Local fact registry for AI, search engines, and humans.",
+  description: "Global claim-level fact registry for AI citation, search engines, and humans.",
   metadataBase: new URL(siteUrl("/")),
   openGraph: {
     siteName: "For-Ai",
     type: "website",
-    locale: "ko_KR",
+    locale: "en_US",
   },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="ko">
+    <html lang={DEFAULT_LOCALE}>
       <body>
         <SiteHeader />
         <main className="page-shell">{children}</main>

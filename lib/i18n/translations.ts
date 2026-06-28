@@ -94,7 +94,7 @@ const ko: UITranslations = {
   site: {
     title: "For-Ai",
     subtitle: "결 · 글로벌 팩트 레지스트리",
-    description: "AI·검색·사람이 같은 사실을 같은 근거로 인용하는 글로벌 팩트 레지스트리",
+    description: "AI 인용을 위한 글로벌 claim-level 사실 레지스트리",
   },
   nav: {
     registry: "레지스트리",
@@ -104,8 +104,8 @@ const ko: UITranslations = {
     admin: "관리자",
   },
   home: {
-    heroTitle: "AI·검색·사람이 같은 사실을 인용하는 레지스트리",
-    heroSubtitle: "claim 단위로 신뢰도·출처·검증일을 관리합니다",
+    heroTitle: "AI가 인용할 수 있는 글로벌 사실 레지스트리",
+    heroSubtitle: "AI·검색엔진·사람이 같은 출처에서 같은 사실을 인용하도록 claim 단위로 신뢰도·출처·검증 상태를 관리합니다",
     searchPlaceholder: "제목 또는 카테고리 검색...",
     registeredDocs: "등록된 문서",
     noResults: "결과 없음",
@@ -156,7 +156,7 @@ const ko: UITranslations = {
     diagnostics: "AI 준비도 진단",
   },
   footer: {
-    tagline: "AI·검색엔진·사람이 같은 사실을 같은 근거로 인용하도록 만드는 로컬 팩트 레지스트리. 확인되지 않은 정보는 추측하지 않고 \"확인 필요\"로 남깁니다.",
+    tagline: "AI·검색엔진·사람이 같은 사실을 같은 근거로 인용하도록 만드는 글로벌 claim-level 사실 레지스트리. 확인되지 않은 정보는 추측하지 않고 \"확인 필요\"로 남깁니다.",
     forHumans: "사람용",
     browseRegistry: "레지스트리 둘러보기",
     suggestTopic: "토픽 제안",
@@ -181,7 +181,7 @@ const en: UITranslations = {
   site: {
     title: "For-Ai",
     subtitle: "Global Fact Registry",
-    description: "A global fact registry where AI, search engines, and humans cite the same facts from the same sources",
+    description: "A global claim-level fact registry for AI citation, search engines, and humans",
   },
   nav: {
     registry: "Registry",
@@ -191,8 +191,8 @@ const en: UITranslations = {
     admin: "Admin",
   },
   home: {
-    heroTitle: "A registry where AI, search, and humans cite the same facts",
-    heroSubtitle: "Managing confidence, sources, and verification dates at the claim level",
+    heroTitle: "A global fact registry for AI citation",
+    heroSubtitle: "AI, search engines, and humans cite the same facts from the same claim-level sources",
     searchPlaceholder: "Search by title or category...",
     registeredDocs: "Registered documents",
     noResults: "No results",
@@ -243,7 +243,7 @@ const en: UITranslations = {
     diagnostics: "AI-readiness diagnostics",
   },
   footer: {
-    tagline: "A local fact registry where AI, search engines, and humans cite the same facts from the same sources. Unverified information is marked as \"Needs verification\" (\"확인 필요\") instead of guessing.",
+    tagline: "A global claim-level fact registry where AI, search engines, and humans cite the same facts from the same sources. Unverified information is marked as \"Needs verification\" (\"확인 필요\") instead of guessing.",
     forHumans: "For humans",
     browseRegistry: "Browse registry",
     suggestTopic: "Suggest topic",
