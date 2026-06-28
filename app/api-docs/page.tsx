@@ -230,7 +230,7 @@ if (data.citation_guidance.can_cite) {
         <h2 id="pro">Pro & Enterprise</h2>
         <p style={{ fontSize: "0.9rem", lineHeight: 1.7 }}>
           Need higher rate limits, priority corrections, or reputation monitoring?
-          Contact <strong>wooyeanho@gmail.com</strong> for Pro and Enterprise plans.
+          Contact <strong>hello@for-ai.org</strong> for Pro and Enterprise plans.
         </p>
         <ul style={{ fontSize: "0.9rem", color: "var(--muted)", lineHeight: 2 }}>
           <li><strong>Pro ($49/mo):</strong> 300 rpm, priority corrections, webhooks, bulk export</li>

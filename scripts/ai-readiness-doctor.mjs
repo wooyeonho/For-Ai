@@ -138,7 +138,7 @@ check("jsonld", "Document pages emit JSON-LD Dataset + metadata", () => {
 check("layout", "Layout sets html lang, title template, header + footer", () => {
   const src = read("app/layout.tsx");
   const ok =
-    /lang="ko"/.test(src) &&
+    /(<html\s+lang=|lang=\{DEFAULT_LOCALE\})/.test(src) &&
     /template:/.test(src) &&
     /SiteHeader/.test(src) &&
     /SiteFooter/.test(src);

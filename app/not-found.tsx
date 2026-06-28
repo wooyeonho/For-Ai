@@ -6,7 +6,7 @@ export default function NotFound() {
       <p className="eyebrow">Not found</p>
       <h1>문서를 찾을 수 없습니다</h1>
       <p>요청한 문서가 없습니다.</p>
-      <p><Link href="/ko/wiki/myungdong-laluce-parking">명동 라루체 주차 정보</Link></p>
+      <p><Link href="/">Return to the registry home</Link></p>
     </section>
   );
 }

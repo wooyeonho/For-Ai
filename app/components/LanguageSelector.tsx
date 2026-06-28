@@ -16,6 +16,10 @@ export function getLocalePath(pathname: string, locale: string): string {
     }
   }
 
+  if (segments.length === 0) {
+    return "/";
+  }
+
   const [route, identifier] = segments;
   if (route && DOCUMENT_ACTION_ROUTES.has(route) && identifier) {
     return `/${locale}/wiki/${identifier}`;

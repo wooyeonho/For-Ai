@@ -417,7 +417,7 @@ export default async function HomePage() {
 
       {/* Search */}
       <section className="section">
-        <HomeSearch docs={docs} />
+        <HomeSearch docs={docs} locale="en" />
       </section>
 
       {/* Registry index */}
