@@ -1,12 +1,6 @@
 import { NextResponse } from "next/server";
-import { createHash } from "crypto";
 import { supabaseAdmin, requireAdmin, logAdminAuditEvent } from "@/lib/admin-api";
-
-function hashContributor(request: Request): string {
-  const ua = request.headers.get("user-agent") ?? "";
-  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "unknown";
-  return createHash("sha256").update(`${ip}:${ua}`).digest("hex").slice(0, 16);
-}
+import { makeContributorHashForRequest } from "@/lib/contributor-hash";
 
 // GET: List verified business profiles (public — only verified ones)
 export async function GET() {
@@ -73,7 +67,13 @@ export async function POST(request: Request) {
     );
   }
 
-  const contributorHash = hashContributor(request);
+  let contributorHash: string;
+  try {
+    contributorHash = makeContributorHashForRequest(request);
+  } catch (error) {
+    console.error("[business-profile] Contributor salt missing:", error);
+    return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
+  }
 
   const { data: profile, error } = await sb
     .from("verified_business_profiles")
