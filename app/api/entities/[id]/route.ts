@@ -3,17 +3,21 @@ import { getEntityProfile } from "../../../../lib/entity-profile";
 import { getDocumentCitationStatus } from "../../../../lib/citation-status";
 import { documentPageUrl, apiDocumentUrl, rawMarkdownUrl, entityPageUrl } from "../../../../lib/urls";
 import { DEFAULT_LOCALE } from "../../../../lib/i18n/locales";
+import { checkRateLimit, rateLimitHeaders, rateLimitResponse } from "../../../../lib/api-rate-limit";
 
 // Machine-readable entity profile: an entity plus every document/claim For-Ai
 // holds about it, with a citable summary. Lets an AI cite at the entity level
 // and see which documents are human-approved. X-For-Ai-Can-Cite is true when at
 // least one document about the entity is citable.
-export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const rateLimit = await checkRateLimit(request);
+  if (!rateLimit.allowed) return rateLimitResponse(rateLimit);
+
   const { id } = await params;
   const profile = await getEntityProfile(decodeURIComponent(id));
 
   if (!profile) {
-    return NextResponse.json({ error: "Entity not found" }, { status: 404 });
+    return NextResponse.json({ error: "Entity not found" }, { status: 404, headers: rateLimitHeaders(rateLimit) });
   }
 
   const { entity, documents, summary } = profile;
@@ -57,6 +61,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     headers: {
       "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
       "X-For-Ai-Can-Cite": summary.citable_documents > 0 ? "true" : "false",
+      ...rateLimitHeaders(rateLimit),
     },
   });
 }
