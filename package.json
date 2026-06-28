@@ -22,7 +22,8 @@
     "doctor:ai-readiness": "node scripts/doctor-ai-readiness.mjs",
     "claims:apply": "node scripts/verified-claims.mjs apply",
     "claims:batch": "node scripts/verified-claims.mjs batch",
-    "claims:generate-payloads": "node scripts/verified-claims.mjs generate-payloads"
+    "claims:generate-payloads": "node scripts/verified-claims.mjs generate-payloads",
+    "smoke:production-submissions": "node scripts/production-submission-smoke.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.8",
