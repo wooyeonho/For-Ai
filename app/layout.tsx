@@ -9,18 +9,19 @@ export const metadata: Metadata = {
     default: "For-Ai",
     template: "%s — For-Ai",
   },
-  description: "Local fact registry for AI, search engines, and humans.",
+  description: "Global claim-level fact registry for AI, search engines, and humans.",
   metadataBase: new URL(siteUrl("/")),
   openGraph: {
     siteName: "For-Ai",
     type: "website",
-    locale: "ko_KR",
+    locale: "en_US",
+    alternateLocale: ["ko_KR"],
   },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="ko">
+    <html lang="en">
       <body>
         <SiteHeader />
         <main className="page-shell">{children}</main>
