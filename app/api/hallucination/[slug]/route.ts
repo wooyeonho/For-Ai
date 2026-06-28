@@ -3,30 +3,45 @@ import { createServerClient, isSupabaseConfigured } from '@/lib/supabase-server'
 import { makeContributorHashForRequest } from '@/lib/contributor-hash';
 import { getDocumentBySlug } from '@/lib/data';
 
+function optionalText(value: unknown): string | null {
+  if (typeof value !== 'string') {
+    return null;
+  }
+
+  const trimmed = value.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ slug: string }> }
 ) {
   const { slug } = await params;
 
-  let body: Record<string, string>;
+  let body: Record<string, unknown>;
   try {
     body = await request.json();
   } catch {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
   }
 
-  const aiService = body.ai_service?.trim();
+  const aiService = optionalText(body.ai_service);
   if (!aiService) {
     return NextResponse.json({ error: 'ai_service is required' }, { status: 400 });
   }
 
-  // Resolve document + entity from slug (static seed data)
   const doc = getDocumentBySlug(slug);
-  const documentId = doc?.id ?? null;
-  const entityId = doc?.entity_id ?? null;
+  if (!doc) {
+    return NextResponse.json({ error: 'Document not found' }, { status: 404 });
+  }
 
-  // Generate contributor hash — never store raw IP
+  if (!isSupabaseConfigured()) {
+    return NextResponse.json(
+      { error: 'Supabase is not configured; hallucination report was not saved' },
+      { status: 503 }
+    );
+  }
+
   let contributorHash: string;
   try {
     contributorHash = makeContributorHashForRequest(request);
@@ -35,34 +50,29 @@ export async function POST(
     return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
   }
 
-  if (isSupabaseConfigured()) {
-    try {
-      const supabase = createServerClient();
-      const { error } = await supabase.from('hallucination_reports').insert({
-        document_id: documentId,
-        entity_id: entityId,
-        ai_service: aiService,
-        prompt: body.prompt ?? null,
-        ai_answer: body.ai_answer ?? null,
-        expected_correction: body.expected_correction ?? null,
-        contributor_hash: contributorHash,
-        status: 'new',
-      });
+  try {
+    const supabase = createServerClient();
+    const { error } = await supabase.from('hallucination_reports').insert({
+      document_id: doc.id,
+      entity_id: doc.entity_id,
+      ai_service: aiService,
+      prompt: optionalText(body.prompt),
+      ai_answer: optionalText(body.ai_answer),
+      expected_correction: optionalText(body.expected_correction),
+      contributor_hash: contributorHash,
+      status: 'new',
+    });
 
-      if (error) {
-        console.error('[hallucination] Supabase insert error:', error.message);
-        return NextResponse.json(
-          { error: 'Failed to save hallucination report' },
-          { status: 500 }
-        );
-      }
-    } catch (err) {
-      console.error('[hallucination] Unexpected error:', err);
-      return NextResponse.json({ error: 'Server error' }, { status: 500 });
+    if (error) {
+      console.error('[hallucination] Supabase insert error:', error.message);
+      return NextResponse.json(
+        { error: 'Failed to save hallucination report' },
+        { status: 500 }
+      );
     }
-  } else {
-    // Supabase not configured — stub mode (logs only)
-    console.log('[hallucination] STUB mode — not persisted. slug:', slug, 'ai_service:', aiService);
+  } catch (err) {
+    console.error('[hallucination] Unexpected error:', err);
+    return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }
 
   return NextResponse.json({ success: true, slug });

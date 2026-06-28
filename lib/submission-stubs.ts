@@ -1,4 +1,4 @@
-import type { HallucinationReport, ReportSubmission } from "./types";
+import type { ReportSubmission } from "./types";
 
 export type SubmissionStubResult = {
   accepted: true;
@@ -29,44 +29,6 @@ export function createReportSubmissionStub(input: {
     storage: "stub",
     raw_ip_stored: false,
   };
-}
-
-export function createHallucinationReportStub(input: {
-  document_id: string;
-  entity_id: string;
-  ai_service: string;
-  prompt: string | null;
-  ai_answer: string | null;
-  expected_correction: string | null;
-}): HallucinationReport & SubmissionStubResult {
-  return {
-    id: "stub-hallucination-report",
-    document_id: input.document_id,
-    entity_id: input.entity_id,
-    ai_service: input.ai_service,
-    prompt: input.prompt,
-    ai_answer: input.ai_answer,
-    expected_correction: input.expected_correction,
-    contributor_hash: STUB_CONTRIBUTOR_HASH,
-    status: "new",
-    created_at: null,
-    accepted: true,
-    storage: "stub",
-    raw_ip_stored: false,
-  };
-}
-
-// Aliases used by API routes (Goals 8-9)
-export function submitHallucinationReport(input: {
-    document_id: string;
-    entity_id: string;
-    ai_service: string;
-    prompt: string;
-    ai_answer: string;
-    expected_correction: string;
-    contributor_hash: string;
-}): HallucinationReport & SubmissionStubResult {
-    return createHallucinationReportStub(input);
 }
 
 export function submitCorrectionReport(input: {
