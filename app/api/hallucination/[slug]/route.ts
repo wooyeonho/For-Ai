@@ -84,8 +84,11 @@ export async function POST(
       return NextResponse.json({ error: 'Server error' }, { status: 500 });
     }
   } else {
-    // Supabase not configured — stub mode (logs only)
-    console.log('[hallucination] STUB mode — not persisted. slug:', slug, 'ai_service:', aiService);
+    console.error('[hallucination] storage not configured — NOT persisted');
+    return NextResponse.json(
+      { error: 'submission_storage_unavailable', persisted: false },
+      { status: 503 }
+    );
   }
 
   return NextResponse.json({ success: true, slug });

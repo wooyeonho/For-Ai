@@ -2,16 +2,33 @@
 
 ## Prompt
 
-You are working on For-Ai, a global claim-level fact registry for AI citation. First read `AGENTS.md` and `design_handoff_for_ai/*`. Do not begin with design. Stabilize runtime behavior in this order: environment, admin auth, locale handling, false-success stubs, full functional audit, then design.
+You are working on For-Ai, a global claim-level fact registry for AI citation. First read `AGENTS.md` and `design_handoff_for_ai/*`. All known runtime bugs are resolved. Work in this order: environment setup → functional audit → design polish.
 
 ## Required steps
 
-1. Inspect actual routes and components before changing code.
-2. Use `schema-v3.sql` as the database source of truth.
-3. Ensure all admin APIs deny access when `ADMIN_SECRET` is missing or wrong.
-4. Ensure public submissions fail clearly when required environment is missing and persist only with Supabase configured.
-5. Replace production hardcoded `/ko/wiki` links with locale-aware helpers.
-6. Run `FUNCTIONAL_AUDIT.md` and summarize every failure.
+### 1. Environment (human must do first — AI cannot supply secret values)
+
+Confirm `.env.local` contains all variables from `design_handoff_for_ai/ENV_SETUP.md`. Do not proceed until a human has confirmed Supabase is configured and `CONTRIBUTOR_SALT` is set.
+
+### 2. Run the functional audit
+
+Follow `design_handoff_for_ai/FUNCTIONAL_AUDIT.md` top to bottom. Record pass/fail for each item. Fix any newly discovered failures before moving to design.
+
+### 3. Design polish last
+
+Only after all functional audit items pass, address visual/layout issues.
+
+## Known-good state (do not re-implement)
+
+| Area | Implementation |
+|---|---|
+| Admin auth | `requireAdmin(request, action)` from `lib/admin-api` |
+| Contributor hashing | `makeContributorHashForRequest(request)` from `lib/contributor-hash` |
+| Rate limiting | Per-route via `checkRateLimit` / `authenticateApiKey` from `lib/api-rate-limit` |
+| Community moderation | `status: "pending"` default, enforced by RLS |
+| Locale-aware document URLs | `documentPageUrl(slug, locale)` from `lib/urls.ts` — also used in `lib/seo.ts` `getRegistryDocumentPaths` |
+| Submission length limits | `lib/submission-limits.ts` constants, enforced at API and form |
+| Topic suggestion honesty | Returns `accepted: false, error: "SERVER_UNCONFIGURED"` when DB unavailable |
 
 ## Do not
 
@@ -19,4 +36,4 @@ You are working on For-Ai, a global claim-level fact registry for AI citation. F
 - Do not store raw IP addresses.
 - Do not make `documents.data` canonical truth.
 - Do not hide broken persistence behind success UI.
-- Do not prioritize visual polish before forms and admin flows actually work.
+- Do not hardcode `/ko/wiki/` — use `documentPageUrl(slug, locale)`.

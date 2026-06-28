@@ -32,7 +32,7 @@ For each route, submit valid and invalid payloads:
 - `/suggest-topic`
 - `/report/[slug]`
 - `/hallucination/[slug]`
-- `/community` post submission, if enabled in the current environment
+- `/community` post submission
 
 Acceptance criteria:
 
@@ -40,6 +40,7 @@ Acceptance criteria:
 - Missing `CONTRIBUTOR_SALT` produces a clear server configuration error, not a fake success.
 - With Supabase configured, submissions create rows in the intended table and never store raw IP addresses.
 - If Supabase is intentionally unavailable, the UI must explicitly say the submission was not durably stored.
+- `/suggest-topic` must NOT return `{ accepted: true }` when DB storage failed. It must return `accepted: false` with `error: "SERVER_UNCONFIGURED"`.
 
 ## Admin pages
 
@@ -57,7 +58,7 @@ Run every admin request with no secret, wrong secret, and correct secret:
 
 Acceptance criteria:
 
-- Empty or missing `ADMIN_SECRET` never authorizes access.
+- Empty or missing `ADMIN_SECRET` never authorizes access. (Already enforced by `requireAdmin` in `lib/admin-api`.)
 - Wrong `x-admin-secret` returns 401.
 - Correct `x-admin-secret` works only when Supabase admin env is configured.
 - Admin writes include CSRF protection as implemented by shared admin helpers.
@@ -68,20 +69,32 @@ Acceptance criteria:
 Search for hardcoded Korean document links and locale fields:
 
 ```bash
-rg '(/ko/wiki|lang: "ko"|lang: "ko")' app lib docs design_handoff_for_ai
+rg '(/ko/wiki|lang: "ko")' app lib -g '*.ts' -g '*.tsx'
 ```
 
-For each result, decide whether it is a sample fixture or a production bug. Production links should use locale-aware helpers such as `documentPageUrl`.
+Expected findings (still present as of 2026-06-28, require fixes):
+
+| File | Line pattern | Fix |
+|---|---|---|
+| `app/report/[slug]/ReportForm.tsx` | `/ko/wiki/${slug}` | `documentPageUrl(slug, locale)` |
+| `app/hallucination/[slug]/HallucinationForm.tsx` | `/ko/wiki/${slug}` | `documentPageUrl(slug, locale)` |
+| `app/community/CommunityClient.tsx` | `/ko/wiki/${p.document_slug}` | `documentPageUrl(p.document_slug, locale)` |
+| `app/admin/candidates/page.tsx` | `/ko/wiki/${c.slug}` | `documentPageUrl(c.slug, "ko")` (admin-only, lower priority) |
+| `app/admin/verify-claim/page.tsx` | `/ko/wiki/${doc.slug}` | `documentPageUrl(doc.slug, doc.lang ?? "ko")` |
+| `app/diagnostics/[slug]/page.tsx` | `/ko/wiki/${document.slug}` | `documentPageUrl(document.slug, locale)` |
+| `lib/seo.ts` | `canonicalPath: \`/ko/wiki/${document.slug}\`` | `documentPageUrl(document.slug, document.lang ?? DEFAULT_LOCALE)` |
+
+For each result, decide whether it is a sample fixture or a production bug. Production links must use `documentPageUrl`.
 
 ## Stub/false-success audit
 
 Search for stub language and success responses:
 
 ```bash
-rg '(stub|success: true|accepted: true)' app lib docs design_handoff_for_ai
+rg '(stub|accepted: true|storage.*none)' app lib -g '*.ts' -g '*.tsx'
 ```
 
-For each result, classify it as:
+For each result, classify as:
 
 - Safe explicit fixture/test stub.
 - Internal admin draft response.
