@@ -184,11 +184,11 @@ export default async function HomePage() {
     <div className="home">
       {/* Hero */}
       <section className="hero">
-        <p className="hero-eyebrow">Global Fact Registry for AI, Search & Humans</p>
+        <p className="hero-eyebrow">AI가 인용할 수 있는 글로벌 사실 레지스트리 — A global fact registry for AI citation</p>
         <h1 className="hero-title">
-          Every fact at the <span className="hero-accent">claim level</span>,
+          A global <span className="hero-accent">claim-level</span> fact registry
           <br />
-          with sources and verification.
+          for AI citation.
         </h1>
         <p className="hero-sub">
           Every claim carries confidence, sources, and verification status.

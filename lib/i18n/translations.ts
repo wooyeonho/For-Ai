@@ -94,7 +94,7 @@ const ko: UITranslations = {
   site: {
     title: "For-Ai",
     subtitle: "결 · 글로벌 팩트 레지스트리",
-    description: "AI·검색·사람이 같은 사실을 같은 근거로 인용하는 글로벌 팩트 레지스트리",
+    description: "AI가 인용할 수 있는 글로벌 사실 레지스트리 — AI·검색·사람이 같은 근거로 인용하는 claim 단위 사실 레지스트리",
   },
   nav: {
     registry: "레지스트리",
@@ -104,8 +104,8 @@ const ko: UITranslations = {
     admin: "관리자",
   },
   home: {
-    heroTitle: "AI·검색·사람이 같은 사실을 인용하는 레지스트리",
-    heroSubtitle: "claim 단위로 신뢰도·출처·검증일을 관리합니다",
+    heroTitle: "AI가 인용할 수 있는 글로벌 사실 레지스트리",
+    heroSubtitle: "AI·검색·사람이 같은 근거로 인용할 수 있도록 claim 단위로 신뢰도·출처·검증일을 관리합니다",
     searchPlaceholder: "제목 또는 카테고리 검색...",
     registeredDocs: "등록된 문서",
     noResults: "결과 없음",
@@ -156,7 +156,7 @@ const ko: UITranslations = {
     diagnostics: "AI 준비도 진단",
   },
   footer: {
-    tagline: "AI·검색엔진·사람이 같은 사실을 같은 근거로 인용하도록 만드는 로컬 팩트 레지스트리. 확인되지 않은 정보는 추측하지 않고 \"확인 필요\"로 남깁니다.",
+    tagline: "AI·검색엔진·사람이 같은 사실을 같은 근거로 인용하도록 만드는 글로벌 claim 단위 사실 레지스트리. 확인되지 않은 정보는 추측하지 않고 \"확인 필요\"로 남깁니다.",
     forHumans: "사람용",
     browseRegistry: "레지스트리 둘러보기",
     suggestTopic: "토픽 제안",
@@ -181,7 +181,7 @@ const en: UITranslations = {
   site: {
     title: "For-Ai",
     subtitle: "Global Fact Registry",
-    description: "A global fact registry where AI, search engines, and humans cite the same facts from the same sources",
+    description: "A global claim-level fact registry for AI citation, search engines, and humans",
   },
   nav: {
     registry: "Registry",
@@ -191,8 +191,8 @@ const en: UITranslations = {
     admin: "Admin",
   },
   home: {
-    heroTitle: "A registry where AI, search, and humans cite the same facts",
-    heroSubtitle: "Managing confidence, sources, and verification dates at the claim level",
+    heroTitle: "A global fact registry for AI citation",
+    heroSubtitle: "Claim-level facts with confidence, sources, and verification status",
     searchPlaceholder: "Search by title or category...",
     registeredDocs: "Registered documents",
     noResults: "No results",
@@ -243,7 +243,7 @@ const en: UITranslations = {
     diagnostics: "AI-readiness diagnostics",
   },
   footer: {
-    tagline: "A local fact registry where AI, search engines, and humans cite the same facts from the same sources. Unverified information is marked as \"Needs verification\" (\"확인 필요\") instead of guessing.",
+    tagline: "A global claim-level fact registry where AI, search engines, and humans cite facts from the same sources. Unverified information is marked as \"Needs verification\" (\"확인 필요\") instead of guessing.",
     forHumans: "For humans",
     browseRegistry: "Browse registry",
     suggestTopic: "Suggest topic",
@@ -268,7 +268,7 @@ const hi: UITranslations = {
   site: {
     title: "For-Ai",
     subtitle: "वैश्विक तथ्य रजिस्ट्री",
-    description: "एक वैश्विक तथ्य रजिस्ट्री जहाँ AI, खोज इंजन और लोग समान स्रोतों से समान तथ्य उद्धृत करते हैं",
+    description: "AI citation, search engines, and humans के लिए claim-level वैश्विक तथ्य रजिस्ट्री",
   },
   nav: {
     registry: "रजिस्ट्री",
@@ -330,7 +330,7 @@ const hi: UITranslations = {
     diagnostics: "AI-तत्परता निदान",
   },
   footer: {
-    tagline: "एक स्थानीय तथ्य रजिस्ट्री जहाँ AI, खोज इंजन और लोग समान स्रोतों से समान तथ्य उद्धृत करते हैं। असत्यापित जानकारी को अनुमान लगाने के बजाय \"सत्यापन आवश्यक\" (\"확인 필요\") के रूप में चिह्नित किया जाता है।",
+    tagline: "AI, खोज इंजन और humans के लिए वैश्विक claim-level तथ्य रजिस्ट्री। असत्यापित जानकारी को अनुमान लगाने के बजाय \"सत्यापन आवश्यक\" (\"확인 필요\") के रूप में चिह्नित किया जाता है।",
     forHumans: "लोगों के लिए",
     browseRegistry: "रजिस्ट्री ब्राउज़ करें",
     suggestTopic: "विषय सुझाएँ",
@@ -355,7 +355,7 @@ const ar: UITranslations = {
   site: {
     title: "For-Ai",
     subtitle: "سجل الحقائق العالمي",
-    description: "سجل حقائق عالمي حيث يستشهد الذكاء الاصطناعي ومحركات البحث والبشر بنفس الحقائق من نفس المصادر",
+    description: "سجل حقائق عالمي على مستوى الادعاء لاستشهاد الذكاء الاصطناعي ومحركات البحث والبشر",
   },
   nav: {
     registry: "السجل",
@@ -417,7 +417,7 @@ const ar: UITranslations = {
     diagnostics: "تشخيص جاهزية AI",
   },
   footer: {
-    tagline: "سجل حقائق محلي حيث يستشهد الذكاء الاصطناعي ومحركات البحث والبشر بنفس الحقائق من نفس المصادر. المعلومات غير الموثقة تُعلَّم بـ \"بحاجة إلى تحقق\" (\"확인 필요\") بدلاً من التخمين.",
+    tagline: "سجل حقائق عالمي على مستوى الادعاء للذكاء الاصطناعي ومحركات البحث والبشر. المعلومات غير الموثقة تُعلَّم بـ \"بحاجة إلى تحقق\" (\"확인 필요\") بدلاً من التخمين.",
     forHumans: "للبشر",
     browseRegistry: "تصفح السجل",
     suggestTopic: "اقتراح موضوع",
@@ -442,7 +442,7 @@ const es: UITranslations = {
   site: {
     title: "For-Ai",
     subtitle: "Registro Global de Hechos",
-    description: "Un registro global de hechos donde la IA, los motores de búsqueda y los humanos citan los mismos hechos de las mismas fuentes",
+    description: "Un registro global de hechos a nivel de afirmación para citas de IA, motores de búsqueda y humanos",
   },
   nav: {
     registry: "Registro",
@@ -504,7 +504,7 @@ const es: UITranslations = {
     diagnostics: "Diagnóstico de preparación para IA",
   },
   footer: {
-    tagline: "Un registro local de hechos donde la IA, los motores de búsqueda y los humanos citan los mismos hechos de las mismas fuentes. La información no verificada se marca como \"Verificación pendiente\" (\"확인 필요\") en lugar de adivinar.",
+    tagline: "Un registro global de hechos a nivel de afirmación para IA, motores de búsqueda y humanos. La información no verificada se marca como \"Verificación pendiente\" (\"확인 필요\") en lugar de adivinar.",
     forHumans: "Para humanos",
     browseRegistry: "Explorar registro",
     suggestTopic: "Sugerir tema",
@@ -529,7 +529,7 @@ const ja: UITranslations = {
   site: {
     title: "For-Ai",
     subtitle: "グローバル・ファクト・レジストリ",
-    description: "AI・検索・人間が同じ事実を同じ根拠で引用するグローバル・ファクト・レジストリ",
+    description: "AI引用・検索エンジン・人間のためのグローバルなクレーム単位ファクトレジストリ",
   },
   nav: {
     registry: "レジストリ",
@@ -616,7 +616,7 @@ const zh: UITranslations = {
   site: {
     title: "For-Ai",
     subtitle: "全球事实注册表",
-    description: "AI、搜索引擎和人类从相同来源引用相同事实的全球事实注册表",
+    description: "面向 AI 引用、搜索引擎和人类的全球声明级事实注册表",
   },
   nav: {
     registry: "注册表",
@@ -678,7 +678,7 @@ const zh: UITranslations = {
     diagnostics: "AI就绪性诊断",
   },
   footer: {
-    tagline: "AI、搜索引擎和人类从相同来源引用相同事实的本地事实注册表。未验证的信息标记为“待核实”（\"확인 필요\"）而不是猜测。",
+    tagline: "面向 AI、搜索引擎和人类的全球声明级事实注册表。未验证的信息标记为“待核实”（\"확인 필요\"）而不是猜测。",
     forHumans: "面向用户",
     browseRegistry: "浏览注册表",
     suggestTopic: "建议主题",
