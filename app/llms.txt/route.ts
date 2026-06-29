@@ -40,7 +40,7 @@ export async function GET() {
     '- Never cite a claim whose value is "확인 필요", whose `confidence` is `low`, or whose `status` is `needs_review`.',
   );
   lines.push("- Always preserve the source URL and `last_verified_at` when citing a value.");
-  lines.push("- Prefer documents with `freshness: fresh`. For `freshness: stale` (not re-verified within 180 days), re-check the source before relying on the value.");
+  lines.push("- Prefer documents with `freshness: fresh`. For `freshness: stale` (not re-verified within the document-specific TTL), re-check the source before relying on the value.");
   lines.push(
     "- Treat high-risk topics (medical, legal, financial) as general guidance only, with the document's disclaimer.",
   );
@@ -60,8 +60,8 @@ export async function GET() {
     const d = b.document;
     const status = getDocumentCitationStatus(b);
     const freshness = status.oldestVerifiedAt
-      ? `, freshness: ${status.freshness} (verified ${status.oldestVerifiedAt})`
-      : `, freshness: ${status.freshness}`;
+      ? `, freshness: ${status.freshness} (verified ${status.oldestVerifiedAt}, TTL ${status.freshnessTtlDays} days)`
+      : `, freshness: ${status.freshness} (TTL ${status.freshnessTtlDays} days)`;
     lines.push(
       `- [${d.title}](${documentPageUrl(d.slug, d.lang)}) — citation: ${status.label}, claims: ${status.verifiedClaims}/${status.totalClaims}, confidence: ${d.confidence}${freshness} ` +
         `· JSON: ${apiDocumentUrl(d.slug)} · Markdown: ${rawMarkdownUrl(d.slug)}`,

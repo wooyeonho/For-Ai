@@ -152,8 +152,8 @@ export default async function WikiDocumentPage({
           <span className="badge badge-low">{document.confidence}</span>
           {document.category && <span className="badge">{document.category}</span>}
           {citationStatus.isVerifiedDocument && citationStatus.freshness === "stale" && (
-            <span className="badge badge-review" title={`Oldest verified claim: ${citationStatus.oldestVerifiedAt ?? "unknown"}`}>
-              ⏳ stale · last verified {citationStatus.oldestVerifiedAt ?? "unknown"}
+            <span className="badge badge-review" title={`Oldest verified claim: ${citationStatus.oldestVerifiedAt ?? "unknown"}; TTL: ${citationStatus.freshnessWindowDays} days`}>
+              ⏳ stale
             </span>
           )}
         </div>
@@ -251,9 +251,10 @@ export default async function WikiDocumentPage({
         <h2 id="citation-status">{t.wiki.citationStatus}</h2>
         <p>
           {t.wiki.citationDocument} <strong>{citationStatus.label}</strong>. {t.wiki.citationReadyClaims}{" "}
-          {citationStatus.verifiedClaims}/{citationStatus.totalClaims}.
+          {citationStatus.verifiedClaims}/{citationStatus.totalClaims}. Freshness: <strong>{citationStatus.freshness}</strong>
+          {" "}(TTL {citationStatus.freshnessWindowDays} days; {citationStatus.freshnessPolicy.reason}).
           {citationStatus.isVerifiedDocument && citationStatus.freshness === "stale" && (
-            <strong> Needs recheck: oldest last verified date is {citationStatus.oldestVerifiedAt ?? "unknown"}; freshness window is {citationStatus.freshnessWindowDays} days.</strong>
+            <strong> Needs recheck: oldest last verified date is {citationStatus.oldestVerifiedAt ?? "unknown"}.</strong>
           )}
         </p>
         <ul className="link-list">

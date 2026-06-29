@@ -33,6 +33,13 @@ export type RenderedDocumentJson = {
     oldest_verified_at: string | null;
     freshness_window_days: number;
     stale_claims: Array<{ claimId: string; fieldPath: string; lastVerifiedAt: string | null }>;
+    freshness_policy: {
+      update_frequency: string;
+      risk_tier: string | null;
+      disclaimer_type: string | null;
+      reason: string;
+    };
+    freshness_description: string;
   };
   machine_readable: {
     canonical_url: string;
@@ -225,6 +232,13 @@ export function renderDocumentJson(bundle: RegistryDocumentBundle): RenderedDocu
       oldest_verified_at: citationStatus.oldestVerifiedAt,
       freshness_window_days: citationStatus.freshnessWindowDays,
       stale_claims: citationStatus.staleClaims,
+      freshness_policy: {
+        update_frequency: citationStatus.freshnessPolicy.updateFrequency,
+        risk_tier: citationStatus.freshnessPolicy.riskTier,
+        disclaimer_type: citationStatus.freshnessPolicy.disclaimerType,
+        reason: citationStatus.freshnessPolicy.reason,
+      },
+      freshness_description: `Freshness is ${citationStatus.freshness}; TTL is ${citationStatus.freshnessWindowDays} days based on ${citationStatus.freshnessPolicy.reason}.`,
     },
     machine_readable: {
       canonical_url: documentPageUrl(document.slug, document.lang),
@@ -272,7 +286,9 @@ export function renderDocumentMarkdown(bundle: RegistryDocumentBundle): string {
 
 status: ${citationStatus.label}
 citation_ready_claims: ${citationStatus.verifiedClaims}/${citationStatus.totalClaims}
-freshness: ${citationStatus.freshness}${citationStatus.oldestVerifiedAt ? ` (oldest verified ${citationStatus.oldestVerifiedAt}; window ${citationStatus.freshnessWindowDays} days)` : ""}${governmentFeeTemplate}
+freshness: ${citationStatus.freshness}${citationStatus.oldestVerifiedAt ? ` (oldest verified ${citationStatus.oldestVerifiedAt}; window ${citationStatus.freshnessWindowDays} days)` : ""}
+freshness_ttl_days: ${citationStatus.freshnessWindowDays}
+freshness_policy: ${citationStatus.freshnessPolicy.reason}${governmentFeeTemplate}
 
 ## Direct answer\n\nquestion: ${directAnswer.question}\nanswer: ${directAnswer.answer}\nregion: ${directAnswer.region}\nlast_verified_at: ${directAnswer.last_verified_at ?? UNKNOWN_TEXT}\nconfidence: ${directAnswer.confidence}\nsource_count: ${directAnswer.source_count}\ncan_cite: ${directAnswer.can_cite}\nrelated_questions: ${directAnswer.related_questions.length > 0 ? directAnswer.related_questions.join(" | ") : "none"}\n\n## Claims\n\n${claimsMarkdown}\n\n## Confidence\n\n${document.confidence}\n\n## Verification status\n\n${document.status}\n\n## Sources\n\n${sourcesMarkdown}\n\n## License notice\n\n${licenseNotice}\n`;
 }
