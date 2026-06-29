@@ -13,7 +13,7 @@
   "claims": [
     {
       "claim_id": "seoul-taxi-medium-base-fare",
-      "field_path": "fare.medium_base",
+      "field_path": "fare.base",
       "claim_text": "서울 중형택시 기본요금 (2023.2.1 조정)",
       "claim_value": "1.6km까지 4,800원",
       "confidence": "high",
@@ -37,7 +37,7 @@
     },
     {
       "claim_id": "seoul-taxi-deluxe-large-base-fare",
-      "field_path": "fare.deluxe_large_base",
+      "field_path": "fare.base",
       "claim_text": "서울 모범·대형택시 기본요금 (2023.2.1 조정)",
       "claim_value": "3km까지 7,000원",
       "confidence": "high",

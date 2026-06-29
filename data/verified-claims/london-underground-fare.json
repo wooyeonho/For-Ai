@@ -13,7 +13,7 @@
   "claims": [
     {
       "claim_id": "tfl-zone1-adult-oyster-peak",
-      "field_path": "fare.zone1_adult_oyster_peak",
+      "field_path": "fare.base",
       "claim_text": "London Underground Zone 1 adult pay-as-you-go Oyster peak fare",
       "claim_value": "£2.90",
       "confidence": "high",
@@ -37,7 +37,7 @@
     },
     {
       "claim_id": "tfl-zone1-adult-oyster-offpeak",
-      "field_path": "fare.zone1_adult_oyster_offpeak",
+      "field_path": "fare.base",
       "claim_text": "London Underground Zone 1 adult pay-as-you-go Oyster off-peak fare",
       "claim_value": "£2.80",
       "confidence": "high",
@@ -61,7 +61,7 @@
     },
     {
       "claim_id": "tfl-zone1-daily-cap",
-      "field_path": "fare.zone1_daily_cap",
+      "field_path": "fare.daily_cap",
       "claim_text": "London Underground Zone 1 daily Oyster/contactless cap",
       "claim_value": "£8.90",
       "confidence": "high",
