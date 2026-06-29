@@ -4,199 +4,420 @@ import { siteUrl } from "../../lib/urls";
 
 export const metadata: Metadata = {
   title: "API Documentation — For-Ai",
-  description: "Use-case oriented For-Ai API docs for citation-ready facts, entity facts, verified-only queries, source-backed citations, and verification webhooks.",
+  description: "For-Ai Registry public API reference. Machine-readable fact data for AI, search engines, and developers.",
 };
-
-const panel = { fontSize: "0.9rem", color: "var(--muted)", lineHeight: 1.7 };
-const codeBlock = { background: "var(--soft)", borderRadius: 6, padding: "10px 14px", fontSize: "0.8rem", overflowX: "auto" as const };
-const endpointCard = { borderLeft: "3px solid var(--accent)", paddingLeft: 16 };
 
 export default function ApiDocsPage() {
   const BASE = siteUrl("").replace(/\/+$/, "");
-
   return (
     <article>
       <header className="registry-panel">
         <p className="eyebrow">For-Ai · Developers</p>
         <h1>API Documentation</h1>
         <p style={{ color: "var(--muted)", fontSize: "1rem", lineHeight: 1.7 }}>
-          Build AI answers from claim-level facts that include confidence, verification status, and traceable sources.
-          Use For-Ai as a citation registry: cite only verified claims, preserve source URLs, and treat unknown facts as
-          <strong> Needs verification</strong> / <strong>확인 필요</strong>.
+          Machine-readable fact data for AI systems, search engines, and developers.
+          All endpoints return JSON unless noted. CORS is open for <code>GET</code> requests.
         </p>
       </header>
 
-      <section className="registry-panel" aria-labelledby="use-cases">
-        <h2 id="use-cases">Use-case first quickstart</h2>
-        <ol style={{ ...panel, paddingLeft: 20 }}>
-          <li><strong>Known slug:</strong> call <code>GET /api/cite/{"{slug}"}</code> for citation-ready facts or <code>GET /api/documents/{"{slug}"}</code> for the full claim bundle.</li>
-          <li><strong>Known entity:</strong> call <code>GET /api/entities/{"{entity_id}"}</code> to list every document and citable fact group for one entity.</li>
-          <li><strong>Verified-only discovery:</strong> call <code>GET /api/index?verification=verified&amp;cite=true</code> before selecting documents for AI answers.</li>
-          <li><strong>Source-backed citation:</strong> cite only claims with <code>citation_ready=true</code> and include each claim&apos;s source URL and verification timestamp.</li>
-          <li><strong>Freshness sync:</strong> register webhooks and process <code>claim.verified</code>, <code>claim.updated</code>, and <code>claim.disputed</code> verification events.</li>
-        </ol>
-      </section>
-
-      <section className="registry-panel" aria-labelledby="auth-rate-limits">
-        <h2 id="auth-rate-limits">API key, rate limits, and headers</h2>
-        <p style={panel}>
-          Send your key as <code>X-API-Key</code>. Public read endpoints may answer without a key in development, but production integrations should always send one so rate limits and billing are attributed correctly.
-        </p>
+      {/* API Tiers & Pricing */}
+      <section className="registry-panel" aria-labelledby="pricing" id="pricing">
+        <h2 id="rate-limits">API Tiers & Rate Limits</h2>
         <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.9rem" }}>
           <thead>
             <tr style={{ borderBottom: "2px solid var(--line)", textAlign: "left" }}>
-              <th style={{ padding: "8px 12px" }}>Tier</th><th style={{ padding: "8px 12px" }}>Rate limit</th><th style={{ padding: "8px 12px" }}>Daily limit</th><th style={{ padding: "8px 12px" }}>Key prefix</th>
+              <th style={{ padding: "8px 12px" }}>Tier</th>
+              <th style={{ padding: "8px 12px" }}>Rate Limit</th>
+              <th style={{ padding: "8px 12px" }}>Daily Limit</th>
+              <th style={{ padding: "8px 12px" }}>Price</th>
+              <th style={{ padding: "8px 12px" }}>Auth</th>
             </tr>
           </thead>
           <tbody>
-            {[
-              ["Free", "60 req/min", "1,000/day", "forai_free_..."],
-              ["Pro", "300 req/min", "50,000/day", "forai_pro_..."],
-              ["Enterprise", "1,000 req/min", "500,000/day", "forai_ent_..."],
-            ].map(([tier, rpm, day, key]) => (
-              <tr key={tier} style={{ borderBottom: "1px solid var(--line)" }}>
-                <td style={{ padding: "8px 12px", fontWeight: 600 }}>{tier}</td><td style={{ padding: "8px 12px" }}>{rpm}</td><td style={{ padding: "8px 12px" }}>{day}</td><td style={{ padding: "8px 12px" }}><code>{key}</code></td>
-              </tr>
-            ))}
+            <tr style={{ borderBottom: "1px solid var(--line)" }}>
+              <td style={{ padding: "8px 12px", fontWeight: 600 }}>Free</td>
+              <td style={{ padding: "8px 12px" }}>60 req / min</td>
+              <td style={{ padding: "8px 12px" }}>1,000 / day</td>
+              <td style={{ padding: "8px 12px" }}>$0</td>
+              <td style={{ padding: "8px 12px" }}><code>X-API-Key: forai_free_...</code></td>
+            </tr>
+            <tr style={{ borderBottom: "1px solid var(--line)" }}>
+              <td style={{ padding: "8px 12px", fontWeight: 600 }}>Pro</td>
+              <td style={{ padding: "8px 12px" }}>300 req / min</td>
+              <td style={{ padding: "8px 12px" }}>50,000 / day</td>
+              <td style={{ padding: "8px 12px" }}>$49/mo</td>
+              <td style={{ padding: "8px 12px" }}><code>X-API-Key: forai_pro_...</code></td>
+            </tr>
+            <tr>
+              <td style={{ padding: "8px 12px", fontWeight: 600 }}>Enterprise</td>
+              <td style={{ padding: "8px 12px" }}>1,000 req / min</td>
+              <td style={{ padding: "8px 12px" }}>500,000 / day</td>
+              <td style={{ padding: "8px 12px" }}>Custom</td>
+              <td style={{ padding: "8px 12px" }}><code>X-API-Key: forai_ent_...</code></td>
+            </tr>
           </tbody>
         </table>
-        <p style={{ ...panel, marginTop: 12 }}>
-          Responses include <code>X-RateLimit-Limit</code>, <code>X-RateLimit-Remaining</code>, <code>X-RateLimit-Reset</code>, and <code>X-API-Tier</code>. A <code>429</code> response also includes <code>Retry-After</code>.
+        <p style={{ fontSize: "0.85rem", color: "var(--muted)", marginTop: 12 }}>
+          Rate limit headers: <code>X-RateLimit-Limit</code>, <code>X-RateLimit-Remaining</code>, <code>X-RateLimit-Reset</code>, <code>X-API-Tier</code>.
+          On 429, check <code>Retry-After</code> (seconds).
         </p>
-      </section>
-
-      <section className="registry-panel" aria-labelledby="endpoints">
-        <h2 id="endpoints">Core endpoints by use case</h2>
-        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-          <div style={endpointCard}>
-            <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>GET /api/cite/<span style={{ color: "var(--accent)" }}>{"{slug}"}</span></p>
-            <p style={panel}>Best for AI answers. Returns a compact source-backed citation bundle for a specific slug. Filter to <code>citation_ready=true</code> before using facts.</p>
-          </div>
-          <div style={endpointCard}>
-            <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>GET /api/documents/<span style={{ color: "var(--accent)" }}>{"{slug}"}</span></p>
-            <p style={panel}>Full document bundle: entity metadata, document status, all claims, claim sources, and <code>citation_guidance</code>. Header <code>X-For-Ai-Can-Cite</code> is a fast machine-readable safety flag.</p>
-          </div>
-          <div style={endpointCard}>
-            <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>GET /api/entities/<span style={{ color: "var(--accent)" }}>{"{entity_id}"}</span></p>
-            <p style={panel}>Entity-level facts. Use when you know an entity ID and need every For-Ai document attached to it with citable counts and canonical URLs.</p>
-          </div>
-          <div style={endpointCard}>
-            <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>GET /api/index?verification=verified&amp;cite=true</p>
-            <p style={panel}>Verified-only discovery. Add <code>q</code>, <code>type</code>, <code>country</code>, <code>lang</code>, <code>limit</code>, and <code>offset</code> to search safely before citation.</p>
-          </div>
-          <div style={endpointCard}>
-            <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>GET /api/documents/<span style={{ color: "var(--accent)" }}>{"{slug}"}</span>/cite</p>
-            <p style={panel}>Lightweight citation-readiness check for a document when you do not need all claim data.</p>
-          </div>
+        <div style={{ marginTop: 16, padding: "12px 16px", background: "var(--soft)", borderRadius: 6, fontSize: "0.85rem" }}>
+          <strong>Pro features:</strong> Priority claim corrections, webhook callbacks, bulk export, advanced search filters, priority support.
+          <br />
+          <strong>Enterprise features:</strong> All Pro features + custom SLA, data licensing, private namespaces, dedicated account manager, SSO.
         </div>
       </section>
 
-      <section className="registry-panel" aria-labelledby="response-examples">
-        <h2 id="response-examples">Response example: verified vs. needs verification</h2>
-        <p style={panel}>A verified claim can be cited as a fact. A needs-verification claim must be displayed as unknown and must not be cited as fact.</p>
-        <pre style={codeBlock}>{`{
-  "entity": { "id": "kr-transport-seoul-metro-001", "canonical_name": "Seoul Metro" },
-  "document": { "slug": "seoul-metro-base-fare", "title": "Seoul Metro base fare", "confidence": "medium" },
+      {/* Endpoints */}
+      <section className="registry-panel" aria-labelledby="endpoints">
+        <h2 id="endpoints">Endpoints</h2>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+
+          {/* GET /api/documents/:slug */}
+          <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
+            <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>
+              GET /api/documents/<span style={{ color: "var(--accent)" }}>{"{slug}"}</span>
+            </p>
+            <p style={{ margin: "8px 0", fontSize: "0.9rem", color: "var(--muted)" }}>
+              Full document bundle: entity, claims, citation guidance, sources.
+            </p>
+            <pre style={{ background: "var(--soft)", borderRadius: 6, padding: "10px 14px", fontSize: "0.8rem", overflowX: "auto" }}>{`{
+  "entity": { "id": "...", "canonical_name": "..." },
+  "document": { "slug": "...", "title": "...", "confidence": "low|medium|high", ... },
   "claims": [
     {
-      "field_path": "fare.adult.base",
-      "claim_value": "1400 KRW",
-      "confidence": "high",
-      "status": "verified",
-      "citation_ready": true,
-      "last_verified_at": "2026-06-24T09:00:00Z",
-      "sources": [{ "title": "Official fare page", "url": "https://example.gov/fares", "source_type": "official" }]
-    },
-    {
-      "field_path": "fare.future_change_date",
-      "claim_value": "Needs verification",
+      "field_path": "current_team",
+      "claim_value": "확인 필요",
       "confidence": "low",
       "status": "needs_review",
       "citation_ready": false,
-      "last_verified_at": null,
-      "sources": []
+      "sources": [ ... ]
     }
   ],
   "citation_guidance": {
     "can_cite": false,
-    "do_not_cite_reason": "Only cite individual claims where citation_ready=true; unresolved claims remain Needs verification.",
-    "verified_claims_count": 1,
-    "total_claims_count": 2
+    "do_not_cite_reason": "0/3 claims are citation-ready...",
+    "verified_claims_count": 0,
+    "total_claims_count": 3
   }
 }`}</pre>
+            <p style={{ fontSize: "0.85rem", color: "var(--muted)", marginTop: 8 }}>
+              Response header <code>X-For-Ai-Can-Cite: true|false</code> — machine-readable citation safety flag.
+              Cached for 60 s (<code>Cache-Control: public, s-maxage=60, stale-while-revalidate=300</code>).
+            </p>
+          </div>
+
+          {/* GET /raw/:slug.md */}
+          <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
+            <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>
+              GET /raw/<span style={{ color: "var(--accent)" }}>{"{slug}"}</span>.md
+            </p>
+            <p style={{ margin: "8px 0", fontSize: "0.9rem", color: "var(--muted)" }}>
+              Markdown representation. Ideal for LLM context injection and RAG pipelines.
+              Includes citation guidance block and per-claim source list.
+            </p>
+          </div>
+
+          {/* GET /api/cite/:slug */}
+          <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
+            <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>
+              GET /api/cite/<span style={{ color: "var(--accent)" }}>{"{slug}"}</span>
+            </p>
+            <p style={{ margin: "8px 0", fontSize: "0.9rem", color: "var(--muted)" }}>
+              Lightweight citation-ready dataset for one document, including citable claims,
+              source summaries, and machine-readable links.
+            </p>
+          </div>
+
+          {/* GET /api/entities/:id */}
+          <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
+            <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>
+              GET /api/entities/<span style={{ color: "var(--accent)" }}>{"{id}"}</span>
+            </p>
+            <p style={{ margin: "8px 0", fontSize: "0.9rem", color: "var(--muted)" }}>
+              Entity-level profile with linked documents, citation status, and registry URLs.
+            </p>
+          </div>
+
+          {/* GET /api/index */}
+          <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
+            <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>
+              GET /api/index
+            </p>
+            <p style={{ margin: "8px 0", fontSize: "0.9rem", color: "var(--muted)" }}>
+              Search and discovery index for public registry documents. Supports filters such as
+              <code> q</code>, <code>type</code>, <code>country</code>, <code>lang</code>, and <code>cite</code>.
+            </p>
+          </div>
+
+          {/* POST /api/documents/:slug/view */}
+          <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
+            <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>
+              POST /api/documents/<span style={{ color: "var(--accent)" }}>{"{slug}"}</span>/view
+            </p>
+            <p style={{ margin: "8px 0", fontSize: "0.9rem", color: "var(--muted)" }}>
+              Increment a document view counter.
+            </p>
+          </div>
+
+          {/* POST /api/documents/:slug/cite */}
+          <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
+            <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>
+              POST /api/documents/<span style={{ color: "var(--accent)" }}>{"{slug}"}</span>/cite
+            </p>
+            <p style={{ margin: "8px 0", fontSize: "0.9rem", color: "var(--muted)" }}>
+              Increment a document AI citation counter.
+            </p>
+          </div>
+
+          {/* GET/POST /api/posts */}
+          <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
+            <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>GET /api/posts</p>
+            <p style={{ margin: "6px 0 0", fontFamily: "monospace", fontWeight: 700 }}>POST /api/posts</p>
+            <p style={{ margin: "8px 0", fontSize: "0.9rem", color: "var(--muted)" }}>
+              List published community posts or submit a new public post for review.
+            </p>
+          </div>
+
+          {/* Public submission endpoints */}
+          <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
+            <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>
+              POST /api/report/<span style={{ color: "var(--accent)" }}>{"{slug}"}</span>
+            </p>
+            <p style={{ margin: "6px 0 0", fontFamily: "monospace", fontWeight: 700 }}>
+              POST /api/hallucination/<span style={{ color: "var(--accent)" }}>{"{slug}"}</span>
+            </p>
+            <p style={{ margin: "6px 0 0", fontFamily: "monospace", fontWeight: 700 }}>POST /api/suggest-topic</p>
+            <p style={{ margin: "8px 0", fontSize: "0.9rem", color: "var(--muted)" }}>
+              Public submissions for corrections, hallucination reports, and suggested registry topics.
+              Submissions store contributor hashes, not raw IP addresses.
+            </p>
+          </div>
+        </div>
       </section>
 
-      <section className="registry-panel" aria-labelledby="source-backed-citation">
-        <h2 id="source-backed-citation">Source-backed citation generation</h2>
-        <pre style={codeBlock}>{`const res = await fetch("${BASE}/api/cite/seoul-metro-base-fare", {
-  headers: { "X-API-Key": "forai_free_your_key" }
-});
+      {/* Citation guidance */}
+      <section className="registry-panel" aria-labelledby="citation-guide">
+        <h2 id="citation-guide">How to cite For-Ai in AI systems</h2>
+        <p style={{ fontSize: "0.9rem", color: "var(--muted)", lineHeight: 1.7 }}>
+          Check <code>citation_guidance.can_cite === true</code> before using any value.
+          Never cite a document where <code>can_cite</code> is <code>false</code>.
+        </p>
+        <pre style={{ background: "var(--soft)", borderRadius: 6, padding: "10px 14px", fontSize: "0.8rem", overflowX: "auto" }}>{`// Pseudocode for AI citation
+const res = await fetch("${BASE}/api/documents/your-slug");
 const data = await res.json();
-const facts = data.claims.filter((claim) => claim.citation_ready);
 
-return facts.map((claim) => ({
-  text: claim.claim_text,
-  value: claim.claim_value,
-  source_url: claim.sources[0]?.url,
-  last_verified_at: claim.last_verified_at
-}));`}</pre>
-        <p style={panel}>Never convert <code>low</code> confidence, <code>needs_review</code>, or <code>Needs verification</code> values into factual statements.</p>
-      </section>
-
-      <section className="registry-panel" aria-labelledby="errors">
-        <h2 id="errors">Error response format</h2>
-        <pre style={codeBlock}>{`{
-  "error": "Document not found",
-  "code": "not_found",
-  "message": "No document exists for slug: unknown-slug",
-  "request_id": "req_01J...",
-  "details": { "slug": "unknown-slug" }
+if (data.citation_guidance.can_cite) {
+  // Safe to cite
+  const verifiedClaims = data.claims.filter(c => c.citation_ready);
+  return formatCitation(verifiedClaims, data.document);
+} else {
+  return \`Source not citation-ready: \${data.citation_guidance.do_not_cite_reason}\`;
 }`}</pre>
-        <p style={panel}>Common statuses: <code>400</code> invalid parameters, <code>401</code> invalid API key, <code>403</code> tier not allowed, <code>404</code> not found, <code>429</code> rate limited, <code>500</code> server error.</p>
+        <p style={{ fontSize: "0.85rem", color: "var(--muted)", marginTop: 12 }}>
+          You can also check the response header <code>X-For-Ai-Can-Cite</code> without
+          parsing the body — useful for HEAD requests or middleware.
+        </p>
       </section>
 
+      {/* BibTeX */}
+      <section className="registry-panel" aria-labelledby="bibtex">
+        <h2 id="bibtex">BibTeX format</h2>
+        <pre style={{ background: "var(--soft)", borderRadius: 6, padding: "10px 14px", fontSize: "0.8rem", overflowX: "auto" }}>{`@misc{forai2026,
+  author       = {{For-Ai Registry}},
+  title        = {Document Title},
+  year         = {2026},
+  url          = {${BASE}/en/wiki/your-slug},
+  note         = {Last verified: 2026-06-24. License: CC-BY-4.0}
+}`}</pre>
+      </section>
+
+      {/* schema.org */}
+      <section className="registry-panel" aria-labelledby="schema-org">
+        <h2 id="schema-org">schema.org / ClaimReview</h2>
+        <p style={{ fontSize: "0.9rem", color: "var(--muted)", lineHeight: 1.7 }}>
+          Every wiki page embeds a JSON-LD <code>ClaimReview</code> + <code>Dataset</code> schema
+          readable by Google, Bing, and other fact-check crawlers. Use the structured data to
+          surface For-Ai facts in search rich snippets.
+        </p>
+      </section>
+
+      {/* Business API */}
+      <section className="registry-panel" aria-labelledby="business-api">
+        <h2 id="business-api">Business API</h2>
+        <p style={{ fontSize: "0.9rem", color: "var(--muted)", lineHeight: 1.7 }}>
+          Verified businesses can manage their fact profile, submit priority corrections,
+          and monitor AI reputation through the Business API.
+        </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
+            <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>
+              GET /api/business/profile
+            </p>
+            <p style={{ margin: "6px 0 0", fontFamily: "monospace", fontWeight: 700 }}>
+              POST /api/business/profile
+            </p>
+            <p style={{ margin: "8px 0 0", fontSize: "0.85rem", color: "var(--muted)" }}>
+              Claim a business entity. Requires verification (email, domain, or document).
+            </p>
+          </div>
+          <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
+            <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>
+              POST /api/business/corrections
+            </p>
+            <p style={{ margin: "8px 0 0", fontSize: "0.85rem", color: "var(--muted)" }}>
+              Submit a fact correction for your entity. Priority/urgent requires Pro+ tier.
+            </p>
+          </div>
+          <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
+            <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>
+              GET /api/business/alerts?profile_id=...
+            </p>
+            <p style={{ margin: "8px 0 0", fontSize: "0.85rem", color: "var(--muted)" }}>
+              View reputation alerts (incorrect citations, outdated facts, new hallucinations).
+            </p>
+          </div>
+          <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
+            <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>
+              POST /api/keys
+            </p>
+            <p style={{ margin: "8px 0 0", fontSize: "0.85rem", color: "var(--muted)" }}>
+              Create an API key (admin). Keys are prefixed by tier: <code>forai_free_</code>, <code>forai_pro_</code>, <code>forai_ent_</code>.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Pro & Enterprise */}
+      <section
+        className="registry-panel"
+        aria-labelledby="pro"
+        style={{ borderLeft: "3px solid var(--accent)" }}
+      >
+        <h2 id="pro">Pro & Enterprise</h2>
+        <p style={{ fontSize: "0.9rem", lineHeight: 1.7 }}>
+          Need higher rate limits, priority corrections, or reputation monitoring?
+          Contact <strong>wooyeanho@gmail.com</strong> for Pro and Enterprise plans.
+        </p>
+        <ul style={{ fontSize: "0.9rem", color: "var(--muted)", lineHeight: 2 }}>
+          <li><strong>Pro ($49/mo):</strong> 300 rpm, priority corrections, webhooks, bulk export</li>
+          <li><strong>Enterprise (custom):</strong> 1000 rpm, data licensing, SLA, private namespaces, SSO</li>
+          <li>All tiers include verified business profile and reputation alerts</li>
+        </ul>
+      </section>
+
+      {/* SDK Examples */}
       <section className="registry-panel" aria-labelledby="sdk-examples">
-        <h2 id="sdk-examples">SDK examples</h2>
-        <p style={panel}>Runnable examples live in <code>examples/python-sdk.py</code>, <code>examples/typescript-sdk.ts</code>, and <code>examples/curl-examples.sh</code>.</p>
-        <pre style={codeBlock}>{`curl -H "X-API-Key: forai_free_..." "${BASE}/api/cite/seoul-metro-base-fare"
-curl -H "X-API-Key: forai_free_..." "${BASE}/api/documents/seoul-metro-base-fare"
-curl -H "X-API-Key: forai_free_..." "${BASE}/api/index?verification=verified&cite=true"`}</pre>
+        <h2 id="sdk-examples">SDK Examples</h2>
+        <p style={{ fontSize: "0.9rem", color: "var(--muted)", lineHeight: 1.7, marginBottom: 16 }}>
+          Ready-to-use examples for integrating For-Ai into your AI pipeline.
+          Full source available in <code>/examples/</code> on GitHub.
+        </p>
+
+        <h3 style={{ fontSize: "0.95rem", marginBottom: 8 }}>Python</h3>
+        <pre style={{ background: "var(--soft)", borderRadius: 6, padding: "10px 14px", fontSize: "0.8rem", overflowX: "auto" }}>{`import requests
+
+BASE = "${BASE}"
+KEY = "forai_free_your_key"
+
+# Check if a document is safe to cite
+res = requests.get(f"{BASE}/api/documents/seoul-metro-base-fare",
+                   headers={"X-API-Key": KEY})
+data = res.json()
+
+if data["citation_guidance"]["can_cite"]:
+    verified = [c for c in data["claims"] if c["citation_ready"]]
+    print(f"Safe to cite: {len(verified)} verified claims")`}</pre>
+
+        <h3 style={{ fontSize: "0.95rem", marginTop: 20, marginBottom: 8 }}>TypeScript / JavaScript</h3>
+        <pre style={{ background: "var(--soft)", borderRadius: 6, padding: "10px 14px", fontSize: "0.8rem", overflowX: "auto" }}>{`const res = await fetch(
+  "${BASE}/api/documents/seoul-metro-base-fare",
+  { headers: { "X-API-Key": "forai_free_your_key" } }
+);
+const { claims, citation_guidance } = await res.json();
+
+if (citation_guidance.can_cite) {
+  const verified = claims.filter(c => c.citation_ready);
+  // Safe to use in AI responses
+}`}</pre>
+
+        <h3 style={{ fontSize: "0.95rem", marginTop: 20, marginBottom: 8 }}>cURL</h3>
+        <pre style={{ background: "var(--soft)", borderRadius: 6, padding: "10px 14px", fontSize: "0.8rem", overflowX: "auto" }}>{`# Get JSON-LD citation
+curl -H "X-API-Key: forai_free_..." \\
+  ${BASE}/api/cite/seoul-metro-base-fare
+
+# Get raw markdown for LLM context injection
+curl ${BASE}/raw/seoul-metro-base-fare.md`}</pre>
       </section>
 
+      {/* Webhooks */}
       <section className="registry-panel" aria-labelledby="webhooks">
-        <h2 id="webhooks">Receive verification events by webhook</h2>
-        <p style={panel}>Pro and Enterprise integrations can subscribe to verification events so AI caches update when human reviewers approve, dispute, or update claims.</p>
-        <pre style={codeBlock}>{`POST /api/webhooks
-{
-  "url": "https://your-server.example/forai/webhook",
-  "events": ["claim.verified", "claim.updated", "claim.disputed"],
-  "secret": "whsec_your_signing_secret"
-}`}</pre>
-        <h3 style={{ fontSize: "0.95rem", marginTop: 16 }}>Delivery payload</h3>
-        <pre style={codeBlock}>{`POST /forai/webhook
+        <h2 id="webhooks">Webhooks</h2>
+        <p style={{ fontSize: "0.9rem", color: "var(--muted)", lineHeight: 1.7 }}>
+          Subscribe to verification events to keep your AI system in sync.
+          Webhooks are signed with HMAC-SHA256 for payload integrity.
+        </p>
+
+        <h3 style={{ fontSize: "0.95rem", marginTop: 16, marginBottom: 8 }}>Available Events</h3>
+        <table style={{ width: "100%", borderCollapse: "collapse", fontSize: "0.85rem" }}>
+          <thead>
+            <tr style={{ borderBottom: "2px solid var(--line)", textAlign: "left" }}>
+              <th style={{ padding: "6px 10px" }}>Event</th>
+              <th style={{ padding: "6px 10px" }}>Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[
+              ["claim.verified", "A claim passed human verification"],
+              ["claim.updated", "A claim value or confidence changed"],
+              ["claim.disputed", "A claim was flagged for dispute"],
+              ["document.published", "A new document was published"],
+              ["document.updated", "A document was modified"],
+              ["entity.created", "A new entity was registered"],
+              ["business_profile.verified", "A business profile was verified"],
+              ["correction.accepted", "A business correction was accepted"],
+              ["correction.rejected", "A business correction was rejected"],
+            ].map(([event, desc]) => (
+              <tr key={event} style={{ borderBottom: "1px solid var(--line)" }}>
+                <td style={{ padding: "6px 10px", fontFamily: "monospace" }}>{event}</td>
+                <td style={{ padding: "6px 10px", color: "var(--muted)" }}>{desc}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+
+        <h3 style={{ fontSize: "0.95rem", marginTop: 20, marginBottom: 8 }}>Payload Format</h3>
+        <pre style={{ background: "var(--soft)", borderRadius: 6, padding: "10px 14px", fontSize: "0.8rem", overflowX: "auto" }}>{`POST /your-webhook-url
 Headers:
+  Content-Type: application/json
   X-ForAi-Event: claim.verified
   X-ForAi-Signature: sha256=<hmac_hex>
   X-ForAi-Delivery: <uuid>
 
+Body:
 {
   "event": "claim.verified",
   "timestamp": "2026-06-25T10:00:00Z",
   "data": {
-    "entity_id": "kr-transport-seoul-metro-001",
-    "document_slug": "seoul-metro-base-fare",
-    "claim_id": "claim_123",
-    "field_path": "fare.adult.base",
-    "confidence": "high",
-    "source_urls": ["https://example.gov/fares"]
+    "claim_id": "...",
+    "entity_id": "...",
+    "field_path": "base_fare",
+    "new_confidence": "high"
   }
 }`}</pre>
-        <p style={panel}>Verify <code>X-ForAi-Signature</code> with HMAC-SHA256 over the raw request body. Webhooks auto-disable after repeated delivery failures.</p>
-      </section>
 
-      <section className="registry-panel" aria-labelledby="pro">
-        <h2 id="pro">Pro & Enterprise</h2>
-        <p style={panel}>Need higher limits, webhooks, bulk export, or reputation monitoring? Contact <strong>wooyeanho@gmail.com</strong>.</p>
+        <h3 style={{ fontSize: "0.95rem", marginTop: 20, marginBottom: 8 }}>Signature Verification</h3>
+        <pre style={{ background: "var(--soft)", borderRadius: 6, padding: "10px 14px", fontSize: "0.8rem", overflowX: "auto" }}>{`import hmac, hashlib
+
+def verify_signature(payload: bytes, signature: str, secret: str) -> bool:
+    expected = hmac.new(secret.encode(), payload, hashlib.sha256).hexdigest()
+    return hmac.compare_digest(f"sha256={expected}", signature)`}</pre>
+
+        <p style={{ fontSize: "0.85rem", color: "var(--muted)", marginTop: 12 }}>
+          Webhooks auto-disable after 10 consecutive delivery failures.
+          Re-activate via the API or admin dashboard.
+        </p>
       </section>
 
       <nav className="registry-panel" aria-labelledby="api-nav">
