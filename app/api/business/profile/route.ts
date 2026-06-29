@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin, requireAdmin, logAdminAuditEvent } from "@/lib/admin-api";
 import { makeContributorHashForRequest } from "@/lib/contributor-hash";
+import { calculateBusinessProfileCompletenessScore, getEntityProfile } from "@/lib/entity-profile";
 
 // GET: List verified business profiles (public — only verified ones)
 export async function GET() {
@@ -9,13 +10,21 @@ export async function GET() {
 
   const { data, error } = await sb
     .from("verified_business_profiles")
-    .select("id, entity_id, business_name, business_url, country, industry, tier, verified_at")
+    .select("id, entity_id, business_name, business_url, country, industry, tier, status, verification_method, verified_at")
     .eq("status", "verified")
     .order("verified_at", { ascending: false })
     .limit(100);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ profiles: data ?? [] });
+  const profiles = await Promise.all((data ?? []).map(async (profile) => {
+    const entityProfile = await getEntityProfile(String(profile.entity_id));
+    return {
+      ...profile,
+      completeness: calculateBusinessProfileCompletenessScore(entityProfile?.documents ?? [], profile),
+    };
+  }));
+
+  return NextResponse.json({ profiles });
 }
 
 // POST: Submit a new business profile claim (public, goes to pending)
