@@ -15,7 +15,7 @@ export async function GET(request: Request) {
 
   let query = sb
     .from("api_keys")
-    .select("id, profile_id, key_prefix, name, tier, rate_limit_rpm, rate_limit_daily, scopes, is_active, last_used_at, expires_at, created_at")
+    .select("id, profile_id, key_prefix, name, tier, rate_limit_rpm, rate_limit_daily, scopes, is_active, revoked_at, last_used_at, expires_at, created_at")
     .order("created_at", { ascending: false })
     .limit(100);
 
@@ -66,8 +66,9 @@ export async function POST(request: Request) {
       rate_limit_daily: tierConfig.rate_limit_daily,
       scopes,
       is_active: true,
+      revoked_at: null,
     })
-    .select("id, key_prefix, name, tier, rate_limit_rpm, rate_limit_daily, scopes, created_at")
+    .select("id, key_prefix, name, tier, rate_limit_rpm, rate_limit_daily, scopes, is_active, revoked_at, created_at")
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -86,7 +87,7 @@ export async function POST(request: Request) {
   }, { status: 201 });
 }
 
-// PATCH: Admin — activate/deactivate an API key
+// PATCH: Admin — revoke or restore an API key
 export async function PATCH(request: Request) {
   const adminError = requireAdmin(request, "api_keys.update");
   if (adminError) return adminError;
@@ -95,24 +96,27 @@ export async function PATCH(request: Request) {
 
   const body = await request.json();
   const keyId = String(body.key_id ?? "").trim();
-  const isActive = body.is_active;
+  const revoke = body.revoke;
 
-  if (!keyId || typeof isActive !== "boolean") {
-    return NextResponse.json({ error: "key_id and is_active (boolean) required" }, { status: 400 });
+  if (!keyId || typeof revoke !== "boolean") {
+    return NextResponse.json({ error: "key_id and revoke (boolean) required" }, { status: 400 });
   }
 
   const { data, error } = await sb
     .from("api_keys")
-    .update({ is_active: isActive })
+    .update({
+      is_active: !revoke,
+      revoked_at: revoke ? new Date().toISOString() : null,
+    })
     .eq("id", keyId)
-    .select("id, key_prefix, name, is_active")
+    .select("id, key_prefix, name, is_active, revoked_at")
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  await logAdminAuditEvent(sb, request, "admin.api_key.toggle", {
+  await logAdminAuditEvent(sb, request, "admin.api_key.revoke", {
     key_id: keyId,
-    is_active: isActive,
+    revoke,
   });
 
   return NextResponse.json({ key: data });
