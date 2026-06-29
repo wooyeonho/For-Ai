@@ -61,9 +61,9 @@ export default function CandidatesPage(){
       <div style={{maxWidth:860,margin:"0 auto"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}>
           <div><h1 style={{fontSize:22,fontWeight:700,margin:0}}>📋 후보 검토 큐</h1>
-            <p style={{color:"#6b7280",fontSize:13,margin:"4px 0 0"}}>AI 생성 후보 → 검토 → 승인 → 🚀 공개 등록</p></div>
+            <p style={{color:"#6b7280",fontSize:13,margin:"4px 0 0"}}>AI 생성 후보 → 검토 → 승인 → 🚀 공개 등록</p><p style={{color:"#374151",fontSize:12,margin:"4px 0 0"}}>기존 관리자 인증 방식대로 ADMIN_SECRET을 입력한 뒤 후보를 조회·처리하세요.</p></div>
           <div style={{display:"flex",gap:8,alignItems:"center"}}>
-            <input type="password" placeholder="관리자 비밀번호" value={secret} onChange={e=>setSecret(e.target.value)}
+            <input type="password" placeholder="ADMIN_SECRET" value={secret} onChange={e=>setSecret(e.target.value)}
               style={{border:"1px solid #d1d5db",borderRadius:6,padding:"6px 10px",fontSize:13,width:160}}/>
             <Link href="/admin/generate" style={{fontSize:13,color:"#2563eb"}}>→ 생성</Link>
           </div>

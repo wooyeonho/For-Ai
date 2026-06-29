@@ -109,10 +109,10 @@ export default function AdminPostsPage() {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
           <div>
             <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>글 관리</h1>
-            <p style={{ color: "#6b7280", fontSize: 13, margin: "4px 0 0" }}>모든 커뮤니티 글을 관리합니다</p>
+            <p style={{ color: "#6b7280", fontSize: 13, margin: "4px 0 0" }}>모든 커뮤니티 글을 관리합니다. 기존 관리자 인증 방식대로 ADMIN_SECRET을 입력한 뒤 글을 조회·관리하세요.</p>
           </div>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <input type="password" placeholder="관리자 비밀번호" value={secret} onChange={(e) => setSecret(e.target.value)}
+            <input type="password" placeholder="ADMIN_SECRET" value={secret} onChange={(e) => setSecret(e.target.value)}
               style={{ border: "1px solid #d1d5db", borderRadius: 6, padding: "6px 10px", fontSize: 13, width: 160 }} />
             <Link href="/admin/candidates" style={{ fontSize: 13, color: "#2563eb" }}>후보 큐</Link>
             <Link href="/community" style={{ fontSize: 13, color: "#2563eb" }}>커뮤니티</Link>

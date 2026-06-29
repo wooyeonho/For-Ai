@@ -194,7 +194,7 @@ export default function AdminGeneratePage() {
             )}
           </div>
           <p style={{ margin: "6px 0 0", fontSize: 11, color: "#6b7280" }}>
-            보안을 위해 인증키는 브라우저에 저장되지 않습니다. 새로고침 시 다시 입력하세요.
+            기존 관리자 인증 방식대로 ADMIN_SECRET을 입력해야 후보 생성 API를 호출할 수 있습니다. 보안을 위해 인증키는 브라우저에 저장되지 않습니다. 새로고침 시 다시 입력하세요.
           </p>
         </div>
 
