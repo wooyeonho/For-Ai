@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { ensureAdminSession } from "@/lib/admin-client";
 
 interface Post {
   id: string;
@@ -42,7 +43,9 @@ export default function AdminPostsPage() {
     const params = new URLSearchParams({ status: statusFilter });
     if (authorFilter !== "all") params.set("author_type", authorFilter);
     try {
-      const r = await fetch(`/api/admin/posts?${params.toString()}`, { headers: { "x-admin-secret": secret } });
+      if (!secret) return;
+      await ensureAdminSession(secret);
+      const r = await fetch(`/api/admin/posts?${params.toString()}`, { credentials: "same-origin" });
       const d = await r.json();
       setPosts(Array.isArray(d.posts) ? d.posts : []);
       if (!r.ok) flash(d.error ?? "조회 실패", false);
@@ -60,10 +63,11 @@ export default function AdminPostsPage() {
   }
 
   async function updateStatus(id: string, status: string) {
-    if (!secret) { flash("admin secret을 입력하세요", false); return; }
+    if (!secret) { flash("관리자 비밀번호를 입력하세요", false); return; }
+    try { await ensureAdminSession(secret); } catch (e) { flash(e instanceof Error ? e.message : String(e), false); return; }
     const r = await fetch("/api/admin/posts", {
       method: "PATCH",
-      headers: { "Content-Type": "application/json", "x-admin-secret": secret, "x-admin-csrf": "1" },
+      headers: { "Content-Type": "application/json", "x-admin-csrf": "1" },
       body: JSON.stringify({ id, status }),
     });
     const d = await r.json();
@@ -76,9 +80,10 @@ export default function AdminPostsPage() {
     if (!secret || !newContent.trim()) return;
     setCreating(true);
     try {
+      await ensureAdminSession(secret);
       const r = await fetch("/api/admin/posts", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "x-admin-secret": secret, "x-admin-csrf": "1" },
+        headers: { "Content-Type": "application/json", "x-admin-csrf": "1" },
         body: JSON.stringify({
           content: newContent.trim(),
           author_type: newAuthorType,
@@ -107,7 +112,7 @@ export default function AdminPostsPage() {
             <p style={{ color: "#6b7280", fontSize: 13, margin: "4px 0 0" }}>모든 커뮤니티 글을 관리합니다</p>
           </div>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <input type="password" placeholder="admin secret" value={secret} onChange={(e) => setSecret(e.target.value)}
+            <input type="password" placeholder="관리자 비밀번호" value={secret} onChange={(e) => setSecret(e.target.value)}
               style={{ border: "1px solid #d1d5db", borderRadius: 6, padding: "6px 10px", fontSize: 13, width: 160 }} />
             <Link href="/admin/candidates" style={{ fontSize: 13, color: "#2563eb" }}>후보 큐</Link>
             <Link href="/community" style={{ fontSize: 13, color: "#2563eb" }}>커뮤니티</Link>

@@ -1,4 +1,4 @@
-import { createHash } from "crypto";
+import { createHash, createHmac, randomBytes, timingSafeEqual } from "crypto";
 import { NextResponse } from "next/server";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 
@@ -8,6 +8,8 @@ const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
 const ADMIN_CSRF_SECRET = process.env.ADMIN_CSRF_SECRET ?? "";
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX = 60;
+const ADMIN_SESSION_COOKIE = "for_ai_admin_session";
+const ADMIN_SESSION_TTL_SECONDS = 30 * 60;
 
 export const ADMIN_AUDIT_TABLE = "admin_audit_events";
 
@@ -67,6 +69,57 @@ function csrfValid(request: Request): boolean {
   return token.length > 0;
 }
 
+function safeEqual(a: string, b: string): boolean {
+  const aBuffer = Buffer.from(a);
+  const bBuffer = Buffer.from(b);
+  return aBuffer.length === bBuffer.length && timingSafeEqual(aBuffer, bBuffer);
+}
+
+function signSessionPayload(payload: string): string {
+  return createHmac("sha256", ADMIN_SECRET).update(payload).digest("base64url");
+}
+
+function adminSessionValid(request: Request): boolean {
+  if (!ADMIN_SECRET) return false;
+  const cookie = request.headers.get("cookie") ?? "";
+  const token = cookie
+    .split(";")
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(`${ADMIN_SESSION_COOKIE}=`))
+    ?.slice(ADMIN_SESSION_COOKIE.length + 1);
+  if (!token) return false;
+  const [expiresAtRaw, nonce, signature] = token.split(".");
+  if (!expiresAtRaw || !nonce || !signature) return false;
+  const expiresAt = Number(expiresAtRaw);
+  if (!Number.isFinite(expiresAt) || expiresAt <= Date.now()) return false;
+  const expected = signSessionPayload(`${expiresAtRaw}.${nonce}`);
+  return safeEqual(signature, expected);
+}
+
+function internalSecretValid(request: Request): boolean {
+  if (!ADMIN_SECRET) return false;
+  const auth = request.headers.get("x-admin-secret") ?? "";
+  if (!safeEqual(auth, ADMIN_SECRET)) return false;
+  // x-admin-secret is reserved for CLI/internal callers. Browser-originated
+  // requests should use the httpOnly session cookie minted by /api/admin/login.
+  return !request.headers.get("origin") && !request.headers.get("sec-fetch-site");
+}
+
+export function issueAdminSessionCookie(response: NextResponse): void {
+  const expiresAt = Date.now() + ADMIN_SESSION_TTL_SECONDS * 1000;
+  const nonce = randomBytes(16).toString("base64url");
+  const payload = `${expiresAt}.${nonce}`;
+  response.cookies.set({
+    name: ADMIN_SESSION_COOKIE,
+    value: `${payload}.${signSessionPayload(payload)}`,
+    httpOnly: true,
+    secure: true,
+    sameSite: "strict",
+    path: "/",
+    maxAge: ADMIN_SESSION_TTL_SECONDS,
+  });
+}
+
 export function supabaseAdmin(): SupabaseClient | null {
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) return null;
   return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
@@ -80,8 +133,7 @@ export function missingSupabaseAdminEnv(): string[] {
 }
 
 export function authorized(request: Request): boolean {
-  const auth = request.headers.get("x-admin-secret") ?? "";
-  return Boolean(ADMIN_SECRET) && auth === ADMIN_SECRET;
+  return adminSessionValid(request) || internalSecretValid(request);
 }
 
 export function safeRequestMetadata(request: Request): AdminAuditMetadata {
@@ -122,9 +174,10 @@ export function requireAdmin(request: Request, action: string): NextResponse | n
     return NextResponse.json({ error: "rate_limited" }, { status: 429 });
   }
 
-  const auth = request.headers.get("x-admin-secret") ?? "";
-  if (!ADMIN_SECRET || auth !== ADMIN_SECRET) {
-    console.info("[admin-audit]", JSON.stringify({ action, allowed: false, reason: ADMIN_SECRET ? "bad_secret" : "missing_admin_secret_config", at: new Date().toISOString() }));
+  if (!ADMIN_SECRET || !authorized(request)) {
+    const hasBrowserSecret = Boolean(request.headers.get("x-admin-secret"))
+      && (Boolean(request.headers.get("origin")) || Boolean(request.headers.get("sec-fetch-site")));
+    console.info("[admin-audit]", JSON.stringify({ action, allowed: false, reason: !ADMIN_SECRET ? "missing_admin_secret_config" : hasBrowserSecret ? "browser_secret_rejected" : "bad_session_or_secret", at: new Date().toISOString() }));
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
