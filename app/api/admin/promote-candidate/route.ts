@@ -26,8 +26,8 @@ export async function POST(request: Request) {
 
   if (fetchErr || !candidate) return NextResponse.json({ error: "후보를 찾을 수 없습니다" }, { status: 404 });
   if (candidate.status === "promoted") return NextResponse.json({ error: "이미 등록된 후보입니다" }, { status: 409 });
-  if (candidate.status !== "approved") {
-    return NextResponse.json({ error: `승인된 후보만 등록 가능합니다 (현재: ${candidate.status})` }, { status: 400 });
+  if (candidate.status !== "generated") {
+    return NextResponse.json({ error: `AI claim generation이 완료된 후보만 등록 가능합니다 (현재: ${candidate.status})` }, { status: 400 });
   }
 
   const lang = String(candidate.lang ?? "").trim();

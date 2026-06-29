@@ -115,7 +115,7 @@ export async function GET(request: Request) {
     const [
       pendingCommunityPosts,
       candidatesNew,
-      candidatesApproved,
+      candidatesGenerated,
       documentsPublished,
       claimSources,
       claimsNeedsReview,
@@ -131,7 +131,7 @@ export async function GET(request: Request) {
     ] = await Promise.all([
       countRows(sb, "community_posts", { status: "pending" }),
       countRows(sb, "topic_candidates", { status: "new" }),
-      countRows(sb, "topic_candidates", { status: "approved" }),
+      countRows(sb, "topic_candidates", { status: "generated" }),
       countRows(sb, "documents", { status: "published" }),
       countRows(sb, "claim_sources"),
       countRows(sb, "claims", { status: "needs_review" }),
@@ -170,10 +170,10 @@ export async function GET(request: Request) {
       .limit(10);
     if (newCandidatesError) throw newCandidatesError;
 
-    const { data: approvedCandidates, error: candidatesError } = await sb
+    const { data: generatedCandidates, error: candidatesError } = await sb
       .from("topic_candidates")
       .select("id, title, slug, lang, category, risk_tier, status, created_at, reviewed_at")
-      .eq("status", "approved")
+      .eq("status", "generated")
       .order("reviewed_at", { ascending: true, nullsFirst: false })
       .limit(10);
     if (candidatesError) throw candidatesError;
@@ -275,20 +275,20 @@ export async function GET(request: Request) {
       { rank: 1, key: "pending_community_posts", label: "Pending community posts", count: pendingCommunityPosts, href: "/admin/posts?status=pending", reason: "공개 제출물은 스팸/오류 노출을 막기 위해 먼저 승인 또는 숨김 처리합니다." },
       { rank: 2, key: "high_risk", label: "High-risk finance/healthcare/legal/realtime", count: (highRiskCandidates?.length ?? 0) + highRiskDocuments.length, href: "/admin/candidates?status=new", reason: "금융·의료·법률·실시간성 항목은 잘못 인용될 때 피해가 커서 우선 검토합니다." },
       { rank: 3, key: "needs_review_claims", label: "Needs_review claims", count: claimsNeedsReview, href: verifyClaimLink(firstPriorityDoc?.slug), reason: "claim source를 추가하고 verified로 승격해야 AI 인용 가능성이 생깁니다." },
-      { rank: 4, key: "approved_candidates", label: "Approved topic candidates", count: candidatesApproved, href: "/admin/candidates?status=approved", reason: "이미 승인된 후보를 문서로 promoted하여 검증 큐에 올립니다." },
+      { rank: 4, key: "generated_candidates", label: "Generated topic candidates", count: candidatesGenerated, href: "/admin/candidates?status=generated", reason: "AI claim generation이 끝난 generated candidate를 공개 등록합니다." },
       { rank: 5, key: "new_candidates", label: "New topic candidates", count: candidatesNew, href: "/admin/candidates?status=new", reason: "신규 후보를 reviewing/approved/rejected로 분류합니다." },
     ];
 
     await logAdminAuditEvent(sb, request, "admin.review.read", {
       pending_community_posts: pendingCommunityPosts,
       candidates_new: candidatesNew,
-      candidates_approved: candidatesApproved,
+      candidates_generated: candidatesGenerated,
       claims_needs_review: claimsNeedsReview,
       claims_verified: claimsVerified,
       documents_verified: documentsVerified,
       priority_claims_count: priorityClaims?.length ?? 0,
       new_candidates_count: newCandidates?.length ?? 0,
-      approved_candidates_count: approvedCandidates?.length ?? 0,
+      generated_candidates_count: generatedCandidates?.length ?? 0,
       promoted_candidates_count: promotedCandidates?.length ?? 0,
       verified_documents_count: verifiedDocuments?.length ?? 0,
       high_risk_count: (highRiskCandidates?.length ?? 0) + highRiskDocuments.length,
@@ -304,7 +304,7 @@ export async function GET(request: Request) {
       counts: {
         pending_community_posts: pendingCommunityPosts,
         candidates_new: candidatesNew,
-        candidates_approved: candidatesApproved,
+        candidates_generated: candidatesGenerated,
         documents_published: documentsPublished,
         claim_sources: claimSources,
         claims_needs_review: claimsNeedsReview,
@@ -319,7 +319,7 @@ export async function GET(request: Request) {
           return { ...claim, document_url: publicDocumentLink(doc ?? {}), verify_url: verifyClaimLink(doc?.slug) };
         }),
         new_candidates: newCandidates ?? [],
-        approved_candidates: approvedCandidates ?? [],
+        generated_candidates: generatedCandidates ?? [],
       },
       promoted_documents: (promotedCandidates ?? []).map((candidate) => ({
         ...candidate,

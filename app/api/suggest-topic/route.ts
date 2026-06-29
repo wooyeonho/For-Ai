@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { makeContributorHashForRequest } from "@/lib/contributor-hash";
+import { buildPublicTopicCandidate } from "@/lib/topic-candidates";
 import {
   hasHoneypotValue,
   inspectSubmissionText,
@@ -137,27 +138,21 @@ export async function POST(request: Request) {
     };
 
     const candidatePayload = {
-      source: "user_suggested",
+      ...buildPublicTopicCandidate({
+        kind: "topic_suggestion",
+        title: question,
+        slugSeed: `${country}-${cityRegion ?? "global"}-${question}-${Date.now().toString(36)}`,
+        lang: language,
+        category,
+        reason: whyThisMatters,
+        aiContext: `Country: ${country}${cityRegion ? `, ${cityRegion}` : ""}`,
+        sourceUrls: [sourceUrl],
+        contributorHash,
+        claimQuestion: question,
+      }),
       status: spamCheck.status,
-      lang: language,
       country: country.toLowerCase(),
-      title: question,
-      slug: slugify(`${country}-${cityRegion ?? "global"}-${question}-${Date.now().toString(36)}`),
-      category,
       subcategory: cityRegion,
-      risk_tier: "medium",
-      why_people_ask_ai: whyThisMatters,
-      why_ai_gets_wrong: "Public suggestion awaiting admin review; no factual claim is verified yet.",
-      claims: [{
-        field_path: "claim.main",
-        question,
-        placeholder_value: language === "ko" ? "확인 필요" : "Needs verification",
-        confidence: "low",
-        verification_status: "needs_review",
-        required_source_type: sourceUrl ? "official" : "traceable_source",
-      }],
-      source_hints: sourceUrl ? [{ url: sourceUrl, title: "Submitted source URL", hint_type: "source_hint" }] : [],
-      contributor_hash: contributorHash,
     };
 
     const [{ error: suggestionError }, { error: candidateError }] = await Promise.all([

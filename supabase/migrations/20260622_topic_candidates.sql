@@ -2,9 +2,9 @@
 CREATE TABLE IF NOT EXISTS topic_candidates (
   id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   status         TEXT NOT NULL DEFAULT 'new'
-                 CHECK (status IN ('new','reviewing','approved','rejected','promoted','spam')),
+                 CHECK (status IN ('new','triaged','generated','rejected','promoted')),
   source         TEXT NOT NULL DEFAULT 'ai_generated'
-                 CHECK (source IN ('ai_generated','user_suggested','admin_created')),
+                 CHECK (source IN ('ai_generated','user_suggested','admin_created','correction_report','hallucination_report')),
   lang           TEXT NOT NULL DEFAULT 'ko',
   title          TEXT NOT NULL,
   slug           TEXT NOT NULL UNIQUE,
@@ -30,6 +30,6 @@ CREATE INDEX IF NOT EXISTS topic_candidates_created_idx  ON topic_candidates(cre
 ALTER TABLE topic_candidates ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "public_insert_topic_candidates"
   ON topic_candidates FOR INSERT TO anon
-  WITH CHECK (source = 'user_suggested' AND status = 'new');
+  WITH CHECK (source IN ('user_suggested','correction_report','hallucination_report') AND status = 'new');
 
 -- No public SELECT/UPDATE policies: candidate review data is admin-only via service-role API routes.

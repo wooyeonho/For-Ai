@@ -2,8 +2,8 @@
 // ALL candidates: claim_value="확인 필요", confidence="low", status="needs_review"
 // Only source-backed verification can promote to verified.
 
-export type CandidateStatus = "new"|"reviewing"|"approved"|"rejected"|"promoted"|"spam";
-export type CandidateSource = "ai_generated"|"user_suggested"|"admin_created";
+export type CandidateStatus = "new"|"triaged"|"generated"|"rejected"|"promoted";
+export type CandidateSource = "ai_generated"|"user_suggested"|"admin_created"|"correction_report"|"hallucination_report";
 export type RiskTier = "low"|"medium"|"high"|"forbidden";
 export type RequiredSourceType = "official"|"law"|"platform"|"document"|"news";
 export type UpdateFrequency = "static"|"event_based"|"realtime"|"short_ttl";
@@ -236,3 +236,56 @@ export const RISK_DISCLAIMER: Record<RiskTier, string|null> = {
   high: "이 정보는 교육 목적의 개요이며, 의료·법률 조언이 아닙니다. 전문가와 상담하세요.",
   forbidden: null,
 };
+
+
+export type PublicCandidateIntakeKind = "topic_suggestion" | "correction_report" | "hallucination_report";
+
+export interface PublicCandidateIntakeInput {
+  kind: PublicCandidateIntakeKind;
+  title: string;
+  slugSeed?: string | null;
+  lang?: string | null;
+  category: string;
+  reason: string;
+  aiContext?: string | null;
+  sourceUrls?: (string | null | undefined)[];
+  contributorHash: string;
+  claimQuestion?: string | null;
+}
+
+export function slugifyCandidateSeed(value: string): string {
+  const slug = value
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9가-힣]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+  return slug || `candidate-${Date.now().toString(36)}`;
+}
+
+export function buildPublicTopicCandidate(input: PublicCandidateIntakeInput) {
+  const sourceUrls = [...new Set(input.sourceUrls?.map((url) => String(url ?? "").trim()).filter(Boolean) ?? [])];
+  const title = input.title.trim();
+  const slugBase = slugifyCandidateSeed(input.slugSeed || title);
+  const suffix = Date.now().toString(36);
+  return {
+    source: input.kind === "topic_suggestion" ? "user_suggested" : input.kind,
+    status: "new" as CandidateStatus,
+    lang: (input.lang?.trim() || "en").slice(0, 5),
+    title,
+    slug: `${slugBase}-${suffix}`.slice(0, 96),
+    category: input.category.trim(),
+    risk_tier: "medium" as RiskTier,
+    why_people_ask_ai: input.reason.trim(),
+    why_ai_gets_wrong: input.aiContext?.trim() || null,
+    claims: [{
+      field_path: "claim.main",
+      question: input.claimQuestion?.trim() || title,
+      placeholder_value: "확인 필요" as const,
+      required_source_type: sourceUrls.length > 0 ? "official" as const : "document" as const,
+    }],
+    source_hints: sourceUrls.map((url) => ({ url, title: "Submitter source candidate", hint_type: "official" as const })),
+    contributor_hash: input.contributorHash,
+  };
+}

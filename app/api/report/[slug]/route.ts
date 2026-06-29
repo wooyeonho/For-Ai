@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createServerClient, isSupabaseConfigured } from '../../../../lib/supabase-server';
 import { makeContributorHashForRequest } from '../../../../lib/contributor-hash';
 import { getDocumentBySlug } from '../../../../lib/data';
+import { buildPublicTopicCandidate } from '../../../../lib/topic-candidates';
 import {
   REPORT_MESSAGE_MAX_LENGTH,
   contributorSubmissionRateLimited,
@@ -77,11 +78,25 @@ export async function POST(
         contributor_hash: contributorHash,
         status: spamCheck.status,
       });
+      if (!error) {
+        await supabase.from('topic_candidates').insert(buildPublicTopicCandidate({
+          kind: 'correction_report',
+          title: `Correction report: ${doc?.title ?? slug}`,
+          slugSeed: `correction-${slug}`,
+          lang: doc?.lang ?? 'en',
+          category: doc?.category ?? 'correction_report',
+          reason: message,
+          aiContext: `Public correction report for document_id=${documentId ?? 'unknown'}, entity_id=${entityId ?? 'unknown'}, report_type=${body.report_type ?? 'correction'}`,
+          sourceUrls: [typeof body.source_url === 'string' ? body.source_url : null],
+          contributorHash,
+          claimQuestion: `Which claim on ${doc?.title ?? slug} needs correction?`,
+        })).catch((err: unknown) => console.warn('[report] topic_candidates insert skipped:', err));
+      }
 
       if (error) {
         console.error('[report] Supabase insert error:', error.message);
         return NextResponse.json(
-          { error: 'Failed to save report' },
+          { error: 'Failed to save candidate report' },
           { status: 500 }
         );
       }
@@ -91,7 +106,7 @@ export async function POST(
       return NextResponse.json({ error: 'Server error' }, { status: 500 });
     }
   } else {
-    console.error('[report] storage not configured — NOT persisted');
+    console.error('[report] candidate storage not configured — NOT persisted');
     return NextResponse.json(
       { error: 'submission_storage_unavailable', persisted: false },
       { status: 503 }
