@@ -7,6 +7,7 @@ import {
   getClaimCitationStatus,
   getVerifiedClaimViolations,
   getDocumentCitationStatus,
+  getFreshnessWindowDays,
   isStale,
   type ClaimCitationStatus,
 } from "../lib/citation-status";
@@ -251,6 +252,27 @@ test("getDocumentCitationStatus uses short commerce policy TTL by default", () =
   }));
 
   assert.equal(explicitTtl.freshness, "fresh");
+});
+
+test("domain freshness windows are applied and stale claims stay citable with warnings", () => {
+  assert.equal(getFreshnessWindowDays("transport.metro fare.base_adult"), 180);
+  assert.equal(getFreshnessWindowDays("government passport fee"), 180);
+  assert.equal(getFreshnessWindowDays("visa travel entry rule"), 90);
+  assert.equal(getFreshnessWindowDays("finance bank rate"), 30);
+
+  const staleClaim = claim({ last_verified_at: "2026-05-20" });
+  const status = getClaimCitationStatus(staleClaim, 30, NOW);
+  assert.equal(status.isCitationReady, true);
+  assert.equal(status.label, "stale");
+  assert.equal(status.freshness, "stale");
+  assert.match(status.warning ?? "", /last verified at 2026-05-20/);
+
+  const docStatus = getDocumentCitationStatus(bundle([staleClaim], {
+    document: document({ category: "finance.bank.rate" }),
+  }), undefined, NOW);
+  assert.equal(docStatus.freshnessWindowDays, 30);
+  assert.equal(docStatus.freshness, "stale");
+  assert.deepEqual(docStatus.staleClaims, [{ claimId: "claim-1", fieldPath: "fare.base_adult", lastVerifiedAt: "2026-05-20" }]);
 });
 
 

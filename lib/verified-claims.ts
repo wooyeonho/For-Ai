@@ -209,7 +209,7 @@ export function getVerifiedBundleBySlug(
 export function getVerifiedMetrics() {
   const bundles = verifiedBundles;
   const totalTopics = bundles.length;
-  const statuses = bundles.map(getDocumentCitationStatus);
+  const statuses = bundles.map((bundle) => getDocumentCitationStatus(bundle));
   const totalClaims = statuses.reduce((sum, status) => sum + status.totalClaims, 0);
   const citationReadyClaims = statuses.reduce((sum, status) => sum + status.verifiedClaims, 0);
   const verifiedClaims = citationReadyClaims;

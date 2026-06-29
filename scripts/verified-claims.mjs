@@ -52,6 +52,41 @@ const VALID_SOURCE_AUTHORITY = new Set([
 const VALID_TRANSLATION_STATUS = new Set([
   "source_language", "human_translated", "machine_translated", "needs_translation_review",
 ]);
+
+const FRESHNESS_WINDOWS_DAYS = {
+  transit_fare: 180,
+  government_fee: 180,
+  visa_travel_rule: 90,
+  opening_hours: 60,
+  finance_fee_rate: 30,
+  default: 180,
+};
+
+function ageInDays(iso, now = new Date()) {
+  if (!iso) return null;
+  const t = Date.parse(iso);
+  if (Number.isNaN(t)) return null;
+  return Math.floor((now.getTime() - t) / 86_400_000);
+}
+
+function freshnessDomain(input) {
+  const value = String(input ?? "").toLowerCase();
+  if (/(government|gov|tax|passport|resident|license|public_service).*fee|fee.*(government|gov|tax|passport|resident|license|public_service)/.test(value)) return "government_fee";
+  if (/(visa|travel|immigration|transit_rule|entry_rule)/.test(value)) return "visa_travel_rule";
+  if (/(opening|hours|business_hours|operating_hours)/.test(value)) return "opening_hours";
+  if (/(finance|bank|loan|interest|rate|fee_rate|card|brokerage)/.test(value)) return "finance_fee_rate";
+  if (/(transit|transport|metro|subway|bus|taxi|rail|underground|fare|transfer)/.test(value)) return "transit_fare";
+  return "default";
+}
+
+function freshnessWindowDays(file) {
+  return FRESHNESS_WINDOWS_DAYS[freshnessDomain(`${file.type ?? ""} ${file.slug ?? ""} ${(file.claims ?? []).map((c) => c.field_path).join(" ")}`)];
+}
+
+function isFreshnessStale(iso, ttlDays) {
+  const age = ageInDays(iso);
+  return age === null || age > ttlDays;
+}
 const REQUIRED_TOP_FIELDS = [
   "entity_id", "slug", "canonical_slug", "type", "name", "localized_title", "lang", "country",
   "jurisdiction", "risk_tier", "update_frequency", "disclaimer_type", "translation_status", "claims",
@@ -197,6 +232,7 @@ function validateFile(path, errors, slugs, entityIds) {
       if (!VERIFIED_CONFIDENCE.has(c.confidence)) {
         errors.push(`${where}: verified claim must be confidence medium/high (got "${c.confidence}")`);
       }
+      if (!c.last_verified_at) errors.push(`${where}: verified claim needs last_verified_at (last checked date)`);
       const sources = Array.isArray(c.sources) ? c.sources : [];
       if (sources.length === 0) {
         errors.push(`${where}: verified claim must have at least one source`);
@@ -212,7 +248,7 @@ function validateFile(path, errors, slugs, entityIds) {
       const ve = c.verification_event;
       if (!ve) errors.push(`${where}: verified claim must have a verification_event`);
       else {
-        if (!ve.verified_at) errors.push(`${where}: verification_event needs verified_at`);
+        if (!ve.verified_at) errors.push(`${where}: verification_event needs verified_at (last checked date)`);
         if (!ve.note) errors.push(`${where}: verification_event needs a note`);
       }
     } else {
@@ -362,19 +398,25 @@ function cmdStatus() {
   let missingSource = 0;
   let missingVerificationEvent = 0;
   const inProgress = [];
-
+  const staleClaims = [];
   for (const path of files) {
     const f = readJson(path);
     let fileReady = 0;
     let countryFileSeen = true;
     let domainFileSeen = true;
+    const ttlDays = freshnessWindowDays(f);
     for (const c of f.claims) {
       totalClaims++;
       if (c.status === "verified") verified++;
       if (c.status !== "verified" || isUnknownClaim(c)) needsVerification++;
       if (!hasSource(c)) missingSource++;
       if (!hasVerificationEvent(c)) missingVerificationEvent++;
-      if (isCitationReady(c)) fileReady++;
+      if (isCitationReady(c)) {
+        fileReady++;
+        if (isFreshnessStale(c.last_verified_at, ttlDays)) {
+          staleClaims.push(`${f.slug} ${c.field_path} (last verified ${c.last_verified_at ?? "missing"}, window ${ttlDays}d)`);
+        }
+      }
       updateStatsBucket(addBucket(byCountry, f.country ?? "?"), countryFileSeen, c);
       updateStatsBucket(addBucket(byDomain, domainOf(f.type)), domainFileSeen, c);
       countryFileSeen = false;
@@ -415,6 +457,11 @@ function cmdStatus() {
   }
   printBuckets("by country", byCountry);
   printBuckets("by domain", byDomain);
+  if (staleClaims.length > 0) {
+    console.log(`\nstale / needs recheck verified claims: ${staleClaims.length}`);
+    for (const s of staleClaims.slice(0, 25)) console.log(`  - ${s}`);
+    if (staleClaims.length > 25) console.log(`  ... and ${staleClaims.length - 25} more`);
+  }
 
   if (inProgress.length > 0) {
     console.log(`\nin progress (files with placeholders left):`);
