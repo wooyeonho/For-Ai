@@ -5,6 +5,7 @@ import {
   ageInDays,
   getCanonicalDirectAnswer,
   getClaimCitationStatus,
+  getVerifiedClaimViolations,
   getDocumentCitationStatus,
   isStale,
   type ClaimCitationStatus,
@@ -155,9 +156,31 @@ test("getClaimCitationStatus rejects placeholders, low confidence, missing sourc
   assertUnverified(getClaimCitationStatus(claim({ last_verified_at: null })));
 });
 
-test("getClaimCitationStatus accepts a verified status as a verification signal", () => {
+test("getClaimCitationStatus requires an explicit verification event", () => {
   const status = getClaimCitationStatus(claim({ verification_events: [] }));
-  assert.equal(status.isCitationReady, true);
+  assertUnverified(status);
+  assert.match(status.reason, /verification event is required/);
+});
+
+test("getVerifiedClaimViolations reports every verified transition requirement", () => {
+  assert.deepEqual(
+    getVerifiedClaimViolations(claim({
+      claim_value: UNKNOWN_FACT_TEXT,
+      confidence: "low",
+      status: "needs_review",
+      last_verified_at: null,
+      sources: [],
+      verification_events: [],
+    })),
+    [
+      "claim_value must not be the unknown placeholder",
+      "confidence must be medium or high",
+      "at least one source is required",
+      "last_verified_at is required",
+      "verification event is required",
+      "admin approval must set status to verified",
+    ],
+  );
 });
 
 test("getDocumentCitationStatus requires human-approved documents and every claim to be ready", () => {

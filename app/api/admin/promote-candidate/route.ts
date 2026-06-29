@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { logAdminAuditEvent, requireAdmin, supabaseAdmin } from "@/lib/admin-api";
+import { UNKNOWN_FACT_TEXT } from "@/lib/citation-status";
 
 function stableId(prefix: string, slug: string): string {
   return `${prefix}-${slug}`.replace(/[^a-zA-Z0-9_-]+/g, "-").slice(0, 120);
@@ -91,7 +92,32 @@ export async function POST(request: Request) {
   }
 
   // ── Insert claims ────────────────────────────────────────────────────────
-  const claims = (candidate.claims ?? []) as { question: string; placeholder_value: string; required_source_type?: string }[];
+  const claims = (candidate.claims ?? []) as {
+    question: string;
+    placeholder_value?: string;
+    required_source_type?: string;
+    claim_value?: string;
+    confidence?: string;
+    status?: string;
+    last_verified_at?: string;
+    sources?: unknown[];
+    verification_event?: unknown;
+  }[];
+  const unsafeVerifiedCandidate = claims.find((claim) => (
+    claim.status === "verified" ||
+    claim.confidence === "medium" ||
+    claim.confidence === "high" ||
+    Boolean(claim.last_verified_at) ||
+    (claim.sources ?? []).length > 0 ||
+    Boolean(claim.verification_event) ||
+    (Boolean(claim.claim_value?.trim()) && claim.claim_value !== UNKNOWN_FACT_TEXT)
+  ));
+  if (unsafeVerifiedCandidate) {
+    return NextResponse.json({
+      error: "candidate promotion cannot create verified claims; use admin verify-claim approval with sources and a verification event",
+    }, { status: 422 });
+  }
+
   if (claims.length > 0) {
     const claimRows = claims.map((cl, i) => ({
       id: stableId("claim", `${slug}-${i + 1}`),
