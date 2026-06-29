@@ -47,7 +47,8 @@ create table documents (
 );
 
 comment on column documents.data is 'Rendering convenience only. Canonical facts must exist as claims.';
-
+comment on column documents.category is 'Topic category namespace, for example technology.saas_pricing. Used for discovery and grouping, not as the canonical fact source.';
+comment on column documents.template is 'Rendering/claim template key, for example saas-pricing. For SaaS pricing documents use field paths: price.free, price.pro_monthly, price.pro_annual, price.team_monthly, limit.free_plan, refund.policy, region.price, last_price_change.';
 create unique index documents_country_lang_slug_key on documents (country, lang, slug);
 create unique index documents_entity_lang_template_key on documents (entity_id, lang, template);
 
@@ -59,6 +60,7 @@ create table claims (
   claim_text text not null,
   claim_value text not null,
   jurisdiction text,
+  currency text,
   confidence confidence_level not null default 'low',
   status claim_status not null default 'needs_review',
   last_verified_at timestamptz,
@@ -71,6 +73,9 @@ create table claims (
 create index claims_document_id_idx on claims (document_id);
 create index claims_entity_id_idx on claims (entity_id);
 create unique index claims_document_field_path_key on claims (document_id, field_path);
+
+comment on column claims.jurisdiction is 'Jurisdiction where the claim applies. Required by convention for region-sensitive SaaS pricing claims.';
+comment on column claims.currency is 'ISO 4217 currency code for monetary claims. SaaS pricing claims must set this when a price is currency-denominated.';
 
 create table claim_sources (
   id text primary key,

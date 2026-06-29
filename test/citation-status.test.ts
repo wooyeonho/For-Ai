@@ -60,6 +60,7 @@ function claim(overrides: Partial<ClaimWithSources> = {}): ClaimWithSources {
     claim_text: "What is the adult base fare?",
     claim_value: "1,400원",
     jurisdiction: "KR",
+    currency: null,
     confidence: "high",
     status: "verified",
     last_verified_at: "2026-06-20",

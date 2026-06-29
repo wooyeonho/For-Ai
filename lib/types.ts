@@ -61,6 +61,7 @@ export type Claim = {
   claim_text: string;
   claim_value: string;
   jurisdiction: string | null;
+  currency: string | null;
   confidence: Confidence;
   status: ClaimStatus;
   last_verified_at: string | null;

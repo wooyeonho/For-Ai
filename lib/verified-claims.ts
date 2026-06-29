@@ -86,6 +86,7 @@ function toRegistryBundle(file: VerifiedClaimFile): RegistryDocumentBundle {
     claim_text: c.claim_text,
     claim_value: c.claim_value,
     jurisdiction: file.country,
+    currency: (c as { currency?: string }).currency ?? null,
     confidence: c.confidence as "high" | "medium" | "low",
     status: c.status as "verified" | "needs_review",
     last_verified_at: c.last_verified_at,

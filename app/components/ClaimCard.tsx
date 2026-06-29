@@ -32,6 +32,7 @@ export function ClaimCard({ claim, locale }: { claim: ClaimWithSources; locale?:
           <ConfidenceBadge level={claim.confidence} locale={locale} />
           <ClaimStatusBadge status={claim.status} locale={locale} />
           {claim.jurisdiction && <span className="badge">{claim.jurisdiction}</span>}
+          {claim.currency && <span className="badge">{claim.currency}</span>}
         </div>
       </div>
 

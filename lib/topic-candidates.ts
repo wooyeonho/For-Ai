@@ -74,6 +74,7 @@ export const TAXONOMY: Record<string, { label: string; subcategories: string[]; 
   games:         { label: "게임", subcategories: ["게임용어","규칙","아이템","장르"], risk_tier: "low" },
   science:       { label: "과학", subcategories: ["물리개념","화학","천문학","지구과학"], risk_tier: "low" },
   tech:          { label: "IT/기술", subcategories: ["용어","프로토콜","하드웨어","소프트웨어"], risk_tier: "low" },
+  saas_pricing:  { label: "SaaS 가격", subcategories: ["무료 플랜","프로 플랜","팀 플랜","환불정책","지역별 가격","가격 변경"], risk_tier: "medium" },
   law_terms:     { label: "법률용어", subcategories: ["민법용어","형법용어","행정법","계약"], risk_tier: "high" },
   // Global / diverse categories
   person_athlete:     { label: "스포츠 선수",    subcategories: ["소속팀","포지션","국적","데뷔","기록","수상"],         risk_tier: "low" },
@@ -96,6 +97,16 @@ export const TAXONOMY_KEYS = Object.keys(TAXONOMY);
 export type ClaimTemplateStub = { field_path: string; question: string; required_source_type: RequiredSourceType };
 
 export const CLAIM_TEMPLATES: Partial<Record<string, ClaimTemplateStub[]>> = {
+  saas_pricing: [
+    { field_path: "price.free",        question: "무료 플랜 가격은?",                 required_source_type: "official" },
+    { field_path: "price.pro_monthly", question: "Pro 월간 가격은?",                  required_source_type: "official" },
+    { field_path: "price.pro_annual",  question: "Pro 연간 가격은?",                  required_source_type: "official" },
+    { field_path: "price.team_monthly",question: "Team 월간 가격은?",                 required_source_type: "official" },
+    { field_path: "limit.free_plan",   question: "무료 플랜의 주요 제한은?",          required_source_type: "official" },
+    { field_path: "refund.policy",     question: "환불 정책은?",                     required_source_type: "official" },
+    { field_path: "region.price",      question: "국가/지역별 가격 차이가 있는가?",   required_source_type: "official" },
+    { field_path: "last_price_change", question: "마지막 가격 변경일 또는 공지일은?", required_source_type: "official" },
+  ],
   person_athlete: [
     { field_path: "bio.full_name",        question: "선수 본명은?",      required_source_type: "official" },
     { field_path: "bio.date_of_birth",    question: "생년월일은?",       required_source_type: "official" },
