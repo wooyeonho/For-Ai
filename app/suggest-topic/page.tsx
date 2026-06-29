@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import SuggestTopicForm from "./SuggestTopicForm";
 
 export const metadata: Metadata = {
-  title: "토픽 제안",
+  title: "Suggest a fact topic | For-Ai",
   description:
-    "AI가 자주 틀리거나 사람들이 AI에게 물어보는 실생활 정보를 제안합니다.",
+    "Suggest a global, source-backed fact topic that should enter For-Ai's candidate review queue before any claim is verified.",
 };
 
 export default function SuggestTopicPage() {

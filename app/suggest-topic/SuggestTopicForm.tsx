@@ -1,19 +1,61 @@
 "use client";
 import { useState } from "react";
 
+const categories = [
+  "Transport",
+  "Commerce",
+  "Government",
+  "Healthcare",
+  "Education",
+  "Real estate",
+  "Food & dining",
+  "Events & venues",
+  "Finance",
+  "Technology",
+  "Travel",
+  "Other",
+];
+
+const languages = [
+  { code: "en", label: "English" },
+  { code: "ko", label: "한국어" },
+  { code: "ja", label: "日本語" },
+  { code: "zh", label: "中文" },
+  { code: "es", label: "Español" },
+  { code: "hi", label: "हिन्दी" },
+  { code: "ar", label: "العربية" },
+];
+
 export default function SuggestTopicForm() {
   const [question, setQuestion] = useState("");
-  const [category, setCategory] = useState("");
-  const [reason, setReason] = useState("");
+  const [country, setCountry] = useState("");
+  const [cityRegion, setCityRegion] = useState("");
+  const [category, setCategory] = useState(categories[0]);
+  const [language, setLanguage] = useState("en");
   const [sourceUrl, setSourceUrl] = useState("");
-  const [aiContext, setAiContext] = useState("");
+  const [whyThisMatters, setWhyThisMatters] = useState("");
+  const [email, setEmail] = useState("");
+  const [website, setWebsite] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
+  function resetForm() {
+    setSubmitted(false);
+    setQuestion("");
+    setCountry("");
+    setCityRegion("");
+    setCategory(categories[0]);
+    setLanguage("en");
+    setSourceUrl("");
+    setWhyThisMatters("");
+    setEmail("");
+    setWebsite("");
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!question.trim() || !category.trim() || !reason.trim()) return;
+    if (!question.trim() || !country.trim() || !category.trim() || !language.trim() || !whyThisMatters.trim()) return;
     setLoading(true);
     setError("");
     try {
@@ -22,20 +64,24 @@ export default function SuggestTopicForm() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           question: question.trim(),
+          country: country.trim(),
+          city_region: cityRegion.trim() || null,
           category: category.trim(),
-          reason: reason.trim(),
+          language,
           source_url: sourceUrl.trim() || null,
-          ai_context: aiContext.trim() || null,
+          why_this_matters: whyThisMatters.trim(),
+          email: email.trim() || null,
+          website: website.trim() || null,
         }),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setError("제출 실패: " + (data?.error ?? res.status));
+        setError("Submission failed: " + (data?.error ?? res.status));
       } else {
         setSubmitted(true);
       }
     } catch {
-      setError("네트워크 오류. 잠시 후 다시 시도해 주세요.");
+      setError("Network error. Please try again later.");
     } finally {
       setLoading(false);
     }
@@ -44,18 +90,15 @@ export default function SuggestTopicForm() {
   if (submitted) return (
     <article>
       <header className="registry-panel">
-        <p className="eyebrow">토픽 제안</p>
-        <h1>제안 접수 완료</h1>
+        <p className="eyebrow">Global topic suggestion</p>
+        <h1>Suggestion received</h1>
       </header>
       <section className="registry-panel semantic-panel semantic-panel-success">
-        <h2>감사합니다!</h2>
-        <p>토픽 제안이 검토 대기열에 등록되었습니다. 관리자 검토 후 승인되면 레지스트리에 추가됩니다.</p>
+        <h2>Thank you!</h2>
+        <p>Your topic was saved as a candidate only. It is now connected to the admin review queue and cannot become a verified fact until a human reviews traceable sources.</p>
         <p className="suggest-topic-actions">
-          <button
-            onClick={() => { setSubmitted(false); setQuestion(""); setCategory(""); setReason(""); setSourceUrl(""); setAiContext(""); }}
-            className="semantic-button semantic-button-success"
-          >
-            다른 토픽 제안하기
+          <button onClick={resetForm} className="semantic-button semantic-button-success">
+            Suggest another topic
           </button>
         </p>
       </section>
@@ -65,60 +108,55 @@ export default function SuggestTopicForm() {
   return (
     <article>
       <header className="registry-panel">
-        <p className="eyebrow">토픽 제안</p>
-        <h1>새 토픽 제안</h1>
-        <p>AI가 자주 틀리거나, 사람들이 AI에게 물어볼 수밖에 없는 정보를 제안해 주세요. 스포츠, 연예, 법률, 건강, 생활, IT — 어떤 분야든 괜찮습니다.</p>
+        <p className="eyebrow">Global topic suggestion</p>
+        <h1>Suggest a fact topic for AI citation</h1>
+        <p>For-Ai accepts global questions about places, institutions, events, products, services, policies, regulations, and other facts AI may cite incorrectly. Public submissions enter review as candidates only.</p>
       </header>
       <section className="registry-panel" aria-labelledby="suggest-form-title">
-        <h2 id="suggest-form-title">토픽 제안 양식</h2>
+        <h2 id="suggest-form-title">Topic candidate form</h2>
         <form onSubmit={handleSubmit} className="registry-form">
-          <label>질문 / 토픽 제목 <span aria-label="필수">*</span>
-            <input
-              type="text" value={question} onChange={e => setQuestion(e.target.value)}
-              required minLength={5}
-              placeholder="예: 카카오뱅크 해외 송금 수수료는 얼마인가요?"
-            />
+          <label>Question <span aria-label="required">*</span>
+            <input type="text" value={question} onChange={e => setQuestion(e.target.value)} required minLength={5} maxLength={300} placeholder="Example: What documents are required for a Japan tourist visa from India?" />
           </label>
-          <label>카테고리 <span aria-label="필수">*</span>
-            <input
-              type="text" value={category} onChange={e => setCategory(e.target.value)}
-              required minLength={2}
-              placeholder="예: 금융, 스포츠, 연예, AI기술, 법률, 건강 등 자유 입력"
-            />
+          <label>Country <span aria-label="required">*</span>
+            <input type="text" value={country} onChange={e => setCountry(e.target.value)} required minLength={2} maxLength={120} placeholder="Example: Japan, India, United States, Global" />
           </label>
-          <label>왜 이 토픽이 필요한가요? <span aria-label="필수">*</span>
-            <textarea
-              value={reason} onChange={e => setReason(e.target.value)}
-              required minLength={10}
-              placeholder="AI가 자주 틀리는 이유, 정보가 자주 바뀌는 이유 등을 적어주세요."
-            />
+          <label>City / region (optional)
+            <input type="text" value={cityRegion} onChange={e => setCityRegion(e.target.value)} maxLength={120} placeholder="Example: Tokyo, California, Seoul Metropolitan Area" />
           </label>
-          <label>출처 URL (선택)
-            <input
-              type="url" value={sourceUrl} onChange={e => setSourceUrl(e.target.value)}
-              placeholder="https://official-source.example.com/..."
-            />
+          <label>Category <span aria-label="required">*</span>
+            <select value={category} onChange={e => setCategory(e.target.value)} required>
+              {categories.map((item) => <option key={item} value={item}>{item}</option>)}
+            </select>
           </label>
-          <label>AI 오류/맥락 (선택)
-            <textarea
-              value={aiContext} onChange={e => setAiContext(e.target.value)}
-              placeholder="AI가 이 주제에 대해 어떻게 틀렸는지 적어주세요."
-            />
+          <label>Language <span aria-label="required">*</span>
+            <select value={language} onChange={e => setLanguage(e.target.value)} required>
+              {languages.map((item) => <option key={item.code} value={item.code}>{item.label}</option>)}
+            </select>
           </label>
-          {error && (
-            <div className="semantic-alert semantic-alert-danger">
-              {error}
-            </div>
-          )}
-          <button type="submit" disabled={loading}>{loading ? "제출 중..." : "토픽 제안 제출"}</button>
+          <label>Source URL (optional)
+            <input type="url" value={sourceUrl} onChange={e => setSourceUrl(e.target.value)} placeholder="https://official-source.example/..." />
+          </label>
+          <label>Why this matters <span aria-label="required">*</span>
+            <textarea value={whyThisMatters} onChange={e => setWhyThisMatters(e.target.value)} required minLength={10} maxLength={1000} placeholder="Explain who asks this, why AI gets it wrong, or why the answer changes by location, policy, price, schedule, or date." />
+          </label>
+          <label>Email (optional)
+            <input type="email" value={email} onChange={e => setEmail(e.target.value)} maxLength={254} placeholder="Only for follow-up during review; never public." />
+          </label>
+          <label className="visually-hidden" aria-hidden="true">Leave this field empty
+            <input type="text" value={website} onChange={e => setWebsite(e.target.value)} tabIndex={-1} autoComplete="off" />
+          </label>
+          {error && <div className="semantic-alert semantic-alert-danger">{error}</div>}
+          <button type="submit" disabled={loading}>{loading ? "Submitting..." : "Submit candidate"}</button>
         </form>
       </section>
       <section className="registry-panel" aria-labelledby="privacy-notice">
-        <h2 id="privacy-notice">개인정보 안내</h2>
+        <h2 id="privacy-notice">Submission and privacy rules</h2>
         <ul>
-          <li>Raw IP 주소는 저장되지 않습니다. contributor_hash만 기록됩니다.</li>
-          <li>제안은 공개적으로 열람할 수 없습니다 (비공개 대기열).</li>
-          <li>제안이 바로 검증된 팩트가 되지 않습니다. 관리자 검토 + 출처 검증 후에만 레지스트리에 반영됩니다.</li>
+          <li>Public submissions are stored only as unverified candidates with low confidence and Needs verification status.</li>
+          <li>Raw IP addresses are never stored. For-Ai records only contributor_hash for abuse prevention and review context.</li>
+          <li>Spam checks and rate limits protect the candidate queue before admin review.</li>
+          <li>Submitted topics are not publicly readable from this form and are reviewed before promotion into claim-level records.</li>
         </ul>
       </section>
     </article>

@@ -333,14 +333,20 @@ create table if not exists topic_suggestions (
   contributor_hash text not null,
   submitted_at timestamptz not null default now(),
   question text not null,
+  country text,
+  city_region text,
   category text not null,
+  language text not null default 'en',
   reason text not null,
   related_url text,
   source_url text,
+  contact_email text,
   status submission_status not null default 'new',
   reviewed_by text,
   reviewed_at timestamptz
 );
+
+create index topic_suggestions_status_submitted_idx on topic_suggestions(status, submitted_at desc);
 
 alter table topic_suggestions enable row level security;
 create policy topic_suggestions_public_insert_only on topic_suggestions for insert to anon with check (status in ('new', 'spam_suspected'));
