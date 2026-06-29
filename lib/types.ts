@@ -27,8 +27,6 @@ export type CommercePolicyFieldPath =
 
 export type SourceType =
   | "official"
-  | "law"
-  | "regulator"
   | "platform"
   | "review"
   | "user"
@@ -60,7 +58,6 @@ export type VerificationEventType =
   | "reviewed"
   | "source_added"
   | "source_removed"
-  | "source_verified"
   | "status_changed"
   | "confidence_changed";
 
