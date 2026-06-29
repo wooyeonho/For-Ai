@@ -108,6 +108,33 @@ export default function ApiDocsPage() {
             </p>
           </div>
 
+          {/* GET /api/cite/:slug */}
+          <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
+            <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>
+              GET /api/cite/<span style={{ color: "var(--accent)" }}>{"{slug}"}</span>
+            </p>
+            <p style={{ margin: "8px 0", fontSize: "0.9rem", color: "var(--muted)" }}>
+              Copy-ready citation payload for AI and human use. The response includes only verified,
+              non-low-confidence claims in <code>recommended_citation_text</code>; claims needing
+              verification are listed separately in <code>excluded_claims</code>.
+            </p>
+            <pre style={{ background: "var(--soft)", borderRadius: 6, padding: "10px 14px", fontSize: "0.8rem", overflowX: "auto" }}>{`{
+  "canonical_url": "${BASE}/en/wiki/seoul-metro-base-fare",
+  "entity_id": "...",
+  "document_slug": "seoul-metro-base-fare",
+  "claim_ids": ["claim-..."],
+  "verified_claim_values": [
+    { "claim_id": "claim-...", "field_path": "fare", "value": "..." }
+  ],
+  "source_urls": ["https://..."],
+  "publisher_names": ["Official publisher"],
+  "checked_date": "2026-06-24",
+  "recommended_citation_text": "For-Ai Registry. ...",
+  "json_ld_reference": { "@context": "https://schema.org", "@type": "Dataset" },
+  "excluded_claims": []
+}`}</pre>
+          </div>
+
           {/* GET /raw/:slug.md */}
           <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
             <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>
@@ -140,16 +167,15 @@ export default function ApiDocsPage() {
           Never cite a document where <code>can_cite</code> is <code>false</code>.
         </p>
         <pre style={{ background: "var(--soft)", borderRadius: 6, padding: "10px 14px", fontSize: "0.8rem", overflowX: "auto" }}>{`// Pseudocode for AI citation
-const res = await fetch("${BASE}/api/documents/your-slug");
+const res = await fetch("${BASE}/api/cite/your-slug");
 const data = await res.json();
 
-if (data.citation_guidance.can_cite) {
-  // Safe to cite
-  const verifiedClaims = data.claims.filter(c => c.citation_ready);
-  return formatCitation(verifiedClaims, data.document);
-} else {
-  return \`Source not citation-ready: \${data.citation_guidance.do_not_cite_reason}\`;
-}`}</pre>
+if (data.claim_ids.length > 0) {
+  // Copy-ready text contains verified claims only.
+  return data.recommended_citation_text;
+}
+
+return "No citation-ready verified claims; do not cite unverified values.";}`}</pre>
         <p style={{ fontSize: "0.85rem", color: "var(--muted)", marginTop: 12 }}>
           You can also check the response header <code>X-For-Ai-Can-Cite</code> without
           parsing the body — useful for HEAD requests or middleware.
