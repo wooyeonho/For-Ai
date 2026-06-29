@@ -159,9 +159,14 @@ export default function AdminGeneratePage() {
       </nav>
 
       <h1 style={{ fontSize: 24, marginBottom: 8 }}>AI Candidate Generator</h1>
-      <p style={{ color: "#6b7280", marginBottom: 32 }}>
-        멀티 AI로 토픽 후보를 자동 생성합니다. 생성된 후보는 topic_candidates 테이블에 저장됩니다.
-      </p>
+      <div style={{ color: "#6b7280", marginBottom: 32, lineHeight: 1.6 }}>
+        <p style={{ margin: "0 0 6px" }}>
+          멀티 AI로 claim-level 토픽 후보를 생성하고 topic_candidates 테이블에 저장합니다.
+        </p>
+        <p style={{ margin: 0 }}>
+          “AI 후보 자동 생성”은 후보 저장까지만 자동입니다. verified 승격은 사람이 출처를 직접 확인한 뒤 후보 검토 큐에서 승인해야 합니다.
+        </p>
+      </div>
 
       <div style={{ display: "grid", gap: 20 }}>
         {/* Admin secret */}
@@ -361,6 +366,58 @@ export default function AdminGeneratePage() {
               <div style={{ fontSize: 12, color: "#6b7280" }}>AI 사용</div>
             </div>
           </div>
+
+          <div style={{ padding: 16, background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, marginBottom: 16 }}>
+            <p style={{ margin: "0 0 12px", fontSize: 13, color: "#475569", lineHeight: 1.5 }}>
+              다음 단계: 생성된 후보는 자동으로 verified 처리되지 않습니다. 출처를 확인한 뒤 후보 검토 큐에서 승인하세요.
+            </p>
+            <Link
+              href="/admin/candidates"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                padding: "9px 14px",
+                borderRadius: 8,
+                border: "1px solid #2563eb",
+                color: "#2563eb",
+                fontWeight: 600,
+                fontSize: 13,
+                textDecoration: "none",
+              }}
+            >
+              후보 검토 큐로 이동
+            </Link>
+          </div>
+
+          {result.saved > 0 && (
+            <div style={{ padding: 16, background: "#ecfdf5", border: "1px solid #86efac", borderRadius: 8, marginBottom: 16 }}>
+              <p style={{ margin: "0 0 12px", fontSize: 13, color: "#166534", lineHeight: 1.5 }}>
+                {result.saved}개 후보가 저장되었습니다. 사람이 출처를 확인한 뒤 승인해야 verified 상태가 됩니다.
+              </p>
+              <Link
+                href="/admin/candidates"
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  padding: "10px 16px",
+                  borderRadius: 8,
+                  background: "#16a34a",
+                  color: "#fff",
+                  fontWeight: 700,
+                  fontSize: 14,
+                  textDecoration: "none",
+                }}
+              >
+                후보 검토 큐에서 승인하세요
+              </Link>
+            </div>
+          )}
+
+          {result.save_status === "failed" && (
+            <div style={{ padding: 12, background: "#fff7ed", border: "1px solid #fed7aa", borderRadius: 8, marginBottom: 16, fontSize: 13, color: "#9a3412", lineHeight: 1.5 }}>
+              <strong>저장 설정 확인 필요:</strong> topic_candidates 저장에 실패했습니다. Supabase 환경변수 설정 또는 topic_candidates migration 적용 여부를 확인하세요.
+            </div>
+          )}
 
           {result.save_error && (
             <div style={{ padding: 12, background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, marginBottom: 16, fontSize: 13, color: "#b91c1c" }}>
