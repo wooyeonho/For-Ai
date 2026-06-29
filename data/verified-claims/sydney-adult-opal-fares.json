@@ -1,0 +1,115 @@
+{
+  "entity_id": "au-transport-nsw-adult-opal-fares-001",
+  "slug": "sydney-adult-opal-fares",
+  "type": "transport.metro",
+  "name": "Sydney and NSW Adult Opal fares (2026)",
+  "lang": "en",
+  "country": "AU",
+  "jurisdiction": "AU-NSW",
+  "risk_tier": "low",
+  "update_frequency": "event_based",
+  "disclaimer_type": "check_official_source",
+  "last_verified_at": "2026-06-29",
+  "claims": [
+    {
+      "claim_id": "nsw-adult-opal-daily-cap-mon-thu",
+      "field_path": "fare_cap.daily_monday_thursday",
+      "claim_text": "Adult Opal daily cap Monday to Thursday",
+      "claim_value": "$19.30",
+      "confidence": "high",
+      "status": "verified",
+      "last_verified_at": "2026-06-29",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "Transport for NSW — Adult Opal fares",
+          "publisher": "Transport for NSW",
+          "url": "https://transportnsw.info/tickets-fares/fares/adult-opal-fares",
+          "observed_at": "2026-06-29",
+          "note": "Official Adult Opal fares page states adult travel is capped at $19.30 a day on Mondays to Thursdays."
+        }
+      ],
+      "verification_event": {
+        "event_type": "source_verified",
+        "actor": "ai-source-fetch",
+        "verified_at": "2026-06-29",
+        "note": "Read directly from Transport for NSW official fare page on 2026-06-29. Final human approval pending."
+      }
+    },
+    {
+      "claim_id": "nsw-adult-opal-daily-cap-fri-weekend-holiday",
+      "field_path": "fare_cap.daily_friday_weekend_public_holiday",
+      "claim_text": "Adult Opal daily cap Friday, weekend, and public holiday",
+      "claim_value": "$9.65",
+      "confidence": "high",
+      "status": "verified",
+      "last_verified_at": "2026-06-29",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "Transport for NSW — Adult Opal fares",
+          "publisher": "Transport for NSW",
+          "url": "https://transportnsw.info/tickets-fares/fares/adult-opal-fares",
+          "observed_at": "2026-06-29",
+          "note": "Official Adult Opal fares page states adult travel is capped at $9.65 on Fridays, Saturdays, Sundays and public holidays."
+        }
+      ],
+      "verification_event": {
+        "event_type": "source_verified",
+        "actor": "ai-source-fetch",
+        "verified_at": "2026-06-29",
+        "note": "Read directly from Transport for NSW official fare page on 2026-06-29. Final human approval pending."
+      }
+    },
+    {
+      "claim_id": "nsw-adult-opal-weekly-cap",
+      "field_path": "fare_cap.weekly",
+      "claim_text": "Adult Opal weekly cap",
+      "claim_value": "$50.00",
+      "confidence": "high",
+      "status": "verified",
+      "last_verified_at": "2026-06-29",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "Transport for NSW — Adult Opal fares",
+          "publisher": "Transport for NSW",
+          "url": "https://transportnsw.info/tickets-fares/fares/adult-opal-fares",
+          "observed_at": "2026-06-29",
+          "note": "Official Adult Opal fares page states adult travel is capped at $50 a week."
+        }
+      ],
+      "verification_event": {
+        "event_type": "source_verified",
+        "actor": "ai-source-fetch",
+        "verified_at": "2026-06-29",
+        "note": "Read directly from Transport for NSW official fare page on 2026-06-29. Final human approval pending."
+      }
+    },
+    {
+      "claim_id": "nsw-adult-opal-offpeak-discount",
+      "field_path": "discount.off_peak_friday_weekend_public_holiday",
+      "claim_text": "Adult Opal discount outside peak and on Fridays/weekends/public holidays",
+      "claim_value": "30% discount",
+      "confidence": "high",
+      "status": "verified",
+      "last_verified_at": "2026-06-29",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "Transport for NSW — Adult Opal fares",
+          "publisher": "Transport for NSW",
+          "url": "https://transportnsw.info/tickets-fares/fares/adult-opal-fares",
+          "observed_at": "2026-06-29",
+          "note": "Official Adult Opal fares page states customers receive a 30% fare discount on metro/train, bus and light rail services when travelling on Fridays, weekends, public holidays and outside peak times."
+        }
+      ],
+      "verification_event": {
+        "event_type": "source_verified",
+        "actor": "ai-source-fetch",
+        "verified_at": "2026-06-29",
+        "note": "Read directly from Transport for NSW official fare page on 2026-06-29. Final human approval pending."
+      }
+    }
+  ]
+}

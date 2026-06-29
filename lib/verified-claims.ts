@@ -14,6 +14,10 @@ import residentIdReissueFee from "../data/verified-claims/resident-id-reissue-fe
 import vehicleTaxPaymentPeriod from "../data/verified-claims/vehicle-tax-payment-period.json";
 import incomeTaxFilingPeriod from "../data/verified-claims/income-tax-filing-period.json";
 import educationExamTemplate from "../data/verified-claims/education-exam-template.json";
+import newYorkSubwayBusFare from "../data/verified-claims/new-york-subway-bus-fare.json";
+import singaporeMrtBusAdultFares from "../data/verified-claims/singapore-mrt-bus-adult-fares.json";
+import torontoTtcFares from "../data/verified-claims/toronto-ttc-fares.json";
+import sydneyAdultOpalFares from "../data/verified-claims/sydney-adult-opal-fares.json";
 
 type VerifiedClaimFile = typeof seoulMetroFare | typeof passportFee | typeof moveInReport | typeof londonTubeFare | typeof usPassportFee | typeof tokyoMetroFare | typeof seoulCityBusFare | typeof seoulTransitTransferRule | typeof seoulTaxiBaseFare | typeof residentIdReissueFee | typeof vehicleTaxPaymentPeriod | typeof incomeTaxFilingPeriod | typeof educationExamTemplate;
 type VerifiedClaimFileClaim = VerifiedClaimFile["claims"][number];
@@ -44,6 +48,10 @@ const verifiedFiles: VerifiedClaimFile[] = [
   vehicleTaxPaymentPeriod,
   incomeTaxFilingPeriod,
   educationExamTemplate,
+  newYorkSubwayBusFare as unknown as VerifiedClaimFile,
+  singaporeMrtBusAdultFares as unknown as VerifiedClaimFile,
+  torontoTtcFares as unknown as VerifiedClaimFile,
+  sydneyAdultOpalFares as unknown as VerifiedClaimFile,
 ];
 
 function toRegistryBundle(file: VerifiedClaimFile): RegistryDocumentBundle {

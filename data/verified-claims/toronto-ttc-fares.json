@@ -1,0 +1,115 @@
+{
+  "entity_id": "ca-transport-ttc-fares-001",
+  "slug": "toronto-ttc-fares",
+  "type": "transport.metro",
+  "name": "Toronto TTC fares (2026)",
+  "lang": "en",
+  "country": "CA",
+  "jurisdiction": "CA-ON",
+  "risk_tier": "low",
+  "update_frequency": "event_based",
+  "disclaimer_type": "check_official_source",
+  "last_verified_at": "2026-06-29",
+  "claims": [
+    {
+      "claim_id": "ttc-adult-single-fare",
+      "field_path": "fare.adult_single_presto_debit_credit",
+      "claim_text": "TTC adult single fare with PRESTO, debit, or credit",
+      "claim_value": "$3.30",
+      "confidence": "high",
+      "status": "verified",
+      "last_verified_at": "2026-06-29",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "TTC — Fares and passes",
+          "publisher": "Toronto Transit Commission (TTC)",
+          "url": "https://www.ttc.ca/Fares-and-passes",
+          "observed_at": "2026-06-29",
+          "note": "Official TTC fares page states the TTC adult fare is $3.30 when tapping Interac debit/credit or mobile wallet."
+        }
+      ],
+      "verification_event": {
+        "event_type": "source_verified",
+        "actor": "ai-source-fetch",
+        "verified_at": "2026-06-29",
+        "note": "Read directly from Toronto Transit Commission (TTC) official fare page on 2026-06-29. Final human approval pending."
+      }
+    },
+    {
+      "claim_id": "ttc-adult-monthly-pass",
+      "field_path": "pass.adult_monthly",
+      "claim_text": "TTC adult monthly pass price",
+      "claim_value": "$156.00",
+      "confidence": "high",
+      "status": "verified",
+      "last_verified_at": "2026-06-29",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "TTC — Fares and passes",
+          "publisher": "Toronto Transit Commission (TTC)",
+          "url": "https://www.ttc.ca/Fares-and-passes",
+          "observed_at": "2026-06-29",
+          "note": "Official TTC monthly pass table lists Adult monthly pass as $156.00."
+        }
+      ],
+      "verification_event": {
+        "event_type": "source_verified",
+        "actor": "ai-source-fetch",
+        "verified_at": "2026-06-29",
+        "note": "Read directly from Toronto Transit Commission (TTC) official fare page on 2026-06-29. Final human approval pending."
+      }
+    },
+    {
+      "claim_id": "ttc-youth-senior-monthly-pass",
+      "field_path": "pass.youth_senior_monthly",
+      "claim_text": "TTC youth or senior monthly pass price",
+      "claim_value": "$128.15",
+      "confidence": "high",
+      "status": "verified",
+      "last_verified_at": "2026-06-29",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "TTC — Fares and passes",
+          "publisher": "Toronto Transit Commission (TTC)",
+          "url": "https://www.ttc.ca/Fares-and-passes",
+          "observed_at": "2026-06-29",
+          "note": "Official TTC monthly pass table lists Youth (13-19) or Senior (65+) monthly pass as $128.15."
+        }
+      ],
+      "verification_event": {
+        "event_type": "source_verified",
+        "actor": "ai-source-fetch",
+        "verified_at": "2026-06-29",
+        "note": "Read directly from Toronto Transit Commission (TTC) official fare page on 2026-06-29. Final human approval pending."
+      }
+    },
+    {
+      "claim_id": "ttc-adult-twelve-month-pass",
+      "field_path": "pass.adult_12_month",
+      "claim_text": "TTC adult 12-month pass monthly price",
+      "claim_value": "$143.00",
+      "confidence": "high",
+      "status": "verified",
+      "last_verified_at": "2026-06-29",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "TTC — Fares and passes",
+          "publisher": "Toronto Transit Commission (TTC)",
+          "url": "https://www.ttc.ca/Fares-and-passes",
+          "observed_at": "2026-06-29",
+          "note": "Official TTC monthly pass table lists Adult 12 Month Pass as $143.00."
+        }
+      ],
+      "verification_event": {
+        "event_type": "source_verified",
+        "actor": "ai-source-fetch",
+        "verified_at": "2026-06-29",
+        "note": "Read directly from Toronto Transit Commission (TTC) official fare page on 2026-06-29. Final human approval pending."
+      }
+    }
+  ]
+}
