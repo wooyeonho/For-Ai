@@ -1,128 +1,94 @@
 # Post-MVP Long-Tail Combination Catalog
 
-This document extends the topic-catalog strategy from practical administrative facts into broad long-tail knowledge: ordinary objects, infrastructure, medical terminology, clinical pathology, radiology, vehicles, buses, rail, plumbing, insects, hardware, electricity, and otaku-style media classification.
+This document extends the topic-catalog strategy from practical administrative facts into broad long-tail combinations where AI answers often become stale: visa requirements, metro fares, passport fees, SaaS pricing, refund policies, and airport transfers.
 
-The goal is not to publish AI-generated answers. The goal is to let AI generate many structured topic and claim candidates that humans and source-backed workflows can correct, verify, or reject.
+The goal is not to publish AI-generated answers or verified documents. The goal is to create structured topic candidates that humans and source-backed workflows can correct, verify, or reject before any public factual claim is promoted.
 
 ## Principle
 
-Every AI-generated combination starts as a verification candidate:
+Every generated combination starts as a topic candidate, not a verified document. It contains only discovery and triage metadata:
 
-- `claim_value`: `확인 필요`
-- `confidence`: `low`
-- `status`: `needs_review`
-- `sources`: `[]`
-- `last_verified_at`: `null`
+- `canonical_slug`
+- `locale`
+- `country`
+- `category`
+- `likely_question`
+- `source_search_query`
+- `risk_tier`
+- `update_frequency`
 
-A generated candidate may become a real answer only after an acceptable source is attached and a verification event records the status/confidence change.
+A topic candidate may become a real answer only after acceptable sources are attached and the normal claim-level verification workflow creates reviewed claims and verification events.
 
 ## Why Long-Tail Combinations Matter
 
-People ask AI about small, boring, technical, and highly specific things:
+People ask AI about small, specific, high-change facts:
 
-- subway station structures, transfer passages, platform screen doors, and station-name systems;
-- train names, train classes, bus types, low-floor buses, and route contexts;
-- toilet types, faucet types, drain traps, bidet types, and other plumbing fixtures;
-- insect classes, identification features, and habitat context;
-- screws, bolts, driver bits, wrench types, wire standards, outlets, and light-bulb sockets;
-- medical terms, blood tests, urine tests, imaging modalities, and radiology terminology;
-- car body types, engine types, fuel systems, and EV charging methods;
-- anime watch order, manga serialization order, game item categories, character attributes, and figure lineups.
+- whether one country's citizens need a visa for another country;
+- what a city metro operator currently charges;
+- how much each passport document type costs in a country;
+- what a SaaS product plan costs in a particular currency or market;
+- what refund policy applies to a platform in a country;
+- how to transfer from an airport to the city center.
 
-These questions are often too small for a full article but still useful as claim-level registry pages.
+These questions are often too narrow for a full article but still useful as claim-level registry seed topics after source-backed review.
 
 ## Combination Axes
 
-Generate candidates by combining three axes:
+Generate candidates by combining the requested axes:
 
 ```text
-domain -> subject -> facet
+visa_requirement -> origin country -> destination country
+metro_fare -> city -> transport operator
+passport_fee -> country -> document type
+saas_pricing -> product -> plan -> currency/country
+refund_policy -> platform -> country
+airport_transfer -> airport -> city center
 ```
 
 Examples:
 
 ```text
-radiology.imaging -> CT 검사 -> 검사 방식
-transport.bus -> 저상버스 -> 분류 기준
-plumbing.fixture -> 양변기 종류 -> 구성 요소
-biology.insect -> 곤충의 종류 -> 식별 특징
-otaku.media -> 애니 시청 순서 -> 공식 맥락
+visa_requirement -> United States -> Japan
+metro_fare -> London -> Transport for London
+passport_fee -> South Korea -> passport renewal
+saas_pricing -> GitHub -> business -> USD/US
+refund_policy -> Steam -> Canada
+airport_transfer -> Incheon Airport -> central Seoul
 ```
 
 ## Added Long-Tail Taxonomy
 
-Suggested category prefixes:
+Current category values:
 
-- `medical.term`
-- `clinical_pathology.lab`
-- `radiology.imaging`
-- `vehicle.car`
-- `transport.bus`
-- `rail.train`
-- `transport.structure`
-- `plumbing.fixture`
-- `biology.insect`
-- `hardware.standard`
-- `electricity.fixture`
-- `otaku.media`
+- `visa_requirement`
+- `metro_fare`
+- `passport_fee`
+- `saas_pricing`
+- `refund_policy`
+- `airport_transfer`
 
-The taxonomy can later expand to:
-
-- `medical.anatomy`
-- `medical.department`
-- `clinical_pathology.microbiology`
-- `radiology.finding_term`
-- `vehicle.ev`
-- `transport.subway`
-- `object.household`
-- `material.plastic`
-- `standard.size`
-- `game.system`
-- `anime.character`
-- `manga.series`
-- `collectible.figure`
+The taxonomy can later expand to additional high-change domains, but generated rows must remain topic candidates until promoted by source-backed verification.
 
 ## Safety Boundaries
 
-### Medical, clinical pathology, and radiology
+### Travel, government, pricing, and commerce
 
-Use `risk_tier: high` and `disclaimer_type: not_medical_advice`.
+Use `risk_tier: high` for visa requirements because eligibility can change quickly and depends on nationality, destination, date, and traveler circumstances.
+
+Use `risk_tier: medium` for metro fares, passport fees, SaaS pricing, refund policies, and airport transfers because they are operational or commercial facts that can change without notice.
 
 Allowed:
 
-- terminology candidates;
-- classification candidates;
-- general test-item candidates;
-- modality comparison candidates;
-- source suggestions from official, academic, or medical-institution sources.
+- topic candidates that describe what should be verified;
+- source-search queries that point reviewers toward official government, operator, platform, airport, or product pricing sources;
+- country and locale metadata for routing and prioritization.
 
 Not allowed as generated verified facts:
 
-- diagnosis;
-- treatment recommendation;
-- personal lab-result interpretation;
-- personal imaging finding interpretation;
-- medication instructions.
-
-### Transport, rail, and buses
-
-Use `check_official_source` for fares, timetables, route contexts, and policy-like claims because they may change.
-
-### Otaku/media topics
-
-Allowed:
-
-- watch-order candidate pages;
-- official release-order candidates;
-- character attribute candidate pages;
-- game item category candidates.
-
-Avoid:
-
-- long copyrighted story reproduction;
-- long quoted dialogue;
-- rumor-based claims;
-- fan speculation presented as fact.
+- asserting that a visa is or is not required;
+- asserting a fare, fee, price, refund window, or transfer time;
+- implying that a generated candidate has already been reviewed;
+- using blog/forum/rumor content as verification.
 
 ## Sample File
 
@@ -132,7 +98,7 @@ The generated sample file is:
 data/topic-candidates/long-tail-combination-sample.jsonl
 ```
 
-It contains deterministic examples generated from the domain/subject/facet matrix. All claims are unverified.
+It contains deterministic examples generated from the combination matrices. Rows are topic candidates only and do not contain verified claims.
 
 Regenerate it with:
 
@@ -150,7 +116,7 @@ scripts/generate-long-tail-combinations.mjs
 
 It intentionally does not call an AI provider. It creates a deterministic starter matrix so AI-based generation can later be compared against a safe baseline.
 
-Future AI generation should preserve the same invariant: all generated claims remain `확인 필요` / `low` / `needs_review` until source-backed verification.
+Future AI generation should preserve the same invariant: generated rows are topic candidates only until source-backed verification promotes them into claim-level documents.
 
 ## Next Expansion
 
