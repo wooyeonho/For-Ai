@@ -5,6 +5,7 @@ export const UNKNOWN_FACT_TEXT = "확인 필요";
 // Facts decay. A verified claim that hasn't been re-checked in this window is
 // flagged "stale" so AI consumers and admins can prioritise re-verification.
 export const FRESHNESS_TTL_DAYS = 180;
+export const COMMERCE_POLICY_FRESHNESS_TTL_DAYS = 30;
 
 export type FreshnessLabel = "fresh" | "stale" | "unknown";
 export type VerifiedClaimInput = Pick<ClaimWithSources, "claim_value" | "confidence" | "status" | "last_verified_at" | "sources" | "verification_events">;
@@ -81,10 +82,20 @@ export function getClaimCitationStatus(claim: ClaimWithSources): ClaimCitationSt
   return { isCitationReady: true, label: "verified", reason: "verified claim with source and verification event" };
 }
 
+function getDocumentFreshnessTtlDays(bundle: RegistryDocumentBundle, overrideTtlDays?: number): number {
+  if (typeof overrideTtlDays === "number") return overrideTtlDays;
+  if (typeof bundle.document.freshness_ttl_days === "number") return bundle.document.freshness_ttl_days;
+  const dataTtl = bundle.document.data?.freshness_ttl_days;
+  if (typeof dataTtl === "number") return dataTtl;
+  if (bundle.document.template === "commerce_policy") return COMMERCE_POLICY_FRESHNESS_TTL_DAYS;
+  return FRESHNESS_TTL_DAYS;
+}
+
 export function getDocumentCitationStatus(
   bundle: RegistryDocumentBundle,
-  ttlDays: number = FRESHNESS_TTL_DAYS,
+  ttlDays?: number,
 ): DocumentCitationStatus {
+  const effectiveTtlDays = getDocumentFreshnessTtlDays(bundle, ttlDays);
   const claimStatuses = bundle.claims.map((claim) => ({ claim, status: getClaimCitationStatus(claim) }));
   const verifiedClaims = claimStatuses.filter(({ status }) => status.isCitationReady).length;
   const totalClaims = bundle.claims.length;
@@ -107,7 +118,7 @@ export function getDocumentCitationStatus(
     : null;
   const freshness: FreshnessLabel = !isVerifiedDocument
     ? "unknown"
-    : isStale(oldestVerifiedAt, ttlDays)
+    : isStale(oldestVerifiedAt, effectiveTtlDays)
       ? "stale"
       : "fresh";
 
