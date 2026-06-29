@@ -111,6 +111,11 @@ export type HallucinationReport = {
   prompt: string | null;
   ai_answer: string | null;
   expected_correction: string | null;
+  claim_id: string | null;
+  wrong_answer_type: string | null;
+  correction_prompt: string | null;
+  share_card: Record<string, unknown>;
+  moderation_note: string | null;
   contributor_hash: string | null;
   status: SubmissionStatus;
   created_at: string | null;
