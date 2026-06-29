@@ -11,6 +11,11 @@ create type business_profile_status as enum ('pending', 'verified', 'suspended',
 -- Business correction request priority
 create type correction_priority as enum ('standard', 'priority', 'urgent');
 
+-- Business-submitted claim proposals are intake items only. They can never be
+-- marked verified directly by a business profile. Human review promotes accepted
+-- proposals through canonical claims + verification_events.
+create type business_claim_proposal_status as enum ('new', 'reviewing', 'accepted', 'rejected', 'withdrawn');
+
 -- Reputation alert severity
 create type alert_severity as enum ('info', 'warning', 'critical');
 
@@ -113,7 +118,38 @@ create index business_corrections_entity_id_idx on business_corrections(entity_i
 create index business_corrections_status_idx on business_corrections(status);
 create index business_corrections_priority_idx on business_corrections(priority);
 
-comment on table business_corrections is 'Claim corrections submitted by verified business profiles. Priority and urgent corrections are reviewed faster but never bypass source verification.';
+comment on table business_corrections is 'Claim corrections submitted by verified business profiles. Priority and urgent corrections are reviewed faster but never bypass source verification. Accepted means accepted for human review/application, not verified.';
+
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Business Claim Proposals
+-- Businesses may propose factual claims, but proposals are never citation-grade.
+-- Promotion to claims.status='verified' must happen via a human verification event.
+-- ─────────────────────────────────────────────────────────────────────────────
+create table business_claim_proposals (
+  id              uuid primary key default gen_random_uuid(),
+  profile_id      uuid not null references verified_business_profiles(id) on delete cascade,
+  entity_id       text not null references entities(id) on delete restrict,
+  document_id     text references documents(id) on delete set null,
+  claim_id        text references claims(id) on delete set null,
+  field_path      text not null,
+  proposed_claim_text text not null,
+  proposed_value  text not null,
+  source_url      text,
+  source_type     source_type not null default 'official',
+  status          business_claim_proposal_status not null default 'new',
+  reviewer_note   text,
+  reviewed_at     timestamptz,
+  contributor_hash text,
+  created_at      timestamptz not null default now(),
+  updated_at      timestamptz not null default now(),
+  constraint business_claim_proposals_no_verified_status check (status::text <> 'verified')
+);
+
+create index business_claim_proposals_profile_id_idx on business_claim_proposals(profile_id);
+create index business_claim_proposals_entity_id_idx on business_claim_proposals(entity_id);
+create index business_claim_proposals_status_idx on business_claim_proposals(status);
+
+comment on table business_claim_proposals is 'Business-submitted claim proposals. These are labeled business-claimed suggestions, not verified facts; they cannot become verified without a human verification_event.';
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Reputation Alerts
@@ -161,7 +197,8 @@ create table sponsored_placements (
   ends_at         timestamptz,
   impressions     bigint not null default 0,
   clicks          bigint not null default 0,
-  created_at      timestamptz not null default now()
+  created_at      timestamptz not null default now(),
+  constraint sponsored_placements_label_required check (lower(display_label) like '%sponsored%' or lower(display_label) like '%ad%')
 );
 
 create index sponsored_placements_profile_id_idx on sponsored_placements(profile_id);
@@ -169,12 +206,85 @@ create index sponsored_placements_active_idx on sponsored_placements(is_active, 
 
 comment on table sponsored_placements is 'Sponsored promotional placements. MUST always render with a visible "Sponsored" label. Never blends with verified facts.';
 
+
+-- Guardrail: direct writes must not flip canonical claims to verified. Admin flows
+-- should call promote_claim_with_human_verification(), which sets a transaction-
+-- local flag, updates the claim, and inserts the required human review event.
+create or replace function prevent_direct_verified_claim_promotion()
+returns trigger
+language plpgsql
+as $$
+begin
+  if new.status = 'verified'
+     and (tg_op = 'INSERT' or old.status is distinct from 'verified')
+     and current_setting('forai.human_verification_event', true) is distinct from 'true' then
+    raise exception 'claims can become verified only through a human verification event';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists claims_require_human_verification on claims;
+create trigger claims_require_human_verification
+before insert or update of status on claims
+for each row execute function prevent_direct_verified_claim_promotion();
+
+create or replace function promote_claim_with_human_verification(
+  p_claim_id text,
+  p_confidence confidence_level,
+  p_note text,
+  p_contributor_hash text default null
+)
+returns void
+language plpgsql
+security definer
+as $$
+declare
+  previous claim_status;
+  previous_confidence confidence_level;
+begin
+  if p_note is null or length(trim(p_note)) = 0 then
+    raise exception 'human verification note is required';
+  end if;
+
+  if p_confidence not in ('medium', 'high') then
+    raise exception 'verified claims require medium or high confidence';
+  end if;
+
+  perform set_config('forai.human_verification_event', 'true', true);
+
+  select status, confidence into previous, previous_confidence from claims where id = p_claim_id for update;
+  if not found then
+    raise exception 'claim % not found', p_claim_id;
+  end if;
+
+  update claims
+     set status = 'verified',
+         confidence = p_confidence,
+         last_verified_at = now(),
+         updated_at = now()
+   where id = p_claim_id;
+
+  insert into verification_events (
+    claim_id, event_type, previous_status, new_status,
+    previous_confidence, new_confidence, note, contributor_hash
+  )
+  select id, 'reviewed', previous, 'verified', previous_confidence, p_confidence, p_note, p_contributor_hash
+    from claims
+   where id = p_claim_id;
+end;
+$$;
+
+comment on function promote_claim_with_human_verification(text, confidence_level, text, text)
+  is 'Only supported path for promoting a claim to verified; records the mandatory human verification event.';
+
 -- ─────────────────────────────────────────────────────────────────────────────
 -- RLS policies
 -- ─────────────────────────────────────────────────────────────────────────────
 alter table verified_business_profiles enable row level security;
 alter table api_keys enable row level security;
 alter table business_corrections enable row level security;
+alter table business_claim_proposals enable row level security;
 alter table reputation_alerts enable row level security;
 alter table sponsored_placements enable row level security;
 
