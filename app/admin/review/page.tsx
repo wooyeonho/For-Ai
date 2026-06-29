@@ -239,6 +239,7 @@ export default function AdminReviewPage() {
           <li><Link href="/admin/new-entity">Create new entity draft</Link></li>
           <li><Link href="/admin/new-document">Create new document draft</Link></li>
           <li><Link href="/admin/import">Bulk import stub</Link></li>
+          <li><Link href="/admin/diagnostics">Admin diagnostics</Link></li>
         </ul>
       </nav>
     </div>
