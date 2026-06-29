@@ -1,8 +1,8 @@
 "use client";
-import { ensureAdminSession } from "@/lib/admin-client";
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { AdminSecretField, useAdminSecret } from "../AdminSecretProvider";
 
 type SourceRow = { id: string; title?: string | null; url?: string | null; source_type?: string | null };
 type ClaimRow = {
@@ -28,7 +28,7 @@ type DocumentRow = {
 const SOURCE_TYPES = ["official", "platform", "document", "web", "review", "other"];
 
 export default function VerifyClaimPage() {
-  const [secret, setSecret] = useState("");
+  const { adminSecret, setAdminSecret, resetAdminSecret } = useAdminSecret();
   const [documents, setDocuments] = useState<DocumentRow[]>([]);
   const [loading, setLoading] = useState(false);
   const [selectedClaim, setSelectedClaim] = useState<ClaimRow | null>(null);
@@ -50,15 +50,14 @@ export default function VerifyClaimPage() {
   } | null>(null);
 
   const load = useCallback(async () => {
-    if (!secret) return;
+    if (!adminSecret) return;
     setLoading(true);
-    try { await ensureAdminSession(secret); } catch (e) { setLoading(false); setMessage({ ok: false, text: e instanceof Error ? e.message : String(e) }); return; }
-    const res = await fetch("/api/admin/verify-claim", { credentials: "same-origin" });
+    const res = await fetch("/api/admin/verify-claim", { headers: { "x-admin-secret": adminSecret } });
     const data = await res.json();
     setLoading(false);
     if (res.ok) setDocuments(Array.isArray(data.documents) ? data.documents : []);
     else setMessage({ ok: false, text: data.error ?? "claim 목록 조회 실패" });
-  }, [secret]);
+  }, [adminSecret]);
 
   const [targetSlug, setTargetSlug] = useState<string | null>(null);
 
@@ -101,10 +100,9 @@ export default function VerifyClaimPage() {
     setChecking(true);
     setSourceCheck(null);
     try {
-      await ensureAdminSession(secret);
       const res = await fetch("/api/admin/check-source", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "x-admin-csrf": "1" },
+        headers: { "Content-Type": "application/json", "x-admin-secret": adminSecret, "x-admin-csrf": "1" },
         body: JSON.stringify({ url: url.trim(), match: claimValue.trim() }),
       });
       const data = await res.json();
@@ -122,10 +120,9 @@ export default function VerifyClaimPage() {
 
   async function submitVerify() {
     if (!selectedClaim) return;
-    try { await ensureAdminSession(secret); } catch (e) { setMessage({ ok: false, text: e instanceof Error ? e.message : String(e) }); return; }
     const res = await fetch("/api/admin/verify-claim", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-admin-csrf": "1" },
+      headers: { "Content-Type": "application/json", "x-admin-secret": adminSecret, "x-admin-csrf": "1" },
       body: JSON.stringify({
         claim_id: selectedClaim.id,
         claim_value: claimValue,
@@ -155,18 +152,21 @@ export default function VerifyClaimPage() {
     <div style={{ maxWidth: 960, margin: "0 auto", padding: "40px 20px" }}>
       <nav style={{ marginBottom: 24, fontSize: 13 }}><Link href="/admin/review">← Admin</Link></nav>
       <h1>Claim 검증 관리</h1>
-      <p style={{ color: "#6b7280" }}>Promoted 문서의 claim에 출처를 붙이고 verified 상태로 승격합니다. 기존 관리자 인증 방식대로 ADMIN_SECRET을 입력한 뒤 문서를 불러오세요.</p>
+      <p style={{ color: "#6b7280" }}>Promoted 문서의 claim에 출처를 붙이고 verified 상태로 승격합니다.</p>
       <p style={{ color: "#374151", fontSize: 13 }}>
-        승격 전 반드시 <Link href="/admin/verification-policy">verified 승격 기준 문서</Link>를 확인하세요.
+        승격 전 반드시 <a href="/docs/operations/CLAIM_VERIFICATION_POLICY.md">verified 승격 기준 문서</a>를 확인하세요.
         AI 생성 후보는 사람이 출처를 검토하기 전까지 verified로 올릴 수 없습니다.
       </p>
 
       <section className="registry-panel">
-        <label style={{ fontWeight: 600 }}>Admin password</label>
-        <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-          <input type="password" value={secret} onChange={(e) => setSecret(e.target.value)} placeholder="관리자 비밀번호" style={{ flex: 1, padding: 8 }} />
-          <button onClick={load} disabled={!secret || loading}>{loading ? "불러오는 중..." : "불러오기"}</button>
-        </div>
+        <AdminSecretField
+          adminSecret={adminSecret}
+          setAdminSecret={setAdminSecret}
+          resetAdminSecret={resetAdminSecret}
+          placeholder="ADMIN_SECRET"
+          inputStyle={{ flex: 1, padding: 8 }}
+        />
+        <button onClick={load} disabled={!adminSecret || loading} style={{ marginTop: 8 }}>{loading ? "불러오는 중..." : "불러오기"}</button>
       </section>
 
       {message && <div style={{ padding: 12, marginBottom: 16, borderRadius: 8, background: message.ok ? "#f0fdf4" : "#fef2f2", color: message.ok ? "#166534" : "#991b1b" }}>{message.text}</div>}

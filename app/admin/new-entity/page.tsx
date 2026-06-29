@@ -1,10 +1,10 @@
 "use client";
 import Link from "next/link";
 import { useState } from "react";
-import { ensureAdminSession } from "@/lib/admin-client";
+import { AdminSecretField, useAdminSecret } from "../AdminSecretProvider";
 
 export default function NewEntityPage() {
-  const [adminSecret, setAdminSecret] = useState("");
+  const { adminSecret, setAdminSecret, resetAdminSecret } = useAdminSecret();
   const [id, setId] = useState("");
   const [type, setType] = useState("");
   const [canonicalName, setCanonicalName] = useState("");
@@ -19,11 +19,11 @@ export default function NewEntityPage() {
     setLoading(true);
     setResult(null);
     try {
-      await ensureAdminSession(adminSecret);
       const res = await fetch("/api/admin/new-entity", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "x-admin-secret": adminSecret,
           "x-admin-csrf": "1",
         },
         body: JSON.stringify({
@@ -123,12 +123,13 @@ export default function NewEntityPage() {
               placeholder="중구"
             />
           </label>
-          <label>Admin Password <span aria-label="필수">*</span>
-            <input
-              type="password" value={adminSecret} onChange={e => setAdminSecret(e.target.value)} required
-              placeholder="관리자 비밀키"
-            />
-          </label>
+          <AdminSecretField
+            adminSecret={adminSecret}
+            setAdminSecret={setAdminSecret}
+            resetAdminSecret={resetAdminSecret}
+            label="Admin Secret *"
+            placeholder="관리자 비밀키"
+          />
           <button type="submit" disabled={loading}>{loading ? "생성 중..." : "Entity 생성"}</button>
         </form>
       </section>
