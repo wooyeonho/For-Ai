@@ -1,10 +1,16 @@
 {
   "entity_id": "kr-transport-seoul-metro-fare-001",
   "slug": "seoul-metro-base-fare",
+  "canonical_slug": "seoul-metro-base-fare",
   "type": "transport.metro",
   "name": "서울 지하철 기본요금 (2025년)",
+  "localized_title": {
+    "ko": "서울 지하철 기본요금 (2025년)"
+  },
   "lang": "ko",
   "country": "KR",
+  "region": "Seoul",
+  "city": "Seoul",
   "jurisdiction": "KR",
   "risk_tier": "low",
   "update_frequency": "event_based",
@@ -25,7 +31,8 @@
           "title": "서울교통공사 운임안내",
           "url": "https://www.seoulmetro.co.kr/en/page.do?menuIdx=354",
           "observed_at": "2026-06-22",
-          "note": "이용거리별 운임표 '10Km까지' 성인 교통카드 기본요금"
+          "note": "이용거리별 운임표 '10Km까지' 성인 교통카드 기본요금",
+          "source_authority": "official"
         }
       ],
       "verification_event": {
@@ -33,7 +40,14 @@
         "actor": "admin",
         "verified_at": "2026-06-22",
         "note": "서울교통공사 공식 운임안내 페이지에서 직접 확인. 2025.6.28 요금 인상 반영."
-      }
+      },
+      "jurisdiction": "KR",
+      "country": "KR",
+      "region": "Seoul",
+      "city": "Seoul",
+      "risk_tier": "low",
+      "update_frequency": "event_based",
+      "disclaimer_type": "check_official_source"
     },
     {
       "claim_id": "seoul-metro-fare-youth-card",
@@ -49,7 +63,8 @@
           "title": "서울교통공사 운임안내",
           "url": "https://www.seoulmetro.co.kr/en/page.do?menuIdx=354",
           "observed_at": "2026-06-22",
-          "note": "이용거리별 운임표 '10Km까지' 청소년 교통카드 기본요금"
+          "note": "이용거리별 운임표 '10Km까지' 청소년 교통카드 기본요금",
+          "source_authority": "official"
         }
       ],
       "verification_event": {
@@ -57,7 +72,14 @@
         "actor": "admin",
         "verified_at": "2026-06-22",
         "note": "서울교통공사 공식 운임안내 페이지에서 직접 확인"
-      }
+      },
+      "jurisdiction": "KR",
+      "country": "KR",
+      "region": "Seoul",
+      "city": "Seoul",
+      "risk_tier": "low",
+      "update_frequency": "event_based",
+      "disclaimer_type": "check_official_source"
     },
     {
       "claim_id": "seoul-metro-fare-child-card",
@@ -73,7 +95,8 @@
           "title": "서울교통공사 운임안내",
           "url": "https://www.seoulmetro.co.kr/en/page.do?menuIdx=354",
           "observed_at": "2026-06-22",
-          "note": "이용거리별 운임표 '10Km까지' 어린이 교통카드 기본요금"
+          "note": "이용거리별 운임표 '10Km까지' 어린이 교통카드 기본요금",
+          "source_authority": "official"
         }
       ],
       "verification_event": {
@@ -81,7 +104,15 @@
         "actor": "admin",
         "verified_at": "2026-06-22",
         "note": "서울교통공사 공식 운임안내 페이지에서 직접 확인"
-      }
+      },
+      "jurisdiction": "KR",
+      "country": "KR",
+      "region": "Seoul",
+      "city": "Seoul",
+      "risk_tier": "low",
+      "update_frequency": "event_based",
+      "disclaimer_type": "check_official_source"
     }
-  ]
+  ],
+  "translation_status": "source_language"
 }

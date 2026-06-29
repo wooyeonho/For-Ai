@@ -8,9 +8,14 @@ create extension if not exists pgcrypto;
 create type confidence_level as enum ('low', 'medium', 'high');
 create type document_status as enum ('ai_draft', 'needs_review', 'verified', 'published', 'archived');
 create type claim_status as enum ('needs_review', 'verified', 'disputed', 'unknown');
-create type source_type as enum ('official', 'platform', 'review', 'user', 'phone', 'photo', 'document', 'web', 'other', 'unknown');
+create type source_type as enum ('official', 'law', 'regulator', 'platform', 'review', 'user', 'phone', 'photo', 'document', 'web', 'other', 'unknown');
+create type risk_tier as enum ('low', 'medium', 'high', 'forbidden');
+create type update_frequency as enum ('realtime', 'daily', 'weekly', 'monthly', 'quarterly', 'annual', 'event_based', 'static');
+create type disclaimer_type as enum ('none', 'check_official_source', 'not_medical_advice', 'not_financial_advice', 'not_legal_advice', 'not_genetic_or_medical_advice', 'public_profile_only', 'realtime_data_required');
+create type source_authority as enum ('primary', 'official', 'regulator', 'legal', 'platform', 'secondary', 'community', 'unknown');
+create type translation_status as enum ('source_language', 'human_translated', 'machine_translated', 'needs_translation_review');
 create type submission_status as enum ('new', 'reviewing', 'accepted', 'rejected', 'spam');
-create type verification_event_type as enum ('created', 'reviewed', 'source_added', 'source_removed', 'status_changed', 'confidence_changed');
+create type verification_event_type as enum ('created', 'reviewed', 'source_added', 'source_removed', 'source_verified', 'status_changed', 'confidence_changed');
 
 create table entities (
   id text primary key,
@@ -29,11 +34,20 @@ create table documents (
   slug text not null,
   lang text not null,
   country text not null,
+  region text,
+  city text,
+  jurisdiction text not null default 'GLOBAL',
+  canonical_slug text not null,
   title text not null,
+  localized_title jsonb not null default '{}'::jsonb,
   category text not null,
   template text not null,
   status document_status not null default 'ai_draft',
   confidence confidence_level not null default 'low',
+  risk_tier risk_tier not null default 'low',
+  update_frequency update_frequency not null default 'event_based',
+  disclaimer_type disclaimer_type not null default 'check_official_source',
+  translation_status translation_status not null default 'source_language',
   last_verified_at timestamptz,
   license_code text not null default 'forai-data-license-v0.1',
   data jsonb not null default '{}'::jsonb,
@@ -41,6 +55,8 @@ create table documents (
   updated_at timestamptz not null default now(),
   constraint documents_entity_id_required check (length(entity_id) > 0),
   constraint documents_slug_required check (length(slug) > 0),
+  constraint documents_canonical_slug_required check (length(canonical_slug) > 0),
+  constraint documents_high_risk_disclaimer_required check (risk_tier <> 'high' or disclaimer_type <> 'none'),
   constraint documents_lang_required check (length(lang) > 0),
   constraint documents_country_required check (length(country) > 0),
   constraint documents_license_not_cc_by_sa check (license_code <> 'CC-BY-SA')
@@ -49,6 +65,7 @@ create table documents (
 comment on column documents.data is 'Rendering convenience only. Canonical facts must exist as claims.';
 
 create unique index documents_country_lang_slug_key on documents (country, lang, slug);
+create unique index documents_canonical_slug_lang_key on documents (canonical_slug, lang);
 create unique index documents_entity_lang_template_key on documents (entity_id, lang, template);
 
 create table claims (
@@ -58,24 +75,36 @@ create table claims (
   field_path text not null,
   claim_text text not null,
   claim_value text not null,
-  jurisdiction text,
+  jurisdiction text not null default 'GLOBAL',
+  country text not null default 'GLOBAL',
+  region text,
+  city text,
+  risk_tier risk_tier not null default 'low',
+  update_frequency update_frequency not null default 'event_based',
+  disclaimer_type disclaimer_type not null default 'check_official_source',
   confidence confidence_level not null default 'low',
   status claim_status not null default 'needs_review',
   last_verified_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   constraint claims_entity_id_required check (length(entity_id) > 0),
-  constraint claims_field_path_required check (length(field_path) > 0)
+  constraint claims_field_path_required check (length(field_path) > 0),
+  constraint claims_country_required check (length(country) > 0),
+  constraint claims_jurisdiction_required check (length(jurisdiction) > 0),
+  constraint claims_high_risk_disclaimer_required check (risk_tier <> 'high' or disclaimer_type <> 'none')
 );
 
 create index claims_document_id_idx on claims (document_id);
 create index claims_entity_id_idx on claims (entity_id);
+create index claims_jurisdiction_idx on claims (jurisdiction);
+create index claims_risk_tier_idx on claims (risk_tier);
 create unique index claims_document_field_path_key on claims (document_id, field_path);
 
 create table claim_sources (
   id text primary key,
   claim_id text not null references claims(id) on delete cascade,
   source_type source_type not null default 'unknown',
+  source_authority source_authority not null default 'unknown',
   title text,
   url text,
   citation text,
@@ -236,8 +265,16 @@ create table topic_candidates (
   slug           text not null unique,
   category       text not null,
   subcategory    text,
-  risk_tier      text not null default 'medium'
-                 check (risk_tier in ('low','medium','high','forbidden')),
+  region         text,
+  city           text,
+  canonical_slug text not null default '',
+  localized_title jsonb not null default '{}'::jsonb,
+  jurisdiction   text not null default 'GLOBAL',
+  source_authority source_authority not null default 'unknown',
+  translation_status translation_status not null default 'source_language',
+  risk_tier      risk_tier not null default 'medium',
+  update_frequency update_frequency not null default 'event_based',
+  disclaimer_type disclaimer_type not null default 'check_official_source',
   why_people_ask_ai  text,
   why_ai_gets_wrong  text,
   claims         jsonb not null default '[]',

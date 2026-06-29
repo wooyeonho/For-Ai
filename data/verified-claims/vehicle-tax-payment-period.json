@@ -1,10 +1,16 @@
 {
   "entity_id": "kr-finance-vehicle-tax-payment-period-001",
   "slug": "vehicle-tax-payment-period",
+  "canonical_slug": "vehicle-tax-payment-period",
   "type": "finance.tax",
   "name": "자동차세 납부 기간·연납 할인",
+  "localized_title": {
+    "ko": "자동차세 납부 기간·연납 할인"
+  },
   "lang": "ko",
   "country": "KR",
+  "region": null,
+  "city": null,
   "jurisdiction": "KR",
   "risk_tier": "low",
   "update_frequency": "annual",
@@ -25,7 +31,8 @@
           "title": "서울시ETAX — 자동차세 연납 안내",
           "url": "https://etax.seoul.go.kr/AtmblRegiTaxYrInptAction.tran?gl_gubun=g&gnb_id=020501&lnb_id=020501",
           "observed_at": "2026-06-28",
-          "note": "서울시ETAX 공식 안내: 별도로 신고납부하지 않는 경우 6월(1기분), 12월(2기분)에 정기분으로 부과. 정기분 1기 납기는 매년 6월(지방세법상 6.16~6.30)."
+          "note": "서울시ETAX 공식 안내: 별도로 신고납부하지 않는 경우 6월(1기분), 12월(2기분)에 정기분으로 부과. 정기분 1기 납기는 매년 6월(지방세법상 6.16~6.30).",
+          "source_authority": "official"
         }
       ],
       "verification_event": {
@@ -33,7 +40,14 @@
         "actor": "ai-source-fetch",
         "verified_at": "2026-06-28",
         "note": "서울시ETAX(etax.seoul.go.kr) 공식 자동차세 안내에서 직접 확인. 2026-06-28 기준. 최종 사람 승인 대기."
-      }
+      },
+      "jurisdiction": "KR",
+      "country": "KR",
+      "region": null,
+      "city": null,
+      "risk_tier": "low",
+      "update_frequency": "annual",
+      "disclaimer_type": "check_official_source"
     },
     {
       "claim_id": "vehicle-tax-payment-period-period-second_half",
@@ -49,7 +63,8 @@
           "title": "서울시ETAX — 자동차세 연납 안내",
           "url": "https://etax.seoul.go.kr/AtmblRegiTaxYrInptAction.tran?gl_gubun=g&gnb_id=020501&lnb_id=020501",
           "observed_at": "2026-06-28",
-          "note": "서울시ETAX 공식 안내: 별도로 신고납부하지 않는 경우 6월(1기분), 12월(2기분)에 정기분으로 부과. 정기분 2기 납기는 매년 12월(지방세법상 12.16~12.31)."
+          "note": "서울시ETAX 공식 안내: 별도로 신고납부하지 않는 경우 6월(1기분), 12월(2기분)에 정기분으로 부과. 정기분 2기 납기는 매년 12월(지방세법상 12.16~12.31).",
+          "source_authority": "official"
         }
       ],
       "verification_event": {
@@ -57,7 +72,14 @@
         "actor": "ai-source-fetch",
         "verified_at": "2026-06-28",
         "note": "서울시ETAX(etax.seoul.go.kr) 공식 자동차세 안내에서 직접 확인. 2026-06-28 기준. 최종 사람 승인 대기."
-      }
+      },
+      "jurisdiction": "KR",
+      "country": "KR",
+      "region": null,
+      "city": null,
+      "risk_tier": "low",
+      "update_frequency": "annual",
+      "disclaimer_type": "check_official_source"
     },
     {
       "claim_id": "vehicle-tax-payment-period-discount-annual_prepay_rate",
@@ -73,7 +95,8 @@
           "title": "서울시ETAX — 자동차세 연납 안내",
           "url": "https://etax.seoul.go.kr/AtmblRegiTaxYrInptAction.tran?gl_gubun=g&gnb_id=020501&lnb_id=020501",
           "observed_at": "2026-06-28",
-          "note": "서울시ETAX 공식 안내: 연납 신고납부는 1·3·6·9월 중 신청 가능. 1월은 2~12월 11개월분의 5%, 3월은 4~12월 9개월분의 5%, 6월은 7~12월 6개월분의 5%, 9월은 10~12월 3개월분의 5% 할인. 1월 신청 시 연세액 대비 환산 약 4.57%."
+          "note": "서울시ETAX 공식 안내: 연납 신고납부는 1·3·6·9월 중 신청 가능. 1월은 2~12월 11개월분의 5%, 3월은 4~12월 9개월분의 5%, 6월은 7~12월 6개월분의 5%, 9월은 10~12월 3개월분의 5% 할인. 1월 신청 시 연세액 대비 환산 약 4.57%.",
+          "source_authority": "official"
         }
       ],
       "verification_event": {
@@ -81,7 +104,15 @@
         "actor": "ai-source-fetch",
         "verified_at": "2026-06-28",
         "note": "서울시ETAX(etax.seoul.go.kr) 공식 연납 안내에서 직접 확인. 연납 할인율은 시행령 개정 대상이므로 행정안전부 공지를 함께 확인 권장. 2026-06-28 기준. 최종 사람 승인 대기."
-      }
+      },
+      "jurisdiction": "KR",
+      "country": "KR",
+      "region": null,
+      "city": null,
+      "risk_tier": "low",
+      "update_frequency": "annual",
+      "disclaimer_type": "check_official_source"
     }
-  ]
+  ],
+  "translation_status": "source_language"
 }

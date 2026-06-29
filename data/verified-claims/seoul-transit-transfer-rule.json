@@ -1,10 +1,16 @@
 {
   "entity_id": "kr-transport-seoul-transit-transfer-001",
   "slug": "seoul-transit-transfer-rule",
+  "canonical_slug": "seoul-transit-transfer-rule",
   "type": "transport.transfer",
   "name": "수도권 대중교통 통합환승 인정 시간 (2025년)",
+  "localized_title": {
+    "ko": "수도권 대중교통 통합환승 인정 시간 (2025년)"
+  },
   "lang": "ko",
   "country": "KR",
+  "region": "Seoul Metropolitan Area",
+  "city": null,
   "jurisdiction": "KR",
   "risk_tier": "low",
   "update_frequency": "event_based",
@@ -25,7 +31,8 @@
           "title": "서울특별시 통합환승 할인제도",
           "url": "https://news.seoul.go.kr/traffic/transfer_discount",
           "observed_at": "2026-06-27",
-          "note": "서울특별시 교통정책과 공식 안내: 1인 1장 카드로 하차 후 30분 이내(21~익일 07시는 60분 이내) 다른 수단 승차 시 환승할인 적용. 공공누리 제4유형. 수정일 2026-02-02."
+          "note": "서울특별시 교통정책과 공식 안내: 1인 1장 카드로 하차 후 30분 이내(21~익일 07시는 60분 이내) 다른 수단 승차 시 환승할인 적용. 공공누리 제4유형. 수정일 2026-02-02.",
+          "source_authority": "official"
         }
       ],
       "verification_event": {
@@ -33,7 +40,14 @@
         "actor": "ai-source-fetch",
         "verified_at": "2026-06-27",
         "note": "서울특별시 공식 통합환승 할인제도 페이지(news.seoul.go.kr)에서 직접 확인. 2026-06-27 기준. 최종 사람 승인 대기."
-      }
+      },
+      "jurisdiction": "KR",
+      "country": "KR",
+      "region": "Seoul Metropolitan Area",
+      "city": null,
+      "risk_tier": "low",
+      "update_frequency": "event_based",
+      "disclaimer_type": "check_official_source"
     },
     {
       "claim_id": "seoul-transfer-window-night",
@@ -49,7 +63,8 @@
           "title": "서울특별시 통합환승 할인제도",
           "url": "https://news.seoul.go.kr/traffic/transfer_discount",
           "observed_at": "2026-06-27",
-          "note": "서울특별시 교통정책과 공식 안내: 21시~익일 07시에는 환승 유효시간 60분 적용. 환승유효시간은 후승 승차시간 기준. 공공누리 제4유형."
+          "note": "서울특별시 교통정책과 공식 안내: 21시~익일 07시에는 환승 유효시간 60분 적용. 환승유효시간은 후승 승차시간 기준. 공공누리 제4유형.",
+          "source_authority": "official"
         }
       ],
       "verification_event": {
@@ -57,7 +72,14 @@
         "actor": "ai-source-fetch",
         "verified_at": "2026-06-27",
         "note": "서울특별시 공식 통합환승 할인제도 페이지(news.seoul.go.kr)에서 직접 확인. 2026-06-27 기준. 최종 사람 승인 대기."
-      }
+      },
+      "jurisdiction": "KR",
+      "country": "KR",
+      "region": "Seoul Metropolitan Area",
+      "city": null,
+      "risk_tier": "low",
+      "update_frequency": "event_based",
+      "disclaimer_type": "check_official_source"
     },
     {
       "claim_id": "seoul-transfer-max-count",
@@ -73,7 +95,8 @@
           "title": "서울특별시 통합환승 할인제도",
           "url": "https://news.seoul.go.kr/traffic/transfer_discount",
           "observed_at": "2026-06-27",
-          "note": "서울특별시 교통정책과 공식 안내: 최대 4회(5회 승차)까지 환승할인 가능. 동일 노선·동일 차량 간 환승은 할인 불가. 공공누리 제4유형."
+          "note": "서울특별시 교통정책과 공식 안내: 최대 4회(5회 승차)까지 환승할인 가능. 동일 노선·동일 차량 간 환승은 할인 불가. 공공누리 제4유형.",
+          "source_authority": "official"
         }
       ],
       "verification_event": {
@@ -81,7 +104,15 @@
         "actor": "ai-source-fetch",
         "verified_at": "2026-06-27",
         "note": "서울특별시 공식 통합환승 할인제도 페이지(news.seoul.go.kr)에서 직접 확인. 2026-06-27 기준. 최종 사람 승인 대기."
-      }
+      },
+      "jurisdiction": "KR",
+      "country": "KR",
+      "region": "Seoul Metropolitan Area",
+      "city": null,
+      "risk_tier": "low",
+      "update_frequency": "event_based",
+      "disclaimer_type": "check_official_source"
     }
-  ]
+  ],
+  "translation_status": "source_language"
 }

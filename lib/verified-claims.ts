@@ -14,21 +14,21 @@ import residentIdReissueFee from "../data/verified-claims/resident-id-reissue-fe
 import vehicleTaxPaymentPeriod from "../data/verified-claims/vehicle-tax-payment-period.json";
 import incomeTaxFilingPeriod from "../data/verified-claims/income-tax-filing-period.json";
 
-type VerifiedClaimFile = typeof seoulMetroFare;
+type VerifiedClaimFile = typeof seoulMetroFare | typeof passportFee | typeof moveInReport | typeof londonTubeFare | typeof usPassportFee | typeof tokyoMetroFare | typeof seoulCityBusFare | typeof seoulTransitTransferRule | typeof seoulTaxiBaseFare | typeof residentIdReissueFee | typeof vehicleTaxPaymentPeriod | typeof incomeTaxFilingPeriod;
 
 const verifiedFiles: VerifiedClaimFile[] = [
   seoulMetroFare,
   passportFee,
   moveInReport,
-  londonTubeFare as unknown as VerifiedClaimFile,
-  usPassportFee as unknown as VerifiedClaimFile,
-  tokyoMetroFare as unknown as VerifiedClaimFile,
-  seoulCityBusFare as unknown as VerifiedClaimFile,
-  seoulTransitTransferRule as unknown as VerifiedClaimFile,
-  seoulTaxiBaseFare as unknown as VerifiedClaimFile,
-  residentIdReissueFee as unknown as VerifiedClaimFile,
-  vehicleTaxPaymentPeriod as unknown as VerifiedClaimFile,
-  incomeTaxFilingPeriod as unknown as VerifiedClaimFile,
+  londonTubeFare,
+  usPassportFee,
+  tokyoMetroFare,
+  seoulCityBusFare,
+  seoulTransitTransferRule,
+  seoulTaxiBaseFare,
+  residentIdReissueFee,
+  vehicleTaxPaymentPeriod,
+  incomeTaxFilingPeriod,
 ];
 
 function toRegistryBundle(file: VerifiedClaimFile): RegistryDocumentBundle {
@@ -37,8 +37,8 @@ function toRegistryBundle(file: VerifiedClaimFile): RegistryDocumentBundle {
     type: file.type,
     canonical_name: file.name,
     country: file.country,
-    region: null,
-    city: null,
+    region: file.region,
+    city: file.city,
     created_at: null,
     updated_at: null,
   };
@@ -54,11 +54,20 @@ function toRegistryBundle(file: VerifiedClaimFile): RegistryDocumentBundle {
     slug: file.slug,
     lang: file.lang,
     country: file.country,
+    region: file.region,
+    city: file.city,
+    jurisdiction: file.jurisdiction,
+    canonical_slug: file.canonical_slug,
     title: file.name,
+    localized_title: file.localized_title,
     category: file.type,
     template: "fact-registry",
     status: docStatus,
     confidence: docConfidence,
+    risk_tier: file.risk_tier as RegistryDocumentBundle["document"]["risk_tier"],
+    update_frequency: file.update_frequency as RegistryDocumentBundle["document"]["update_frequency"],
+    disclaimer_type: file.disclaimer_type as RegistryDocumentBundle["document"]["disclaimer_type"],
+    translation_status: file.translation_status as RegistryDocumentBundle["document"]["translation_status"],
     last_verified_at: file.last_verified_at,
     license_code: "forai-data-license-v0.1",
     data: {
@@ -85,7 +94,13 @@ function toRegistryBundle(file: VerifiedClaimFile): RegistryDocumentBundle {
     field_path: c.field_path,
     claim_text: c.claim_text,
     claim_value: c.claim_value,
-    jurisdiction: file.country,
+    jurisdiction: c.jurisdiction,
+    country: c.country,
+    region: c.region,
+    city: c.city,
+    risk_tier: c.risk_tier as ClaimWithSources["risk_tier"],
+    update_frequency: c.update_frequency as ClaimWithSources["update_frequency"],
+    disclaimer_type: c.disclaimer_type as ClaimWithSources["disclaimer_type"],
     confidence: c.confidence as "high" | "medium" | "low",
     status: c.status as "verified" | "needs_review",
     last_verified_at: c.last_verified_at,
@@ -94,7 +109,8 @@ function toRegistryBundle(file: VerifiedClaimFile): RegistryDocumentBundle {
     sources: (c.sources ?? []).map((s, i) => ({
       id: `src-${c.claim_id}-${i}`,
       claim_id: c.claim_id,
-      source_type: s.source_type as "official" | "law",
+      source_type: s.source_type as ClaimWithSources["sources"][number]["source_type"],
+      source_authority: s.source_authority as ClaimWithSources["sources"][number]["source_authority"],
       title: s.title,
       url: s.url,
       citation: s.note,

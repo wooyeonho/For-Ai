@@ -14,6 +14,22 @@ export type SourceType =
   | "web"
   | "other"
   | "unknown";
+export type RiskTier = "low" | "medium" | "high" | "forbidden";
+export type UpdateFrequency = "realtime" | "daily" | "weekly" | "monthly" | "quarterly" | "annual" | "event_based" | "static";
+export type DisclaimerType =
+  | "none"
+  | "check_official_source"
+  | "not_medical_advice"
+  | "not_financial_advice"
+  | "not_legal_advice"
+  | "not_genetic_or_medical_advice"
+  | "public_profile_only"
+  | "realtime_data_required";
+export type SourceAuthority = "primary" | "official" | "regulator" | "legal" | "platform" | "secondary" | "community" | "unknown";
+export type TranslationStatus = "source_language" | "human_translated" | "machine_translated" | "needs_translation_review";
+
+export type LocalizedTitle = Record<string, string>;
+
 export type SubmissionStatus = "new" | "reviewing" | "accepted" | "rejected" | "spam";
 export type VerificationEventType =
   | "created"
@@ -41,11 +57,20 @@ export type Document = {
   slug: string;
   lang: string;
   country: string;
+  region: string | null;
+  city: string | null;
+  jurisdiction: string;
+  canonical_slug: string;
   title: string;
+  localized_title: LocalizedTitle;
   category: string;
   template: string;
   status: DocumentStatus;
   confidence: Confidence;
+  risk_tier: RiskTier;
+  update_frequency: UpdateFrequency;
+  disclaimer_type: DisclaimerType;
+  translation_status: TranslationStatus;
   last_verified_at: string | null;
   license_code: string;
   data: Record<string, unknown>;
@@ -60,7 +85,13 @@ export type Claim = {
   field_path: string;
   claim_text: string;
   claim_value: string;
-  jurisdiction: string | null;
+  jurisdiction: string;
+  country: string;
+  region: string | null;
+  city: string | null;
+  risk_tier: RiskTier;
+  update_frequency: UpdateFrequency;
+  disclaimer_type: DisclaimerType;
   confidence: Confidence;
   status: ClaimStatus;
   last_verified_at: string | null;
@@ -72,6 +103,7 @@ export type ClaimSource = {
   id: string;
   claim_id: string;
   source_type: SourceType;
+  source_authority: SourceAuthority;
   title: string | null;
   url: string | null;
   citation: string | null;

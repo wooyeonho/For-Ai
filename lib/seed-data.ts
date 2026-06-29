@@ -10,7 +10,9 @@ function claimStub(
   return {
     id, document_id: docId, entity_id: entityId,
     field_path: fieldPath, claim_text: text,
-    claim_value: "확인 필요", jurisdiction: entityId.slice(0, 2).toUpperCase(), confidence: "low", status: "needs_review",
+    claim_value: "확인 필요", jurisdiction: entityId.slice(0, 2).toUpperCase(),
+    country: entityId.slice(0, 2).toUpperCase(), region: null, city: null,
+    risk_tier: "low", update_frequency: "event_based", disclaimer_type: "check_official_source", confidence: "low", status: "needs_review",
     last_verified_at: null, created_at: null, updated_at: null,
     sources: [], verification_events: [],
   };
@@ -30,10 +32,12 @@ function vClaim(
     id, document_id: docId, entity_id: entityId,
     field_path: fieldPath, claim_text: text, claim_value: value,
     jurisdiction: entityId.slice(0, 2).toUpperCase(),
+    country: entityId.slice(0, 2).toUpperCase(), region: null, city: null,
+    risk_tier: "low", update_frequency: "event_based", disclaimer_type: "check_official_source",
     confidence, status: "verified", last_verified_at: observedAt,
     created_at: null, updated_at: null,
     sources: [{
-      id: `src-${id}`, claim_id: id, source_type: "official",
+      id: `src-${id}`, claim_id: id, source_type: "official", source_authority: "official",
       title: sourceTitle, url: sourceUrl, citation: sourceCitation,
       observed_at: observedAt, contributor_hash: null, created_at: null,
     } as ClaimSource],
@@ -53,8 +57,10 @@ function vClaim(
 function makeDoc(id: string, entity: Entity, slug: string, title: string,
   category: string, template: string, lang = "ko"): Document {
   return {
-    id, entity_id: entity.id, slug, lang, country: entity.country, title, category, template,
-    status: "ai_draft", confidence: "low", last_verified_at: null,
+    id, entity_id: entity.id, slug, lang, country: entity.country, region: entity.region, city: entity.city, jurisdiction: entity.country,
+    canonical_slug: slug, title, localized_title: { [lang]: title }, category, template,
+    status: "ai_draft", confidence: "low", risk_tier: "low", update_frequency: "event_based",
+    disclaimer_type: "check_official_source", translation_status: "source_language", last_verified_at: null,
     license_code: "forai-data-license-v0.1",
     data: {
       direct_answer: "확인 필요",

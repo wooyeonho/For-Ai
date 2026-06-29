@@ -1,10 +1,30 @@
-import type { ClaimWithSources, RegistryDocumentBundle } from "./types";
+import type { ClaimWithSources, RegistryDocumentBundle, UpdateFrequency } from "./types";
 
 export const UNKNOWN_FACT_TEXT = "확인 필요";
 
 // Facts decay. A verified claim that hasn't been re-checked in this window is
 // flagged "stale" so AI consumers and admins can prioritise re-verification.
 export const FRESHNESS_TTL_DAYS = 180;
+
+export const FRESHNESS_TTL_DAYS_BY_UPDATE_FREQUENCY: Record<UpdateFrequency, number> = {
+  realtime: 1,
+  daily: 2,
+  weekly: 7,
+  monthly: 31,
+  quarterly: 92,
+  annual: 366,
+  event_based: 180,
+  static: 730,
+};
+
+export function getFreshnessTtlDays(updateFrequency: UpdateFrequency | null | undefined): number {
+  return updateFrequency ? FRESHNESS_TTL_DAYS_BY_UPDATE_FREQUENCY[updateFrequency] : FRESHNESS_TTL_DAYS;
+}
+
+export function getBundleFreshnessTtlDays(bundle: RegistryDocumentBundle): number {
+  const claimTtls = bundle.claims.map((claim) => getFreshnessTtlDays(claim.update_frequency));
+  return Math.min(getFreshnessTtlDays(bundle.document.update_frequency), ...claimTtls);
+}
 
 export type FreshnessLabel = "fresh" | "stale" | "unknown";
 
@@ -17,12 +37,12 @@ export function ageInDays(iso: string | null | undefined, now: Date = new Date()
 
 export function isStale(
   iso: string | null | undefined,
-  ttlDays: number = FRESHNESS_TTL_DAYS,
+  ttlDays?: number,
   now: Date = new Date(),
 ): boolean {
   const age = ageInDays(iso, now);
   if (age === null) return true; // no verification date → treat as not-fresh
-  return age > ttlDays;
+  return age > (ttlDays ?? FRESHNESS_TTL_DAYS);
 }
 
 export type ClaimCitationStatus = {
@@ -43,6 +63,8 @@ export type DocumentCitationStatus = {
 
 export function getClaimCitationStatus(claim: ClaimWithSources): ClaimCitationStatus {
   const hasSource = claim.sources.length > 0;
+  const hasScope = Boolean(claim.country?.trim()) && Boolean(claim.jurisdiction?.trim());
+  const hasRequiredDisclaimer = claim.risk_tier !== "high" || claim.disclaimer_type !== "none";
   const hasVerificationEvent =
     claim.status === "verified" ||
     claim.verification_events.some((event) =>
@@ -55,6 +77,8 @@ export function getClaimCitationStatus(claim: ClaimWithSources): ClaimCitationSt
     hasVerifiedValue &&
     hasSource &&
     hasVerificationEvent &&
+    hasScope &&
+    hasRequiredDisclaimer &&
     Boolean(claim.last_verified_at);
 
   if (isCitationReady) {
@@ -64,13 +88,13 @@ export function getClaimCitationStatus(claim: ClaimWithSources): ClaimCitationSt
   return {
     isCitationReady,
     label: "unverified",
-    reason: "requires verified status, non-low confidence, source, verification event, and last_verified_at",
+    reason: "requires verified status, non-low confidence, source, verification event, country/jurisdiction scope, required disclaimer, and last_verified_at",
   };
 }
 
 export function getDocumentCitationStatus(
   bundle: RegistryDocumentBundle,
-  ttlDays: number = FRESHNESS_TTL_DAYS,
+  ttlDays?: number,
 ): DocumentCitationStatus {
   const claimStatuses = bundle.claims.map((claim) => ({ claim, status: getClaimCitationStatus(claim) }));
   const verifiedClaims = claimStatuses.filter(({ status }) => status.isCitationReady).length;
@@ -92,9 +116,10 @@ export function getDocumentCitationStatus(
   const oldestVerifiedAt = readyDates.length > 0
     ? readyDates.reduce((oldest, current) => (Date.parse(current) < Date.parse(oldest) ? current : oldest))
     : null;
+  const effectiveTtlDays = ttlDays ?? getBundleFreshnessTtlDays(bundle);
   const freshness: FreshnessLabel = !isVerifiedDocument
     ? "unknown"
-    : isStale(oldestVerifiedAt, ttlDays)
+    : isStale(oldestVerifiedAt, effectiveTtlDays)
       ? "stale"
       : "fresh";
 
