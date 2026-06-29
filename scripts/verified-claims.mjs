@@ -42,12 +42,18 @@ const VALID_STATUS = new Set(["verified", "needs_review"]);
 const VALID_CONFIDENCE = new Set(["low", "medium", "high"]);
 const VERIFIED_CONFIDENCE = new Set(["medium", "high"]);
 const VALID_SOURCE_TYPE = new Set([
-  "official", "law", "platform", "review", "user",
+  "official", "law", "regulator", "platform", "review", "user",
   "phone", "photo", "document", "web", "other", "unknown",
 ]);
+const VALID_SOURCE_AUTHORITY = new Set([
+  "primary", "official", "regulator", "legal", "platform", "secondary", "community", "unknown",
+]);
+const VALID_TRANSLATION_STATUS = new Set([
+  "source_language", "human_translated", "machine_translated", "needs_translation_review",
+]);
 const REQUIRED_TOP_FIELDS = [
-  "entity_id", "slug", "type", "name", "lang", "country",
-  "jurisdiction", "risk_tier", "update_frequency", "disclaimer_type", "claims",
+  "entity_id", "slug", "canonical_slug", "type", "name", "localized_title", "lang", "country",
+  "jurisdiction", "risk_tier", "update_frequency", "disclaimer_type", "translation_status", "claims",
 ];
 
 function readJson(path) {
@@ -99,6 +105,19 @@ function validateFile(path, errors, slugs, entityIds) {
     return;
   }
 
+  if (!VALID_TRANSLATION_STATUS.has(file.translation_status)) {
+    errors.push(`${rel}: invalid translation_status "${file.translation_status}"`);
+  }
+  if (file.canonical_slug && !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(file.canonical_slug)) {
+    errors.push(`${rel}: canonical_slug must be a stable English kebab-case slug`);
+  }
+  if (file.localized_title && !file.localized_title[file.lang]) {
+    errors.push(`${rel}: localized_title must include display title for lang "${file.lang}"`);
+  }
+  if (file.risk_tier === "high" && file.disclaimer_type === "none") {
+    errors.push(`${rel}: high-risk claim file requires a non-none disclaimer_type`);
+  }
+
   const seenClaimIds = new Set();
   for (const [i, c] of file.claims.entries()) {
     const where = `${rel} claim[${i}] (${c.claim_id ?? "no-id"})`;
@@ -110,9 +129,17 @@ function validateFile(path, errors, slugs, entityIds) {
     if (!c.field_path) errors.push(`${where}: missing field_path`);
     if (!c.claim_text) errors.push(`${where}: missing claim_text`);
     if (c.claim_value === undefined || c.claim_value === "") errors.push(`${where}: missing claim_value`);
+    for (const field of ["jurisdiction", "country", "risk_tier", "update_frequency", "disclaimer_type"]) {
+      if (c[field] === undefined || c[field] === null || c[field] === "") {
+        errors.push(`${where}: missing required field "${field}"`);
+      }
+    }
 
     if (!VALID_STATUS.has(c.status)) errors.push(`${where}: invalid status "${c.status}"`);
     if (!VALID_CONFIDENCE.has(c.confidence)) errors.push(`${where}: invalid confidence "${c.confidence}"`);
+    if (c.risk_tier === "high" && c.disclaimer_type === "none") {
+      errors.push(`${where}: high-risk claim requires a non-none disclaimer_type`);
+    }
 
     // No fake facts: a placeholder value can never be verified or above low.
     if (c.claim_value === PLACEHOLDER) {
@@ -133,6 +160,9 @@ function validateFile(path, errors, slugs, entityIds) {
       }
       for (const [j, s] of sources.entries()) {
         if (!VALID_SOURCE_TYPE.has(s.source_type)) errors.push(`${where} source[${j}]: invalid source_type "${s.source_type}"`);
+        if (!VALID_SOURCE_AUTHORITY.has(s.source_authority)) {
+          errors.push(`${where} source[${j}]: invalid source_authority "${s.source_authority}"`);
+        }
         if (!s.url && !s.title) errors.push(`${where} source[${j}]: needs a url or title`);
         if (!s.observed_at) errors.push(`${where} source[${j}]: needs observed_at`);
       }

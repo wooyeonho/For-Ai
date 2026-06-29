@@ -1,4 +1,4 @@
-import type { ClaimWithSources, RegistryDocumentBundle } from "./types";
+import type { ClaimWithSources, RegistryDocumentBundle, UpdateFrequency } from "./types";
 
 export const UNKNOWN_FACT_TEXT = "확인 필요";
 
@@ -6,6 +6,26 @@ export const UNKNOWN_FACT_TEXT = "확인 필요";
 // flagged "stale" so AI consumers and admins can prioritise re-verification.
 export const FRESHNESS_TTL_DAYS = 180;
 export const COMMERCE_POLICY_FRESHNESS_TTL_DAYS = 30;
+
+export const FRESHNESS_TTL_DAYS_BY_UPDATE_FREQUENCY: Record<UpdateFrequency, number> = {
+  realtime: 1,
+  daily: 2,
+  weekly: 7,
+  monthly: 31,
+  quarterly: 92,
+  annual: 366,
+  event_based: 180,
+  static: 730,
+};
+
+export function getFreshnessTtlDays(updateFrequency: UpdateFrequency | null | undefined): number {
+  return updateFrequency ? FRESHNESS_TTL_DAYS_BY_UPDATE_FREQUENCY[updateFrequency] : FRESHNESS_TTL_DAYS;
+}
+
+export function getBundleFreshnessTtlDays(bundle: RegistryDocumentBundle): number {
+  const claimTtls = bundle.claims.map((claim) => getFreshnessTtlDays(claim.update_frequency));
+  return Math.min(getFreshnessTtlDays(bundle.document.update_frequency), ...claimTtls);
+}
 
 export type FreshnessLabel = "fresh" | "stale" | "unknown";
 export type VerifiedClaimInput = Pick<ClaimWithSources, "claim_value" | "confidence" | "status" | "last_verified_at" | "sources" | "verification_events">;
@@ -21,12 +41,12 @@ export function ageInDays(iso: string | null | undefined, now: Date = new Date()
 
 export function isStale(
   iso: string | null | undefined,
-  ttlDays: number = FRESHNESS_TTL_DAYS,
+  ttlDays?: number,
   now: Date = new Date(),
 ): boolean {
   const age = ageInDays(iso, now);
   if (age === null) return true; // no verification date → treat as not-fresh
-  return age > ttlDays;
+  return age > (ttlDays ?? FRESHNESS_TTL_DAYS);
 }
 
 export type ClaimCitationStatus = {
