@@ -158,11 +158,14 @@ create table admin_audit_events (
   id uuid primary key default gen_random_uuid(),
   action text not null,
   metadata jsonb not null default '{}'::jsonb,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  constraint admin_audit_no_raw_request_metadata check (
+    not (metadata ?| array['ip', 'raw_ip', 'client_ip', 'x_forwarded_for', 'x_real_ip', 'user_agent', 'raw_user_agent'])
+  )
 );
 
 comment on table admin_audit_events is 'Admin-only audit trail. Do not store raw IP addresses; use safe metadata such as hashed user-agent or contributor_hash only.';
-comment on column admin_audit_events.metadata is 'Safe request/action metadata only. Raw IP addresses are forbidden.';
+comment on column admin_audit_events.metadata is 'Safe request/action metadata only. Raw IP addresses and raw user-agent strings are forbidden; store only hashes or non-identifying action fields.';
 
 create index admin_audit_events_created_at_idx on admin_audit_events (created_at desc);
 
@@ -334,3 +337,10 @@ create table if not exists topic_suggestions (
 alter table topic_suggestions enable row level security;
 create policy topic_suggestions_public_insert_only on topic_suggestions for insert to anon with check (status = 'new');
 -- No public SELECT policy: suggestions are write-only and admin-reviewed.
+
+
+-- Privacy/retention policy notes:
+-- - Never persist raw IP addresses. Public contributors are identified only by contributor_hash.
+-- - Raw user-agent strings are not stored in admin audit metadata; store a short salted/one-way hash or omit.
+-- - Public intake submissions (edits, reports, hallucination_reports, topic_suggestions, topic_candidates) should be reviewed and deleted/anonymized within 180 days after final status, unless retained as accepted claim provenance.
+-- - Admin audit events should be retained for 365 days, then deleted or aggregated.

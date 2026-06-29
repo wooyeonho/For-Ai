@@ -27,8 +27,11 @@ create table verified_business_profiles (
   country         text not null,
   industry        text,
   contact_name    text,
+  contact_email_consent boolean not null default false,
+  contact_email_purpose text not null default 'business_profile_verification',
   verification_method text not null default 'email'
                   check (verification_method in ('email', 'domain', 'document', 'phone')),
+  verification_review_url text,
   status          business_profile_status not null default 'pending',
   tier            api_tier not null default 'free',
   verified_at     timestamptz,
@@ -36,14 +39,25 @@ create table verified_business_profiles (
   metadata        jsonb not null default '{}'::jsonb,
   contributor_hash text,
   created_at      timestamptz not null default now(),
-  updated_at      timestamptz not null default now()
+  updated_at      timestamptz not null default now(),
+  constraint vbp_email_consent_required check (contact_email_consent = true),
+  constraint vbp_email_purpose_required check (length(contact_email_purpose) > 0),
+  constraint vbp_no_document_blob_in_metadata check (not (metadata ? 'verification_document')),
+  constraint vbp_no_raw_request_metadata check (
+    not (metadata ?| array['ip', 'raw_ip', 'client_ip', 'x_forwarded_for', 'x_real_ip', 'user_agent', 'raw_user_agent'])
+  )
 );
 
 create unique index verified_business_profiles_entity_id_key on verified_business_profiles(entity_id);
 create index verified_business_profiles_status_idx on verified_business_profiles(status);
 create index verified_business_profiles_tier_idx on verified_business_profiles(tier);
 
-comment on table verified_business_profiles is 'Businesses that have claimed and verified ownership of an entity. Verified profiles can submit priority corrections and access enhanced API features.';
+comment on table verified_business_profiles is 'Businesses that have claimed and verified ownership of an entity. Stores business contact email only with explicit consent/purpose for verification and account notices; never store raw IP/user-agent or verification document blobs.';
+comment on column verified_business_profiles.business_email is 'Business contact email; requires contact_email_consent and contact_email_purpose. Retain only while the profile is pending/active and delete or anonymize within 30 days after rejection/closure unless legally required.';
+comment on column verified_business_profiles.contact_email_consent is 'Explicit consent for storing business_email for the stated contact_email_purpose.';
+comment on column verified_business_profiles.contact_email_purpose is 'Specific purpose for storing business_email, e.g. business_profile_verification/account_notices.';
+comment on column verified_business_profiles.verification_review_url is 'External storage or manual review link for verification evidence. Do not store uploaded verification document contents in this database.';
+comment on column verified_business_profiles.metadata is 'Safe metadata only. Raw IP addresses, raw user agents, and verification document blobs are forbidden.';
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- API Keys
@@ -210,3 +224,11 @@ create index webhook_subs_profile_idx on webhook_subscriptions(profile_id);
 comment on table webhook_subscriptions is 'Webhook subscriptions for verification events. Auto-disabled after 10 consecutive failures.';
 comment on column webhook_subscriptions.events is 'Array of event types: claim.verified, claim.updated, claim.disputed, document.published, document.updated, entity.created, business_profile.verified, correction.accepted, correction.rejected';
 comment on column webhook_subscriptions.secret is 'HMAC-SHA256 signing secret for payload verification. Sent as X-ForAi-Signature header.';
+
+
+-- Privacy/retention policy notes:
+-- - Public contributors are identified only by contributor_hash derived with a secret salt; raw IP addresses are never persisted.
+-- - Public intake submissions (reports, hallucination_reports, edits, topic_suggestions, topic_candidates) should be reviewed and deleted/anonymized within 180 days after final status, unless retained as accepted claim provenance.
+-- - Admin audit events should be retained for 365 days, then deleted or aggregated.
+-- - API usage logs should be retained for 400 days for billing/rate-limit dispute windows, then deleted or aggregated.
+-- - Business emails are retained only while needed for verification/account notices and deleted or anonymized within 30 days after profile rejection/closure unless legally required.
