@@ -4,6 +4,7 @@ import { getPublishedVerifiedDocumentIndexFromSupabase } from "../lib/supabase-i
 import { getAllEntityRefs } from "../lib/entity-profile";
 import { siteUrl, documentPageUrl, entityPageUrl } from "../lib/urls";
 import { getDocumentCitationStatus } from "../lib/citation-status";
+import { normalizeCitationSurface } from "../lib/render";
 
 type DocumentSitemapEntry = {
   slug: string;
@@ -16,10 +17,11 @@ type DocumentSitemapEntry = {
 function getStaticDocumentEntries(): DocumentSitemapEntry[] {
   return getAllRegistryBundles().map((bundle) => {
     const citationStatus = getDocumentCitationStatus(bundle);
+    const normalized = normalizeCitationSurface(bundle);
     return {
-      slug: bundle.document.slug,
+      slug: normalized.sitemap.slug,
       lang: bundle.document.lang,
-      lastModified: citationStatus.oldestVerifiedAt ?? bundle.document.last_verified_at ?? bundle.document.updated_at ?? new Date().toISOString(),
+      lastModified: citationStatus.oldestVerifiedAt ?? normalized.sitemap.last_verified_at ?? bundle.document.last_verified_at ?? bundle.document.updated_at ?? new Date().toISOString(),
       canCite: citationStatus.isVerifiedDocument,
       sourceCount: bundle.claims.reduce((count, claim) => count + claim.sources.length, 0),
     };

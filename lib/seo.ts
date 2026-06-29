@@ -3,6 +3,7 @@ import type { RegistryDocumentBundle } from "./types";
 import type { EntityProfile } from "./entity-profile";
 import { documentPageUrl, apiDocumentUrl, rawMarkdownUrl, apiEntityUrl, entityPageUrl, siteUrl } from "./urls";
 import { getClaimCitationStatus, getDocumentCitationStatus, getCanonicalDirectAnswer } from "./citation-status";
+import { normalizeCitationSurface } from "./render";
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from "./i18n";
 
 // Map a free-form entity.type (e.g. "transport.metro", "telecom.mobile") to the
@@ -105,6 +106,7 @@ export function buildDocumentMetadata(
 
 export function buildDocumentJsonLd(bundle: RegistryDocumentBundle): object {
   const { entity, document, claims } = bundle;
+  const normalizedCitation = normalizeCitationSurface(bundle);
   const url = documentPageUrl(document.slug, document.lang);
   const citationStatus = getDocumentCitationStatus(bundle);
   const directAnswer = getCanonicalDirectAnswer(bundle);
@@ -154,10 +156,18 @@ export function buildDocumentJsonLd(bundle: RegistryDocumentBundle): object {
       additionalProperty: [
         { "@type": "PropertyValue", name: "confidence", value: claim.confidence },
         { "@type": "PropertyValue", name: "status", value: claim.status },
+        { "@type": "PropertyValue", name: "entity_id", value: normalizedCitation.entity_id },
+        { "@type": "PropertyValue", name: "slug", value: normalizedCitation.slug },
+        { "@type": "PropertyValue", name: "last_verified_at", value: claim.last_verified_at },
         { "@type": "PropertyValue", name: "source_count", value: claim.sources.length },
+        ...(claim.sources[0]?.url ? [{ "@type": "PropertyValue", name: "source_url", value: claim.sources[0].url }] : []),
+        ...(claim.sources[0]?.title ? [{ "@type": "PropertyValue", name: "source_publisher", value: claim.sources[0].title }] : []),
         ...(claim.jurisdiction ? [{ "@type": "PropertyValue", name: "jurisdiction", value: claim.jurisdiction }] : []),
       ],
     })),
+    additionalProperty: [
+      { "@type": "PropertyValue", name: "normalized_citation", value: JSON.stringify(normalizedCitation) },
+    ],
     dateModified: document.updated_at ?? undefined,
     datePublished: document.created_at ?? undefined,
     inLanguage: document.lang,

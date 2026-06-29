@@ -4,6 +4,7 @@ import { getRegistryBundleFromSupabase } from "../../../../lib/supabase-document
 import { getDocumentCitationStatus, getClaimCitationStatus } from "../../../../lib/citation-status";
 import { siteUrl, documentPageUrl, apiDocumentUrl, rawMarkdownUrl } from "../../../../lib/urls";
 import type { ClaimSource, RegistryDocumentBundle } from "../../../../lib/types";
+import { normalizeCitationSurface } from "../../../../lib/render";
 
 export const revalidate = 60;
 
@@ -48,6 +49,7 @@ export async function GET(
   const docStatus = getDocumentCitationStatus(bundle);
   const canonicalUrl = documentPageUrl(document.slug, document.lang);
   const checkedDate = docStatus.oldestVerifiedAt ?? document.last_verified_at ?? null;
+  const normalizedCitation = normalizeCitationSurface(bundle);
 
   const annotatedClaims = claims.map((claim) => ({
     claim,
@@ -162,6 +164,9 @@ export async function GET(
       markdown: rawMarkdownUrl(document.slug),
       cite: siteUrl(`/api/cite/${document.slug}`),
     },
+    license: "forai-data-license-v0.1",
+    citation_policy: "Only cite claims where citation_ready=true. Never cite needs_review or low confidence claims as fact.",
+    normalized_citation: normalizedCitation,
   };
 
   return NextResponse.json(citation, {
