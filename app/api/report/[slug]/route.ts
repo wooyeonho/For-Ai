@@ -8,6 +8,7 @@ import {
   hasHoneypotValue,
   inspectSubmissionText,
 } from '../../../../lib/submission-limits';
+import { recordDocumentAnalyticsEvent } from '@/lib/analytics';
 
 export async function POST(
   request: Request,
@@ -84,6 +85,7 @@ export async function POST(
           { status: 500 }
         );
       }
+      await recordDocumentAnalyticsEvent(supabase, request, slug, 'report_submission');
     } catch (err) {
       console.error('[report] Unexpected error:', err);
       return NextResponse.json({ error: 'Server error' }, { status: 500 });

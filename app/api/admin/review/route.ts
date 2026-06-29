@@ -150,14 +150,32 @@ export async function GET(request: Request) {
     // Citation pickup: which documents AI/users actually engage with.
     const { data: statsRows, error: statsError } = await sb
       .from("document_stats")
-      .select("document_id, view_count, ai_citation_count")
+      .select("document_id, view_count, ai_citation_count, human_view_count, bot_view_count, ai_crawler_view_count, api_cite_count, citation_copy_count, report_submission_count")
       .order("ai_citation_count", { ascending: false })
       .limit(200);
     if (statsError) throw statsError;
     const stats = statsRows ?? [];
     const totalViews = stats.reduce((sum, r) => sum + Number(r.view_count ?? 0), 0);
     const totalCitations = stats.reduce((sum, r) => sum + Number(r.ai_citation_count ?? 0), 0);
-    const topStats = stats.filter((r) => Number(r.ai_citation_count ?? 0) > 0).slice(0, 10);
+    const totalHumanViews = stats.reduce((sum, r) => sum + Number(r.human_view_count ?? 0), 0);
+    const totalBotViews = stats.reduce((sum, r) => sum + Number(r.bot_view_count ?? 0), 0);
+    const totalAiCrawlerViews = stats.reduce((sum, r) => sum + Number(r.ai_crawler_view_count ?? 0), 0);
+    const totalApiCiteCalls = stats.reduce((sum, r) => sum + Number(r.api_cite_count ?? 0), 0);
+    const totalCitationCopyClicks = stats.reduce((sum, r) => sum + Number(r.citation_copy_count ?? 0), 0);
+    const totalReportSubmissions = stats.reduce((sum, r) => sum + Number(r.report_submission_count ?? 0), 0);
+    const topStats = stats
+      .filter((r) =>
+        Number(r.view_count ?? 0) +
+        Number(r.ai_citation_count ?? 0) +
+        Number(r.api_cite_count ?? 0) +
+        Number(r.citation_copy_count ?? 0) +
+        Number(r.report_submission_count ?? 0) > 0
+      )
+      .sort((a, b) =>
+        (Number(b.ai_citation_count ?? 0) + Number(b.view_count ?? 0) + Number(b.report_submission_count ?? 0)) -
+        (Number(a.ai_citation_count ?? 0) + Number(a.view_count ?? 0) + Number(a.report_submission_count ?? 0))
+      )
+      .slice(0, 10);
     const topIds = topStats.map((r) => r.document_id);
     const titleById = new Map<string, { title?: string | null; slug?: string | null; lang?: string | null }>();
     if (topIds.length > 0) {
@@ -175,6 +193,12 @@ export async function GET(request: Request) {
         title: doc?.title ?? r.document_id,
         view_count: Number(r.view_count ?? 0),
         ai_citation_count: Number(r.ai_citation_count ?? 0),
+        human_view_count: Number(r.human_view_count ?? 0),
+        bot_view_count: Number(r.bot_view_count ?? 0),
+        ai_crawler_view_count: Number(r.ai_crawler_view_count ?? 0),
+        api_cite_count: Number(r.api_cite_count ?? 0),
+        citation_copy_count: Number(r.citation_copy_count ?? 0),
+        report_submission_count: Number(r.report_submission_count ?? 0),
         public_url: doc ? publicDocumentLink(doc) : null,
       };
     });
@@ -220,6 +244,13 @@ export async function GET(request: Request) {
       engagement: {
         total_views: totalViews,
         total_citations: totalCitations,
+        total_human_views: totalHumanViews,
+        total_bot_views: totalBotViews,
+        total_ai_crawler_views: totalAiCrawlerViews,
+        total_api_cite_calls: totalApiCiteCalls,
+        total_citation_copy_clicks: totalCitationCopyClicks,
+        total_report_submissions: totalReportSubmissions,
+        monetization_boundary: "Analytics may inform business products, but sponsored content and verified fact integrity remain separate.",
         top_cited: topCited,
       },
       dashboard: {

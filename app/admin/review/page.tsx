@@ -51,6 +51,12 @@ type TopCited = {
   title: string;
   view_count: number;
   ai_citation_count: number;
+  human_view_count: number;
+  bot_view_count: number;
+  ai_crawler_view_count: number;
+  api_cite_count: number;
+  citation_copy_count: number;
+  report_submission_count: number;
   public_url?: string | null;
 };
 
@@ -64,6 +70,13 @@ type ReviewPayload = {
   engagement?: {
     total_views: number;
     total_citations: number;
+    total_human_views: number;
+    total_bot_views: number;
+    total_ai_crawler_views: number;
+    total_api_cite_calls: number;
+    total_citation_copy_clicks: number;
+    total_report_submissions: number;
+    monetization_boundary: string;
     top_cited: TopCited[];
   };
 };
@@ -182,17 +195,27 @@ export default function AdminReviewPage() {
       <section className="registry-panel" aria-labelledby="engagement-title">
         <h2 id="engagement-title">인용 픽업 (실제 사용 계측)</h2>
         <div className="stat-strip">
-          <div className="stat"><span className="stat-num">{data?.engagement?.total_views ?? 0}</span><span className="stat-label">누적 조회</span></div>
-          <div className="stat"><span className="stat-num">{data?.engagement?.total_citations ?? 0}</span><span className="stat-label">누적 AI 인용</span></div>
+          <div className="stat"><span className="stat-num">{data?.engagement?.total_human_views ?? 0}</span><span className="stat-label">human views</span></div>
+          <div className="stat"><span className="stat-num">{data?.engagement?.total_bot_views ?? 0}</span><span className="stat-label">bot views</span></div>
+          <div className="stat"><span className="stat-num">{data?.engagement?.total_ai_crawler_views ?? 0}</span><span className="stat-label">AI crawler views</span></div>
+          <div className="stat"><span className="stat-num">{data?.engagement?.total_api_cite_calls ?? 0}</span><span className="stat-label">/api/cite calls</span></div>
+          <div className="stat"><span className="stat-num">{data?.engagement?.total_citation_copy_clicks ?? 0}</span><span className="stat-label">citation copy clicks</span></div>
+          <div className="stat"><span className="stat-num">{data?.engagement?.total_report_submissions ?? 0}</span><span className="stat-label">report submissions</span></div>
         </div>
+        <p className="meta-label">{data?.engagement?.monetization_boundary ?? "Sponsored content and verified fact integrity remain separate."}</p>
         <h3>인용 많은 문서 Top</h3>
-        {(data?.engagement?.top_cited.length ?? 0) === 0 && <p>아직 집계된 AI 인용이 없습니다. 인용은 POST /api/documents/&lt;slug&gt;/cite로 증가합니다.</p>}
+        {(data?.engagement?.top_cited.length ?? 0) === 0 && <p>아직 집계된 사용 이벤트가 없습니다. read, /api/cite, copy, report 이벤트가 slug별로 집계됩니다.</p>}
         {data?.engagement?.top_cited.map((doc) => (
           <div className="claim-card" key={doc.document_id}>
             <p><strong>{doc.title}</strong></p>
             <p>
               <span className="badge badge-verified">✦ AI 인용 {doc.ai_citation_count}</span>{" "}
-              <span className="badge">👁 조회 {doc.view_count}</span>
+              <span className="badge">👤 human {doc.human_view_count}</span>{" "}
+              <span className="badge">🤖 bot {doc.bot_view_count}</span>{" "}
+              <span className="badge">✦ AI crawler {doc.ai_crawler_view_count}</span>{" "}
+              <span className="badge">API cite {doc.api_cite_count}</span>{" "}
+              <span className="badge">copy {doc.citation_copy_count}</span>{" "}
+              <span className="badge">reports {doc.report_submission_count}</span>
             </p>
             {doc.public_url && <a href={doc.public_url} target="_blank" rel="noopener noreferrer">문서 보기</a>}
           </div>
