@@ -186,6 +186,31 @@ test("getDocumentCitationStatus reports freshness from the oldest ready claim", 
   assert.equal(stale.oldestVerifiedAt, "2025-12-28");
 });
 
+test("getDocumentCitationStatus uses short commerce policy TTL by default", () => {
+  const commerce = getDocumentCitationStatus(bundle([
+    claim({
+      field_path: "return.window_days",
+      last_verified_at: "2026-05-27",
+    }),
+  ], {
+    document: document({
+      category: "commerce",
+      template: "commerce_policy",
+    }),
+  }));
+
+  assert.equal(commerce.freshness, "stale");
+
+  const explicitTtl = getDocumentCitationStatus(bundle([
+    claim({ last_verified_at: "2026-05-27" }),
+  ], {
+    document: document({ data: { freshness_ttl_days: 45 } }),
+  }));
+
+  assert.equal(explicitTtl.freshness, "fresh");
+});
+
+
 test("getCanonicalDirectAnswer returns the first citation-ready value or the unknown placeholder", () => {
   assert.equal(getCanonicalDirectAnswer(bundle([claim({ claim_value: UNKNOWN_FACT_TEXT }), claim({ id: "claim-2", claim_value: "Ready value" })])), "Ready value");
   assert.equal(getCanonicalDirectAnswer(bundle([claim({ claim_value: UNKNOWN_FACT_TEXT })])), UNKNOWN_FACT_TEXT);

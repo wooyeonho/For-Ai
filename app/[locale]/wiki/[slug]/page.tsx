@@ -66,6 +66,14 @@ export default async function WikiDocumentPage({
   const isPromoted = !getRegistryBundleBySlug(slug);
   const jsonLd = buildDocumentJsonLd(bundle);
   const citationStatus = getDocumentCitationStatus(bundle);
+  const freshnessTtlDays = typeof document.freshness_ttl_days === "number"
+    ? document.freshness_ttl_days
+    : typeof docData.freshness_ttl_days === "number"
+      ? docData.freshness_ttl_days
+      : document.template === "commerce_policy"
+        ? 30
+        : null;
+  const isCommercePolicy = document.template === "commerce_policy";
   const totalSources = claims.reduce((n, c) => n + c.sources.length, 0);
 
   return (
@@ -99,6 +107,19 @@ export default async function WikiDocumentPage({
         </p>
         <DocumentStatsBar documentId={document.id} />
       </header>
+
+      {/* Commerce policy template guardrails */}
+      {isCommercePolicy && (
+        <section className="registry-panel" style={{ background: "#eff6ff", borderInlineStart: "3px solid #3b82f6" }}>
+          <p className="eyebrow">Commerce policy template</p>
+          <p>Country and jurisdiction are required because return, refund, cancellation, and shipping policies can differ by market.</p>
+          <ul className="link-list">
+            <li>country: <strong>{document.country || entity.country}</strong></li>
+            <li>jurisdiction: <strong>{claims.find((claim) => claim.jurisdiction)?.jurisdiction ?? entity.country}</strong></li>
+            {freshnessTtlDays && <li>freshness TTL: <strong>{freshnessTtlDays} days</strong></li>}
+          </ul>
+        </section>
+      )}
 
       {/* Why people ask AI this question */}
       {whyPeopleAsk && (
