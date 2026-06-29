@@ -54,7 +54,7 @@ export async function GET() {
   lines.push(`- Per-document Markdown: \`${rawMarkdownUrl("<slug>")}\``);
   lines.push(`- Per-entity profile (all documents about one entity): \`${siteUrl("/api/entities/<entity_id>")}\``);
   lines.push("");
-  lines.push(`## Verified documents (${verified.length + verifiedSupabaseDocs.length})`);
+  lines.push(`## Citation-ready documents (${verified.length + verifiedSupabaseDocs.length})`);
   lines.push("");
   for (const b of verified) {
     const d = b.document;
@@ -74,22 +74,14 @@ export async function GET() {
     );
   }
   lines.push("");
-  lines.push(`## Candidate / unverified documents (${candidates.length + candidateSupabaseDocs.length})`);
+  lines.push(`## Unverified documents excluded (${candidates.length + candidateSupabaseDocs.length})`);
   lines.push("");
-  lines.push('- Candidate documents are discoverable only; values marked "확인 필요" are not factual citations.');
-  for (const b of candidates) {
-    const d = b.document;
-    lines.push(
-      `- [${d.title}](${documentPageUrl(d.slug, d.lang)}) — status: ${d.status}, confidence: ${d.confidence} ` +
-        `· JSON: ${apiDocumentUrl(d.slug)} · Markdown: ${rawMarkdownUrl(d.slug)}`,
-    );
-  }
-  for (const d of candidateSupabaseDocs) {
-    lines.push(
-      `- [${d.title}](${documentPageUrl(d.slug, d.lang)}) — status: ${d.doc_status}, confidence: ${d.confidence} ` +
-        `· JSON: ${apiDocumentUrl(d.slug)} · Markdown: ${rawMarkdownUrl(d.slug)}`,
-    );
-  }
+  lines.push(
+    '- Unverified documents are intentionally not listed here as AI citation targets. Discover them through the public wiki or `/api/index?verification=candidate`, but treat every result as **DO NOT CITE** unless `can_cite=true`.',
+  );
+  lines.push(
+    '- A document becomes citation-ready only when the document status is `verified` and every claim is verified with non-low confidence, at least one source, a verification event, and `last_verified_at`.',
+  );
   lines.push("");
 
   return new Response(lines.join("\n"), {

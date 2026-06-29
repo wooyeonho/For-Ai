@@ -80,7 +80,7 @@ export type DocumentCitationStatus = {
   verifiedClaims: number;
   unverifiedClaims: number;
   totalClaims: number;
-  label: "verified" | "unverified";
+  label: "citation ready" | "do not cite";
   isVerifiedDocument: boolean;
   freshness: FreshnessLabel;
   oldestVerifiedAt: string | null;
@@ -131,11 +131,9 @@ export function getClaimCitationStatus(
   now: Date = new Date(),
 ): ClaimCitationStatus {
   const hasSource = claim.sources.length > 0;
-  const hasVerificationEvent =
-    claim.status === "verified" ||
-    claim.verification_events.some((event) =>
-      event.new_status === "verified" || event.event_type === "source_verified",
-    );
+  const hasVerificationEvent = claim.verification_events.some((event) =>
+    event.new_status === "verified" || event.event_type === "source_verified",
+  );
   const hasVerifiedValue = Boolean(claim.claim_value?.trim()) && claim.claim_value !== UNKNOWN_FACT_TEXT;
   const isCitationReady =
     claim.status === "verified" &&
@@ -180,12 +178,13 @@ export function getDocumentCitationStatus(
   const verifiedClaims = claimStatuses.filter(({ status }) => status.isCitationReady).length;
   const totalClaims = bundle.claims.length;
   const unverifiedClaims = totalClaims - verifiedClaims;
-  // A document is citable only when a human has approved it (status verified/
-  // published) AND every claim is citation-ready. Claim-level verification alone
-  // is not enough — "human approval before verified" (principle #6). Unapproved
-  // docs (ai_draft, needs_review) stay discoverable but are never can_cite=true.
-  const isHumanApproved = bundle.document.status === "verified" || bundle.document.status === "published";
-  const isVerifiedDocument = isHumanApproved && totalClaims > 0 && verifiedClaims === totalClaims;
+  // A document is citable only when the document itself has reached the
+  // explicit verified state AND every claim is citation-ready. `published` means
+  // public-readable only; it is not equivalent to AI-citable truth. Promoted AI
+  // drafts and review docs (ai_draft/needs_review/published with pending claims)
+  // stay discoverable but must remain can_cite=false.
+  const isHumanApprovedForCitation = bundle.document.status === "verified";
+  const isVerifiedDocument = isHumanApprovedForCitation && totalClaims > 0 && verifiedClaims === totalClaims;
 
   // Freshness is bound by the oldest verification among citation-ready claims:
   // if the weakest link is stale, the citable answer is stale.
@@ -206,7 +205,7 @@ export function getDocumentCitationStatus(
     verifiedClaims,
     unverifiedClaims,
     totalClaims,
-    label: isVerifiedDocument ? "verified" : "unverified",
+    label: isVerifiedDocument ? "citation ready" : "do not cite",
     isVerifiedDocument,
     freshness,
     oldestVerifiedAt,

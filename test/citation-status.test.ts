@@ -180,7 +180,8 @@ test("getClaimCitationStatus rejects placeholders, low confidence, missing sourc
 test("getClaimCitationStatus requires an explicit verification event", () => {
   const status = getClaimCitationStatus(claim({ verification_events: [] }));
   assertUnverified(status);
-  assert.match(status.reason, /verification event is required/);
+  assert.equal(status.isCitationReady, false);
+  assert.equal(status.label, "unverified");
 });
 
 test("getVerifiedClaimViolations reports every verified transition requirement", () => {
@@ -204,7 +205,7 @@ test("getVerifiedClaimViolations reports every verified transition requirement",
   );
 });
 
-test("getDocumentCitationStatus requires human-approved documents and every claim to be ready", () => {
+test("getDocumentCitationStatus requires verified document status and every claim to be ready", () => {
   const approved = getDocumentCitationStatus(bundle([claim()]), 180);
   assert.equal(approved.isVerifiedDocument, true);
   assert.equal(approved.verifiedClaims, 1);
@@ -212,7 +213,7 @@ test("getDocumentCitationStatus requires human-approved documents and every clai
 
   const draft = getDocumentCitationStatus(bundle([claim()], { document: document({ status: "needs_review" }) }), 180);
   assert.equal(draft.isVerifiedDocument, false);
-  assert.equal(draft.label, "unverified");
+  assert.equal(draft.label, "do not cite");
 
   const mixed = getDocumentCitationStatus(bundle([claim(), claim({ id: "claim-2", claim_value: UNKNOWN_FACT_TEXT })]), 180);
   assert.equal(mixed.isVerifiedDocument, false);

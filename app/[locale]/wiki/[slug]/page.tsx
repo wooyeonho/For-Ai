@@ -163,6 +163,31 @@ export default async function WikiDocumentPage({
         <DocumentStatsBar documentId={document.id} />
       </header>
 
+      {!citationStatus.isVerifiedDocument && (
+        <section
+          className="registry-panel"
+          role="alert"
+          aria-labelledby="unverified-document-warning"
+          style={{
+            background: "#fff1f2",
+            border: "2px solid #e11d48",
+            borderInlineStart: "6px solid #be123c",
+          }}
+        >
+          <p className="eyebrow" style={{ color: "#be123c" }}>DO NOT CITE · 확인 필요</p>
+          <h2 id="unverified-document-warning" style={{ marginTop: 0 }}>Unverified document — not citation ready</h2>
+          <p>
+            This page is publicly readable for review, but it is not an AI-citable fact record.
+            Do not cite this document unless the citation status is <strong>citation ready</strong>.
+          </p>
+          <ul className="link-list">
+            <li>Document status: <strong>{document.status}</strong></li>
+            <li>Citation-ready claims: <strong>{citationStatus.verifiedClaims}/{citationStatus.totalClaims}</strong></li>
+            <li>Required before citation: document status <strong>verified</strong> and every claim verified with source-backed evidence.</li>
+          </ul>
+        </section>
+      )}
+
       {/* Commerce policy template guardrails */}
       {isCommercePolicy && (
         <section className="registry-panel" style={{ background: "#eff6ff", borderInlineStart: "3px solid #3b82f6" }}>
