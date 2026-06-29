@@ -5,6 +5,7 @@ import { getDocumentCitationStatus, getClaimCitationStatus } from "../../../../l
 import { siteUrl, documentPageUrl, apiDocumentUrl, rawMarkdownUrl } from "../../../../lib/urls";
 import type { ClaimSource, RegistryDocumentBundle } from "../../../../lib/types";
 import { normalizeCitationSurface } from "../../../../lib/render";
+import { recordDocumentAnalyticsEvent } from "@/lib/analytics";
 
 export const revalidate = 60;
 
@@ -31,10 +32,16 @@ function sourceReference(source: ClaimSource) {
 }
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ slug: string }> },
 ) {
   const { slug } = await params;
+  const sb = supabaseAdmin();
+  if (sb) {
+    recordDocumentAnalyticsEvent(sb, request, slug, "api_cite").catch((error) => {
+      console.error("[api-cite] analytics event failed", error);
+    });
+  }
 
   let bundle: RegistryDocumentBundle | null = getRegistryBundleBySlug(slug);
   if (!bundle) bundle = await getRegistryBundleFromSupabase(slug);

@@ -365,10 +365,16 @@ create policy community_posts_public_select
 
 -- document_stats: track view_count and ai_citation_count per document.
 create table document_stats (
-  document_id       text primary key references documents(id) on delete cascade,
-  view_count        bigint not null default 0,
-  ai_citation_count bigint not null default 0,
-  updated_at        timestamptz not null default now()
+  document_id             text primary key references documents(id) on delete cascade,
+  view_count              bigint not null default 0,
+  ai_citation_count       bigint not null default 0,
+  human_view_count        bigint not null default 0,
+  bot_view_count          bigint not null default 0,
+  ai_crawler_view_count   bigint not null default 0,
+  api_cite_count          bigint not null default 0,
+  citation_copy_count     bigint not null default 0,
+  report_submission_count bigint not null default 0,
+  updated_at              timestamptz not null default now()
 );
 
 alter table document_stats enable row level security;
@@ -379,6 +385,27 @@ alter table document_stats enable row level security;
 create policy document_stats_public_select
   on document_stats for select to anon
   using (true);
+
+-- document_read_events: privacy-safe detailed analytics for slug-level aggregates.
+create table document_read_events (
+  id              uuid primary key default gen_random_uuid(),
+  document_id     text not null references documents(id) on delete cascade,
+  event_type      text not null check (event_type in ('read','api_cite','citation_copy','report_submission')),
+  actor_type      text not null check (actor_type in ('human','bot','ai_crawler')),
+  crawler_name    text,
+  visitor_hash    text,
+  user_agent_hash text,
+  created_at      timestamptz not null default now()
+);
+
+comment on table document_read_events is 'Privacy-safe read/citation analytics. Never store raw IP addresses; store contributor-style visitor_hash only.';
+comment on column document_read_events.visitor_hash is 'Salted non-raw visitor identifier derived from request IP when available; raw IP is forbidden.';
+comment on column document_read_events.user_agent_hash is 'Hashed user-agent for coarse duplicate/debug analysis without storing raw user-agent text.';
+
+create index document_read_events_document_created_idx on document_read_events (document_id, created_at desc);
+create index document_read_events_type_actor_idx on document_read_events (event_type, actor_type);
+
+alter table document_read_events enable row level security;
 
 -- Public topic suggestions are private intake submissions, not publishable facts.
 create table if not exists topic_suggestions (

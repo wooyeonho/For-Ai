@@ -16,6 +16,7 @@ export function DirectAnswerBox({
   canonicalUrl,
   docTitle,
   locale,
+  slug,
 }: {
   question: string;
   answer: string;
@@ -27,6 +28,7 @@ export function DirectAnswerBox({
   canonicalUrl?: string;
   docTitle?: string;
   locale?: string;
+  slug?: string;
 }) {
   const lang = (locale ?? DEFAULT_LOCALE) as SupportedLocale;
   const t = getTranslations(lang);
@@ -47,6 +49,7 @@ export function DirectAnswerBox({
               labelCopy={t.claims.copyCitation}
               labelCopied={t.claims.copied}
               warningText="Citation copy includes verified claims only; needs verification or low confidence claims are excluded."
+              slug={slug}
             />
           )}
         </div>

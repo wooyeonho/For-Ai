@@ -6,11 +6,13 @@ export function CopyCitationButton({
   labelCopy,
   labelCopied,
   warningText,
+  slug,
 }: {
   citationText: string;
   labelCopy: string;
   labelCopied: string;
   warningText?: string;
+  slug?: string;
 }) {
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState(false);
@@ -22,6 +24,9 @@ export function CopyCitationButton({
       await navigator.clipboard.writeText(citationText);
       setCopied(true);
       setError(false);
+      if (slug) {
+        fetch(`/api/documents/${slug}/copy-citation`, { method: "POST" }).catch(() => {});
+      }
       setTimeout(() => setCopied(false), 2000);
     } catch {
       setError(true);
