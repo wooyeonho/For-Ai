@@ -31,6 +31,8 @@ export type RenderedDocumentJson = {
     unverified_claim_paths: string[];
     freshness: "fresh" | "stale" | "unknown";
     oldest_verified_at: string | null;
+    freshness_window_days: number;
+    stale_claims: Array<{ claimId: string; fieldPath: string; lastVerifiedAt: string | null }>;
   };
   machine_readable: {
     canonical_url: string;
@@ -221,6 +223,8 @@ export function renderDocumentJson(bundle: RegistryDocumentBundle): RenderedDocu
       unverified_claim_paths: unverifiedPaths,
       freshness: citationStatus.freshness,
       oldest_verified_at: citationStatus.oldestVerifiedAt,
+      freshness_window_days: citationStatus.freshnessWindowDays,
+      stale_claims: citationStatus.staleClaims,
     },
     machine_readable: {
       canonical_url: documentPageUrl(document.slug, document.lang),
@@ -245,16 +249,17 @@ export function renderDocumentMarkdown(bundle: RegistryDocumentBundle): string {
     "license_notice",
     "For-Ai Data License v0.1 placeholder.",
   );
+  const docCitationStatus = getDocumentCitationStatus(bundle);
   const claimsMarkdown = claims
     .map((claim) => {
       const sources = renderClaimSources(claim.sources);
-      const citationStatus = getClaimCitationStatus(claim);
+      const citationStatus = getClaimCitationStatus(claim, docCitationStatus.freshnessWindowDays);
       const displayValue = claim.claim_value || UNKNOWN_TEXT;
       const displayConfidence = displayValue === UNKNOWN_TEXT ? "low" : claim.confidence;
 
       const normalized = normalizedCitation.claims.find((item) => item.field_path === claim.field_path);
 
-      return `- ${claim.field_path}: ${displayValue}\n  - claim: ${claim.claim_text}\n  - canonical entity_id: ${normalized?.entity_id ?? entity.id}\n  - canonical slug: ${normalized?.slug ?? document.slug}\n  - canonical source_url: ${normalized?.source_url ?? UNKNOWN_TEXT}\n  - canonical source_publisher: ${normalized?.source_publisher ?? UNKNOWN_TEXT}\n  - citation status: ${citationStatus.label}\n  - citation reason: ${citationStatus.reason}\n  - confidence: ${displayConfidence}\n  - jurisdiction: ${claim.jurisdiction ?? "inherit"}\n  - verification status: ${claim.status}\n  - last_verified_at: ${claim.last_verified_at ?? UNKNOWN_TEXT}\n  - source_count: ${claim.sources.length}\n  - verification_event_count: ${claim.verification_events.length}\n  - sources:\n${sources}`;
+      return `- ${claim.field_path}: ${displayValue}\n  - claim: ${claim.claim_text}\n  - canonical entity_id: ${normalized?.entity_id ?? entity.id}\n  - canonical slug: ${normalized?.slug ?? document.slug}\n  - canonical source_url: ${normalized?.source_url ?? UNKNOWN_TEXT}\n  - canonical source_publisher: ${normalized?.source_publisher ?? UNKNOWN_TEXT}\n  - citation status: ${citationStatus.label}\n  - citation reason: ${citationStatus.reason}\n  - freshness: ${citationStatus.freshness}\n  - freshness_window_days: ${citationStatus.freshnessWindowDays}\n  - stale_warning: ${citationStatus.warning ?? "none"}\n  - confidence: ${displayConfidence}\n  - jurisdiction: ${claim.jurisdiction ?? "inherit"}\n  - verification status: ${claim.status}\n  - last_verified_at: ${claim.last_verified_at ?? UNKNOWN_TEXT}\n  - source_count: ${claim.sources.length}\n  - verification_event_count: ${claim.verification_events.length}\n  - sources:\n${sources}`;
     })
     .join("\n");
   const sourcesMarkdown = renderTopLevelSources(claims);
@@ -263,13 +268,11 @@ export function renderDocumentMarkdown(bundle: RegistryDocumentBundle): string {
     ? `\n## Government fee template\n\nStandard claim field paths:\n${GOVERNMENT_FEE_FIELD_PATHS.map((fieldPath) => `- ${fieldPath}`).join("\n")}\n\nDisclaimer: ${GOVERNMENT_FEE_DISCLAIMER}\n`
     : "";
 
-  const docCitationStatus = getDocumentCitationStatus(bundle);
-
-  return `# ${document.title}\n\nentity_id: ${entity.id}\ndocument_id: ${document.id}\nslug: ${document.slug}\nlang: ${document.lang}\ncountry: ${document.country}\nlicense_code: ${document.license_code}\n\n## Citation guidance\n\ncan_cite: ${docCitationStatus.isVerifiedDocument}\ndo_not_cite_reason: ${docCitationStatus.isVerifiedDocument ? "null" : `${docCitationStatus.verifiedClaims}/${docCitationStatus.totalClaims} claims verified`}\n\nCite a claim only if its verification status is "verified" and it has at least one source. Do not cite values shown as "확인 필요", or claims with "low" confidence or "needs_review" status. Always preserve the source URL and last_verified_at when citing.\n\n## Document citation status
+  return `# ${document.title}\n\nentity_id: ${entity.id}\ndocument_id: ${document.id}\nslug: ${document.slug}\nlang: ${document.lang}\ncountry: ${document.country}\nlicense_code: ${document.license_code}\n\n## Citation guidance\n\ncan_cite: ${docCitationStatus.isVerifiedDocument}\ndo_not_cite_reason: ${docCitationStatus.isVerifiedDocument ? "null" : `${docCitationStatus.verifiedClaims}/${docCitationStatus.totalClaims} claims verified`}\n\nCite a claim only if its verification status is "verified" and it has at least one source. Do not cite values shown as "확인 필요", or claims with "low" confidence or "needs_review" status. Always preserve the source URL and last_verified_at when citing. Stale claims may remain citation-ready, but they must carry a last verified date warning and should be rechecked before reliance.\n\n## Document citation status
 
 status: ${citationStatus.label}
 citation_ready_claims: ${citationStatus.verifiedClaims}/${citationStatus.totalClaims}
-freshness: ${citationStatus.freshness}${citationStatus.oldestVerifiedAt ? ` (oldest verified ${citationStatus.oldestVerifiedAt})` : ""}${governmentFeeTemplate}
+freshness: ${citationStatus.freshness}${citationStatus.oldestVerifiedAt ? ` (oldest verified ${citationStatus.oldestVerifiedAt}; window ${citationStatus.freshnessWindowDays} days)` : ""}${governmentFeeTemplate}
 
 ## Direct answer\n\nquestion: ${directAnswer.question}\nanswer: ${directAnswer.answer}\nregion: ${directAnswer.region}\nlast_verified_at: ${directAnswer.last_verified_at ?? UNKNOWN_TEXT}\nconfidence: ${directAnswer.confidence}\nsource_count: ${directAnswer.source_count}\ncan_cite: ${directAnswer.can_cite}\nrelated_questions: ${directAnswer.related_questions.length > 0 ? directAnswer.related_questions.join(" | ") : "none"}\n\n## Claims\n\n${claimsMarkdown}\n\n## Confidence\n\n${document.confidence}\n\n## Verification status\n\n${document.status}\n\n## Sources\n\n${sourcesMarkdown}\n\n## License notice\n\n${licenseNotice}\n`;
 }

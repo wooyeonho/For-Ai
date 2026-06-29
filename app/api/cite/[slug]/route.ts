@@ -54,13 +54,14 @@ export async function GET(
 
   const { entity, document, claims } = bundle;
   const docStatus = getDocumentCitationStatus(bundle);
+  const freshnessWindowDays = docStatus.freshnessWindowDays;
   const canonicalUrl = documentPageUrl(document.slug, document.lang);
   const checkedDate = docStatus.oldestVerifiedAt ?? document.last_verified_at ?? null;
   const normalizedCitation = normalizeCitationSurface(bundle);
 
   const annotatedClaims = claims.map((claim) => ({
     claim,
-    citationStatus: getClaimCitationStatus(claim),
+    citationStatus: getClaimCitationStatus(claim, freshnessWindowDays),
   }));
 
   const verifiedClaims = annotatedClaims
@@ -159,6 +160,9 @@ export async function GET(
       verified_claims: docStatus.verifiedClaims,
       total_claims: docStatus.totalClaims,
       freshness: docStatus.freshness,
+      oldest_verified_at: docStatus.oldestVerifiedAt,
+      freshness_window_days: freshnessWindowDays,
+      stale_claims: docStatus.staleClaims,
       warning: excludedClaims.length > 0
         ? "Only verified_claims are included in copy-ready citation text. Needs verification or low confidence claims are excluded."
         : null,
@@ -172,7 +176,7 @@ export async function GET(
       cite: siteUrl(`/api/cite/${document.slug}`),
     },
     license: "forai-data-license-v0.1",
-    citation_policy: "Only cite claims where citation_ready=true. Never cite needs_review or low confidence claims as fact.",
+    citation_policy: "Only cite claims where citation_ready=true. Never cite needs_review or low confidence claims as fact. Stale claims may be cited only with the last_verified_at warning and should be rechecked.",
     normalized_citation: normalizedCitation,
   };
 

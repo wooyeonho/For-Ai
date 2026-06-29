@@ -27,6 +27,23 @@ export function getBundleFreshnessTtlDays(bundle: RegistryDocumentBundle): numbe
   return Math.min(getFreshnessTtlDays(bundle.document.update_frequency), ...claimTtls);
 }
 
+export type FreshnessDomain =
+  | "transit_fare"
+  | "government_fee"
+  | "visa_travel_rule"
+  | "opening_hours"
+  | "finance_fee_rate"
+  | "default";
+
+export const FRESHNESS_WINDOWS_DAYS: Record<FreshnessDomain, number> = {
+  transit_fare: 180,
+  government_fee: 180,
+  visa_travel_rule: 90,
+  opening_hours: 60,
+  finance_fee_rate: 30,
+  default: FRESHNESS_TTL_DAYS,
+};
+
 export type FreshnessLabel = "fresh" | "stale" | "unknown";
 export type VerifiedClaimInput = Pick<ClaimWithSources, "claim_value" | "confidence" | "status" | "last_verified_at" | "sources" | "verification_events">;
 
@@ -51,8 +68,12 @@ export function isStale(
 
 export type ClaimCitationStatus = {
   isCitationReady: boolean;
-  label: "verified" | "unverified";
+  label: "verified" | "stale" | "unverified";
   reason: string;
+  freshness: FreshnessLabel;
+  freshnessWindowDays: number;
+  lastVerifiedAt: string | null;
+  warning: string | null;
 };
 
 export type DocumentCitationStatus = {
@@ -63,6 +84,8 @@ export type DocumentCitationStatus = {
   isVerifiedDocument: boolean;
   freshness: FreshnessLabel;
   oldestVerifiedAt: string | null;
+  freshnessWindowDays: number;
+  staleClaims: Array<{ claimId: string; fieldPath: string; lastVerifiedAt: string | null }>;
 };
 
 export function getVerifiedClaimViolations(claim: VerifiedClaimInput): string[] {
@@ -88,35 +111,72 @@ export function assertVerifiedClaimReady(claim: VerifiedClaimInput): { ok: true 
   return violations.length === 0 ? { ok: true } : { ok: false, violations };
 }
 
-export function getClaimCitationStatus(claim: ClaimWithSources): ClaimCitationStatus {
-  const validation = assertVerifiedClaimReady(claim);
+export function getFreshnessDomain(input: string | null | undefined): FreshnessDomain {
+  const value = (input ?? "").toLowerCase();
+  if (/(government|gov|tax|passport|resident|license|public_service).*fee|fee.*(government|gov|tax|passport|resident|license|public_service)/.test(value)) return "government_fee";
+  if (/(visa|travel|immigration|transit_rule|entry_rule)/.test(value)) return "visa_travel_rule";
+  if (/(opening|hours|business_hours|operating_hours)/.test(value)) return "opening_hours";
+  if (/(finance|bank|loan|interest|rate|fee_rate|card|brokerage)/.test(value)) return "finance_fee_rate";
+  if (/(transit|transport|metro|subway|bus|taxi|rail|underground|fare|transfer)/.test(value)) return "transit_fare";
+  return "default";
+}
 
-  if ("violations" in validation) {
+export function getFreshnessWindowDays(input: string | null | undefined): number {
+  return FRESHNESS_WINDOWS_DAYS[getFreshnessDomain(input)];
+}
+
+export function getClaimCitationStatus(
+  claim: ClaimWithSources,
+  ttlDays: number = FRESHNESS_TTL_DAYS,
+  now: Date = new Date(),
+): ClaimCitationStatus {
+  const hasSource = claim.sources.length > 0;
+  const hasVerificationEvent =
+    claim.status === "verified" ||
+    claim.verification_events.some((event) =>
+      event.new_status === "verified" || event.event_type === "source_verified",
+    );
+  const hasVerifiedValue = Boolean(claim.claim_value?.trim()) && claim.claim_value !== UNKNOWN_FACT_TEXT;
+  const isCitationReady =
+    claim.status === "verified" &&
+    claim.confidence !== "low" &&
+    hasVerifiedValue &&
+    hasSource &&
+    hasVerificationEvent &&
+    Boolean(claim.last_verified_at);
+  const stale = isCitationReady && isStale(claim.last_verified_at, ttlDays, now);
+
+  if (isCitationReady) {
     return {
-      isCitationReady: false,
-      label: "unverified",
-      reason: `requires verified status, medium/high confidence, non-placeholder value, source, verification event, and last_verified_at (${validation.violations.join("; ")})`,
+      isCitationReady,
+      label: stale ? "stale" : "verified",
+      reason: stale
+        ? "verified claim is citation-ready but needs recheck because its freshness window was exceeded"
+        : "verified claim with source and verification event",
+      freshness: stale ? "stale" : "fresh",
+      freshnessWindowDays: ttlDays,
+      lastVerifiedAt: claim.last_verified_at ?? null,
+      warning: stale ? `Needs recheck: last verified at ${claim.last_verified_at ?? "unknown"}; freshness window is ${ttlDays} days.` : null,
     };
   }
 
-  return { isCitationReady: true, label: "verified", reason: "verified claim with source and verification event" };
-}
-
-function getDocumentFreshnessTtlDays(bundle: RegistryDocumentBundle, overrideTtlDays?: number): number {
-  if (typeof overrideTtlDays === "number") return overrideTtlDays;
-  if (typeof bundle.document.freshness_ttl_days === "number") return bundle.document.freshness_ttl_days;
-  const dataTtl = bundle.document.data?.freshness_ttl_days;
-  if (typeof dataTtl === "number") return dataTtl;
-  if (bundle.document.template === "commerce_policy") return COMMERCE_POLICY_FRESHNESS_TTL_DAYS;
-  return FRESHNESS_TTL_DAYS;
+  return {
+    isCitationReady,
+    label: "unverified",
+    reason: "requires verified status, non-low confidence, source, verification event, and last_verified_at",
+    freshness: "unknown",
+    freshnessWindowDays: ttlDays,
+    lastVerifiedAt: claim.last_verified_at ?? null,
+    warning: null,
+  };
 }
 
 export function getDocumentCitationStatus(
   bundle: RegistryDocumentBundle,
-  ttlDays?: number,
+  ttlDays: number = getFreshnessWindowDays(bundle.document.category || bundle.entity.type),
+  now: Date = new Date(),
 ): DocumentCitationStatus {
-  const effectiveTtlDays = getDocumentFreshnessTtlDays(bundle, ttlDays);
-  const claimStatuses = bundle.claims.map((claim) => ({ claim, status: getClaimCitationStatus(claim) }));
+  const claimStatuses = bundle.claims.map((claim) => ({ claim, status: getClaimCitationStatus(claim, ttlDays, now) }));
   const verifiedClaims = claimStatuses.filter(({ status }) => status.isCitationReady).length;
   const totalClaims = bundle.claims.length;
   const unverifiedClaims = totalClaims - verifiedClaims;
@@ -138,7 +198,7 @@ export function getDocumentCitationStatus(
     : null;
   const freshness: FreshnessLabel = !isVerifiedDocument
     ? "unknown"
-    : isStale(oldestVerifiedAt, effectiveTtlDays)
+    : isStale(oldestVerifiedAt, ttlDays, now)
       ? "stale"
       : "fresh";
 
@@ -150,6 +210,10 @@ export function getDocumentCitationStatus(
     isVerifiedDocument,
     freshness,
     oldestVerifiedAt,
+    freshnessWindowDays: ttlDays,
+    staleClaims: claimStatuses
+      .filter(({ status }) => status.isCitationReady && status.freshness === "stale")
+      .map(({ claim }) => ({ claimId: claim.id, fieldPath: claim.field_path, lastVerifiedAt: claim.last_verified_at ?? null })),
   };
 }
 

@@ -153,7 +153,7 @@ export default async function WikiDocumentPage({
           {document.category && <span className="badge">{document.category}</span>}
           {citationStatus.isVerifiedDocument && citationStatus.freshness === "stale" && (
             <span className="badge badge-review" title={`Oldest verified claim: ${citationStatus.oldestVerifiedAt ?? "unknown"}`}>
-              ⏳ stale
+              ⏳ stale · last verified {citationStatus.oldestVerifiedAt ?? "unknown"}
             </span>
           )}
         </div>
@@ -227,6 +227,9 @@ export default async function WikiDocumentPage({
         <p>
           {t.wiki.citationDocument} <strong>{citationStatus.label}</strong>. {t.wiki.citationReadyClaims}{" "}
           {citationStatus.verifiedClaims}/{citationStatus.totalClaims}.
+          {citationStatus.isVerifiedDocument && citationStatus.freshness === "stale" && (
+            <strong> Needs recheck: oldest last verified date is {citationStatus.oldestVerifiedAt ?? "unknown"}; freshness window is {citationStatus.freshnessWindowDays} days.</strong>
+          )}
         </p>
         <ul className="link-list">
           <li>{t.wiki.doNotCiteUnknown}</li>
