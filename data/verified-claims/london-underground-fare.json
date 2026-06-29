@@ -1,10 +1,16 @@
 {
   "entity_id": "gb-transport-tfl-tube-fare-001",
   "slug": "london-underground-zone1-fare",
+  "canonical_slug": "london-underground-zone1-fare",
   "type": "transport.metro",
   "name": "London Underground Zone 1 Fare (2026)",
+  "localized_title": {
+    "en": "London Underground Zone 1 Fare (2026)"
+  },
   "lang": "en",
   "country": "GB",
+  "region": "England",
+  "city": "London",
   "jurisdiction": "GB",
   "risk_tier": "low",
   "update_frequency": "annual",
@@ -25,7 +31,8 @@
           "title": "Mayor of London / GLA — MD3464 March 2026 TfL fare changes (Annex Table A1, Zones 1-6 PAYG rail fares)",
           "url": "https://www.london.gov.uk/md3464-march-2026-transport-london-fare-changes",
           "observed_at": "2026-06-27",
-          "note": "Official Mayoral Decision setting TfL fares from March 2026. Adult PAYG single fare for a journey including Zone 1 (1 zone): peak £2.90. Peak times: Mon-Fri 06:30-09:30 and 16:00-19:00 (excluding public holidays)."
+          "note": "Official Mayoral Decision setting TfL fares from March 2026. Adult PAYG single fare for a journey including Zone 1 (1 zone): peak £2.90. Peak times: Mon-Fri 06:30-09:30 and 16:00-19:00 (excluding public holidays).",
+          "source_authority": "official"
         }
       ],
       "verification_event": {
@@ -33,7 +40,14 @@
         "actor": "ai-source-fetch",
         "verified_at": "2026-06-27",
         "note": "Read directly from london.gov.uk official Mayoral fare decision (MD3464) and Annex Table A1. 2026-06-27 기준. 최종 사람 승인 대기."
-      }
+      },
+      "jurisdiction": "GB",
+      "country": "GB",
+      "region": "England",
+      "city": "London",
+      "risk_tier": "low",
+      "update_frequency": "annual",
+      "disclaimer_type": "check_official_source"
     },
     {
       "claim_id": "tfl-zone1-adult-oyster-offpeak",
@@ -49,7 +63,8 @@
           "title": "Mayor of London / GLA — MD3464 March 2026 TfL fare changes (Table 1.2, Adult PAYG fares including Zone 1)",
           "url": "https://www.london.gov.uk/md3464-march-2026-transport-london-fare-changes",
           "observed_at": "2026-06-27",
-          "note": "Official Mayoral Decision setting TfL fares from March 2026. Adult PAYG single fare for a journey including Zone 1 (1 zone): off-peak £2.80. Off-peak fares apply at all other times outside the peak windows."
+          "note": "Official Mayoral Decision setting TfL fares from March 2026. Adult PAYG single fare for a journey including Zone 1 (1 zone): off-peak £2.80. Off-peak fares apply at all other times outside the peak windows.",
+          "source_authority": "official"
         }
       ],
       "verification_event": {
@@ -57,7 +72,14 @@
         "actor": "ai-source-fetch",
         "verified_at": "2026-06-27",
         "note": "Read directly from london.gov.uk official Mayoral fare decision (MD3464), Table 1.2. 2026-06-27 기준. 최종 사람 승인 대기."
-      }
+      },
+      "jurisdiction": "GB",
+      "country": "GB",
+      "region": "England",
+      "city": "London",
+      "risk_tier": "low",
+      "update_frequency": "annual",
+      "disclaimer_type": "check_official_source"
     },
     {
       "claim_id": "tfl-zone1-daily-cap",
@@ -73,7 +95,8 @@
           "title": "Transport for London — Adult caps and Travelcard prices (2026) / Fare capping",
           "url": "https://tfl.gov.uk/fares/find-fares/capping",
           "observed_at": "2026-06-27",
-          "note": "Official TfL fare capping page and content.tfl.gov.uk/adult-fares.pdf (Adult rate prices 2026): Zone 1 only daily anytime pay-as-you-go cap £8.90 (Monday-Sunday cap £44.70). Same £8.90 daily cap applies to Zones 1-2."
+          "note": "Official TfL fare capping page and content.tfl.gov.uk/adult-fares.pdf (Adult rate prices 2026): Zone 1 only daily anytime pay-as-you-go cap £8.90 (Monday-Sunday cap £44.70). Same £8.90 daily cap applies to Zones 1-2.",
+          "source_authority": "official"
         }
       ],
       "verification_event": {
@@ -81,7 +104,15 @@
         "actor": "ai-source-fetch",
         "verified_at": "2026-06-27",
         "note": "Read directly from tfl.gov.uk official Fare capping page and official Adult fares PDF. 2026-06-27 기준. 최종 사람 승인 대기."
-      }
+      },
+      "jurisdiction": "GB",
+      "country": "GB",
+      "region": "England",
+      "city": "London",
+      "risk_tier": "low",
+      "update_frequency": "annual",
+      "disclaimer_type": "check_official_source"
     }
-  ]
+  ],
+  "translation_status": "source_language"
 }

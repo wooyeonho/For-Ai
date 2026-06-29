@@ -1,10 +1,16 @@
 {
   "entity_id": "kr-admin-move-in-report-001",
   "slug": "move-in-report-deadline",
+  "canonical_slug": "move-in-report-deadline",
   "type": "administration.documents",
   "name": "전입신고 기한 및 과태료",
+  "localized_title": {
+    "ko": "전입신고 기한 및 과태료"
+  },
   "lang": "ko",
   "country": "KR",
+  "region": null,
+  "city": null,
   "jurisdiction": "KR",
   "risk_tier": "low",
   "update_frequency": "static",
@@ -25,7 +31,8 @@
           "title": "주민등록법 제16조 (거주지의 이동)",
           "url": "https://www.law.go.kr/lsLinkCommonInfo.do?lsJoLnkSeq=1012776409",
           "observed_at": "2026-06-22",
-          "note": "제16조 제1항: '신거주지에 전입한 날부터 14일 이내에 신거주지의 시장·군수 또는 구청장에게 전입신고를 하여야 한다'"
+          "note": "제16조 제1항: '신거주지에 전입한 날부터 14일 이내에 신거주지의 시장·군수 또는 구청장에게 전입신고를 하여야 한다'",
+          "source_authority": "legal"
         }
       ],
       "verification_event": {
@@ -33,7 +40,14 @@
         "actor": "admin",
         "verified_at": "2026-06-22",
         "note": "국가법령정보센터에서 주민등록법 제16조 원문 직접 확인. 법률 제20677호 (2025.1.21. 타법개정, 시행 2025.7.22.)"
-      }
+      },
+      "jurisdiction": "KR",
+      "country": "KR",
+      "region": null,
+      "city": null,
+      "risk_tier": "low",
+      "update_frequency": "static",
+      "disclaimer_type": "check_official_source"
     },
     {
       "claim_id": "move-in-report-penalty",
@@ -49,7 +63,8 @@
           "title": "주민등록법 제40조 제4항 (과태료)",
           "url": "https://www.easylaw.go.kr/CSP/CnpClsMainBtr.laf?ccfNo=4&cciNo=1&cnpClsNo=1&csmSeq=666",
           "observed_at": "2026-06-22",
-          "note": "'정당한 사유 없이 전입신고를 14일 이내에 하지 않은 경우 5만원 이하의 과태료가 부과됩니다 (주민등록법 제40조 제4항)'"
+          "note": "'정당한 사유 없이 전입신고를 14일 이내에 하지 않은 경우 5만원 이하의 과태료가 부과됩니다 (주민등록법 제40조 제4항)'",
+          "source_authority": "legal"
         }
       ],
       "verification_event": {
@@ -57,7 +72,15 @@
         "actor": "admin",
         "verified_at": "2026-06-22",
         "note": "찾기쉬운 생활법령 정보 (법제처 사이트)에서 과태료 조항 확인"
-      }
+      },
+      "jurisdiction": "KR",
+      "country": "KR",
+      "region": null,
+      "city": null,
+      "risk_tier": "low",
+      "update_frequency": "static",
+      "disclaimer_type": "check_official_source"
     }
-  ]
+  ],
+  "translation_status": "source_language"
 }

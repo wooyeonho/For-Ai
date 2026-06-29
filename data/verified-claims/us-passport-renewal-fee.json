@@ -1,10 +1,16 @@
 {
   "entity_id": "us-gov-state-dept-passport-001",
   "slug": "us-passport-renewal-fee",
+  "canonical_slug": "us-passport-renewal-fee",
   "type": "government.documents",
   "name": "US Passport Renewal Fee (2026)",
+  "localized_title": {
+    "en": "US Passport Renewal Fee (2026)"
+  },
   "lang": "en",
   "country": "US",
+  "region": null,
+  "city": null,
   "jurisdiction": "US",
   "risk_tier": "low",
   "update_frequency": "event_based",
@@ -25,7 +31,8 @@
           "title": "U.S. Department of State — Passport Fees",
           "url": "https://travel.state.gov/content/travel/en/passports/how-apply/fees.html",
           "observed_at": "2026-06-27",
-          "note": "Official fees page lists the adult passport book renewal/application fee as $130 for DS-82 mail renewal; acceptance facility fee does not apply to mail renewals."
+          "note": "Official fees page lists the adult passport book application fee as $130. Renewal by mail (Form DS-82) pays the application fee only; the $35 acceptance facility fee does not apply to mail renewals. Confirmed 2026-06-27.",
+          "source_authority": "official"
         }
       ],
       "verification_event": {
@@ -33,7 +40,14 @@
         "actor": "ai-source-fetch",
         "verified_at": "2026-06-27",
         "note": "Read directly from travel.state.gov official Passport Fees page. 2026-06-27 기준. 최종 사람 승인 대기."
-      }
+      },
+      "jurisdiction": "US",
+      "country": "US",
+      "region": null,
+      "city": null,
+      "risk_tier": "low",
+      "update_frequency": "event_based",
+      "disclaimer_type": "check_official_source"
     },
     {
       "claim_id": "us-passport-renewal-fee-child",
@@ -44,7 +58,46 @@
       "status": "needs_review",
       "last_verified_at": null,
       "sources": [],
-      "verification_event": null
+      "verification_event": null,
+      "jurisdiction": "US",
+      "country": "US",
+      "region": null,
+      "city": null,
+      "risk_tier": "low",
+      "update_frequency": "event_based",
+      "disclaimer_type": "check_official_source"
+    },
+    {
+      "claim_id": "us-passport-card-renewal-fee",
+      "field_path": "fee.passport_card_renewal",
+      "claim_text": "US passport card renewal fee (adult, by mail)",
+      "claim_value": "$30",
+      "confidence": "high",
+      "status": "verified",
+      "last_verified_at": "2026-06-27",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "U.S. Department of State — Passport Fees",
+          "url": "https://travel.state.gov/content/travel/en/passports/how-apply/fees.html",
+          "observed_at": "2026-06-27",
+          "note": "Official fees page lists the adult passport card application fee as $30. Renewal by mail (Form DS-82) pays the application fee only; the $35 acceptance facility fee does not apply to mail renewals. Confirmed 2026-06-27.",
+          "source_authority": "official"
+        }
+      ],
+      "verification_event": {
+        "event_type": "source_verified",
+        "actor": "ai-source-fetch",
+        "verified_at": "2026-06-27",
+        "note": "Read directly from travel.state.gov official Passport Fees page. 2026-06-27 기준. 최종 사람 승인 대기."
+      },
+      "jurisdiction": "US",
+      "country": "US",
+      "region": null,
+      "city": null,
+      "risk_tier": "low",
+      "update_frequency": "event_based",
+      "disclaimer_type": "check_official_source"
     },
     {
       "claim_id": "us-passport-renewal-processing-standard",
@@ -60,7 +113,8 @@
           "title": "U.S. Department of State — Get Your Processing Time",
           "url": "https://travel.state.gov/content/travel/en/passports/how-apply/processing-times.html",
           "observed_at": "2026-06-27",
-          "note": "Official processing times page states routine processing takes 4-6 weeks. Mailing time is separate."
+          "note": "Official processing times page (Last Updated April 16, 2026) states routine processing takes 4-6 weeks and expedited 2-3 weeks. Mailing time (up to 2 weeks each way) is separate. Processing time changes seasonally with demand.",
+          "source_authority": "official"
         }
       ],
       "verification_event": {
@@ -68,7 +122,14 @@
         "actor": "ai-source-fetch",
         "verified_at": "2026-06-27",
         "note": "Read directly from travel.state.gov official Processing Times page. 2026-06-27 기준. Seasonal value — re-verify regularly. 최종 사람 승인 대기."
-      }
+      },
+      "jurisdiction": "US",
+      "country": "US",
+      "region": null,
+      "city": null,
+      "risk_tier": "low",
+      "update_frequency": "event_based",
+      "disclaimer_type": "check_official_source"
     },
     {
       "claim_id": "us-passport-renewal-processing-expedited",
@@ -84,7 +145,8 @@
           "title": "U.S. Department of State — Get Your Processing Time",
           "url": "https://travel.state.gov/content/travel/en/passports/how-apply/processing-times.html",
           "observed_at": "2026-06-27",
-          "note": "Official processing times page states expedited processing takes 2-3 weeks. Mailing time is separate."
+          "note": "Official processing times page states expedited processing takes 2-3 weeks. Mailing time is separate.",
+          "source_authority": "official"
         }
       ],
       "verification_event": {
@@ -92,7 +154,14 @@
         "actor": "ai-source-fetch",
         "verified_at": "2026-06-27",
         "note": "Read directly from travel.state.gov official Processing Times page. 2026-06-27 기준. Seasonal value — re-verify regularly. 최종 사람 승인 대기."
-      }
+      },
+      "jurisdiction": "US",
+      "country": "US",
+      "region": null,
+      "city": null,
+      "risk_tier": "low",
+      "update_frequency": "event_based",
+      "disclaimer_type": "check_official_source"
     },
     {
       "claim_id": "us-passport-renewal-required-documents",
@@ -103,7 +172,14 @@
       "status": "needs_review",
       "last_verified_at": null,
       "sources": [],
-      "verification_event": null
+      "verification_event": null,
+      "jurisdiction": "US",
+      "country": "US",
+      "region": null,
+      "city": null,
+      "risk_tier": "low",
+      "update_frequency": "event_based",
+      "disclaimer_type": "check_official_source"
     },
     {
       "claim_id": "us-passport-renewal-application-channel",
@@ -119,7 +195,8 @@
           "title": "U.S. Department of State — Passport Fees",
           "url": "https://travel.state.gov/content/travel/en/passports/how-apply/fees.html",
           "observed_at": "2026-06-27",
-          "note": "Official fees guidance distinguishes DS-82 mail renewals from applications that require an acceptance facility fee."
+          "note": "Official fees guidance distinguishes DS-82 mail renewals from applications that require an acceptance facility fee.",
+          "source_authority": "official"
         }
       ],
       "verification_event": {
@@ -127,7 +204,14 @@
         "actor": "ai-source-fetch",
         "verified_at": "2026-06-27",
         "note": "Read directly from travel.state.gov official Passport Fees page. 2026-06-27 기준. 최종 사람 승인 대기."
-      }
+      },
+      "jurisdiction": "US",
+      "country": "US",
+      "region": null,
+      "city": null,
+      "risk_tier": "low",
+      "update_frequency": "event_based",
+      "disclaimer_type": "check_official_source"
     },
     {
       "claim_id": "us-passport-renewal-official-page",
@@ -143,7 +227,8 @@
           "title": "U.S. Department of State — Passport Fees",
           "url": "https://travel.state.gov/content/travel/en/passports/how-apply/fees.html",
           "observed_at": "2026-06-27",
-          "note": "Official U.S. Department of State passport fees page."
+          "note": "Official U.S. Department of State passport fees page.",
+          "source_authority": "official"
         }
       ],
       "verification_event": {
@@ -151,7 +236,15 @@
         "actor": "ai-source-fetch",
         "verified_at": "2026-06-27",
         "note": "Official government source URL captured for the fee document."
-      }
+      },
+      "jurisdiction": "US",
+      "country": "US",
+      "region": null,
+      "city": null,
+      "risk_tier": "low",
+      "update_frequency": "event_based",
+      "disclaimer_type": "check_official_source"
     }
-  ]
+  ],
+  "translation_status": "source_language"
 }
