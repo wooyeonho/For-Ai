@@ -45,7 +45,7 @@ const ENTITY_REQUIRED = [
 ];
 
 const CLAIM_REQUIRED = [
-  "field_path", "claim_text", "claim_value", "confidence", "status", "sources",
+  "field_path", "claim_text", "claim_value", "confidence", "status",
 ];
 
 // ---------------------------------------------------------------------------
@@ -88,8 +88,11 @@ function validateClaim(claim, line, claimIdx) {
   if (claim.status !== "needs_review") {
     fail(line, `${prefix} status must be "needs_review", got "${claim.status}"`);
   }
-  if (!Array.isArray(claim.sources) || claim.sources.length !== 0) {
-    fail(line, `${prefix} sources must be an empty array`);
+  if (Array.isArray(claim.sources) && claim.sources.length !== 0) {
+    fail(line, `${prefix} sources must stay empty before human approval`);
+  }
+  if (Array.isArray(claim.claim_sources) && claim.claim_sources.length !== 0) {
+    fail(line, `${prefix} claim_sources must not be populated before human approval`);
   }
 
   if (typeof claim.field_path !== "string" || claim.field_path.length === 0) {
@@ -230,6 +233,16 @@ for (let i = 0; i < lines.length; i++) {
     fail(lineNum, `duplicate slug: "${entry.slug}"`);
   }
   seenSlugs.add(entry.slug);
+
+  if (entry.status !== undefined && !["ai_draft", "needs_review"].includes(entry.status)) {
+    fail(lineNum, `generated document status must be ai_draft or needs_review, got "${entry.status}"`);
+  }
+  if (entry.confidence !== undefined && entry.confidence !== "low") {
+    fail(lineNum, `generated document confidence must be low, got "${entry.confidence}"`);
+  }
+  if (entry.citation_ready !== undefined && entry.citation_ready !== false) {
+    fail(lineNum, "generated candidate must keep citation_ready=false before human approval");
+  }
 
   // Source policy
   validateSourcePolicy(entry.source_policy, lineNum);

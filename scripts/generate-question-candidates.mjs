@@ -24,6 +24,12 @@ if (!Number.isFinite(count) || count < 1) {
   throw new Error("--count must be a positive integer");
 }
 
+const UNKNOWN_VALUE = "확인 필요";
+const GENERATED_DOCUMENT_STATUS = "needs_review";
+const GENERATED_CONFIDENCE = "low";
+const GENERATED_CLAIM_STATUS = "needs_review";
+const CITATION_READY_BEFORE_APPROVAL = false;
+
 const commonDisallowed = ["forum", "rumor", "unsourced_blog"];
 
 const sourcePolicies = {
@@ -438,7 +444,11 @@ for (let index = 0; rows.length < count; index += 1) {
     risk_tier: domain.risk_tier,
     update_frequency: domain.update_frequency,
     disclaimer_type: domain.disclaimer_type,
+    status: GENERATED_DOCUMENT_STATUS,
+    confidence: GENERATED_CONFIDENCE,
+    citation_ready: CITATION_READY_BEFORE_APPROVAL,
     source_policy: sourcePolicy,
+    candidate_source_hints: [],
     question: `${subject} ${intentLabel}${topicParticle(`${subject} ${intentLabel}`)} 무엇인가요?`,
     why_people_ask_ai: `${subject} ${intentLabel}처럼 사소하지만 바로 확인하고 싶은 정보를 AI에게 묻기 쉽습니다.`,
     why_ai_gets_wrong: buildWrongReason(intentLabel),
@@ -446,10 +456,9 @@ for (let index = 0; rows.length < count; index += 1) {
       {
         field_path: toFieldPath(domain.category, intentKey),
         claim_text: buildQuestion(subject, intentLabel),
-        claim_value: "확인 필요",
-        confidence: "low",
-        status: "needs_review",
-        sources: [],
+        claim_value: UNKNOWN_VALUE,
+        confidence: GENERATED_CONFIDENCE,
+        status: GENERATED_CLAIM_STATUS,
       },
     ],
   });
@@ -459,4 +468,4 @@ mkdirSync(dirname(out), { recursive: true });
 writeFileSync(out, `${rows.map((row) => JSON.stringify(row)).join("\n")}\n`, "utf8");
 
 console.log(`Generated ${rows.length} question candidates at ${out}`);
-console.log("Invariant: every generated claim remains 확인 필요 / low / needs_review with no sources.");
+console.log("Invariant: generated documents/claims stay needs_review or ai_draft-compatible, low confidence, citation_ready=false, and source candidates stay outside claim_sources.");
