@@ -1,0 +1,54 @@
+{
+  "slug": "micropayment-limit-change",
+  "country": "KR",
+  "lang": "ko",
+  "verified_at": "YYYY-MM-DD",
+  "_meta": {
+    "title": "소액결제 한도 변경 방법",
+    "category": "finance.mobile",
+    "why_people_ask_ai": "핸드폰 소액결제 한도를 높이거나 차단하고 싶을 때",
+    "why_ai_gets_wrong": "통신사별 방법이 다르고, 차단 vs 한도변경 경로를 혼동",
+    "required_source_types": [
+      "platform"
+    ],
+    "instructions": "Fill each claim below with the real value from an official source. Set verified_at to the date you confirmed the value. Do NOT guess — if you cannot confirm from an official source, delete this file."
+  },
+  "claims": [
+    {
+      "field_path": "method.skt",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "SKT 소액결제 한도 변경 방법은?",
+      "sources": [
+        {
+          "source_type": "platform",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    },
+    {
+      "field_path": "method.kt",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "KT 소액결제 한도 변경 방법은?",
+      "sources": [
+        {
+          "source_type": "platform",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    }
+  ]
+}

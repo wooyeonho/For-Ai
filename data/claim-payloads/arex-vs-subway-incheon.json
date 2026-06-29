@@ -1,0 +1,72 @@
+{
+  "slug": "arex-vs-subway-incheon",
+  "country": "KR",
+  "lang": "ko",
+  "verified_at": "YYYY-MM-DD",
+  "_meta": {
+    "title": "공항철도 vs 지하철 차이 (인천공항)",
+    "category": "transport.rail",
+    "why_people_ask_ai": "인천공항 갈 때 직통 vs 일반 차이, 소요시간, 요금 궁금",
+    "why_ai_gets_wrong": "직통열차 요금과 일반열차 요금 혼동, 소요시간 부정확",
+    "required_source_types": [
+      "official"
+    ],
+    "instructions": "Fill each claim below with the real value from an official source. Set verified_at to the date you confirmed the value. Do NOT guess — if you cannot confirm from an official source, delete this file."
+  },
+  "claims": [
+    {
+      "field_path": "fare.express",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "공항철도 직통열차 요금은?",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    },
+    {
+      "field_path": "fare.all_stop",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "공항철도 일반열차 요금은?",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    },
+    {
+      "field_path": "time.express_minutes",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "직통열차 서울역→인천공항 소요시간은?",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    }
+  ]
+}

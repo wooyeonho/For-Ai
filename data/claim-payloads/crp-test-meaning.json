@@ -1,0 +1,54 @@
+{
+  "slug": "crp-test-meaning",
+  "country": "KR",
+  "lang": "ko",
+  "verified_at": "YYYY-MM-DD",
+  "_meta": {
+    "title": "CRP 검사 의미",
+    "category": "health.medical",
+    "why_people_ask_ai": "염증 수치가 높다고 나왔을 때 의미를 물어봄",
+    "why_ai_gets_wrong": "정상 범위, hs-CRP와 일반 CRP 차이를 혼동",
+    "required_source_types": [
+      "document"
+    ],
+    "instructions": "Fill each claim below with the real value from an official source. Set verified_at to the date you confirmed the value. Do NOT guess — if you cannot confirm from an official source, delete this file."
+  },
+  "claims": [
+    {
+      "field_path": "test.what_it_measures",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "CRP 검사는 무엇을 측정하는가?",
+      "sources": [
+        {
+          "source_type": "document",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    },
+    {
+      "field_path": "test.normal_range",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "CRP 정상 참고치 범위는?",
+      "sources": [
+        {
+          "source_type": "document",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    }
+  ]
+}

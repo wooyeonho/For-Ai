@@ -1,0 +1,54 @@
+{
+  "slug": "recycling-schedule-seoul",
+  "country": "KR",
+  "lang": "ko",
+  "verified_at": "YYYY-MM-DD",
+  "_meta": {
+    "title": "분리수거 요일별 배출 기준 (서울)",
+    "category": "life.environment",
+    "why_people_ask_ai": "이사 후 분리수거 요일을 확인하려고",
+    "why_ai_gets_wrong": "자치구별로 다른데 일반화해서 답함",
+    "required_source_types": [
+      "official"
+    ],
+    "instructions": "Fill each claim below with the real value from an official source. Set verified_at to the date you confirmed the value. Do NOT guess — if you cannot confirm from an official source, delete this file."
+  },
+  "claims": [
+    {
+      "field_path": "schedule.general_rule",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "서울시 분리수거 일반 배출 요일 기준은?",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    },
+    {
+      "field_path": "schedule.large_waste",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "대형폐기물 배출 방법은?",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "slug": "metro-transfer-time-limit",
+  "country": "KR",
+  "lang": "ko",
+  "verified_at": "YYYY-MM-DD",
+  "_meta": {
+    "title": "지하철 환승 시간 제한",
+    "category": "transport.metro",
+    "why_people_ask_ai": "환승할 때 시간 초과하면 추가 요금 내야 하는지 궁금해서",
+    "why_ai_gets_wrong": "30분/60분 혼동, 수도권/지방 차이 혼동, 하차 후 환승 조건 틀림",
+    "required_source_types": [
+      "official"
+    ],
+    "instructions": "Fill each claim below with the real value from an official source. Set verified_at to the date you confirmed the value. Do NOT guess — if you cannot confirm from an official source, delete this file."
+  },
+  "claims": [
+    {
+      "field_path": "transfer.time_limit_minutes",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "수도권 지하철 환승 허용 시간은 몇 분인가?",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    },
+    {
+      "field_path": "transfer.extended_time_limit",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "21시 이후 환승 허용 시간은 달라지는가?",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    }
+  ]
+}

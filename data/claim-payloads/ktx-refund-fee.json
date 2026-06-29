@@ -1,0 +1,72 @@
+{
+  "slug": "ktx-refund-fee",
+  "country": "KR",
+  "lang": "ko",
+  "verified_at": "YYYY-MM-DD",
+  "_meta": {
+    "title": "KTX 환불 수수료",
+    "category": "transport.rail",
+    "why_people_ask_ai": "기차표 취소할 때 수수료가 시간대별로 달라서 자주 물어봄",
+    "why_ai_gets_wrong": "시간 구간별 수수료율이 자주 바뀌고, AI가 옛날 기준을 답하는 경우 많음",
+    "required_source_types": [
+      "official"
+    ],
+    "instructions": "Fill each claim below with the real value from an official source. Set verified_at to the date you confirmed the value. Do NOT guess — if you cannot confirm from an official source, delete this file."
+  },
+  "claims": [
+    {
+      "field_path": "refund.before_departure_day",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "KTX 출발 1일 전까지 환불 수수료는?",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    },
+    {
+      "field_path": "refund.within_departure_day",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "KTX 출발 당일 환불 수수료는?",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    },
+    {
+      "field_path": "refund.after_departure",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "KTX 출발 후 환불 가능 여부와 수수료는?",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    }
+  ]
+}

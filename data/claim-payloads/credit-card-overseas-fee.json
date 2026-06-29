@@ -1,0 +1,54 @@
+{
+  "slug": "credit-card-overseas-fee",
+  "country": "KR",
+  "lang": "ko",
+  "verified_at": "YYYY-MM-DD",
+  "_meta": {
+    "title": "신용카드 해외 결제 수수료",
+    "category": "finance.card",
+    "why_people_ask_ai": "해외 여행/직구 시 추가 수수료가 궁금해서",
+    "why_ai_gets_wrong": "카드사별 수수료율, 국제브랜드 수수료, 해외원화결제(DCC) 차이를 혼동",
+    "required_source_types": [
+      "platform"
+    ],
+    "instructions": "Fill each claim below with the real value from an official source. Set verified_at to the date you confirmed the value. Do NOT guess — if you cannot confirm from an official source, delete this file."
+  },
+  "claims": [
+    {
+      "field_path": "fee.international_brand",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "해외 결제 시 국제 브랜드 수수료율은?",
+      "sources": [
+        {
+          "source_type": "platform",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    },
+    {
+      "field_path": "fee.card_company",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "카드사 해외 이용 수수료율은?",
+      "sources": [
+        {
+          "source_type": "platform",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    }
+  ]
+}

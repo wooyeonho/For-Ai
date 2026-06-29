@@ -1,0 +1,72 @@
+{
+  "slug": "electrical-outlet-types-worldwide",
+  "country": "KR",
+  "lang": "ko",
+  "verified_at": "YYYY-MM-DD",
+  "_meta": {
+    "title": "전기 콘센트 타입 (세계)",
+    "category": "electricity.fixture",
+    "why_people_ask_ai": "해외 여행 시 어댑터 필요 여부를 확인하려고",
+    "why_ai_gets_wrong": "타입 C/F/G/A/B 구분이나 각 나라별 대응을 틀림",
+    "required_source_types": [
+      "document"
+    ],
+    "instructions": "Fill each claim below with the real value from an official source. Set verified_at to the date you confirmed the value. Do NOT guess — if you cannot confirm from an official source, delete this file."
+  },
+  "claims": [
+    {
+      "field_path": "type.korea",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "한국 콘센트 타입은?",
+      "sources": [
+        {
+          "source_type": "document",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    },
+    {
+      "field_path": "type.usa",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "미국 콘센트 타입은?",
+      "sources": [
+        {
+          "source_type": "document",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    },
+    {
+      "field_path": "type.uk",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "영국 콘센트 타입은?",
+      "sources": [
+        {
+          "source_type": "document",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    }
+  ]
+}
