@@ -81,6 +81,10 @@ function buildSystemPrompt(lang: string): string {
   return `You are a global fact-registry curator for For-Ai. Search the web and output only valid JSON arrays. Prioritize topics with official sources. Find real official/platform/law/document URLs for source_hints, and prefer those source types over news, stats, blogs, or forums. Accept ANY topic: sports, entertainment, life, IT, finance, government, etc. Output in ${language}.`;
 }
 
+const UNKNOWN_VALUE = "확인 필요";
+const GENERATED_CLAIM_STATUS = "needs_review" as const;
+const GENERATED_CONFIDENCE = "low" as const;
+
 type ParsedCandidates = { candidates: Record<string, unknown>[]; parseError?: string };
 
 function parseCandidatesFromResponse(
@@ -138,10 +142,21 @@ function parseCandidatesFromResponse(
         country: String(c.country ?? "").trim() || defaultCountryForLang(lang),
         status: "new",
         generation_model: `${response.provider}/${response.model}`,
-        claims: ((c.claims ?? []) as Record<string, unknown>[]).map((cl) => ({
-          ...cl,
-          placeholder_value: "확인 필요",
-        })),
+        claims: ((c.claims ?? []) as Record<string, unknown>[]).map((cl, index) => {
+          const claim = { ...cl } as Record<string, unknown>;
+          delete claim.sources;
+          delete claim.claim_sources;
+          delete claim.source_hints;
+          return {
+            ...claim,
+            field_path: String(claim.field_path ?? `claim.${index + 1}`).trim() || `claim.${index + 1}`,
+            claim_text: String(claim.claim_text ?? claim.question ?? claim.field_path ?? UNKNOWN_VALUE).trim() || UNKNOWN_VALUE,
+            claim_value: UNKNOWN_VALUE,
+            placeholder_value: UNKNOWN_VALUE,
+            confidence: GENERATED_CONFIDENCE,
+            status: GENERATED_CLAIM_STATUS,
+          };
+        }),
         source_hints: [...hints, ...extra],
       };
     });
@@ -185,10 +200,11 @@ function candidateSimilarity(a: Record<string, unknown>, b: Record<string, unkno
   return Math.max(slugScore, titleScore * 0.92);
 }
 
-function consensusLevel(score: number): "low" | "medium" | "high" {
-  if (score >= 0.8) return "high";
-  if (score >= 0.55) return "medium";
-  return "low";
+function consensusLevel(score: number): "unanimous" | "majority" | "minority" | "single" {
+  if (score >= 0.9) return "unanimous";
+  if (score >= 0.55) return "majority";
+  if (score > 0) return "minority";
+  return "single";
 }
 
 function mergeSourceHints(candidates: Record<string, unknown>[]): Record<string, string>[] {
