@@ -4,9 +4,10 @@
  * verified-claims.mjs — file-based verified-claim production tooling.
  *
  * Makes the manual workflow (fetch official source -> fill claim -> verified
- * claims JSON) repeatable and safe. Four subcommands:
+ * claims JSON) repeatable and safe. Subcommands:
  *
  *   status              Show backlog vs citation-ready progress.
+ *   recommend           Suggest 10 seed topics for today's verification queue.
  *   scaffold <seed>     Generate a fillable verified-claims/<slug>.json skeleton
  *                       from a seed topic in data/verified-seed-set.json.
  *   validate            Enforce For-Ai trust rules across every verified-claims
@@ -55,6 +56,12 @@ const REQUIRED_TOP_FIELDS = [
   "entity_id", "slug", "canonical_slug", "type", "name", "localized_title", "lang", "country",
   "jurisdiction", "risk_tier", "update_frequency", "disclaimer_type", "translation_status", "claims",
 ];
+const OFFICIAL_SOURCE_TYPES = new Set(["official", "law", "platform", "document"]);
+const DOCUMENTS_DATA_CANONICAL_PATTERNS = [
+  /document\.data\.(?:claims?|facts?|sources?|verification|verified|claim_value|confidence|status)/i,
+  /documents\.data\.(?:claims?|facts?|sources?|verification|verified|claim_value|confidence|status)/i,
+  /from\(["']documents["']\)[\s\S]{0,240}data[\s\S]{0,240}(?:claims?|facts?|claim_value|verification|verified)/i,
+];
 
 function readJson(path) {
   return JSON.parse(readFileSync(path, "utf8"));
@@ -69,6 +76,39 @@ function listClaimFiles() {
 
 function isCitationReady(claim) {
   return claim.status === "verified" && claim.claim_value !== PLACEHOLDER;
+}
+
+function domainOf(value) {
+  return String(value ?? "unknown").split(".")[0] || "unknown";
+}
+
+function hasSource(claim) {
+  return Array.isArray(claim.sources) && claim.sources.length > 0;
+}
+
+function hasVerificationEvent(claim) {
+  return Boolean(claim.verification_event);
+}
+
+function isUnknownClaim(claim) {
+  const value = String(claim.claim_value ?? "").trim().toLowerCase();
+  return claim.claim_value === PLACEHOLDER || value === "needs verification";
+}
+
+function addBucket(map, key) {
+  if (!map[key]) {
+    map[key] = { files: 0, claims: 0, verified: 0, needsVerification: 0, missingSource: 0, missingVerificationEvent: 0 };
+  }
+  return map[key];
+}
+
+function updateStatsBucket(bucket, fileSeen, claim) {
+  if (fileSeen) bucket.files++;
+  bucket.claims++;
+  if (claim.status === "verified") bucket.verified++;
+  if (claim.status !== "verified" || isUnknownClaim(claim)) bucket.needsVerification++;
+  if (!hasSource(claim)) bucket.missingSource++;
+  if (!hasVerificationEvent(claim)) bucket.missingVerificationEvent++;
 }
 
 // ---------------------------------------------------------------------------
@@ -141,15 +181,18 @@ function validateFile(path, errors, slugs, entityIds) {
       errors.push(`${where}: high-risk claim requires a non-none disclaimer_type`);
     }
 
-    // No fake facts: a placeholder value can never be verified or above low.
-    if (c.claim_value === PLACEHOLDER) {
-      if (c.status === "verified") errors.push(`${where}: placeholder value marked verified (no fake facts)`);
-      if (c.confidence !== "low") errors.push(`${where}: placeholder value must stay confidence:low`);
+    // No fake facts: an unknown value can never be verified or above low.
+    if (isUnknownClaim(c)) {
+      if (c.status === "verified") errors.push(`${where}: unknown/placeholder value marked verified (no fake facts)`);
+      if (c.confidence !== "low") errors.push(`${where}: unknown facts must stay confidence:low`);
+      if (c.claim_value !== PLACEHOLDER && c.claim_value !== "Needs verification") {
+        errors.push(`${where}: unknown fact must use "${PLACEHOLDER}" or "Needs verification"`);
+      }
     }
 
     if (c.status === "verified") {
-      if (c.claim_value === PLACEHOLDER) {
-        errors.push(`${where}: verified claim must have a real value, not "${PLACEHOLDER}"`);
+      if (isUnknownClaim(c)) {
+        errors.push(`${where}: verified claim must have a real value, not an unknown/placeholder value`);
       }
       if (!VERIFIED_CONFIDENCE.has(c.confidence)) {
         errors.push(`${where}: verified claim must be confidence medium/high (got "${c.confidence}")`);
@@ -253,14 +296,40 @@ function checkMonetizationGuards(errors) {
   }
 }
 
+function checkDocumentsDataWarnings(warnings) {
+  const scanRoots = ["app", "lib", "scripts"];
+  const sourceExt = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs"]);
+  function walk(dir) {
+    if (!existsSync(dir)) return;
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const path = join(dir, entry.name);
+      if (entry.isDirectory()) walk(path);
+      else if (sourceExt.has(path.slice(path.lastIndexOf(".")))) {
+        const text = readFileSync(path, "utf8");
+        if (DOCUMENTS_DATA_CANONICAL_PATTERNS.some((re) => re.test(text))) {
+          warnings.push(`${relative(ROOT, path)}: documents.data may be used as canonical factual truth; keep canonical facts in claims/claim_sources/verification_events`);
+        }
+      }
+    }
+  }
+  for (const root of scanRoots) walk(join(ROOT, root));
+}
+
 function cmdValidate() {
   const files = listClaimFiles();
   const errors = [];
+  const warnings = [];
   const slugs = new Set();
   const entityIds = new Set();
   for (const path of files) validateFile(path, errors, slugs, entityIds);
   checkLoaderWiring(files, errors);
   checkMonetizationGuards(errors);
+  checkDocumentsDataWarnings(warnings);
+
+  if (warnings.length > 0) {
+    console.warn(`verified-claims validate: ${warnings.length} warning(s)`);
+    for (const w of warnings) console.warn(`  ! ${w}`);
+  }
 
   if (errors.length > 0) {
     console.error(`verified-claims validate: ${errors.length} violation(s)\n`);
@@ -286,27 +355,37 @@ function cmdValidate() {
 function cmdStatus() {
   const files = listClaimFiles();
   const byCountry = {};
+  const byDomain = {};
   let totalClaims = 0;
-  let ready = 0;
+  let verified = 0;
+  let needsVerification = 0;
+  let missingSource = 0;
+  let missingVerificationEvent = 0;
   const inProgress = [];
+
   for (const path of files) {
     const f = readJson(path);
-    const country = f.country ?? "?";
-    byCountry[country] = byCountry[country] ?? { files: 0, ready: 0 };
-    byCountry[country].files++;
     let fileReady = 0;
+    let countryFileSeen = true;
+    let domainFileSeen = true;
     for (const c of f.claims) {
       totalClaims++;
-      if (isCitationReady(c)) { ready++; fileReady++; byCountry[country].ready++; }
+      if (c.status === "verified") verified++;
+      if (c.status !== "verified" || isUnknownClaim(c)) needsVerification++;
+      if (!hasSource(c)) missingSource++;
+      if (!hasVerificationEvent(c)) missingVerificationEvent++;
+      if (isCitationReady(c)) fileReady++;
+      updateStatsBucket(addBucket(byCountry, f.country ?? "?"), countryFileSeen, c);
+      updateStatsBucket(addBucket(byDomain, domainOf(f.type)), domainFileSeen, c);
+      countryFileSeen = false;
+      domainFileSeen = false;
     }
-    if (fileReady < f.claims.length) {
-      inProgress.push(`${f.slug} (${fileReady}/${f.claims.length} ready, ${f.country})`);
-    }
+    if (fileReady < f.claims.length) inProgress.push(`${f.slug} (${fileReady}/${f.claims.length} ready, ${f.country}, ${f.type})`);
   }
 
-  const seedSlugs = new Set();
   let seedTopics = 0;
   let seedClaims = 0;
+  const seedSlugs = new Set();
   if (existsSync(SEED_PATH)) {
     const seed = readJson(SEED_PATH);
     seedTopics = seed.length;
@@ -317,14 +396,26 @@ function cmdStatus() {
   }
   const startedSlugs = new Set(files.map((p) => readJson(p).slug));
   const notStarted = [...seedSlugs].filter((s) => !startedSlugs.has(s));
+  const totalCandidates = seedClaims + totalClaims;
 
   console.log("=== For-Ai verified-claims status ===\n");
-  console.log(`citation-ready claims : ${ready} / ${totalClaims} across ${files.length} files`);
-  console.log(`seed backlog          : ${seedTopics} topics / ${seedClaims} placeholder claims`);
-  console.log(`\nby country:`);
-  for (const [c, v] of Object.entries(byCountry).sort()) {
-    console.log(`  ${c.padEnd(4)} ${v.files} files, ${v.ready} citation-ready claims`);
+  console.log(`total candidates                  : ${totalCandidates} (${totalClaims} managed claims + ${seedClaims} seed placeholder claims)`);
+  console.log(`verified claims                   : ${verified}`);
+  console.log(`needs verification                : ${needsVerification + seedClaims}`);
+  console.log(`missing source                    : ${missingSource + seedClaims}`);
+  console.log(`missing verification event        : ${missingVerificationEvent + seedClaims}`);
+  console.log(`managed files                     : ${files.length}`);
+  console.log(`seed backlog                      : ${seedTopics} topics / ${seedClaims} placeholder claims`);
+
+  function printBuckets(title, map) {
+    console.log(`\n${title}:`);
+    for (const [key, v] of Object.entries(map).sort()) {
+      console.log(`  ${key.padEnd(14)} files ${String(v.files).padStart(2)} | claims ${String(v.claims).padStart(3)} | verified ${String(v.verified).padStart(3)} | needs ${String(v.needsVerification).padStart(3)} | no-source ${String(v.missingSource).padStart(3)} | no-event ${String(v.missingVerificationEvent).padStart(3)}`);
+    }
   }
+  printBuckets("by country", byCountry);
+  printBuckets("by domain", byDomain);
+
   if (inProgress.length > 0) {
     console.log(`\nin progress (files with placeholders left):`);
     for (const s of inProgress) console.log(`  - ${s}`);
@@ -333,7 +424,69 @@ function cmdStatus() {
     console.log(`\nbacklog not started (seed topics with no verified-claims file): ${notStarted.length}`);
     for (const s of notStarted.slice(0, 20)) console.log(`  - ${s}`);
     if (notStarted.length > 20) console.log(`  ... and ${notStarted.length - 20} more`);
-    console.log(`\nscaffold the next one with:  npm run claims:scaffold -- <seed-slug>`);
+    console.log(`\nrecommend today's queue with:  npm run claims:recommend`);
+    console.log(`scaffold the next one with:    npm run claims:scaffold -- <seed-slug>`);
+  }
+}
+
+
+// ---------------------------------------------------------------------------
+// recommend
+// ---------------------------------------------------------------------------
+
+function cmdRecommend(args) {
+  const opts = parseArgs(args);
+  const limit = Number(opts.limit ?? opts.n ?? 10);
+  if (!existsSync(SEED_PATH)) {
+    console.error(`seed file not found: ${SEED_PATH}`);
+    process.exit(1);
+  }
+
+  const seed = readJson(SEED_PATH);
+  const files = listClaimFiles().map((p) => readJson(p));
+  const fileBySlug = new Map(files.map((f) => [f.slug, f]));
+  const existingSlugs = new Set(files.map((f) => f.slug));
+  const existingDomains = new Set(files.map((f) => domainOf(f.type)));
+  const existingTypes = new Set(files.map((f) => f.type));
+
+  function hasOpenClaims(file) {
+    return Boolean(file) && file.claims.some((c) => c.status !== "verified" || isUnknownClaim(c) || !hasSource(c) || !hasVerificationEvent(c));
+  }
+
+  const rows = seed.map((topic) => {
+    const claims = topic.claims ?? [];
+    const officialClaims = claims.filter((c) => OFFICIAL_SOURCE_TYPES.has(c.required_source_type ?? "official")).length;
+    const domain = domainOf(topic.category);
+    const file = fileBySlug.get(topic.slug);
+    const hasScaffold = Boolean(file);
+    const openScaffold = hasOpenClaims(file);
+    const sameType = existingTypes.has(topic.category);
+    const sameDomain = existingDomains.has(domain);
+    const officialRatio = claims.length ? officialClaims / claims.length : 0;
+    const score =
+      officialRatio * 50 +
+      (sameType ? 25 : sameDomain ? 18 : 0) +
+      (hasScaffold ? 20 : 0) +
+      (topic.risk_tier === "low" ? 5 : 0) +
+      Math.max(0, 5 - claims.length);
+    const reasons = [];
+    if (officialRatio >= 1) reasons.push("official sources clear");
+    else if (officialClaims > 0) reasons.push(`${officialClaims}/${claims.length} official-like sources`);
+    if (sameType) reasons.push(`same vertical: ${topic.category}`);
+    else if (sameDomain) reasons.push(`near existing domain: ${domain}`);
+    if (hasScaffold) reasons.push("entity/document scaffold exists");
+    return { topic, claims, score, reasons, hasScaffold, openScaffold };
+  })
+    .filter((r) => r.openScaffold || !existingSlugs.has(r.topic.slug))
+    .sort((a, b) => b.score - a.score || a.claims.length - b.claims.length || a.topic.slug.localeCompare(b.topic.slug))
+    .slice(0, Number.isFinite(limit) && limit > 0 ? limit : 10);
+
+  console.log("=== Today's recommended verification queue ===\n");
+  for (const [i, row] of rows.entries()) {
+    console.log(`${String(i + 1).padStart(2)}. ${row.topic.slug} — ${row.topic.title ?? row.topic.slug}`);
+    console.log(`    country=${row.topic.country ?? "?"} domain=${domainOf(row.topic.category)} type=${row.topic.category ?? "?"} claims=${row.claims.length} score=${row.score.toFixed(1)}`);
+    console.log(`    why: ${row.reasons.join("; ") || "general backlog candidate"}`);
+    console.log(`    next: npm run claims:scaffold -- ${row.topic.slug}`);
   }
 }
 
@@ -376,6 +529,7 @@ function cmdScaffold(args) {
   const entityId = topic.entity_id ?? slugToEntityId(country, type, seedSlug);
 
   const claims = (topic.claims ?? []).map((c) => ({
+    _instructions: "Required: replace claim_value only after checking a traceable source. Verified claims require status=verified, confidence=medium|high, sources[], and verification_event. Unknown facts must remain Needs verification/확인 필요 with confidence=low.",
     claim_id: `${seedSlug}-${String(c.field_path ?? "field").replace(/\./g, "-")}`,
     field_path: c.field_path ?? "unknown.field",
     claim_text: c.question ?? c.claim_text ?? c.field_path ?? "",
@@ -388,6 +542,7 @@ function cmdScaffold(args) {
   }));
 
   const out = {
+    _instructions: "For-Ai canonical facts live in claims -> sources -> verification_event. documents.data is rendering convenience only. Required top-level fields: entity_id, slug, type, name, lang, country, jurisdiction, risk_tier, update_frequency, disclaimer_type, claims.",
     entity_id: entityId,
     slug: seedSlug,
     type,
@@ -813,9 +968,10 @@ function main() {
     case "batch": return cmdBatch(rest);
     case "generate-payloads": return cmdGeneratePayloads(rest);
     case "status": return cmdStatus();
+    case "recommend": return cmdRecommend(rest);
     case "scaffold": return cmdScaffold(rest);
     default:
-      console.error("usage: node scripts/verified-claims.mjs <status|scaffold|apply|batch|generate-payloads|validate>");
+      console.error("usage: node scripts/verified-claims.mjs <status|recommend|scaffold|apply|batch|generate-payloads|validate>");
       process.exit(1);
   }
 }
