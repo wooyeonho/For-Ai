@@ -35,6 +35,9 @@ function sourceFromRow(row: Record<string, unknown>): ClaimSource {
     citation: (row.citation ?? null) as string | null,
     lang: (row.lang ?? null) as string | null,
     observed_at: (row.observed_at ?? null) as string | null,
+    source_check_status: (row.source_check_status ?? null) as ClaimSource["source_check_status"],
+    source_trust_score: typeof row.source_trust_score === "number" ? row.source_trust_score : null,
+    source_check_notes: (row.source_check_notes ?? null) as string | null,
     contributor_hash: (row.contributor_hash ?? null) as string | null,
     created_at: (row.created_at ?? null) as string | null,
   };

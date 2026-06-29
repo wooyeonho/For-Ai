@@ -119,6 +119,9 @@ create table claim_sources (
   citation text,
   lang text,
   observed_at timestamptz,
+  source_check_status text not null default 'unchecked' check (source_check_status in ('unchecked', 'passed', 'warning', 'failed')),
+  source_trust_score integer not null default 0 check (source_trust_score >= 0 and source_trust_score <= 100),
+  source_check_notes text,
   contributor_hash text,
   created_at timestamptz not null default now()
 );

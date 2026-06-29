@@ -39,7 +39,7 @@ type DocumentRow = {
 };
 type ClaimListMeta = { count: number; limit: number; offset: number; has_more: boolean };
 
-const SOURCE_TYPES = ["official", "platform", "document", "web", "review", "user", "phone", "photo", "other", "unknown"];
+const SOURCE_TYPES = ["official", "law", "platform", "document", "web", "review", "user", "phone", "photo", "other", "unknown"];
 const SOURCE_TRUST: Record<string, number> = { official: 95, platform: 85, document: 80, web: 65, photo: 60, phone: 55, review: 40, user: 30, other: 25, unknown: 0 };
 function trustScore(sourceType?: string | null, url?: string | null, citation?: string | null) {
   const base = SOURCE_TRUST[sourceType ?? "unknown"] ?? 0;
@@ -70,6 +70,11 @@ export default function VerifyClaimPage() {
     exact_match?: boolean | null;
     token_match?: { matched: string[]; missing: string[] } | null;
     snippet?: string | null;
+    extracted_title?: string | null;
+    source_check_status?: "unchecked" | "passed" | "warning" | "failed";
+    source_trust_score?: number;
+    source_check_notes?: string[];
+    source_check_details?: Record<string, boolean | null>;
   } | null>(null);
   const [filters, setFilters] = useState({
     status: "needs_review",
@@ -152,7 +157,14 @@ export default function VerifyClaimPage() {
       const res = await fetch("/api/admin/check-source", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-admin-secret": secret, "x-admin-csrf": "1", ...(adminActor.trim() ? { "x-admin-actor": adminActor.trim() } : {}) },
-        body: JSON.stringify({ url: url.trim(), match: claimValue.trim() }),
+        body: JSON.stringify({
+          url: url.trim(),
+          match: claimValue.trim(),
+          claim_text: selectedClaim?.claim_text ?? "",
+          source_type: sourceType,
+          title: title.trim(),
+          observed_at: new Date().toISOString(),
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -182,6 +194,11 @@ export default function VerifyClaimPage() {
         citation,
         confidence,
         observed_at: new Date().toISOString(),
+        claim_text: selectedClaim.claim_text,
+        fetch_ok: sourceCheck?.reachable ?? null,
+        source_check_status: sourceCheck?.source_check_status ?? "unchecked",
+        source_trust_score: sourceCheck?.source_trust_score ?? 0,
+        source_check_notes: sourceCheck?.source_check_notes ?? [],
       }),
     });
     const data = await res.json();
@@ -393,6 +410,17 @@ export default function VerifyClaimPage() {
                 {sourceCheck.reachable ? `✓ 도달 가능 (HTTP ${sourceCheck.status})` : `✗ 도달 실패${sourceCheck.status ? ` (HTTP ${sourceCheck.status})` : ""}`}
                 {sourceCheck.error && <span style={{ color: "#b91c1c", fontWeight: 400 }}> — {sourceCheck.error}</span>}
               </p>
+              {sourceCheck.source_check_status && (
+                <p style={{ margin: "0 0 4px", color: sourceCheck.source_check_status === "passed" ? "#166534" : sourceCheck.source_check_status === "warning" ? "#92400e" : "#b91c1c" }}>
+                  Source trust: {sourceCheck.source_check_status} · {sourceCheck.source_trust_score ?? 0}/100
+                </p>
+              )}
+              {sourceCheck.extracted_title && <p style={{ margin: "0 0 4px", color: "#374151" }}>추출 title: {sourceCheck.extracted_title}</p>}
+              {sourceCheck.source_check_notes && sourceCheck.source_check_notes.length > 0 && (
+                <ul style={{ margin: "4px 0", paddingLeft: 18, color: "#6b7280" }}>
+                  {sourceCheck.source_check_notes.map((note) => <li key={note}>{note}</li>)}
+                </ul>
+              )}
               {sourceCheck.exact_match === true && <p style={{ margin: "0 0 4px", color: "#166534" }}>✓ 입력한 값이 페이지 본문에 그대로 존재합니다</p>}
               {sourceCheck.exact_match === false && sourceCheck.token_match && (
                 <p style={{ margin: "0 0 4px", color: "#92400e" }}>
@@ -402,7 +430,7 @@ export default function VerifyClaimPage() {
                 </p>
               )}
               {sourceCheck.snippet && <p style={{ margin: "4px 0 0", color: "#374151", fontStyle: "italic" }}>…{sourceCheck.snippet}…</p>}
-              <p style={{ margin: "6px 0 0", fontSize: 11, color: "#6b7280" }}>본문 자동 매칭은 보조 수단입니다 — 반드시 직접 확인 후 저장하세요.</p>
+              <p style={{ margin: "6px 0 0", fontSize: 11, color: "#6b7280" }}>Source check/trust score는 보조 신호입니다 — 통과해도 verified가 아니며 반드시 admin approval 후 저장하세요.</p>
             </div>
           )}
           <label>citation / 메모<textarea value={citation} onChange={(e) => setCitation(e.target.value)} placeholder="어떤 문구/근거를 확인했는지" /></label>
