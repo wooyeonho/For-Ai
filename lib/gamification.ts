@@ -218,3 +218,142 @@ export async function getContributorStats(
     badges: badges ?? [],
   };
 }
+
+export type ContributorBadgeMetric =
+  | "submitted_source_count"
+  | "accepted_source_count"
+  | "verified_claim_contribution_count"
+  | "country_coverage_count"
+  | "category_contribution_count"
+  | "stale_claim_fix_count"
+  | "hallucination_report_accepted_count";
+
+export type ContributorBadgeTier = "bronze" | "silver" | "gold";
+
+export type ContributorGamificationStats = Record<ContributorBadgeMetric, number>;
+
+export type ContributorBadgeDefinition = {
+  id: string;
+  label: string;
+  description: string;
+  metric: ContributorBadgeMetric;
+  threshold: number;
+  tier: ContributorBadgeTier;
+};
+
+export type ContributorBadge = ContributorBadgeDefinition & {
+  currentValue: number;
+  earned: boolean;
+};
+
+export const emptyContributorGamificationStats: ContributorGamificationStats = {
+  submitted_source_count: 0,
+  accepted_source_count: 0,
+  verified_claim_contribution_count: 0,
+  country_coverage_count: 0,
+  category_contribution_count: 0,
+  stale_claim_fix_count: 0,
+  hallucination_report_accepted_count: 0,
+};
+
+export const contributorBadgeDefinitions: ContributorBadgeDefinition[] = [
+  {
+    id: "source-scout-bronze",
+    label: "Source Scout",
+    description: "Submitted at least 3 traceable sources for claim review.",
+    metric: "submitted_source_count",
+    threshold: 3,
+    tier: "bronze",
+  },
+  {
+    id: "source-scout-silver",
+    label: "Source Scout+",
+    description: "Submitted at least 15 traceable sources for claim review.",
+    metric: "submitted_source_count",
+    threshold: 15,
+    tier: "silver",
+  },
+  {
+    id: "accepted-evidence-bronze",
+    label: "Accepted Evidence",
+    description: "Had at least 2 submitted sources accepted by reviewers.",
+    metric: "accepted_source_count",
+    threshold: 2,
+    tier: "bronze",
+  },
+  {
+    id: "accepted-evidence-gold",
+    label: "Accepted Evidence Pro",
+    description: "Had at least 25 submitted sources accepted by reviewers.",
+    metric: "accepted_source_count",
+    threshold: 25,
+    tier: "gold",
+  },
+  {
+    id: "verified-claim-helper-bronze",
+    label: "Verified Claim Helper",
+    description: "Contributed to at least 1 claim that became verified.",
+    metric: "verified_claim_contribution_count",
+    threshold: 1,
+    tier: "bronze",
+  },
+  {
+    id: "verified-claim-helper-silver",
+    label: "Verified Claim Helper+",
+    description: "Contributed to at least 10 claims that became verified.",
+    metric: "verified_claim_contribution_count",
+    threshold: 10,
+    tier: "silver",
+  },
+  {
+    id: "global-coverage-bronze",
+    label: "Global Coverage",
+    description: "Contributed accepted evidence across at least 2 countries.",
+    metric: "country_coverage_count",
+    threshold: 2,
+    tier: "bronze",
+  },
+  {
+    id: "category-builder-bronze",
+    label: "Category Builder",
+    description: "Contributed accepted evidence across at least 3 categories.",
+    metric: "category_contribution_count",
+    threshold: 3,
+    tier: "bronze",
+  },
+  {
+    id: "freshness-fixer-bronze",
+    label: "Freshness Fixer",
+    description: "Fixed at least 1 stale claim with accepted updated evidence.",
+    metric: "stale_claim_fix_count",
+    threshold: 1,
+    tier: "bronze",
+  },
+  {
+    id: "hallucination-corrector-bronze",
+    label: "Hallucination Corrector",
+    description: "Had at least 1 hallucination report accepted by reviewers.",
+    metric: "hallucination_report_accepted_count",
+    threshold: 1,
+    tier: "bronze",
+  },
+];
+
+export const CONTRIBUTOR_BADGE_POLICY_NOTE =
+  "Badges are quality reference signals only. They do not grant automatic verified authority, reviewer permissions, or claim verification rights.";
+
+export function calculateContributorBadges(
+  stats: Partial<ContributorGamificationStats>,
+): ContributorBadge[] {
+  const normalized = { ...emptyContributorGamificationStats, ...stats };
+
+  return contributorBadgeDefinitions.map((definition) => {
+    const currentValue = normalized[definition.metric];
+
+    return {
+      ...definition,
+      currentValue,
+      earned: currentValue >= definition.threshold,
+    };
+  });
+}

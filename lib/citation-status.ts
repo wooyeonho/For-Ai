@@ -16,6 +16,7 @@ export const FRESHNESS_TTL_DAYS_BY_UPDATE_FREQUENCY: Record<UpdateFrequency, num
   annual: 366,
   event_based: 180,
   static: 730,
+  unknown: FRESHNESS_TTL_DAYS,
 };
 
 export function getFreshnessTtlDays(updateFrequency: UpdateFrequency | null | undefined): number {
