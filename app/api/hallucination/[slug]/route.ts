@@ -2,7 +2,13 @@ import { NextResponse } from 'next/server';
 import { createServerClient, isSupabaseConfigured } from '@/lib/supabase-server';
 import { makeContributorHashForRequest } from '@/lib/contributor-hash';
 import { getDocumentBySlug } from '@/lib/data';
-import { HALLUCINATION_FIELD_MAX_LENGTHS, type HallucinationFieldName } from '@/lib/submission-limits';
+import {
+  HALLUCINATION_FIELD_MAX_LENGTHS,
+  contributorSubmissionRateLimited,
+  hasHoneypotValue,
+  inspectSubmissionText,
+  type HallucinationFieldName,
+} from '@/lib/submission-limits';
 
 export async function POST(
   request: Request,
@@ -15,6 +21,10 @@ export async function POST(
     body = await request.json();
   } catch {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  }
+
+  if (hasHoneypotValue(body)) {
+    return NextResponse.json({ error: 'submission rejected', code: 'HONEYPOT_FILLED' }, { status: 400 });
   }
 
   const aiService = body.ai_service?.trim();
@@ -61,6 +71,20 @@ export async function POST(
   if (isSupabaseConfigured()) {
     try {
       const supabase = createServerClient();
+      const limit = contributorSubmissionRateLimited(contributorHash);
+      if (limit) {
+        return NextResponse.json(
+          { error: 'submission rate limit exceeded', code: `RATE_LIMIT_${limit.toUpperCase()}` },
+          { status: 429 }
+        );
+      }
+
+      const spamCheck = inspectSubmissionText([
+        aiService,
+        normalizedBody.prompt,
+        normalizedBody.ai_answer,
+        normalizedBody.expected_correction,
+      ]);
       const { error } = await supabase.from('hallucination_reports').insert({
         document_id: documentId,
         entity_id: entityId,
@@ -69,7 +93,7 @@ export async function POST(
         ai_answer: normalizedBody.ai_answer || null,
         expected_correction: normalizedBody.expected_correction || null,
         contributor_hash: contributorHash,
-        status: 'new',
+        status: spamCheck.status,
       });
 
       if (error) {
