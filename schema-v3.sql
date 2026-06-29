@@ -171,9 +171,9 @@ alter table reports enable row level security;
 alter table hallucination_reports enable row level security;
 alter table admin_audit_events enable row level security;
 
-create policy edits_public_insert_only on edits for insert to anon with check (true);
-create policy reports_public_insert_only on reports for insert to anon with check (true);
-create policy hallucination_reports_public_insert_only on hallucination_reports for insert to anon with check (true);
+create policy edits_public_insert_only on edits for insert to anon with check (status = 'new');
+create policy reports_public_insert_only on reports for insert to anon with check (status = 'new');
+create policy hallucination_reports_public_insert_only on hallucination_reports for insert to anon with check (status = 'new');
 
 -- No public SELECT policies are defined for edits, reports, or hallucination_reports.
 -- No public SELECT policies are defined for admin_audit_events.
@@ -265,13 +265,9 @@ create policy topic_candidates_public_insert
   on topic_candidates for insert to anon
   with check (source = 'user_suggested' and status = 'new');
 
--- Admin review pipeline: allow anon SELECT (candidate metadata is not sensitive).
--- UPDATE is NOT granted to anon — candidate review/approve/promote runs through
--- service-role API routes (/api/admin/*) gated by x-admin-secret. Granting anon
--- UPDATE here would let any unauthenticated caller self-approve a candidate.
-create policy topic_candidates_public_select
-  on topic_candidates for select to anon
-  using (true);
+-- No public SELECT/UPDATE policies: topic candidates are review-queue
+-- intake records and are readable only through admin/service-role API routes
+-- (/api/admin/*) gated by x-admin-secret.
 
 -- community_posts: users, AI (aiai), and admins can all leave posts.
 create table community_posts (
