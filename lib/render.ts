@@ -42,6 +42,30 @@ export type RenderedDocumentJson = {
     updated_at: string;
     rule: string;
   };
+  normalized_citation: NormalizedCitationSurface;
+};
+
+export type NormalizedCitationClaim = {
+  entity_id: string;
+  slug: string;
+  field_path: string;
+  claim_value: string;
+  status: string;
+  confidence: string;
+  source_url: string | null;
+  source_publisher: string | null;
+  last_verified_at: string | null;
+};
+
+export type NormalizedCitationSurface = {
+  entity_id: string;
+  slug: string;
+  claims: NormalizedCitationClaim[];
+  sitemap: {
+    slug: string;
+    url: string;
+    last_verified_at: string | null;
+  };
 };
 
 const UNKNOWN_TEXT = UNKNOWN_FACT_TEXT;
@@ -138,8 +162,43 @@ function renderTopLevelSources(claims: RegistryDocumentBundle["claims"]): string
     .join("\n");
 }
 
+/**
+ * Canonical, minimal citation payload shared by human and machine-readable
+ * surfaces. Keep these fields claim-level: if one surface drifts from this
+ * normalized shape, CI should fail rather than letting AI-facing citations
+ * disagree with the HTML page.
+ */
+export function normalizeCitationSurface(bundle: RegistryDocumentBundle): NormalizedCitationSurface {
+  const { entity, document, claims } = bundle;
+
+  return {
+    entity_id: entity.id,
+    slug: document.slug,
+    claims: claims.map((claim) => {
+      const primarySource = claim.sources[0] ?? null;
+      return {
+        entity_id: entity.id,
+        slug: document.slug,
+        field_path: claim.field_path,
+        claim_value: claim.claim_value || UNKNOWN_TEXT,
+        status: claim.status,
+        confidence: claim.confidence,
+        source_url: primarySource?.url ?? null,
+        source_publisher: primarySource?.title ?? null,
+        last_verified_at: claim.last_verified_at ?? null,
+      };
+    }),
+    sitemap: {
+      slug: document.slug,
+      url: documentPageUrl(document.slug, document.lang),
+      last_verified_at: document.last_verified_at ?? null,
+    },
+  };
+}
+
 export function renderDocumentJson(bundle: RegistryDocumentBundle): RenderedDocumentJson {
   const { document } = bundle;
+  const normalizedCitation = normalizeCitationSurface(bundle);
   const citationStatus = getDocumentCitationStatus(bundle);
   const directAnswer = getRenderedDirectAnswer(bundle);
   const claimStatuses = bundle.claims.map((c) => ({ c, cs: getClaimCitationStatus(c) }));
@@ -173,11 +232,13 @@ export function renderDocumentJson(bundle: RegistryDocumentBundle): RenderedDocu
       updated_at: document.updated_at ?? UNKNOWN_TEXT,
       rule: "Unsourced or unknown facts must remain 확인 필요 with low confidence.",
     },
+    normalized_citation: normalizedCitation,
   };
 }
 
 export function renderDocumentMarkdown(bundle: RegistryDocumentBundle): string {
   const { entity, document, claims } = bundle;
+  const normalizedCitation = normalizeCitationSurface(bundle);
   const directAnswer = getRenderedDirectAnswer(bundle);
   const licenseNotice = getStringDataValue(
     document.data,
@@ -191,7 +252,9 @@ export function renderDocumentMarkdown(bundle: RegistryDocumentBundle): string {
       const displayValue = claim.claim_value || UNKNOWN_TEXT;
       const displayConfidence = displayValue === UNKNOWN_TEXT ? "low" : claim.confidence;
 
-      return `- ${claim.field_path}: ${displayValue}\n  - claim: ${claim.claim_text}\n  - citation status: ${citationStatus.label}\n  - citation reason: ${citationStatus.reason}\n  - confidence: ${displayConfidence}\n  - jurisdiction: ${claim.jurisdiction ?? "inherit"}\n  - verification status: ${claim.status}\n  - last_verified_at: ${claim.last_verified_at ?? UNKNOWN_TEXT}\n  - source_count: ${claim.sources.length}\n  - verification_event_count: ${claim.verification_events.length}\n  - sources:\n${sources}`;
+      const normalized = normalizedCitation.claims.find((item) => item.field_path === claim.field_path);
+
+      return `- ${claim.field_path}: ${displayValue}\n  - claim: ${claim.claim_text}\n  - canonical entity_id: ${normalized?.entity_id ?? entity.id}\n  - canonical slug: ${normalized?.slug ?? document.slug}\n  - canonical source_url: ${normalized?.source_url ?? UNKNOWN_TEXT}\n  - canonical source_publisher: ${normalized?.source_publisher ?? UNKNOWN_TEXT}\n  - citation status: ${citationStatus.label}\n  - citation reason: ${citationStatus.reason}\n  - confidence: ${displayConfidence}\n  - jurisdiction: ${claim.jurisdiction ?? "inherit"}\n  - verification status: ${claim.status}\n  - last_verified_at: ${claim.last_verified_at ?? UNKNOWN_TEXT}\n  - source_count: ${claim.sources.length}\n  - verification_event_count: ${claim.verification_events.length}\n  - sources:\n${sources}`;
     })
     .join("\n");
   const sourcesMarkdown = renderTopLevelSources(claims);

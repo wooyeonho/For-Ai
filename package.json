@@ -25,6 +25,7 @@
     "claims:generate-payloads": "node scripts/verified-claims.mjs generate-payloads",
     "smoke:production-submissions": "node scripts/production-submission-smoke.mjs",
     "claims:recommend": "node scripts/verified-claims.mjs recommend",
+    "check:citation-surfaces": "node scripts/check-citation-surfaces.mjs",
     "job:triage-topic-candidates": "node scripts/jobs/triage-topic-candidates.mjs",
     "job:find-stale-claims": "node scripts/jobs/find-stale-claims.mjs",
     "job:check-source-health": "node scripts/jobs/check-source-health.mjs",

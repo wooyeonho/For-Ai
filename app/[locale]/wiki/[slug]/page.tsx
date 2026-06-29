@@ -9,8 +9,8 @@ import type { SupportedLocale } from "../../../../lib/i18n";
 import { getEntityLabels } from "../../../../lib/i18n/entity-labels";
 import type { RegistryDocumentBundle } from "../../../../lib/types";
 import { getRegistryBundleFromSupabase } from "../../../../lib/supabase-documents";
-import { getDocumentCitationStatus } from "../../../../lib/citation-status";
-import { getRenderedDirectAnswer } from "../../../../lib/render";
+import { getCanonicalDirectAnswer, getDocumentCitationStatus } from "../../../../lib/citation-status";
+import { getRenderedDirectAnswer, normalizeCitationSurface } from "../../../../lib/render";
 import { DirectAnswerBox } from "../../../components/DirectAnswerBox";
 import { ClaimTable } from "../../../components/ClaimTable";
 import { ViewTracker } from "../../../components/ViewTracker";
@@ -68,6 +68,7 @@ export default async function WikiDocumentPage({
   const isPromoted = !getRegistryBundleBySlug(slug);
   const jsonLd = buildDocumentJsonLd(bundle);
   const citationStatus = getDocumentCitationStatus(bundle);
+  const normalizedCitation = normalizeCitationSurface(bundle);
   const freshnessTtlDays = typeof document.freshness_ttl_days === "number"
     ? document.freshness_ttl_days
     : typeof docData.freshness_ttl_days === "number"
@@ -99,6 +100,11 @@ export default async function WikiDocumentPage({
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <script
+        id="for-ai-normalized-citation"
+        type="application/json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(normalizedCitation) }}
       />
 
       {/* Direct answer first — question, answer, and trust signals */}

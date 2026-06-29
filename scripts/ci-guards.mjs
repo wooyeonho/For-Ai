@@ -10,6 +10,7 @@
  *   mojibake   - fail if UTF-8-as-Latin-1 mojibake appears in app/ or lib/.
  *   artifacts  - fail if build/dependency output or oversized generated dumps are committed.
  *   claims     - fail if any verified-claims file violates the trust rules (delegates to verified-claims.mjs validate).
+ *   surfaces   - fail if citation surfaces drift from the normalized claim-level contract.
  *   diff-size  - fail if a PR changes an unexpected number of files (full-repo-rewrite guard).
  *   secrets    - fail if Supabase service-role secrets leak into client or non-route mutation code.
  *   all        - run route + mojibake + artifacts + claims + secrets (and diff-size when a base SHA is available).
@@ -217,6 +218,16 @@ function guardClaims() {
   }
 }
 
+function guardSurfaces() {
+  try {
+    const out = execFileSync("node", ["scripts/check-citation-surfaces.mjs"], { encoding: "utf-8" });
+    process.stdout.write(`${out.trim()}\n`);
+  } catch (e) {
+    const detail = `${e.stdout ?? ""}${e.stderr ?? ""}`.trim();
+    fail([`citation surfaces guard FAILED:`, detail]);
+  }
+}
+
 function guardDiffSize() {
   const base = process.env.BASE_SHA;
   if (!base) {
@@ -338,6 +349,7 @@ const guards = {
   artifacts: guardArtifacts,
   claims: guardClaims,
   secrets: guardSecrets,
+  surfaces: guardSurfaces,
   "diff-size": guardDiffSize,
   all() {
     guardRoute();
@@ -345,12 +357,13 @@ const guards = {
     guardArtifacts();
     guardClaims();
     guardSecrets();
+    guardSurfaces();
     guardDiffSize();
   },
 };
 
 if (!guard || !guards[guard]) {
-  console.error(`Usage: node scripts/ci-guards.mjs <route|mojibake|artifacts|claims|secrets|diff-size|all>`);
+  console.error(`Usage: node scripts/ci-guards.mjs <route|mojibake|artifacts|claims|secrets|surfaces|diff-size|all>`);
   process.exit(2);
 }
 
