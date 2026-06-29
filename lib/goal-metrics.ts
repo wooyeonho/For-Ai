@@ -16,6 +16,19 @@ export type GoalMetrics = {
   realtimeCandidates: number;
 };
 
+export type CampaignTopCategory = { label: string; count: number };
+export type OneMillionFactsCampaignMetrics = {
+  totalFacts: number;
+  verifiedFacts: number;
+  countriesCovered: number;
+  countryCodes: string[];
+  topCategories: CampaignTopCategory[];
+  progressPercent: number;
+  remainingFacts: number;
+};
+
+const ONE_MILLION_FACTS_GOAL = 1_000_000;
+
 function countJsonl(relativePath: string): number {
   try {
     const file = fs.readFileSync(path.join(process.cwd(), relativePath), "utf8");
@@ -77,4 +90,36 @@ export function getTrustReadiness(): GoalMetric[] {
     { label: "High-risk candidates", value: m.highRiskCandidates, detail: "medical/legal/finance/realtime candidates require source review" },
     { label: "Generated queues", value: m.generatedQuestionCandidates + m.longTailTopicCandidates, detail: "candidate inventory, not published truth" },
   ];
+}
+
+export function getOneMillionFactsCampaignMetrics(): OneMillionFactsCampaignMetrics {
+  const bundles = getAllRegistryBundles();
+  const claims = bundles.flatMap((bundle) => bundle.claims);
+  const verifiedFacts = claims.filter((claim) => claim.status === "verified" && claim.claim_value !== "확인 필요").length;
+  const countryCodes = Array.from(
+    new Set(bundles.map((bundle) => bundle.document.country).filter(Boolean)),
+  ).sort((a, b) => a.localeCompare(b, "en"));
+
+  const categoryCounts = bundles.reduce((counts, bundle) => {
+    const category = bundle.document.category || "uncategorized";
+    counts.set(category, (counts.get(category) ?? 0) + 1);
+    return counts;
+  }, new Map<string, number>());
+
+  const topCategories = Array.from(categoryCounts.entries())
+    .map(([label, count]) => ({ label, count }))
+    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, "en"))
+    .slice(0, 8);
+
+  const totalFacts = claims.length;
+
+  return {
+    totalFacts,
+    verifiedFacts,
+    countriesCovered: countryCodes.length,
+    countryCodes,
+    topCategories,
+    progressPercent: Math.min(100, Number(((totalFacts / ONE_MILLION_FACTS_GOAL) * 100).toFixed(3))),
+    remainingFacts: Math.max(0, ONE_MILLION_FACTS_GOAL - totalFacts),
+  };
 }
