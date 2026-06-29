@@ -202,7 +202,7 @@ export async function GET(request: Request) {
       .select("id, title, slug, lang, status, category, last_verified_at")
       .eq("status", "verified")
       .order("last_verified_at", { ascending: false, nullsFirst: false })
-      .limit(10);
+      .limit(30);
     if (docsError) throw docsError;
 
     const { data: highRiskCandidates, error: highRiskCandidatesError } = await sb
