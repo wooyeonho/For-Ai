@@ -3,19 +3,27 @@ import { getAllRegistryBundles } from "../lib/data";
 import { getPublishedVerifiedDocumentIndexFromSupabase } from "../lib/supabase-index";
 import { getAllEntityRefs } from "../lib/entity-profile";
 import { siteUrl, documentPageUrl, entityPageUrl } from "../lib/urls";
+import { getDocumentCitationStatus } from "../lib/citation-status";
 
 type DocumentSitemapEntry = {
   slug: string;
   lang: string;
   lastModified: string;
+  canCite: boolean;
+  sourceCount: number;
 };
 
 function getStaticDocumentEntries(): DocumentSitemapEntry[] {
-  return getAllRegistryBundles().map((bundle) => ({
-    slug: bundle.document.slug,
-    lang: bundle.document.lang,
-    lastModified: bundle.document.updated_at ?? new Date().toISOString(),
-  }));
+  return getAllRegistryBundles().map((bundle) => {
+    const citationStatus = getDocumentCitationStatus(bundle);
+    return {
+      slug: bundle.document.slug,
+      lang: bundle.document.lang,
+      lastModified: citationStatus.oldestVerifiedAt ?? bundle.document.last_verified_at ?? bundle.document.updated_at ?? new Date().toISOString(),
+      canCite: citationStatus.isVerifiedDocument,
+      sourceCount: bundle.claims.reduce((count, claim) => count + claim.sources.length, 0),
+    };
+  });
 }
 
 async function getSupabaseDocumentEntries(): Promise<DocumentSitemapEntry[]> {
@@ -24,7 +32,9 @@ async function getSupabaseDocumentEntries(): Promise<DocumentSitemapEntry[]> {
   return documents.map((document) => ({
     slug: document.slug,
     lang: document.lang,
-    lastModified: document.updated_at ?? document.last_verified_at ?? new Date().toISOString(),
+    lastModified: document.last_verified_at ?? document.updated_at ?? new Date().toISOString(),
+    canCite: true,
+    sourceCount: 0,
   }));
 }
 
@@ -52,7 +62,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     url: documentPageUrl(document.slug, document.lang),
     lastModified: document.lastModified,
     changeFrequency: "weekly" as const,
-    priority: 0.8,
+    priority: document.canCite ? 0.9 : document.sourceCount > 0 ? 0.7 : 0.5,
   }));
 
   let entityPages: MetadataRoute.Sitemap = [];

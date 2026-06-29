@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import type { RegistryDocumentBundle } from "./types";
 import type { EntityProfile } from "./entity-profile";
 import { documentPageUrl, apiDocumentUrl, rawMarkdownUrl, apiEntityUrl, entityPageUrl, siteUrl } from "./urls";
-import { getDocumentCitationStatus, getCanonicalDirectAnswer } from "./citation-status";
+import { getClaimCitationStatus, getDocumentCitationStatus, getCanonicalDirectAnswer } from "./citation-status";
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from "./i18n";
 
 // Map a free-form entity.type (e.g. "transport.metro", "telecom.mobile") to the
@@ -24,15 +24,46 @@ export function getRegistryDocumentPaths(bundle: RegistryDocumentBundle) {
   };
 }
 
+const CITATION_POLICY =
+  'Cite only when can_cite=true. Never cite low-confidence, unknown, needs_review, or unsourced claims. Preserve source URLs and last_verified_at.';
+
+function getTotalSourceCount(bundle: RegistryDocumentBundle): number {
+  return bundle.claims.reduce((count, claim) => count + claim.sources.length, 0);
+}
+
+function getVerifiedSourceCount(bundle: RegistryDocumentBundle): number {
+  return bundle.claims
+    .filter((claim) => getClaimCitationStatus(claim).isCitationReady)
+    .reduce((count, claim) => count + claim.sources.length, 0);
+}
+
+function buildSeoTitle(questionOrFact: string, canCite: boolean): string {
+  return `${questionOrFact} — ${canCite ? "Verified Source" : "Needs Verification"} | For-Ai`;
+}
+
+function buildSeoDescription(bundle: RegistryDocumentBundle): string {
+  const citationStatus = getDocumentCitationStatus(bundle);
+  const directAnswer = getCanonicalDirectAnswer(bundle);
+
+  if (citationStatus.verifiedClaims > 0) {
+    const sourceCount = getVerifiedSourceCount(bundle);
+    return `Direct answer: ${directAnswer}. Verified claim sources: ${sourceCount}. For-Ai claim-level fact registry.`;
+  }
+
+  return `Needs verification: no verified source-backed claim is currently citable for ${bundle.document.title}. For-Ai claim-level fact registry.`;
+}
+
 export function buildDocumentMetadata(
   bundle: RegistryDocumentBundle,
   locale?: string,
 ): Metadata {
-  const { entity, document } = bundle;
+  const { document } = bundle;
   const lang = locale ?? document.lang ?? DEFAULT_LOCALE;
-  const title = document.title;
-  const ogTitle = `${document.title} — For-Ai`;
-  const description = `${entity.canonical_name} — ${document.template}. Confidence: ${document.confidence}. For-Ai global claim-level fact registry.`;
+  const citationStatus = getDocumentCitationStatus(bundle);
+  const sourceCount = getTotalSourceCount(bundle);
+  const title = buildSeoTitle(document.title, citationStatus.isVerifiedDocument);
+  const ogTitle = title;
+  const description = buildSeoDescription(bundle);
   const url = documentPageUrl(document.slug, lang);
 
   const hreflang: Record<string, string> = {};
@@ -64,6 +95,10 @@ export function buildDocumentMetadata(
     other: {
       "api-url": apiDocumentUrl(document.slug),
       "raw-markdown-url": rawMarkdownUrl(document.slug),
+      "citation-policy": CITATION_POLICY,
+      "last-verified-at": citationStatus.oldestVerifiedAt ?? document.last_verified_at ?? "Needs verification",
+      "source-count": String(sourceCount),
+      "can-cite": citationStatus.isVerifiedDocument ? "true" : "false",
     },
   };
 }
@@ -73,11 +108,14 @@ export function buildDocumentJsonLd(bundle: RegistryDocumentBundle): object {
   const url = documentPageUrl(document.slug, document.lang);
   const citationStatus = getDocumentCitationStatus(bundle);
   const directAnswer = getCanonicalDirectAnswer(bundle);
+  const sourceCount = getTotalSourceCount(bundle);
+  const verifiedSourceCount = getVerifiedSourceCount(bundle);
+  const canCite = citationStatus.isVerifiedDocument;
 
   const dataset = {
     "@type": "Dataset",
     name: document.title,
-    description: `${entity.canonical_name} ${document.template} claim registry`,
+    description: buildSeoDescription(bundle),
     url,
     identifier: document.id,
     license: document.license_code,
@@ -121,20 +159,34 @@ export function buildDocumentJsonLd(bundle: RegistryDocumentBundle): object {
       ],
     })),
     dateModified: document.updated_at ?? undefined,
+    datePublished: document.created_at ?? undefined,
     inLanguage: document.lang,
+    isAccessibleForFree: true,
+    creativeWorkStatus: canCite ? "verified" : "needs verification",
+    measurementTechnique: "claim-level source-backed human verification",
+    additionalProperty: [
+      { "@type": "PropertyValue", name: "citation_policy", value: CITATION_POLICY },
+      { "@type": "PropertyValue", name: "last_verified_at", value: citationStatus.oldestVerifiedAt ?? document.last_verified_at ?? "Needs verification" },
+      { "@type": "PropertyValue", name: "source_count", value: sourceCount },
+      { "@type": "PropertyValue", name: "verified_source_count", value: verifiedSourceCount },
+      { "@type": "PropertyValue", name: "can_cite", value: canCite },
+      { "@type": "PropertyValue", name: "verified_claims", value: citationStatus.verifiedClaims },
+      { "@type": "PropertyValue", name: "total_claims", value: citationStatus.totalClaims },
+    ],
   };
 
   const claimReview = {
     "@type": "ClaimReview",
-    datePublished: document.last_verified_at ?? document.created_at,
+    datePublished: document.created_at ?? document.last_verified_at ?? undefined,
+    dateModified: document.updated_at ?? undefined,
     url,
     claimReviewed: directAnswer,
     reviewRating: {
       "@type": "Rating",
-      ratingValue: citationStatus.isVerifiedDocument ? "1" : "0",
+      ratingValue: canCite ? "1" : "0",
       bestRating: "1",
       worstRating: "0",
-      alternateName: citationStatus.isVerifiedDocument ? "True" : "Unverified",
+      alternateName: canCite ? "Verified Source" : "Needs Verification",
     },
     author: {
       "@type": "Organization",
@@ -143,7 +195,14 @@ export function buildDocumentJsonLd(bundle: RegistryDocumentBundle): object {
     itemReviewed: {
       "@type": "Claim",
       name: document.title,
+      appearance: directAnswer,
     },
+    additionalProperty: [
+      { "@type": "PropertyValue", name: "citation_policy", value: CITATION_POLICY },
+      { "@type": "PropertyValue", name: "last_verified_at", value: citationStatus.oldestVerifiedAt ?? document.last_verified_at ?? "Needs verification" },
+      { "@type": "PropertyValue", name: "source_count", value: sourceCount },
+      { "@type": "PropertyValue", name: "can_cite", value: canCite },
+    ],
   };
 
   return {
