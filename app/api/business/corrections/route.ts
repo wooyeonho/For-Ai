@@ -84,14 +84,58 @@ export async function POST(request: Request) {
     );
   }
 
+  const { data: existingClaim } = claimId
+    ? await sb
+      .from("claims")
+      .select("id, document_id, claim_value, claim_text")
+      .eq("id", claimId)
+      .maybeSingle()
+    : await sb
+      .from("claims")
+      .select("id, document_id, claim_value, claim_text")
+      .eq("entity_id", entityId)
+      .eq("field_path", fieldPath)
+      .eq("status", "verified")
+      .maybeSingle();
+
+  const existingClaimRecord = (existingClaim ?? {}) as Record<string, unknown>;
+  const documentId = typeof existingClaimRecord.document_id === "string" ? existingClaimRecord.document_id : null;
+  const conflictsWithClaimId = typeof existingClaimRecord.id === "string" ? existingClaimRecord.id : claimId;
+  const existingValue = typeof existingClaimRecord.claim_value === "string"
+    ? existingClaimRecord.claim_value
+    : currentValue;
+  const differsFromVerifiedClaim = Boolean(existingValue && existingValue !== proposedValue);
+
+  const { data: submittedClaim, error: submittedClaimError } = await sb
+    .from("business_submitted_claims")
+    .insert({
+      profile_id: profileId,
+      entity_id: entityId,
+      document_id: documentId,
+      conflicts_with_claim_id: conflictsWithClaimId,
+      field_path: fieldPath,
+      claim_text: String(existingClaimRecord.claim_text ?? `Business-submitted claim for ${fieldPath}`),
+      claim_value: proposedValue,
+      source_url: sourceUrl,
+      source_type: sourceType,
+      status: "pending_verification",
+      citation_ready: false,
+    })
+    .select("id, field_path, claim_value, status, citation_ready, created_at")
+    .single();
+
+  if (submittedClaimError) {
+    return NextResponse.json({ error: submittedClaimError.message }, { status: 500 });
+  }
+
   const { data: correction, error } = await sb
     .from("business_corrections")
     .insert({
       profile_id: profileId,
       entity_id: entityId,
-      claim_id: claimId,
+      claim_id: conflictsWithClaimId,
       field_path: fieldPath,
-      current_value: currentValue,
+      current_value: existingValue,
       proposed_value: proposedValue,
       reason,
       source_url: sourceUrl,
@@ -105,7 +149,12 @@ export async function POST(request: Request) {
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   return NextResponse.json(
-    { correction, message: "Correction submitted for review" },
+    {
+      correction,
+      submitted_claim: submittedClaim,
+      differs_from_verified_claim: differsFromVerifiedClaim,
+      message: "Business-submitted claim stored separately and queued for verification",
+    },
     { status: 201 },
   );
 }

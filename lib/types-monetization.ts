@@ -6,6 +6,8 @@ export type BusinessProfileStatus = "pending" | "verified" | "suspended" | "reje
 export type CorrectionPriority = "standard" | "priority" | "urgent";
 export type BusinessClaimProposalStatus = "new" | "reviewing" | "accepted" | "rejected" | "withdrawn";
 export type AlertSeverity = "info" | "warning" | "critical";
+export type ClaimSourceOfClaim = "independent" | "business_submitted" | "sponsored";
+export type BusinessSubmittedClaimStatus = "pending_verification" | "accepted" | "rejected";
 export type AlertType =
   | "incorrect_citation"
   | "outdated_fact"
@@ -48,6 +50,25 @@ export type ApiKey = {
   last_used_at: string | null;
   expires_at: string | null;
   created_at: string;
+};
+
+export type BusinessSubmittedClaim = {
+  id: string;
+  profile_id: string;
+  entity_id: string;
+  document_id: string | null;
+  conflicts_with_claim_id: string | null;
+  field_path: string;
+  claim_text: string;
+  claim_value: string;
+  source_url: string | null;
+  source_type: string;
+  status: BusinessSubmittedClaimStatus;
+  citation_ready: false;
+  reviewed_at: string | null;
+  reviewer_note: string | null;
+  created_at: string;
+  updated_at: string;
 };
 
 export type BusinessCorrection = {

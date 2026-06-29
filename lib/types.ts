@@ -2,6 +2,7 @@ export type Confidence = "low" | "medium" | "high";
 export type TranslationStatus = "machine_translated" | "human_reviewed";
 export type DocumentStatus = "ai_draft" | "needs_review" | "verified" | "published" | "archived";
 export type ClaimStatus = "needs_review" | "verified" | "disputed" | "unknown";
+export type ClaimSourceOfClaim = "independent" | "business_submitted" | "sponsored";
 
 export const transportFareFieldPaths = [
   "fare.base",
@@ -122,6 +123,9 @@ export type Claim = {
   last_verified_at: string | null;
   created_at: string | null;
   updated_at: string | null;
+  source_of_claim?: ClaimSourceOfClaim;
+  business_submission_status?: "pending_verification" | "accepted" | "rejected" | null;
+  submitted_by_business_name?: string | null;
 };
 
 export type ClaimSource = {
