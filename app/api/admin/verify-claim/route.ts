@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { logAdminAuditEvent, requireAdmin, supabaseAdmin } from "@/lib/admin-api";
 import { scoreSourceTrust } from "@/lib/source-trust";
+import { awardPoints, checkAndAwardBadges, POINT_VALUES } from "@/lib/gamification";
 
 const DEFAULT_STATUS = "needs_review";
 const DEFAULT_LIMIT = 50;
@@ -427,6 +428,14 @@ export async function POST(request: Request) {
       new_confidence: nextConfidence,
       document_all_verified: documentAllVerified,
     });
+
+    if (contributorHash && action === "verify") {
+      await awardPoints(sb, contributorHash, 'source_used_in_verified_claim', POINT_VALUES.source_used_in_verified_claim, {
+        referenceId: claimId,
+        referenceType: 'claim',
+      });
+      await checkAndAwardBadges(sb, contributorHash);
+    }
 
     return NextResponse.json({ claim: updatedClaim, source_id: sourceId, source_trust_score: sourceId ? sourceTrust.source_trust_score : null, document_all_verified: documentAllVerified });
   } catch (error) {

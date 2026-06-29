@@ -18,6 +18,7 @@ export function SiteHeader() {
           <Link href="/#registry">Registry</Link>
           <Link href="/api-docs">API</Link>
           <Link href="/community">Community</Link>
+          <Link href="/contribute">Contribute</Link>
           <Link href="/suggest-topic">Suggest</Link>
           <LanguageSelector />
         </nav>
@@ -38,6 +39,7 @@ export function SiteHeader() {
           <Link href="/#registry" onClick={close}>Registry</Link>
           <Link href="/api-docs" onClick={close}>API</Link>
           <Link href="/community" onClick={close}>Community</Link>
+          <Link href="/contribute" onClick={close}>Contribute</Link>
           <Link href="/suggest-topic" onClick={close}>Suggest Topic</Link>
           <div className="site-nav-mobile-lang"><LanguageSelector /></div>
         </nav>

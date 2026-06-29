@@ -10,6 +10,7 @@ import {
   inspectSubmissionText,
   type HallucinationFieldName,
 } from '@/lib/submission-limits';
+import { awardPoints, POINT_VALUES } from '@/lib/gamification';
 
 export async function POST(
   request: Request,
@@ -122,6 +123,12 @@ export async function POST(
           { status: 500 }
         );
       }
+
+      // Award points for reporting a hallucination
+      await awardPoints(supabase, contributorHash, 'hallucination_reported', POINT_VALUES.hallucination_reported, {
+        referenceType: 'hallucination_report',
+        metadata: { slug, ai_service: aiService },
+      });
     } catch (err) {
       console.error('[hallucination] Unexpected error:', err);
       return NextResponse.json({ error: 'Server error' }, { status: 500 });
