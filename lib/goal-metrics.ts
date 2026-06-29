@@ -31,6 +31,13 @@ export type GoalMetrics = CoverageMetrics & {
 };
 
 export type CampaignTopCategory = { label: string; count: number };
+
+export type QuestMetricHints = {
+  lowestCoverageCountry: string | null;
+  lowestCoverageCategory: string | null;
+  staleClaims: number;
+};
+
 export type OneMillionFactsCampaignMetrics = {
   totalFacts: number;
   verifiedFacts: number;
@@ -175,5 +182,18 @@ export function getOneMillionFactsCampaignMetrics(): OneMillionFactsCampaignMetr
     topCategories,
     progressPercent: Math.min(100, Number(((totalFacts / ONE_MILLION_FACTS_GOAL) * 100).toFixed(3))),
     remainingFacts: Math.max(0, ONE_MILLION_FACTS_GOAL - totalFacts),
+  };
+}
+
+
+export function getQuestMetricHints(): QuestMetricHints {
+  const metrics = getCoverageMetrics();
+  const lowestCoverageCountry = metrics.documentsByCountry.at(-1)?.key ?? null;
+  const lowestCoverageCategory = metrics.documentsByVertical.at(-1)?.key ?? null;
+
+  return {
+    lowestCoverageCountry,
+    lowestCoverageCategory,
+    staleClaims: metrics.staleClaims,
   };
 }
