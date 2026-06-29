@@ -15,10 +15,10 @@ export default async function ReportPage({
   searchParams,
 }: {
   params: Promise<{ slug: string }>;
-  searchParams: Promise<{ submitted?: string }>;
+  searchParams: Promise<{ intent?: string; submitted?: string }>;
 }) {
   const { slug } = await params;
-  const { submitted } = await searchParams;
+  const { intent, submitted } = await searchParams;
   const bundle = getRegistryBundleBySlug(slug) ?? await getRegistryBundleFromSupabase(slug);
 
   if (!bundle) {
@@ -32,6 +32,23 @@ export default async function ReportPage({
   }
 
   const { entity, document, claims } = bundle;
+  const isSourceIntent = intent === "source";
+  const isNotifyIntent = intent === "notify";
+  const formTitle = isSourceIntent
+    ? "Submit an official source."
+    : isNotifyIntent
+      ? "Get notified when verified."
+      : "정정 요청";
+  const formDescription = isSourceIntent
+    ? "Submit an official source URL or citation for human review. This public correction flow does not immediately verify the claim."
+    : isNotifyIntent
+      ? "Leave a note that you want updates for this claim. The current MVP stores this as a queued correction request, not as a verified fact."
+      : "확인이 필요한 claim에 대해 정정 요청을 남겨주세요. 로그인은 필요하지 않습니다.";
+  const messagePlaceholder = isSourceIntent
+    ? "Official source URL, issuing organization, and which claim it supports."
+    : isNotifyIntent
+      ? "Which claim should we notify you about when it is verified? Do not include sensitive personal information."
+      : "어떤 claim이 정정되어야 하는지 적어주세요.";
 
   async function submitReport(formData: FormData) {
     "use server";
@@ -70,8 +87,11 @@ export default async function ReportPage({
       ) : null}
 
       <section className="registry-panel" aria-labelledby="report-form-title">
-        <h2 id="report-form-title">정정 요청</h2>
-        <p>확인이 필요한 claim에 대해 정정 요청을 남겨주세요. 로그인은 필요하지 않습니다.</p>
+        <h2 id="report-form-title">{formTitle}</h2>
+        <p>{formDescription}</p>
+        {isSourceIntent ? (
+          <p className="meta-label">Official sources are reviewed by humans before any claim status changes to verified.</p>
+        ) : null}
         <form action={submitReport} className="registry-form">
           <label>
             Field path 선택 또는 입력
@@ -83,11 +103,11 @@ export default async function ReportPage({
             </select>
           </label>
           <label>
-            정정 요청 내용
-            <textarea name="message" required minLength={5} maxLength={REPORT_MESSAGE_MAX_LENGTH} placeholder="어떤 claim이 정정되어야 하는지 적어주세요." />
+            {isSourceIntent ? "Official source details" : isNotifyIntent ? "Notification request" : "정정 요청 내용"}
+            <textarea name="message" required minLength={5} maxLength={REPORT_MESSAGE_MAX_LENGTH} placeholder={messagePlaceholder} />
           </label>
           <input type="hidden" name="contributor_hash" value="local-stub-contributor-hash" />
-          <button type="submit">정정 요청 제출</button>
+          <button type="submit">{isSourceIntent ? "Submit official source" : isNotifyIntent ? "Request notification" : "정정 요청 제출"}</button>
         </form>
       </section>
 
