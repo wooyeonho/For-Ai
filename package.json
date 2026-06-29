@@ -28,7 +28,8 @@
     "job:find-stale-claims": "node scripts/jobs/find-stale-claims.mjs",
     "job:check-source-health": "node scripts/jobs/check-source-health.mjs",
     "job:generate-admin-digest": "node scripts/jobs/generate-admin-digest.mjs",
-    "job:check-security-baseline": "node scripts/jobs/check-security-baseline.mjs"
+    "job:check-security-baseline": "node scripts/jobs/check-security-baseline.mjs",
+    "admin:digest": "node scripts/jobs/generate-admin-digest.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.8",
