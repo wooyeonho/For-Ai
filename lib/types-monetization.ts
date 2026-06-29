@@ -43,6 +43,7 @@ export type ApiKey = {
   rate_limit_daily: number;
   scopes: string[];
   is_active: boolean;
+  revoked_at: string | null;
   last_used_at: string | null;
   expires_at: string | null;
   created_at: string;
