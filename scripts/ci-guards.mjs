@@ -8,24 +8,38 @@
  * Guards:
  *   route      - fail if a stale `/api/document` (singular) path appears in app/ or lib/.
  *   mojibake   - fail if UTF-8-as-Latin-1 mojibake appears in app/ or lib/.
+ *   api-docs   - fail if API docs GET/POST endpoints drift from public app/api routes.
  *   artifacts  - fail if build/dependency output or oversized generated dumps are committed.
  *   claims     - fail if any verified-claims file violates the trust rules (delegates to verified-claims.mjs validate).
  *   surfaces   - fail if citation surfaces drift from the normalized claim-level contract.
  *   schema-types - fail if schema-v3.sql enum/check values diverge from TypeScript unions.
  *   diff-size  - fail if a PR changes an unexpected number of files (full-repo-rewrite guard).
  *   secrets    - fail if Supabase service-role secrets leak into client or non-route mutation code.
- *   all        - run route + mojibake + artifacts + claims + secrets + surfaces + schema-types (and diff-size when a base SHA is available).
+ *   all        - run route + api-docs + mojibake + artifacts + claims + secrets + surfaces + schema-types (and diff-size when a base SHA is available).
  *
  * Exit code 0 = pass, 1 = a guard failed, 2 = usage/internal error.
  */
 
 import { execFileSync } from "node:child_process";
 import { readdirSync, readFileSync, statSync } from "node:fs";
-import { join, extname } from "node:path";
+import { join, extname, relative, sep } from "node:path";
 
 // --- configuration ---------------------------------------------------------
 
 const SCAN_ROOTS = ["app", "lib"];
+const API_DOCS_PAGE = "app/api-docs/page.tsx";
+const API_ROUTES_ROOT = "app/api";
+const DOC_CHECK_METHODS = new Set(["GET", "POST"]);
+const PROTECTED_API_PREFIXES = ["/api/admin/"];
+const PROTECTED_API_ENDPOINTS = new Set([
+  "GET /api/business/alerts",
+  "POST /api/business/alerts",
+  "GET /api/business/corrections",
+  "GET /api/keys",
+  "POST /api/keys",
+  "GET /api/webhooks",
+  "POST /api/webhooks",
+]);
 const SOURCE_EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".css", ".md", ".json"]);
 const API_ROUTE_RE = /^app\/api\/.+\/route\.(ts|tsx|js|jsx|mjs)$/;
 const SERVER_SECRET_MODULES = new Set([
@@ -118,6 +132,63 @@ function linesWith(text, predicate) {
   return hits;
 }
 
+function normalizeApiPath(path) {
+  return path
+    .replace(/<span[^>]*>\{\s*"\{([^}]+)\}"\s*\}<\/span>/g, "{$1}")
+    .replace(/<[^>]+>/g, "")
+    .replace(/\{([A-Za-z0-9_ -]+)\}/g, (_, name) => `:${name.trim().replace(/\s+/g, "-")}`)
+    .replace(/\[([A-Za-z0-9_ -]+)\]/g, (_, name) => `:${name.trim().replace(/\s+/g, "-")}`)
+    .replace(/:[A-Za-z0-9_-]+/g, ":param")
+    .replace(/\?.*$/, "")
+    .replace(/\/+$/, "");
+}
+
+function deriveApiRoutePath(file) {
+  const routeDir = relative(API_ROUTES_ROOT, file).split(sep).slice(0, -1);
+  return normalizeApiPath(`/api/${routeDir.join("/")}`);
+}
+
+function routeMethods(file) {
+  const text = readFileSync(file, "utf-8");
+  const methods = [];
+  const re = /export\s+async\s+function\s+(GET|POST|PUT|PATCH|DELETE|HEAD|OPTIONS)\b/g;
+  let match;
+  while ((match = re.exec(text))) methods.push(match[1]);
+  return methods;
+}
+
+function documentedApiEndpoints() {
+  const text = readFileSync(API_DOCS_PAGE, "utf-8")
+    .replace(/<span[^>]*>\{\s*"\{([^}]+)\}"\s*\}<\/span>/g, "{$1}")
+    .replace(/<[^>]+>/g, "");
+  const endpoints = new Set();
+  const re = /\b(GET|POST)\s+(\/api\/[^\s`"'<)]+)/g;
+  let match;
+  while ((match = re.exec(text))) {
+    const method = match[1];
+    const path = normalizeApiPath(match[2]);
+    endpoints.add(`${method} ${path}`);
+  }
+  return endpoints;
+}
+
+function actualApiEndpoints() {
+  const endpoints = new Set();
+  for (const file of walk(API_ROUTES_ROOT)) {
+    if (!file.endsWith(`${sep}route.ts`) && !file.endsWith("/route.ts")) continue;
+    const path = deriveApiRoutePath(file);
+    for (const method of routeMethods(file)) {
+      if (DOC_CHECK_METHODS.has(method)) endpoints.add(`${method} ${path}`);
+    }
+  }
+  return endpoints;
+}
+
+function isProtectedEndpoint(endpoint) {
+  const [, path] = endpoint.split(" ");
+  return PROTECTED_API_PREFIXES.some((prefix) => path.startsWith(prefix)) || PROTECTED_API_ENDPOINTS.has(endpoint);
+}
+
 function git(args) {
   return execFileSync("git", args, { encoding: "utf-8" }).trim();
 }
@@ -146,6 +217,32 @@ function guardRoute() {
     ]);
   }
   console.log("route guard: ok");
+}
+
+function guardApiDocsRoutes() {
+  const documented = documentedApiEndpoints();
+  const actual = actualApiEndpoints();
+  const publicActual = new Set([...actual].filter((endpoint) => !isProtectedEndpoint(endpoint)));
+
+  const docsWithoutRoutes = [...documented]
+    .filter((endpoint) => !actual.has(endpoint))
+    .sort();
+  const publicRoutesWithoutDocs = [...publicActual]
+    .filter((endpoint) => !documented.has(endpoint))
+    .sort();
+
+  if (docsWithoutRoutes.length || publicRoutesWithoutDocs.length) {
+    fail([
+      "api-docs route guard FAILED: API docs endpoints must match implemented public routes.",
+      ...(docsWithoutRoutes.length
+        ? ["", "Documented in app/api-docs/page.tsx but no matching app/api/**/route.ts exists:", ...docsWithoutRoutes.map((e) => `  - ${e}`)]
+        : []),
+      ...(publicRoutesWithoutDocs.length
+        ? ["", "Implemented public app/api/**/route.ts endpoint but missing from app/api-docs/page.tsx:", ...publicRoutesWithoutDocs.map((e) => `  - ${e}`)]
+        : []),
+    ]);
+  }
+  console.log("api-docs route guard: ok");
 }
 
 function guardMojibake() {
@@ -357,6 +454,7 @@ const guard = process.argv[2];
 const guards = {
   route: guardRoute,
   mojibake: guardMojibake,
+  "api-docs": guardApiDocsRoutes,
   artifacts: guardArtifacts,
   claims: guardClaims,
   secrets: guardSecrets,
@@ -365,6 +463,7 @@ const guards = {
   "diff-size": guardDiffSize,
   all() {
     guardRoute();
+    guardApiDocsRoutes();
     guardMojibake();
     guardArtifacts();
     guardClaims();
@@ -376,7 +475,7 @@ const guards = {
 };
 
 if (!guard || !guards[guard]) {
-  console.error(`Usage: node scripts/ci-guards.mjs <route|mojibake|artifacts|claims|secrets|surfaces|schema-types|diff-size|all>`);
+  console.error(`Usage: node scripts/ci-guards.mjs <route|api-docs|mojibake|artifacts|claims|secrets|surfaces|schema-types|diff-size|all>`);
   process.exit(2);
 }
 
