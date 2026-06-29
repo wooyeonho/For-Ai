@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 
 import { logAdminAuditEvent, requireAdmin, supabaseAdmin } from "@/lib/admin-api";
+import { assertVerifiedClaimReady, UNKNOWN_FACT_TEXT } from "@/lib/citation-status";
+import type { Confidence, SourceType } from "@/lib/types";
 
 export async function GET(request: Request) {
   const adminError = requireAdmin(request, "claims.read_for_review");
@@ -36,21 +38,58 @@ export async function POST(request: Request) {
   const citation = String(body.citation ?? "").trim() || null;
   const observedAt = String(body.observed_at ?? new Date().toISOString()).trim();
   const confidence = String(body.confidence ?? "high").trim();
-  const allowedSources = new Set(["official", "platform", "review", "user", "phone", "photo", "document", "web", "other", "unknown"]);
-  const allowedConfidence = new Set(["medium", "high"]);
+  const allowedSources = new Set<SourceType>(["official", "law", "regulator", "platform", "review", "user", "phone", "photo", "document", "web", "other", "unknown"]);
+  const allowedConfidence = new Set<Confidence>(["medium", "high"]);
 
-  if (!claimId || !claimValue || claimValue === "확인 필요") return NextResponse.json({ error: "claim_id and verified claim_value are required" }, { status: 400 });
+  if (!claimId || !claimValue || claimValue === UNKNOWN_FACT_TEXT) return NextResponse.json({ error: "claim_id and verified claim_value are required" }, { status: 400 });
+  if (!observedAt || Number.isNaN(Date.parse(observedAt))) return NextResponse.json({ error: "valid observed_at / last_verified_at is required" }, { status: 400 });
   if (!title && !url && !citation) return NextResponse.json({ error: "at least one source title, url, or citation is required" }, { status: 400 });
-  if (!allowedSources.has(sourceType) || !allowedConfidence.has(confidence)) return NextResponse.json({ error: "invalid source_type or confidence" }, { status: 400 });
+  if (!allowedSources.has(sourceType as SourceType) || !allowedConfidence.has(confidence as Confidence)) return NextResponse.json({ error: "invalid source_type or confidence" }, { status: 400 });
 
   const { data: existingClaim, error: fetchError } = await sb
     .from("claims")
-    .select("id, document_id, entity_id, status, confidence")
+    .select("id, document_id, entity_id, status, confidence, claim_value, last_verified_at")
     .eq("id", claimId)
     .single();
   if (fetchError || !existingClaim) return NextResponse.json({ error: "claim not found", detail: fetchError?.message }, { status: 404 });
 
   const now = new Date().toISOString();
+  const eventDraft = {
+    claim_id: claimId,
+    event_type: "status_changed" as const,
+    previous_status: existingClaim.status,
+    new_status: "verified" as const,
+    previous_confidence: existingClaim.confidence,
+    new_confidence: confidence as "medium" | "high",
+    note: citation ?? title ?? url,
+  };
+  const readiness = assertVerifiedClaimReady({
+    claim_value: claimValue,
+    confidence: confidence as "medium" | "high",
+    status: "verified",
+    last_verified_at: observedAt,
+    sources: [{
+      id: "pending-source",
+      claim_id: claimId,
+      source_type: sourceType as SourceType,
+      title,
+      url,
+      citation,
+      observed_at: observedAt,
+      contributor_hash: null,
+      created_at: null,
+    }],
+    verification_events: [{
+      id: "pending-event",
+      contributor_hash: null,
+      created_at: now,
+      ...eventDraft,
+    }],
+  });
+  if (!readiness.ok) {
+    return NextResponse.json({ error: "verified claim requirements not met", violations: readiness.violations }, { status: 422 });
+  }
+
   const sourceId = `src-${claimId}-${Date.now()}`;
   const { error: sourceError } = await sb.from("claim_sources").insert({
     id: sourceId,
@@ -74,15 +113,18 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "claim update failed", detail: claimError.message }, { status: 500 });
   }
 
-  await sb.from("verification_events").insert({
-    claim_id: claimId,
-    event_type: "status_changed",
-    previous_status: existingClaim.status,
-    new_status: "verified",
-    previous_confidence: existingClaim.confidence,
-    new_confidence: confidence,
-    note: citation ?? title ?? url,
-  });
+  const { error: eventError } = await sb.from("verification_events").insert(eventDraft);
+  if (eventError) {
+    await sb.from("claims").update({
+      claim_value: existingClaim.claim_value,
+      confidence: existingClaim.confidence,
+      status: existingClaim.status,
+      last_verified_at: existingClaim.last_verified_at,
+      updated_at: now,
+    }).eq("id", claimId);
+    await sb.from("claim_sources").delete().eq("id", sourceId);
+    return NextResponse.json({ error: "verification event insert failed", detail: eventError.message }, { status: 500 });
+  }
 
   const { data: siblingClaims } = await sb.from("claims").select("status").eq("document_id", existingClaim.document_id);
   const allVerified = (siblingClaims ?? []).length > 0 && (siblingClaims ?? []).every((claim) => claim.status === "verified");

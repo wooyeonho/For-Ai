@@ -7,6 +7,9 @@ export const UNKNOWN_FACT_TEXT = "확인 필요";
 export const FRESHNESS_TTL_DAYS = 180;
 
 export type FreshnessLabel = "fresh" | "stale" | "unknown";
+export type VerifiedClaimInput = Pick<ClaimWithSources, "claim_value" | "confidence" | "status" | "last_verified_at" | "sources" | "verification_events">;
+
+const VERIFIED_CONFIDENCE = new Set(["medium", "high"]);
 
 export function ageInDays(iso: string | null | undefined, now: Date = new Date()): number | null {
   if (!iso) return null;
@@ -41,31 +44,41 @@ export type DocumentCitationStatus = {
   oldestVerifiedAt: string | null;
 };
 
-export function getClaimCitationStatus(claim: ClaimWithSources): ClaimCitationStatus {
-  const hasSource = claim.sources.length > 0;
-  const hasVerificationEvent =
-    claim.status === "verified" ||
-    claim.verification_events.some((event) =>
-      event.new_status === "verified" || event.event_type === "source_verified",
-    );
-  const hasVerifiedValue = Boolean(claim.claim_value?.trim()) && claim.claim_value !== UNKNOWN_FACT_TEXT;
-  const isCitationReady =
-    claim.status === "verified" &&
-    claim.confidence !== "low" &&
-    hasVerifiedValue &&
-    hasSource &&
-    hasVerificationEvent &&
-    Boolean(claim.last_verified_at);
+export function getVerifiedClaimViolations(claim: VerifiedClaimInput): string[] {
+  const violations: string[] = [];
+  const claimValue = claim.claim_value?.trim() ?? "";
+  const hasVerificationEvent = claim.verification_events.some((event) =>
+    event.new_status === "verified" || event.event_type === "source_verified",
+  );
 
-  if (isCitationReady) {
-    return { isCitationReady, label: "verified", reason: "verified claim with source and verification event" };
+  if (!claimValue) violations.push("claim_value is required");
+  if (claimValue === UNKNOWN_FACT_TEXT) violations.push("claim_value must not be the unknown placeholder");
+  if (!VERIFIED_CONFIDENCE.has(claim.confidence)) violations.push("confidence must be medium or high");
+  if (claim.sources.length < 1) violations.push("at least one source is required");
+  if (!claim.last_verified_at) violations.push("last_verified_at is required");
+  if (!hasVerificationEvent) violations.push("verification event is required");
+  if (claim.status !== "verified") violations.push("admin approval must set status to verified");
+
+  return violations;
+}
+
+export function assertVerifiedClaimReady(claim: VerifiedClaimInput): { ok: true } | { ok: false; violations: string[] } {
+  const violations = getVerifiedClaimViolations(claim);
+  return violations.length === 0 ? { ok: true } : { ok: false, violations };
+}
+
+export function getClaimCitationStatus(claim: ClaimWithSources): ClaimCitationStatus {
+  const validation = assertVerifiedClaimReady(claim);
+
+  if ("violations" in validation) {
+    return {
+      isCitationReady: false,
+      label: "unverified",
+      reason: `requires verified status, medium/high confidence, non-placeholder value, source, verification event, and last_verified_at (${validation.violations.join("; ")})`,
+    };
   }
 
-  return {
-    isCitationReady,
-    label: "unverified",
-    reason: "requires verified status, non-low confidence, source, verification event, and last_verified_at",
-  };
+  return { isCitationReady: true, label: "verified", reason: "verified claim with source and verification event" };
 }
 
 export function getDocumentCitationStatus(

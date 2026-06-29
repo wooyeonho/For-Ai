@@ -15,6 +15,19 @@ import vehicleTaxPaymentPeriod from "../data/verified-claims/vehicle-tax-payment
 import incomeTaxFilingPeriod from "../data/verified-claims/income-tax-filing-period.json";
 
 type VerifiedClaimFile = typeof seoulMetroFare;
+type VerifiedClaimFileClaim = VerifiedClaimFile["claims"][number];
+
+function isVerifiedFileClaim(claim: VerifiedClaimFileClaim): boolean {
+  return (
+    claim.status === "verified" &&
+    Boolean(claim.claim_value?.trim()) &&
+    claim.claim_value !== "확인 필요" &&
+    (claim.confidence === "medium" || claim.confidence === "high") &&
+    (claim.sources ?? []).length > 0 &&
+    Boolean(claim.last_verified_at) &&
+    Boolean(claim.verification_event)
+  );
+}
 
 const verifiedFiles: VerifiedClaimFile[] = [
   seoulMetroFare,
@@ -43,7 +56,7 @@ function toRegistryBundle(file: VerifiedClaimFile): RegistryDocumentBundle {
     updated_at: null,
   };
 
-  const hasVerifiedClaims = file.claims.some((c) => c.status === "verified");
+  const hasVerifiedClaims = file.claims.some(isVerifiedFileClaim);
   const docStatus = hasVerifiedClaims ? "verified" as const : "needs_review" as const;
   const docConfidence = hasVerifiedClaims ? "high" as const : "low" as const;
   const defaultLang = file.lang === "ko" ? "ko" : "en";
@@ -87,7 +100,7 @@ function toRegistryBundle(file: VerifiedClaimFile): RegistryDocumentBundle {
     claim_value: c.claim_value,
     jurisdiction: file.country,
     confidence: c.confidence as "high" | "medium" | "low",
-    status: c.status as "verified" | "needs_review",
+    status: (isVerifiedFileClaim(c) ? "verified" : "needs_review") as "verified" | "needs_review",
     last_verified_at: c.last_verified_at,
     created_at: null,
     updated_at: null,
@@ -128,7 +141,7 @@ function toRegistryBundle(file: VerifiedClaimFile): RegistryDocumentBundle {
     slug: file.slug,
     title: file.name,
     summary: hasVerifiedClaims
-      ? `${file.claims.filter((c) => c.status === "verified").length} verified claims`
+      ? `${file.claims.filter(isVerifiedFileClaim).length} verified claims`
       : `${file.claims.length} claims pending verification`,
     status: "verified" as const,
     confidence: "high" as const,
