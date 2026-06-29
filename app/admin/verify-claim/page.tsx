@@ -20,6 +20,8 @@ type DocumentRow = {
   id: string;
   slug: string;
   title: string;
+  country?: string;
+  category?: string;
   status: string;
   confidence: string;
   lang?: string;
@@ -27,6 +29,7 @@ type DocumentRow = {
   category?: string;
   claims?: ClaimRow[];
 };
+type ClaimListMeta = { count: number; limit: number; offset: number; has_more: boolean };
 
 const SOURCE_TYPES = ["official", "platform", "document", "web", "review", "other"];
 
@@ -55,16 +58,39 @@ export default function VerifyClaimPage() {
     token_match?: { matched: string[]; missing: string[] } | null;
     snippet?: string | null;
   } | null>(null);
+  const [filters, setFilters] = useState({
+    status: "needs_review",
+    country: "",
+    lang: "",
+    category: "",
+    slug: "",
+    sort: "high_risk",
+    limit: "50",
+    offset: "0",
+  });
+  const [meta, setMeta] = useState<ClaimListMeta>({ count: 0, limit: 50, offset: 0, has_more: false });
 
   const load = useCallback(async () => {
     if (!secret) return;
     setLoading(true);
-    const res = await fetch("/api/admin/verify-claim", { headers: { "x-admin-secret": secret, ...(adminActor.trim() ? { "x-admin-actor": adminActor.trim() } : {}) } });
+    const params = new URLSearchParams();
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value.trim()) params.set(key, value.trim());
+    });
+    const res = await fetch(`/api/admin/verify-claim?${params.toString()}`, { headers: { "x-admin-secret": secret, ...(adminActor.trim() ? { "x-admin-actor": adminActor.trim() } : {}) } });
     const data = await res.json();
     setLoading(false);
-    if (res.ok) setDocuments(Array.isArray(data.documents) ? data.documents : []);
+    if (res.ok) {
+      setDocuments(Array.isArray(data.documents) ? data.documents : []);
+      setMeta({
+        count: Number(data.count ?? 0),
+        limit: Number(data.limit ?? filters.limit),
+        offset: Number(data.offset ?? filters.offset),
+        has_more: Boolean(data.has_more),
+      });
+    }
     else setMessage({ ok: false, text: data.error ?? "claim 목록 조회 실패" });
-  }, [secret]);
+  }, [filters, secret]);
 
   const [targetSlug, setTargetSlug] = useState<string | null>(null);
 
@@ -73,7 +99,10 @@ export default function VerifyClaimPage() {
   // Deep-link target: /admin/verify-claim?slug=<slug> (set by candidates promote flow)
   useEffect(() => {
     const slug = new URLSearchParams(window.location.search).get("slug");
-    if (slug) setTargetSlug(slug);
+    if (slug) {
+      setTargetSlug(slug);
+      setFilters((current) => ({ ...current, slug, offset: "0" }));
+    }
   }, []);
 
   // Once documents load, scroll the targeted doc into view and open its first unverified claim.
@@ -233,6 +262,35 @@ export default function VerifyClaimPage() {
         </div>
       </section>
 
+      <section className="registry-panel">
+        <h2>필터</h2>
+        <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))" }}>
+          <label>status
+            <select value={filters.status} onChange={(e) => setFilters({ ...filters, status: e.target.value, offset: "0" })}>
+              <option value="needs_review">needs_review</option>
+              <option value="unknown">unknown</option>
+              <option value="disputed">disputed</option>
+              <option value="verified">verified</option>
+            </select>
+          </label>
+          <label>country<input value={filters.country} onChange={(e) => setFilters({ ...filters, country: e.target.value, offset: "0" })} placeholder="KR, US, global" /></label>
+          <label>lang<input value={filters.lang} onChange={(e) => setFilters({ ...filters, lang: e.target.value, offset: "0" })} placeholder="ko, en, ja..." /></label>
+          <label>category<input value={filters.category} onChange={(e) => setFilters({ ...filters, category: e.target.value, offset: "0" })} placeholder="government, banking..." /></label>
+          <label>slug<input value={filters.slug} onChange={(e) => setFilters({ ...filters, slug: e.target.value, offset: "0" })} placeholder="slug 검색" /></label>
+          <label>정렬
+            <select value={filters.sort} onChange={(e) => setFilters({ ...filters, sort: e.target.value, offset: "0" })}>
+              <option value="high_risk">high-risk 우선 + 오래된 순</option>
+              <option value="oldest">오래된 순</option>
+            </select>
+          </label>
+          <label>limit<input type="number" min="1" max="200" value={filters.limit} onChange={(e) => setFilters({ ...filters, limit: e.target.value, offset: "0" })} /></label>
+        </div>
+        <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
+          <button onClick={load} disabled={!secret || loading}>{loading ? "적용 중..." : "필터 적용"}</button>
+          <button type="button" onClick={() => setFilters({ status: "needs_review", country: "", lang: "", category: "", slug: "", sort: "high_risk", limit: "50", offset: "0" })}>초기화</button>
+        </div>
+      </section>
+
       {message && <div style={{ padding: 12, marginBottom: 16, borderRadius: 8, background: message.ok ? "#f0fdf4" : "#fef2f2", color: message.ok ? "#166534" : "#991b1b" }}>{message.text}</div>}
 
       <section className="registry-panel">
@@ -257,13 +315,22 @@ export default function VerifyClaimPage() {
         <div className="stat"><span className="stat-num">{allClaims.length}</span><span className="stat-label">전체 claim</span></div>
         <div className="stat"><span className="stat-num">{reviewCount}</span><span className="stat-label">확인 필요</span></div>
         <div className="stat"><span className="stat-num">{verifiedCount}</span><span className="stat-label">검증됨</span></div>
+        <div className="stat"><span className="stat-num">{meta.count}</span><span className="stat-label">필터 결과</span></div>
+      </div>
+
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 16, fontSize: 13, color: "#4b5563" }}>
+        <span>{meta.count}개 중 {meta.count === 0 ? 0 : meta.offset + 1}-{Math.min(meta.offset + meta.limit, meta.count)} 표시 · limit {meta.limit}</span>
+        <div style={{ display: "flex", gap: 8 }}>
+          <button type="button" disabled={loading || meta.offset <= 0} onClick={() => setFilters({ ...filters, offset: String(Math.max(0, meta.offset - meta.limit)) })}>이전</button>
+          <button type="button" disabled={loading || !meta.has_more} onClick={() => setFilters({ ...filters, offset: String(meta.offset + meta.limit) })}>다음</button>
+        </div>
       </div>
 
       {documents.filter((doc) => visibleDocIds.has(doc.id)).map((doc) => (
         <section className="registry-panel" key={doc.id} id={`doc-${doc.slug}`}>
           <h2><Link href={`/${doc.lang??"en"}/wiki/${doc.slug}`}>{doc.title}</Link></h2>
-          <p className="meta-label">{doc.slug} · {doc.country ?? "?"} · {doc.category ?? "?"} · {doc.status} · {doc.confidence}</p>
-          {(doc.claims ?? []).filter((claim) => visibleClaimIds.has(claim.id)).map((claim) => (
+          <p className="meta-label">{doc.slug} · {doc.country ?? "?"} · {doc.lang ?? "?"} · {doc.category ?? "?"} · {doc.status} · {doc.confidence}</p>
+          {(doc.claims ?? []).map((claim) => (
             <div className="claim-card" key={claim.id}>
               <label style={{ float: "right", fontSize: 12 }}><input type="checkbox" checked={selectedClaimIds.includes(claim.id)} onChange={(e) => setSelectedClaimIds((ids) => e.target.checked ? [...ids, claim.id] : ids.filter((id) => id !== claim.id))} /> bulk 선택</label>
               <p className="eyebrow">{claim.field_path}</p>
