@@ -31,7 +31,7 @@ export function DirectAnswerBox({
   const lang = (locale ?? DEFAULT_LOCALE) as SupportedLocale;
   const t = getTranslations(lang);
   const citationText = canCite && canonicalUrl && docTitle
-    ? `For-Ai Registry. "${docTitle}". Last verified: ${lastVerifiedAt ?? "unknown"}. ${canonicalUrl}`
+    ? `For-Ai Registry. "${docTitle}". Verified claim: ${displayAnswer}. Checked: ${lastVerifiedAt ?? "unknown"}. ${canonicalUrl}`
     : null;
 
   return (
@@ -46,6 +46,7 @@ export function DirectAnswerBox({
               citationText={citationText}
               labelCopy={t.claims.copyCitation}
               labelCopied={t.claims.copied}
+              warningText="Citation copy includes verified claims only; needs verification or low confidence claims are excluded."
             />
           )}
         </div>
