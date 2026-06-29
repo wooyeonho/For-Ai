@@ -2,7 +2,12 @@ import { NextResponse } from 'next/server';
 import { createServerClient, isSupabaseConfigured } from '../../../../lib/supabase-server';
 import { makeContributorHashForRequest } from '../../../../lib/contributor-hash';
 import { getDocumentBySlug } from '../../../../lib/data';
-import { REPORT_MESSAGE_MAX_LENGTH } from '../../../../lib/submission-limits';
+import {
+  REPORT_MESSAGE_MAX_LENGTH,
+  contributorSubmissionRateLimited,
+  hasHoneypotValue,
+  inspectSubmissionText,
+} from '../../../../lib/submission-limits';
 
 export async function POST(
   request: Request,
@@ -15,6 +20,10 @@ export async function POST(
     body = await request.json();
   } catch {
     return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  }
+
+  if (hasHoneypotValue(body)) {
+    return NextResponse.json({ error: 'submission rejected', code: 'HONEYPOT_FILLED' }, { status: 400 });
   }
 
   const message = body.message?.trim();
@@ -50,13 +59,22 @@ export async function POST(
   if (isSupabaseConfigured()) {
     try {
       const supabase = createServerClient();
+      const limit = contributorSubmissionRateLimited(contributorHash);
+      if (limit) {
+        return NextResponse.json(
+          { error: 'submission rate limit exceeded', code: `RATE_LIMIT_${limit.toUpperCase()}` },
+          { status: 429 }
+        );
+      }
+
+      const spamCheck = inspectSubmissionText([message]);
       const { error } = await supabase.from('reports').insert({
         document_id: documentId,
         entity_id: entityId,
         report_type: body.report_type ?? 'correction',
         message,
         contributor_hash: contributorHash,
-        status: 'new',
+        status: spamCheck.status,
       });
 
       if (error) {

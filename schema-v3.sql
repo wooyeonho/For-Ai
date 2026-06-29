@@ -9,7 +9,7 @@ create type confidence_level as enum ('low', 'medium', 'high');
 create type document_status as enum ('ai_draft', 'needs_review', 'verified', 'published', 'archived');
 create type claim_status as enum ('needs_review', 'verified', 'disputed', 'unknown');
 create type source_type as enum ('official', 'platform', 'review', 'user', 'phone', 'photo', 'document', 'web', 'other', 'unknown');
-create type submission_status as enum ('new', 'reviewing', 'accepted', 'rejected', 'spam');
+create type submission_status as enum ('new', 'reviewing', 'accepted', 'rejected', 'spam', 'spam_suspected');
 create type verification_event_type as enum ('created', 'reviewed', 'source_added', 'source_removed', 'status_changed', 'confidence_changed');
 
 create table entities (
@@ -230,7 +230,7 @@ create policy listings_public_select on listings for select to anon
 create table topic_candidates (
   id             uuid primary key default gen_random_uuid(),
   status         text not null default 'new'
-                 check (status in ('new','reviewing','approved','rejected','promoted','spam')),
+                 check (status in ('new','reviewing','approved','rejected','promoted','spam','spam_suspected')),
   source         text not null default 'ai_generated'
                  check (source in ('ai_generated','user_suggested','admin_created')),
   lang           text not null default 'ko',
@@ -262,11 +262,11 @@ create index topic_candidates_created_idx  on topic_candidates(created_at desc);
 
 alter table topic_candidates enable row level security;
 
--- Only allow public anon insert for user_suggested candidates with status 'new'.
+-- Only allow public anon insert for user_suggested candidates awaiting admin review.
 -- AI-generated candidates require service_role key (not anon).
 create policy topic_candidates_public_insert
   on topic_candidates for insert to anon
-  with check (source = 'user_suggested' and status = 'new');
+  with check (source = 'user_suggested' and status in ('new', 'spam_suspected'));
 
 -- No public SELECT/UPDATE policies: topic candidates are review-queue
 -- intake records and are readable only through admin/service-role API routes
@@ -335,7 +335,7 @@ create table if not exists topic_suggestions (
 );
 
 alter table topic_suggestions enable row level security;
-create policy topic_suggestions_public_insert_only on topic_suggestions for insert to anon with check (status = 'new');
+create policy topic_suggestions_public_insert_only on topic_suggestions for insert to anon with check (status in ('new', 'spam_suspected'));
 -- No public SELECT policy: suggestions are write-only and admin-reviewed.
 
 

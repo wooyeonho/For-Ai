@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { makeContributorHashForRequest } from "@/lib/contributor-hash";
+import {
+  SUGGEST_TOPIC_MESSAGE_MAX_LENGTH,
+  contributorSubmissionRateLimited,
+  hasHoneypotValue,
+  inspectSubmissionText,
+} from "@/lib/submission-limits";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const SUPABASE_ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
@@ -14,6 +20,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "invalid JSON" }, { status: 400 });
   }
 
+  if (hasHoneypotValue(body)) {
+    return NextResponse.json({ error: "submission rejected", code: "HONEYPOT_FILLED" }, { status: 400 });
+  }
+
   const question    = String(body.question    ?? "").trim();
   const category    = String(body.category    ?? "").trim();
   const suggestedSlug = String(body.suggested_slug ?? "").trim() || null;
@@ -21,6 +31,13 @@ export async function POST(request: Request) {
   const sourceUrl   = String(body.source_url  ?? "").trim() || null;
   const relatedUrl  = String(body.related_url ?? "").trim() || null;
   const aiContext   = String(body.ai_context  ?? "").trim() || null;
+
+  if (question.length > SUGGEST_TOPIC_MESSAGE_MAX_LENGTH || reason.length > SUGGEST_TOPIC_MESSAGE_MAX_LENGTH || (aiContext?.length ?? 0) > SUGGEST_TOPIC_MESSAGE_MAX_LENGTH) {
+    return NextResponse.json(
+      { error: `message fields must be ${SUGGEST_TOPIC_MESSAGE_MAX_LENGTH} characters or fewer`, code: "MESSAGE_TOO_LONG", max_length: SUGGEST_TOPIC_MESSAGE_MAX_LENGTH },
+      { status: 400 }
+    );
+  }
 
   if (!question || !category || !reason) {
     return NextResponse.json(
@@ -48,8 +65,19 @@ export async function POST(request: Request) {
   const lang = String(body.lang ?? "en").trim().slice(0, 5);
 
   let storage: "db" | "none" = "none";
+  let submissionStatus = "new";
   try {
     const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
+    const limit = contributorSubmissionRateLimited(hash);
+    if (limit) {
+      return NextResponse.json(
+        { error: "submission rate limit exceeded", code: `RATE_LIMIT_${limit.toUpperCase()}` },
+        { status: 429 }
+      );
+    }
+
+    const spamCheck = inspectSubmissionText([question, category, reason, sourceUrl, relatedUrl, aiContext]);
+    submissionStatus = spamCheck.status;
     const { error: suggestionError } = await sb.from("topic_suggestions").insert({
       contributor_hash: hash,
       question,
@@ -57,12 +85,12 @@ export async function POST(request: Request) {
       reason,
       related_url: relatedUrl,
       source_url: sourceUrl,
-      status: "new",
+      status: spamCheck.status,
     });
 
     const { error } = await sb.from("topic_candidates").insert({
       source: "user_suggested",
-      status: "new",
+      status: spamCheck.status,
       lang,
       title: question,
       slug: suggestedSlug ?? question.toLowerCase().replace(/[^a-z0-9가-힣]+/g, "-").slice(0, 80),
@@ -94,7 +122,7 @@ export async function POST(request: Request) {
 
   return NextResponse.json({
     accepted: true,
-    status: "new",
+    status: submissionStatus,
     storage,
     raw_ip_stored: false,
   });
