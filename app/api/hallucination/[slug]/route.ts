@@ -3,6 +3,7 @@ import { createServerClient, isSupabaseConfigured } from '@/lib/supabase-server'
 import { makeContributorHashForRequest } from '@/lib/contributor-hash';
 import { getDocumentBySlug } from '@/lib/data';
 import { buildPublicTopicCandidate } from '@/lib/topic-candidates';
+import { recordContributionEvent } from '@/lib/contributions';
 import {
   HALLUCINATION_FIELD_MAX_LENGTHS,
   contributorSubmissionRateLimited,
@@ -114,6 +115,18 @@ export async function POST(
           contributorHash,
           claimQuestion: normalizedBody.expected_correction || `Which claim on ${doc?.title ?? slug} did ${aiService} answer incorrectly?`,
         })).catch((err: unknown) => console.warn('[hallucination] topic_candidates insert skipped:', err));
+      }
+
+
+      if (!error && typeof body.source_url === 'string' && body.source_url.trim()) {
+        await recordContributionEvent(supabase, {
+          contributor_hash: contributorHash,
+          event_type: 'source_submitted',
+          country: doc?.country ?? null,
+          source_type: 'web',
+          claim_id: body.claim_id?.trim() || null,
+          document_id: documentId,
+        });
       }
 
       if (error) {
