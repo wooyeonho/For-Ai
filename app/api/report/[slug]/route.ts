@@ -10,6 +10,7 @@ import {
   inspectSubmissionText,
 } from '../../../../lib/submission-limits';
 import { recordDocumentAnalyticsEvent } from '@/lib/analytics';
+import { normalizeSourceUrl, pointEventForSubmission } from '@/lib/source-contributions';
 
 export async function POST(
   request: Request,
@@ -58,6 +59,8 @@ export async function POST(
     return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
   }
 
+  let responsePayload: Record<string, unknown> = { success: true, slug };
+
   if (isSupabaseConfigured()) {
     try {
       const supabase = createServerClient();
@@ -69,7 +72,13 @@ export async function POST(
         );
       }
 
-      const spamCheck = inspectSubmissionText([message]);
+      const sourceUrl = typeof body.source_url === 'string' ? body.source_url.trim() : '';
+      const sourceTitle = typeof body.source_title === 'string' ? body.source_title.trim() : '';
+      const citation = typeof body.citation === 'string' ? body.citation.trim() : '';
+      const claimId = typeof body.claim_id === 'string' && body.claim_id.trim() ? body.claim_id.trim() : null;
+      const fieldPath = typeof body.field_path === 'string' && body.field_path.trim() ? body.field_path.trim() : null;
+      const normalizedUrl = normalizeSourceUrl(sourceUrl);
+      const spamCheck = inspectSubmissionText([message, sourceUrl, sourceTitle, citation]);
       const { error } = await supabase.from('reports').insert({
         document_id: documentId,
         entity_id: entityId,
@@ -78,19 +87,95 @@ export async function POST(
         contributor_hash: contributorHash,
         status: spamCheck.status,
       });
+
+      let pointsAwarded = 0;
+      let sourceCandidateId: string | null = null;
+      if (!error && (sourceUrl || sourceTitle || citation)) {
+        const { data: contributor, error: contributorError } = await supabase
+          .from('contributors')
+          .upsert({ contributor_hash: contributorHash, updated_at: new Date().toISOString() }, { onConflict: 'contributor_hash' })
+          .select('id,total_points')
+          .single();
+        if (contributorError) throw new Error(`contributor upsert failed: ${contributorError.message}`);
+
+        const { data: duplicate } = normalizedUrl
+          ? await supabase
+              .from('source_candidates')
+              .select('id')
+              .eq('normalized_url', normalizedUrl)
+              .neq('status', 'spam')
+              .limit(1)
+              .maybeSingle()
+          : { data: null } as { data: null };
+        const isDuplicate = Boolean(duplicate?.id);
+        const pointEvent = spamCheck.status === 'spam_suspected'
+          ? { eventType: 'source_spam_rejected', points: 0 }
+          : pointEventForSubmission(isDuplicate);
+        pointsAwarded = pointEvent.points;
+
+        const { data: candidate, error: sourceError } = await supabase.from('source_candidates').insert({
+          document_id: documentId,
+          entity_id: entityId,
+          claim_id: claimId,
+          field_path: fieldPath,
+          title: sourceTitle || null,
+          url: sourceUrl || null,
+          normalized_url: normalizedUrl,
+          citation: citation || null,
+          source_type: body.report_type === 'source_candidate' ? 'official' : 'unknown',
+          source_authority: body.report_type === 'source_candidate' ? 'official' : 'unknown',
+          message,
+          contributor_hash: contributorHash,
+          contributor_id: contributor.id,
+          duplicate_of: duplicate?.id ?? null,
+          status: spamCheck.status,
+          review_status: spamCheck.status === 'spam_suspected' ? 'spam' : 'pending',
+          points_awarded: pointsAwarded,
+        }).select('id').single();
+        if (sourceError) throw new Error(`source candidate insert failed: ${sourceError.message}`);
+        sourceCandidateId = candidate.id;
+
+        const { data: event, error: eventError } = await supabase.from('contribution_events').insert({
+          contributor_id: contributor.id,
+          contributor_hash: contributorHash,
+          source_candidate_id: sourceCandidateId,
+          claim_id: claimId,
+          event_type: pointEvent.eventType,
+          points_delta: pointsAwarded,
+          metadata: { duplicate: isDuplicate, spam_status: spamCheck.status, points_do_not_determine_truth: true },
+        }).select('id').single();
+        if (eventError) throw new Error(`contribution event insert failed: ${eventError.message}`);
+
+        if (pointsAwarded > 0) {
+          const { error: pointsError } = await supabase.from('contributor_points').insert({
+            contributor_id: contributor.id,
+            contributor_hash: contributorHash,
+            contribution_event_id: event.id,
+            points: pointsAwarded,
+            reason: pointEvent.eventType,
+          });
+          if (pointsError) throw new Error(`contributor points insert failed: ${pointsError.message}`);
+          await supabase.from('contributors').update({
+            total_points: Number(contributor.total_points ?? 0) + pointsAwarded,
+            updated_at: new Date().toISOString(),
+          }).eq('id', contributor.id);
+        }
+      }
+
       if (!error) {
-        await supabase.from('topic_candidates').insert(buildPublicTopicCandidate({
+        const { error: topicCandidateError } = await supabase.from('topic_candidates').insert(buildPublicTopicCandidate({
           kind: 'correction_report',
           title: `Correction report: ${doc?.title ?? slug}`,
           slugSeed: `correction-${slug}`,
           lang: doc?.lang ?? 'en',
           category: doc?.category ?? 'correction_report',
           reason: message,
-          aiContext: `Public correction report for document_id=${documentId ?? 'unknown'}, entity_id=${entityId ?? 'unknown'}, report_type=${body.report_type ?? 'correction'}`,
-          sourceUrls: [typeof body.source_url === 'string' ? body.source_url : null],
+          aiContext: `Public correction report for document_id=${documentId ?? 'unknown'}, entity_id=${entityId ?? 'unknown'}, report_type=${body.report_type ?? 'correction'}, source_candidate_id=${sourceCandidateId ?? 'none'}`,
+          sourceUrls: [sourceUrl || null],
           contributorHash,
           claimQuestion: `Which claim on ${doc?.title ?? slug} needs correction?`,
-        })).catch((err: unknown) => console.warn('[report] topic_candidates insert skipped:', err));
+        }));
+        if (topicCandidateError) console.warn('[report] topic_candidates insert skipped:', topicCandidateError.message);
       }
 
       if (error) {
@@ -101,6 +186,7 @@ export async function POST(
         );
       }
       await recordDocumentAnalyticsEvent(supabase, request, slug, 'report_submission');
+      responsePayload = { success: true, slug, points_awarded: pointsAwarded, source_candidate_id: sourceCandidateId };
     } catch (err) {
       console.error('[report] Unexpected error:', err);
       return NextResponse.json({ error: 'Server error' }, { status: 500 });
@@ -113,5 +199,5 @@ export async function POST(
     );
   }
 
-  return NextResponse.json({ success: true, slug });
+  return NextResponse.json(responsePayload);
 }
