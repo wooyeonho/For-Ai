@@ -1,9 +1,9 @@
 import type { MetadataRoute } from "next";
 import { getAllRegistryBundles } from "../lib/data";
-import { getPublishedVerifiedDocumentIndexFromSupabase } from "../lib/supabase-index";
+import { getRegistryIndex } from "../lib/registry-index";
+import { getDocumentCitationStatus } from "../lib/citation-status";
 import { getAllEntityRefs } from "../lib/entity-profile";
 import { siteUrl, documentPageUrl, entityPageUrl } from "../lib/urls";
-import { getDocumentCitationStatus } from "../lib/citation-status";
 import { normalizeCitationSurface } from "../lib/render";
 
 type DocumentSitemapEntry = {
@@ -29,15 +29,17 @@ function getStaticDocumentEntries(): DocumentSitemapEntry[] {
 }
 
 async function getSupabaseDocumentEntries(): Promise<DocumentSitemapEntry[]> {
-  const documents = await getPublishedVerifiedDocumentIndexFromSupabase();
+  const documents = await getRegistryIndex({ cite: true });
 
-  return documents.map((document) => ({
-    slug: document.slug,
-    lang: document.lang,
-    lastModified: document.last_verified_at ?? document.updated_at ?? new Date().toISOString(),
-    canCite: true,
-    sourceCount: 0,
-  }));
+  return documents
+    .filter((document) => document.source === "supabase")
+    .map((document) => ({
+      slug: document.slug,
+      lang: document.lang,
+      lastModified: document.last_verified_at ?? document.updated_at ?? new Date().toISOString(),
+      canCite: true,
+      sourceCount: 0,
+    }));
 }
 
 function mergeDocumentEntries(entries: DocumentSitemapEntry[]): DocumentSitemapEntry[] {

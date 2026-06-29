@@ -1,5 +1,6 @@
 import { allRegistryBundles } from "./seed-data";
 import { verifiedBundles } from "./verified-claims";
+import { getClaimCitationStatus, getDocumentCitationStatus } from "./citation-status";
 import type { ClaimWithSources, Document, RegistryDocumentBundle } from "./types";
 
 const verifiedSlugs = new Set(verifiedBundles.map((b) => b.document.slug));
@@ -22,22 +23,11 @@ export function getAllRegistryBundles(): RegistryDocumentBundle[] {
 
 
 export function isVerifiedClaim(claim: ClaimWithSources): boolean {
-  return (
-    claim.status === "verified" &&
-    claim.confidence !== "low" &&
-    claim.claim_value !== "확인 필요" &&
-    Array.isArray(claim.sources) &&
-    claim.sources.length > 0
-  );
+  return getClaimCitationStatus(claim).isCitationReady;
 }
 
 export function isVerifiedDocumentBundle(bundle: RegistryDocumentBundle): boolean {
-  return (
-    (bundle.document.status === "verified" || bundle.document.status === "published") &&
-    bundle.document.confidence !== "low" &&
-    bundle.claims.length > 0 &&
-    bundle.claims.every(isVerifiedClaim)
-  );
+  return getDocumentCitationStatus(bundle).isVerifiedDocument;
 }
 
 export function partitionRegistryBundles(bundles: RegistryDocumentBundle[]): {

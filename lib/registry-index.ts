@@ -49,20 +49,35 @@ type SupabaseIndexRow = {
   last_verified_at?: string | null;
   updated_at?: string | null;
   entities?: { id?: string; canonical_name?: string; type?: string; country?: string } | null;
-  claims?: { status?: string; confidence?: string; claim_value?: string; claim_sources?: unknown[] }[];
+  claims?: {
+    status?: string;
+    confidence?: string;
+    claim_value?: string;
+    last_verified_at?: string | null;
+    claim_sources?: unknown[];
+    verification_events?: { new_status?: string | null; event_type?: string | null }[];
+  }[];
 };
 
-// A Supabase document is citable only when it is published/verified and every
-// claim is verified with a non-low confidence, a real value, and at least one
-// source. (Moved here from app/llms.txt so the judgment is single-sourced.)
+// A Supabase document is citable only when document.status is verified and
+// every claim is verified with a non-low confidence, a real value, at least one
+// source, a verification event, and last_verified_at. Published is public-only,
+// not citation-ready. (Moved here from app/llms.txt so the judgment is single-sourced.)
 export function isVerifiedSupabaseDoc(doc: {
   status?: string;
   confidence?: string;
-  claims?: { status?: string; confidence?: string; claim_value?: string; claim_sources?: unknown[] }[];
+  claims?: {
+    status?: string;
+    confidence?: string;
+    claim_value?: string;
+    last_verified_at?: string | null;
+    claim_sources?: unknown[];
+    verification_events?: { new_status?: string | null; event_type?: string | null }[];
+  }[];
 }): boolean {
   const claims = doc.claims ?? [];
   return (
-    (doc.status === "published" || doc.status === "verified") &&
+    doc.status === "verified" &&
     doc.confidence !== "low" &&
     claims.length > 0 &&
     claims.every(
@@ -70,8 +85,13 @@ export function isVerifiedSupabaseDoc(doc: {
         claim.status === "verified" &&
         claim.confidence !== "low" &&
         claim.claim_value !== "확인 필요" &&
+        Boolean(claim.last_verified_at) &&
         Array.isArray(claim.claim_sources) &&
-        claim.claim_sources.length > 0,
+        claim.claim_sources.length > 0 &&
+        Array.isArray(claim.verification_events) &&
+        claim.verification_events.some(
+          (event) => event.new_status === "verified" || event.event_type === "source_verified",
+        ),
     )
   );
 }
@@ -82,8 +102,13 @@ function verifiedClaimCount(claims: SupabaseIndexRow["claims"]): number {
       claim.status === "verified" &&
       claim.confidence !== "low" &&
       claim.claim_value !== "확인 필요" &&
+      Boolean(claim.last_verified_at) &&
       Array.isArray(claim.claim_sources) &&
-      claim.claim_sources.length > 0,
+      claim.claim_sources.length > 0 &&
+      Array.isArray(claim.verification_events) &&
+      claim.verification_events.some(
+        (event) => event.new_status === "verified" || event.event_type === "source_verified",
+      ),
   ).length;
 }
 
@@ -128,7 +153,7 @@ export async function getSupabaseIndexItems(staticSlugs: Set<string>): Promise<R
       .select(
         "slug,title,lang,status,confidence,last_verified_at,updated_at," +
           "entities(id,canonical_name,type,country)," +
-          "claims(status,confidence,claim_value,claim_sources(id))",
+          "claims(status,confidence,claim_value,last_verified_at,claim_sources(id),verification_events(new_status,event_type))",
       )
       .in("status", ["published", "verified", "needs_review"])
       .order("updated_at", { ascending: false })

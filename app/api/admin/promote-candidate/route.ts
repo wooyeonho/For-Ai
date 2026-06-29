@@ -76,7 +76,9 @@ export async function POST(request: Request) {
     template: "fact-sheet",
     lang,
     country,
-    status: "published",
+    // Promoted AI candidates are public review records, not verified/citable documents.
+    // Keep the document in needs_review until human source-backed claim verification is complete.
+    status: "needs_review",
     confidence: "low",
     category: candidate.category,
     data: {
@@ -146,7 +148,9 @@ export async function POST(request: Request) {
     slug,
     title: candidate.title,
     summary: claims.length > 0 ? `${claims.length}개 claim 확인 필요` : null,
-    status: "published",
+    // Promoted AI candidates are public review records, not verified/citable documents.
+    // Keep the document in needs_review until human source-backed claim verification is complete.
+    status: "needs_review",
     confidence: "low",
   });
   if (listingErr) {

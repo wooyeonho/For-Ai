@@ -217,7 +217,7 @@ export function renderDocumentJson(bundle: RegistryDocumentBundle): RenderedDocu
       can_cite: citationStatus.isVerifiedDocument,
       do_not_cite_reason: citationStatus.isVerifiedDocument
         ? null
-        : `${citationStatus.verifiedClaims}/${citationStatus.totalClaims} claims are citation-ready. Unverified: ${unverifiedPaths.join(", ") || "none"}`,
+        : `Document status is ${document.status}; ${citationStatus.verifiedClaims}/${citationStatus.totalClaims} claims are citation-ready. Unverified: ${unverifiedPaths.join(", ") || "none"}`,
       verified_claims_count: verifiedCount,
       total_claims_count: bundle.claims.length,
       unverified_claim_paths: unverifiedPaths,
@@ -268,7 +268,7 @@ export function renderDocumentMarkdown(bundle: RegistryDocumentBundle): string {
     ? `\n## Government fee template\n\nStandard claim field paths:\n${GOVERNMENT_FEE_FIELD_PATHS.map((fieldPath) => `- ${fieldPath}`).join("\n")}\n\nDisclaimer: ${GOVERNMENT_FEE_DISCLAIMER}\n`
     : "";
 
-  return `# ${document.title}\n\nentity_id: ${entity.id}\ndocument_id: ${document.id}\nslug: ${document.slug}\nlang: ${document.lang}\ncountry: ${document.country}\nlicense_code: ${document.license_code}\n\n## Citation guidance\n\ncan_cite: ${docCitationStatus.isVerifiedDocument}\ndo_not_cite_reason: ${docCitationStatus.isVerifiedDocument ? "null" : `${docCitationStatus.verifiedClaims}/${docCitationStatus.totalClaims} claims verified`}\n\nCite a claim only if its verification status is "verified" and it has at least one source. Do not cite values shown as "확인 필요", or claims with "low" confidence or "needs_review" status. Always preserve the source URL and last_verified_at when citing. Stale claims may remain citation-ready, but they must carry a last verified date warning and should be rechecked before reliance.\n\n## Document citation status
+  return `# ${document.title}\n\nentity_id: ${entity.id}\ndocument_id: ${document.id}\nslug: ${document.slug}\nlang: ${document.lang}\ncountry: ${document.country}\nlicense_code: ${document.license_code}\n\n## Citation guidance\n\ncan_cite: ${docCitationStatus.isVerifiedDocument}\ndo_not_cite_reason: ${docCitationStatus.isVerifiedDocument ? "null" : `document status ${document.status}; ${docCitationStatus.verifiedClaims}/${docCitationStatus.totalClaims} claims citation-ready`}\n\nCite this document only if can_cite is true. Cite a claim only if its verification status is "verified" and it has at least one source plus a verification event. Do not cite values shown as "확인 필요", or claims with "low" confidence or "needs_review" status. Always preserve the source URL and last_verified_at when citing. Stale claims may remain citation-ready, but they must carry a last verified date warning and should be rechecked before reliance.\n\n## Document citation status
 
 status: ${citationStatus.label}
 citation_ready_claims: ${citationStatus.verifiedClaims}/${citationStatus.totalClaims}
