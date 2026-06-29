@@ -22,6 +22,18 @@ const out = args.get("out") ?? "data/topic-candidates/long-tail-combination-samp
 
 const commonDisallowed = ["forum", "rumor", "unsourced_blog"];
 
+
+const transportFareFieldPaths = [
+  ["fare.base", "기본요금"],
+  ["fare.airport", "공항 요금"],
+  ["fare.daily_cap", "일일 상한 요금"],
+  ["fare.card_required", "교통카드 필수 여부"],
+  ["transfer.rule", "환승 규칙"],
+  ["payment.contactless", "비접촉 결제 지원"],
+  ["children.discount", "어린이 할인"],
+  ["last_updated_by_operator", "운영기관 최종 갱신일"],
+];
+
 const domains = [
   {
     prefix: "medical-term",
@@ -104,24 +116,21 @@ const domains = [
     ],
   },
   {
-    prefix: "transport-bus",
-    type: "transport.bus",
+    prefix: "transport-fare",
+    type: "transport.fare",
     risk_tier: "medium",
     update_frequency: "event_based",
     disclaimer_type: "check_official_source",
     country: "KR",
     jurisdiction: "KR",
     source_policy: {
-      preferred: ["official", "platform"],
-      allowed: ["official", "platform", "document", "web"],
+      preferred: ["official"],
+      allowed: ["official", "document", "platform", "web"],
       disallowed: commonDisallowed,
+      note: "Transport fare claims should prioritize the official transport agency/operator source for each claim.",
     },
-    subjects: ["버스 종류", "저상버스", "광역버스", "시내버스", "마을버스", "공항버스"],
-    facets: [
-      ["type_categories", "분류 기준"],
-      ["operation_context", "운행 맥락"],
-      ["fare_rule", "요금 기준"],
-    ],
+    subjects: ["시내버스 요금", "마을버스 요금", "광역버스 요금", "지하철 요금", "공항철도 요금", "공항버스 요금"],
+    facets: transportFareFieldPaths,
   },
   {
     prefix: "rail",
@@ -303,6 +312,12 @@ const englishHints = new Map([
   ["시내버스", "city-bus"],
   ["마을버스", "village-bus"],
   ["공항버스", "airport-bus"],
+  ["시내버스 요금", "city-bus-fare"],
+  ["마을버스 요금", "village-bus-fare"],
+  ["광역버스 요금", "metropolitan-bus-fare"],
+  ["지하철 요금", "subway-fare"],
+  ["공항철도 요금", "airport-rail-fare"],
+  ["공항버스 요금", "airport-bus-fare"],
   ["기차 종류", "train-types"],
   ["KTX", "ktx"],
   ["ITX", "itx"],
@@ -390,12 +405,12 @@ const lines = selected.map(({ domain, subject, subjectSlug, facetPath, facetName
     source_policy: domain.source_policy,
     claims: [
       {
-        field_path: `${domain.type}.${facetPath}`,
+        field_path: domain.type === "transport.fare" || facetPath.includes(".") ? facetPath : `${domain.type}.${facetPath}`,
         claim_text: `${subject}: ${facetName} 정보는 확인이 필요합니다${expansionRound > 0 ? ` (확장 후보 ${expansionRound + 1})` : ""}.`,
         claim_value: "확인 필요",
         confidence: "low",
         status: "needs_review",
-        sources: [],
+        sources: domain.type === "transport.fare" ? [{ source_type: "official", title: "확인 필요: 공식 교통기관/운영기관 요금 안내", url: null, observed_at: null }] : [],
       },
     ],
   });

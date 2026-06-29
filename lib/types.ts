@@ -1,6 +1,20 @@
 export type Confidence = "low" | "medium" | "high";
 export type DocumentStatus = "ai_draft" | "needs_review" | "verified" | "published" | "archived";
 export type ClaimStatus = "needs_review" | "verified" | "disputed" | "unknown";
+
+export const transportFareFieldPaths = [
+  "fare.base",
+  "fare.airport",
+  "fare.daily_cap",
+  "fare.card_required",
+  "transfer.rule",
+  "payment.contactless",
+  "children.discount",
+  "last_updated_by_operator",
+] as const;
+
+export type TransportFareFieldPath = (typeof transportFareFieldPaths)[number];
+
 export type SourceType =
   | "official"
   | "law"

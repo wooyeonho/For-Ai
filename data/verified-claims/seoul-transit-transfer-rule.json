@@ -13,7 +13,7 @@
   "claims": [
     {
       "claim_id": "seoul-transfer-window-day",
-      "field_path": "transfer.window_day",
+      "field_path": "transfer.rule",
       "claim_text": "수도권 통합환승 인정 시간 (주간, 07시~21시): 하차 후 다음 수단 승차까지",
       "claim_value": "하차 후 30분 이내",
       "confidence": "high",
@@ -37,7 +37,7 @@
     },
     {
       "claim_id": "seoul-transfer-window-night",
-      "field_path": "transfer.window_night",
+      "field_path": "transfer.rule",
       "claim_text": "수도권 통합환승 인정 시간 (심야, 21시~익일 07시): 하차 후 다음 수단 승차까지",
       "claim_value": "하차 후 60분 이내",
       "confidence": "high",
@@ -61,7 +61,7 @@
     },
     {
       "claim_id": "seoul-transfer-max-count",
-      "field_path": "transfer.max_count",
+      "field_path": "transfer.rule",
       "claim_text": "수도권 통합환승 최대 환승 가능 횟수",
       "claim_value": "최대 4회 환승 (총 5회 승차)",
       "confidence": "high",

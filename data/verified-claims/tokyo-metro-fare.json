@@ -13,7 +13,7 @@
   "claims": [
     {
       "claim_id": "tokyo-metro-ic-1-6km",
-      "field_path": "fare.ic_1_6km",
+      "field_path": "fare.base",
       "claim_text": "Tokyo Metro IC card fare for 1-6km",
       "claim_value": "178 yen (adult)",
       "confidence": "high",
@@ -37,7 +37,7 @@
     },
     {
       "claim_id": "tokyo-metro-ic-7-11km",
-      "field_path": "fare.ic_7_11km",
+      "field_path": "fare.base",
       "claim_text": "Tokyo Metro IC card fare for 7-11km",
       "claim_value": "209 yen (adult)",
       "confidence": "high",
