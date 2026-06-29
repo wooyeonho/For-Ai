@@ -59,6 +59,119 @@ const sourcePolicies = {
   },
 };
 
+
+const priorityVerticals = [
+  {
+    key: "priority-transport-fares-rules",
+    category: "life.transport",
+    vertical: "transport fares/rules",
+    risk_tier: "medium",
+    update_frequency: "event_based",
+    disclaimer_type: "check_official_source",
+    source_policy_key: "official",
+    countries: ["US", "GB", "JP", "KR", "DE", "FR", "SG", "AU"],
+    subjectByCountry: {
+      US: "major city transit fare and transfer rules",
+      GB: "national rail and TfL fare rules",
+      JP: "rail and metro fare adjustment rules",
+      KR: "metro and bus fare transfer rules",
+      DE: "regional transit fare zone rules",
+      FR: "metro and regional transit ticket rules",
+      SG: "MRT and bus fare rules",
+      AU: "state transit fare and concession rules",
+    },
+    intents: [
+      ["base_fare", "base adult fare"],
+      ["distance_or_zone_rule", "distance or zone pricing rule"],
+      ["transfer_window", "transfer time window"],
+      ["max_transfers", "maximum transfer count"],
+      ["daily_cap", "daily fare cap"],
+      ["weekly_cap", "weekly fare cap"],
+      ["airport_surcharge", "airport surcharge rule"],
+      ["child_fare", "child fare rule"],
+      ["senior_or_concession", "senior or concession fare rule"],
+      ["refund_or_penalty", "refund or penalty rule"],
+    ],
+  },
+  {
+    key: "priority-government-fees-processing",
+    category: "administration.documents",
+    vertical: "government fees/processing times",
+    risk_tier: "medium",
+    update_frequency: "annual",
+    disclaimer_type: "check_official_source",
+    source_policy_key: "official",
+    countries: ["US", "GB", "CA", "AU", "KR", "JP", "DE", "FR", "SG", "IN"],
+    subjectByCountry: {
+      US: "passport and vital-record government service fees",
+      GB: "passport and civil registration service fees",
+      CA: "passport and immigration document processing fees",
+      AU: "passport and identity document service fees",
+      KR: "passport and civil certificate issuance fees",
+      JP: "passport and residence document service fees",
+      DE: "passport and registration certificate fees",
+      FR: "passport and civil status document fees",
+      SG: "passport and identity document fees",
+      IN: "passport and identity service fees",
+    },
+    intents: [
+      ["standard_fee", "standard application fee"],
+      ["expedited_fee", "expedited service fee"],
+      ["adult_fee", "adult applicant fee"],
+      ["minor_fee", "minor applicant fee"],
+      ["processing_time_standard", "standard processing time"],
+      ["processing_time_expedited", "expedited processing time"],
+      ["online_available", "online application availability"],
+      ["in_person_required", "in-person requirement"],
+      ["required_documents", "required supporting documents"],
+      ["fee_waiver_or_refund", "fee waiver or refund rule"],
+    ],
+  },
+  {
+    key: "priority-travel-visa-requirements",
+    category: "travel.visa",
+    vertical: "travel/visa requirements",
+    risk_tier: "high",
+    update_frequency: "event_based",
+    disclaimer_type: "check_official_source",
+    source_policy_key: "regulator",
+    countries: ["US", "GB", "CA", "AU", "JP", "KR", "DE", "FR", "SG", "IN"],
+    subjectByCountry: {
+      US: "visitor visa and ESTA entry requirements",
+      GB: "visitor visa and ETA entry requirements",
+      CA: "visitor visa and eTA entry requirements",
+      AU: "visitor visa and ETA entry requirements",
+      JP: "short-stay visa and entry requirements",
+      KR: "short-term visa and K-ETA entry requirements",
+      DE: "Schengen visitor visa entry requirements",
+      FR: "Schengen visitor visa entry requirements",
+      SG: "short-term visit pass entry requirements",
+      IN: "tourist visa and e-visa entry requirements",
+    },
+    intents: [
+      ["visa_required", "visa requirement"],
+      ["eta_or_evisa", "ETA or e-visa requirement"],
+      ["passport_validity", "passport validity requirement"],
+      ["allowed_stay_days", "allowed stay period"],
+      ["application_fee", "application fee"],
+      ["processing_time", "processing time"],
+      ["required_documents", "required documents"],
+      ["transit_rule", "transit visa rule"],
+      ["extension_rule", "stay extension rule"],
+      ["official_update_page", "official update page"],
+    ],
+  },
+];
+
+const priorityScores = {
+  official_source: 5,
+  ai_hallucination_risk: 5,
+  search_demand: 5,
+  volatility: 5,
+  global_expansion: 5,
+  claim_structuring: 5,
+};
+
 const domains = [
   {
     key: "commerce-apparel-price",
@@ -260,9 +373,55 @@ for (const domain of domains) {
 }
 
 const rows = [];
-for (let index = 0; index < count; index += 1) {
+let sequence = 0;
+
+for (const priority of priorityVerticals) {
+  for (const country of priority.countries) {
+    if (rows.length >= count) break;
+    sequence += 1;
+    const sourcePolicy = sourcePolicies[priority.source_policy_key];
+    const subject = priority.subjectByCountry[country] ?? `${country} ${priority.vertical}`;
+    rows.push({
+      candidate_id: `priority-candidate-${String(sequence).padStart(6, "0")}`,
+      visibility: "internal_candidate",
+      generated_by: "priority_vertical_v1",
+      generation_note: "Priority candidate selected by rubric: official source existence, AI hallucination risk, search demand, volatility, global expansion, claim structuring.",
+      priority: {
+        vertical: priority.vertical,
+        rank_group: "P0",
+        target_claims_per_country: 10,
+        scoring: priorityScores,
+        total_score: Object.values(priorityScores).reduce((sum, score) => sum + score, 0),
+      },
+      entity_id: `${priority.key}-${country.toLowerCase()}-${String(sequence).padStart(6, "0")}`,
+      type: priority.category,
+      name: `${country} ${subject}`,
+      slug: `${priority.key}-${country.toLowerCase()}`,
+      lang: "en",
+      country,
+      jurisdiction: country,
+      risk_tier: priority.risk_tier,
+      update_frequency: priority.update_frequency,
+      disclaimer_type: priority.disclaimer_type,
+      source_policy: sourcePolicy,
+      question: `What are the official ${subject}?`,
+      why_people_ask_ai: `${priority.vertical} vary by country and are often asked as quick travel or public-service questions.`,
+      why_ai_gets_wrong: "AI may mix jurisdictions, outdated fee tables, unofficial summaries, or previous-year rules.",
+      claims: priority.intents.map(([intentKey, intentLabel]) => ({
+        field_path: toFieldPath(priority.category, intentKey),
+        claim_text: `${country} ${subject}: ${intentLabel} needs verification.`,
+        claim_value: "확인 필요",
+        confidence: "low",
+        status: "needs_review",
+        sources: [],
+      })),
+    });
+  }
+}
+
+for (let index = 0; rows.length < count; index += 1) {
   const { domain, subject, intentKey, intentLabel } = candidates[index % candidates.length];
-  const sequence = index + 1;
+  sequence += 1;
   const sourcePolicy = sourcePolicies[domain.source_policy_key];
   rows.push({
     candidate_id: `question-candidate-${String(sequence).padStart(6, "0")}`,
