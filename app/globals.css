@@ -2153,3 +2153,64 @@ body {
   margin: 4px 0 0;
   font-weight: 600;
 }
+
+.campaign-page .registry-panel + .registry-panel {
+  margin-top: 0;
+}
+
+.campaign-hero {
+  border-color: #cbd7ea;
+}
+
+.campaign-cta-row {
+  margin-top: 18px;
+}
+
+.campaign-principles {
+  margin: 14px 0 0;
+  padding-left: 1.2rem;
+}
+
+.campaign-principles li + li {
+  margin-top: 8px;
+}
+
+.campaign-ranked-list {
+  display: grid;
+  gap: 10px;
+  list-style: none;
+  margin: 16px 0 0;
+  padding: 0;
+}
+
+.campaign-ranked-list li {
+  align-items: center;
+  background: var(--soft);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  display: flex;
+  gap: 12px;
+  justify-content: space-between;
+  padding: 10px 12px;
+}
+
+.campaign-ranked-list strong {
+  color: var(--accent);
+  font-family: var(--font-mono);
+}
+
+.campaign-country-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.campaign-action-card {
+  display: flex;
+  flex-direction: column;
+}
+
+.campaign-action-card .cta-link {
+  margin-top: auto;
+}
