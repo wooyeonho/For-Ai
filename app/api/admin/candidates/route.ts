@@ -88,7 +88,7 @@ export async function PATCH(request: Request) {
   const body = await request.json();
   const id = String(body.id ?? "").trim();
   const status = String(body.status ?? "").trim();
-  const allowed = new Set(["new", "reviewing", "approved", "rejected", "promoted", "spam"]);
+  const allowed = new Set(["new", "triaged", "generated", "rejected", "promoted"]);
   if (!id || !allowed.has(status)) return NextResponse.json({ error: "valid id and status are required" }, { status: 400 });
 
   const { data, error } = await sb

@@ -8,7 +8,7 @@ import { AdminSecretField, useAdminSecret } from "../AdminSecretProvider";
 type Counts = {
   pending_community_posts: number;
   candidates_new: number;
-  candidates_approved: number;
+  candidates_generated: number;
   documents_published: number;
   claim_sources: number;
   claims_needs_review: number;
@@ -88,6 +88,7 @@ type ReviewPayload = {
     needs_review_claims: PriorityClaim[];
     new_candidates: Candidate[];
     approved_candidates: Candidate[];
+    generated_candidates: Candidate[];
   };
   promoted_documents: Candidate[];
   verified_documents: VerifiedDocument[];
@@ -109,7 +110,7 @@ type ReviewPayload = {
 const EMPTY_COUNTS: Counts = {
   pending_community_posts: 0,
   candidates_new: 0,
-  candidates_approved: 0,
+  candidates_generated: 0,
   documents_published: 0,
   claim_sources: 0,
   claims_needs_review: 0,
@@ -130,7 +131,7 @@ export default function AdminReviewPage() {
   const checklist = useMemo(() => [
     { label: "글 관리", count: counts.pending_community_posts, hint: "community_posts.status = pending", href: "/admin/posts?status=pending" },
     { label: "신규 후보", count: counts.candidates_new, hint: "topic_candidates.status = new", href: "/admin/candidates?status=new" },
-    { label: "승인 후보", count: counts.candidates_approved, hint: "topic_candidates.status = approved", href: "/admin/candidates?status=approved" },
+    { label: "AI claim 생성", count: counts.candidates_generated, hint: "topic_candidates.status = generated", href: "/admin/candidates" },
     { label: "needs_review claim", count: counts.claims_needs_review, hint: "claims.status = needs_review", href: "/admin/verify-claim" },
     { label: "공개 등록", count: counts.documents_published, hint: "documents.status = published", href: "/admin/candidates" },
     { label: "claim source", count: counts.claim_sources, hint: "claim_sources rows", href: "/admin/verify-claim" },
@@ -159,9 +160,10 @@ export default function AdminReviewPage() {
         <p>
           pending community posts, topic candidates, needs_review claims, promoted/verified documents,
           high-risk categories를 한 화면에서 확인하고 오늘 처리 순서대로 이동합니다.
+          후보 생성부터 verified 문서 공유까지 claim-level 운영 상태를 admin API count로 확인합니다.
         </p>
         <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-          <input aria-label="Admin secret" type="password" value={secret} onChange={(event) => setSecret(event.target.value)} placeholder="ADMIN_SECRET" style={{ flex: 1, padding: 10 }} />
+          <input aria-label="Admin secret" type="password" value={adminSecret} onChange={(event) => setAdminSecret(event.target.value)} placeholder="ADMIN_SECRET" style={{ flex: 1, padding: 10 }} />
           <button onClick={load} disabled={loading}>{loading ? "불러오는 중..." : "운영 현황 불러오기"}</button>
         </div>
         {message && <p style={{ color: message.ok ? "#166534" : "#991b1b" }}>{message.text}</p>}
@@ -200,6 +202,14 @@ export default function AdminReviewPage() {
         </div>
       </section>
 
+      <section className="registry-panel" aria-labelledby="today-title">
+        <h2 id="today-title">오늘 해야 할 일</h2>
+        <div className="stat-strip">
+          <div className="stat"><span className="stat-num">{counts.claims_needs_review}</span><span className="stat-label">needs_review claim</span></div>
+          <div className="stat"><span className="stat-num">{counts.candidates_generated}</span><span className="stat-label">generated candidate</span></div>
+        </div>
+      </section>
+
       <section className="registry-panel" aria-labelledby="posts-title">
         <h2 id="posts-title">Pending community posts</h2>
         <p><Link href="/admin/posts?status=pending" style={primaryButtonStyle}>글 관리</Link></p>
@@ -216,7 +226,7 @@ export default function AdminReviewPage() {
         <h2 id="candidates-title">New / approved topic candidates</h2>
         <div className="stat-strip">
           <div className="stat"><span className="stat-num">{counts.candidates_new}</span><span className="stat-label">new candidates</span></div>
-          <div className="stat"><span className="stat-num">{counts.candidates_approved}</span><span className="stat-label">approved candidates</span></div>
+          <div className="stat"><span className="stat-num">{counts.candidates_generated}</span><span className="stat-label">generated candidates</span></div>
         </div>
         <h3>New candidates</h3>
         <p><Link href="/admin/candidates?status=new" style={primaryButtonStyle}>후보 검토</Link></p>
@@ -242,6 +252,18 @@ export default function AdminReviewPage() {
               <Link href={claim.verify_url ?? "/admin/verify-claim"} style={primaryButtonStyle}>claim 검증</Link>
               {claim.document_url && <a href={claim.document_url} target="_blank" rel="noopener noreferrer" style={secondaryButtonStyle}>문서 보기</a>}
             </div>
+          </div>
+        ))}
+
+        <h3>Generated candidates · 공개 등록 대기</h3>
+        {(data?.priorities.generated_candidates.length ?? 0) === 0 && <p>공개 등록 대기 중인 generated candidate가 없습니다.</p>}
+        {data?.priorities.generated_candidates.map((candidate) => (
+          <div className="claim-card" key={candidate.id}>
+            <p className="eyebrow">{candidate.category} · risk: {candidate.risk_tier}</p>
+            <p><strong>{candidate.title}</strong></p>
+            <p>{candidate.lang}/wiki/{candidate.slug}</p>
+            <p><span className="badge badge-review">{candidate.status}</span></p>
+            <Link href="/admin/candidates" style={primaryButtonStyle}>공개 등록하러 가기</Link>
           </div>
         ))}
       </section>

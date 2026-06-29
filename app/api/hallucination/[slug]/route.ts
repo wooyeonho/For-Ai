@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createServerClient, isSupabaseConfigured } from '@/lib/supabase-server';
 import { makeContributorHashForRequest } from '@/lib/contributor-hash';
 import { getDocumentBySlug } from '@/lib/data';
+import { buildPublicTopicCandidate } from '@/lib/topic-candidates';
 import {
   HALLUCINATION_FIELD_MAX_LENGTHS,
   contributorSubmissionRateLimited,
@@ -99,11 +100,25 @@ export async function POST(
         contributor_hash: contributorHash,
         status: spamCheck.status,
       });
+      if (!error) {
+        await supabase.from('topic_candidates').insert(buildPublicTopicCandidate({
+          kind: 'hallucination_report',
+          title: `AI hallucination report: ${doc?.title ?? slug}`,
+          slugSeed: `hallucination-${slug}`,
+          lang: doc?.lang ?? 'en',
+          category: doc?.category ?? 'hallucination_report',
+          reason: normalizedBody.expected_correction || normalizedBody.ai_answer || `AI hallucination reported from ${aiService}`,
+          aiContext: `AI service: ${aiService}\nPrompt: ${normalizedBody.prompt || '(not provided)'}\nAI answer: ${normalizedBody.ai_answer || '(not provided)'}\nDocument: ${documentId ?? 'unknown'} / Entity: ${entityId ?? 'unknown'}`,
+          sourceUrls: [typeof body.source_url === 'string' ? body.source_url : null],
+          contributorHash,
+          claimQuestion: normalizedBody.expected_correction || `Which claim on ${doc?.title ?? slug} did ${aiService} answer incorrectly?`,
+        })).catch((err: unknown) => console.warn('[hallucination] topic_candidates insert skipped:', err));
+      }
 
       if (error) {
         console.error('[hallucination] Supabase insert error:', error.message);
         return NextResponse.json(
-          { error: 'Failed to save hallucination report' },
+          { error: 'Failed to save hallucination candidate' },
           { status: 500 }
         );
       }
@@ -112,7 +127,7 @@ export async function POST(
       return NextResponse.json({ error: 'Server error' }, { status: 500 });
     }
   } else {
-    console.error('[hallucination] storage not configured — NOT persisted');
+    console.error('[hallucination] candidate storage not configured — NOT persisted');
     return NextResponse.json(
       { error: 'submission_storage_unavailable', persisted: false },
       { status: 503 }
