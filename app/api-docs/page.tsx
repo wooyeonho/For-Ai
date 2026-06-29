@@ -146,14 +146,37 @@ export default function ApiDocsPage() {
             </p>
           </div>
 
-          {/* GET /api/documents/:slug/citation */}
+          {/* GET /api/cite/:slug */}
           <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
             <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>
-              GET /api/documents/<span style={{ color: "var(--accent)" }}>{"{slug}"}</span>/citation
+              GET /api/cite/<span style={{ color: "var(--accent)" }}>{"{slug}"}</span>
             </p>
             <p style={{ margin: "8px 0", fontSize: "0.9rem", color: "var(--muted)" }}>
-              Lightweight citation-readiness check. Returns only <code>can_cite</code>,
-              <code>do_not_cite_reason</code>, and verified counts — no full claim data.
+              JSON-LD citation bundle for AI and search integrations. Returns citation status,
+              entity metadata, citable claim details, source references, and canonical endpoint URLs.
+            </p>
+            <pre style={{ background: "var(--soft)", borderRadius: 6, padding: "10px 14px", fontSize: "0.8rem", overflowX: "auto" }}>{`GET ${BASE}/api/cite/your-slug
+
+{
+  "@context": "https://schema.org",
+  "@type": "Dataset",
+  "name": "Document Title",
+  "slug": "your-slug",
+  "citation_status": {
+    "label": "ready|limited|not_ready",
+    "verified_claims": 2,
+    "total_claims": 3
+  },
+  "claims": [
+    {
+      "field_path": "base_fare",
+      "citation_ready": true,
+      "sources": [ ... ]
+    }
+  ]
+}`}</pre>
+            <p style={{ fontSize: "0.85rem", color: "var(--muted)", marginTop: 8 }}>
+              Compatibility alias: <code>/api/documents/{"{slug}"}/citation</code> returns the same response.
             </p>
           </div>
         </div>
@@ -279,26 +302,24 @@ return "No citation-ready verified claims; do not cite unverified values.";}`}</
 BASE = "${BASE}"
 KEY = "forai_free_your_key"
 
-# Check if a document is safe to cite
-res = requests.get(f"{BASE}/api/documents/seoul-metro-base-fare",
+# Get the JSON-LD citation bundle
+res = requests.get(f"{BASE}/api/cite/seoul-metro-base-fare",
                    headers={"X-API-Key": KEY})
 data = res.json()
 
-if data["citation_guidance"]["can_cite"]:
-    verified = [c for c in data["claims"] if c["citation_ready"]]
-    print(f"Safe to cite: {len(verified)} verified claims")`}</pre>
+verified = [c for c in data["claims"] if c["citation_ready"]]
+print(f"Citation status: {data['citation_status']['label']}")
+print(f"Safe claims: {len(verified)}")`}</pre>
 
         <h3 style={{ fontSize: "0.95rem", marginTop: 20, marginBottom: 8 }}>TypeScript / JavaScript</h3>
         <pre style={{ background: "var(--soft)", borderRadius: 6, padding: "10px 14px", fontSize: "0.8rem", overflowX: "auto" }}>{`const res = await fetch(
-  "${BASE}/api/documents/seoul-metro-base-fare",
+  "${BASE}/api/cite/seoul-metro-base-fare",
   { headers: { "X-API-Key": "forai_free_your_key" } }
 );
-const { claims, citation_guidance } = await res.json();
+const { claims, citation_status } = await res.json();
 
-if (citation_guidance.can_cite) {
-  const verified = claims.filter(c => c.citation_ready);
-  // Safe to use in AI responses
-}`}</pre>
+const verified = claims.filter(c => c.citation_ready);
+console.log(citation_status.label, verified.length);`}</pre>
 
         <h3 style={{ fontSize: "0.95rem", marginTop: 20, marginBottom: 8 }}>cURL</h3>
         <pre style={{ background: "var(--soft)", borderRadius: 6, padding: "10px 14px", fontSize: "0.8rem", overflowX: "auto" }}>{`# Get JSON-LD citation
