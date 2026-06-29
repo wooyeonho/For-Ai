@@ -1,10 +1,10 @@
 import { createHash, createHmac, randomBytes, timingSafeEqual } from "crypto";
 import { NextResponse } from "next/server";
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { createServiceRoleClient, isServiceRoleKeyConfigured } from "./supabase-server";
 
 const ADMIN_SECRET = process.env.ADMIN_SECRET ?? "";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
 const ADMIN_CSRF_SECRET = process.env.ADMIN_CSRF_SECRET ?? "";
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX = 60;
@@ -131,14 +131,13 @@ export function issueAdminSessionCookie(response: NextResponse): void {
 }
 
 export function supabaseAdmin(): SupabaseClient | null {
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) return null;
-  return createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+  return createServiceRoleClient();
 }
 
 export function missingSupabaseAdminEnv(): string[] {
   return [
     ...(!SUPABASE_URL ? ["NEXT_PUBLIC_SUPABASE_URL"] : []),
-    ...(!SUPABASE_SERVICE_ROLE_KEY ? ["SUPABASE_SERVICE_ROLE_KEY"] : []),
+    ...(!isServiceRoleKeyConfigured() ? ["SUPABASE_SERVICE_ROLE_KEY"] : []),
   ];
 }
 
