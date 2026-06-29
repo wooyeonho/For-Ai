@@ -1,9 +1,9 @@
 "use client";
-import { ensureAdminSession } from "@/lib/admin-client";
 
 import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
 import { ageInDays, isStale } from "../../../lib/citation-status";
+import { AdminSecretField, useAdminSecret } from "../AdminSecretProvider";
 
 type Counts = {
   candidates_new: number;
@@ -79,7 +79,7 @@ const EMPTY_COUNTS: Counts = {
 };
 
 export default function AdminReviewPage() {
-  const [secret, setSecret] = useState("");
+  const { adminSecret, setAdminSecret, resetAdminSecret } = useAdminSecret();
   const [data, setData] = useState<ReviewPayload | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
@@ -98,8 +98,7 @@ export default function AdminReviewPage() {
   const load = useCallback(async () => {
     setLoading(true);
     setMessage(null);
-    try { await ensureAdminSession(secret); } catch (e) { setLoading(false); setMessage({ ok: false, text: e instanceof Error ? e.message : String(e) }); return; }
-    const res = await fetch("/api/admin/review", { credentials: "same-origin" });
+    const res = await fetch("/api/admin/review", { headers: { "x-admin-secret": adminSecret } });
     const payload = await res.json();
     setLoading(false);
     if (res.ok) {
@@ -108,7 +107,7 @@ export default function AdminReviewPage() {
     } else {
       setMessage({ ok: false, text: payload.error ?? "Admin workflow 조회 실패" });
     }
-  }, [secret]);
+  }, [adminSecret]);
 
   return (
     <div style={{ maxWidth: 1080, margin: "0 auto", padding: "40px 20px" }}>
@@ -117,17 +116,15 @@ export default function AdminReviewPage() {
         <h1>For-Ai admin review checklist</h1>
         <p>
           후보 생성부터 verified 문서 공유까지 claim-level 운영 상태를 admin API count로 확인합니다.
-          기존 관리자 인증 방식은 유지됩니다. 이 페이지에서 ADMIN_SECRET을 입력한 뒤 count를 불러오세요.
           오늘 해야 할 일은 needs_review claim과 approved candidate를 먼저 처리합니다.
         </p>
-        <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-          <input
-            aria-label="Admin password"
-            type="password"
-            value={secret}
-            onChange={(event) => setSecret(event.target.value)}
-            placeholder="관리자 비밀번호"
-            style={{ flex: 1, padding: 10 }}
+        <div style={{ display: "grid", gap: 8, marginTop: 16 }}>
+          <AdminSecretField
+            adminSecret={adminSecret}
+            setAdminSecret={setAdminSecret}
+            resetAdminSecret={resetAdminSecret}
+            placeholder="ADMIN_SECRET"
+            inputStyle={{ flex: 1, padding: 10 }}
           />
           <button onClick={load} disabled={loading}>{loading ? "불러오는 중..." : "count 불러오기"}</button>
         </div>
@@ -240,7 +237,6 @@ export default function AdminReviewPage() {
           <li><Link href="/admin/new-entity">Create new entity draft</Link></li>
           <li><Link href="/admin/new-document">Create new document draft</Link></li>
           <li><Link href="/admin/import">Bulk import stub</Link></li>
-          <li><Link href="/admin/diagnostics">Admin diagnostics</Link></li>
         </ul>
       </nav>
     </div>

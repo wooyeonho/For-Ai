@@ -1,13 +1,13 @@
 "use client";
 import { useState } from "react";
-import { ensureAdminSession } from "@/lib/admin-client";
+import { AdminSecretField, useAdminSecret } from "../AdminSecretProvider";
 
 const CLAIM_PLACEHOLDER = `parking.availability::주차 가능 여부는?
 parking.free_minutes::무료 주차 시간은?
 parking.max_vehicles::최대 주차 대수는?`;
 
 export default function NewDocumentPage() {
-  const [adminSecret, setAdminSecret] = useState("");
+  const { adminSecret, setAdminSecret, resetAdminSecret } = useAdminSecret();
   const [entityId, setEntityId] = useState("");
   const [slug, setSlug] = useState("");
   const [lang, setLang] = useState("ko");
@@ -48,11 +48,11 @@ export default function NewDocumentPage() {
     setLoading(true);
     setResult(null);
     try {
-      await ensureAdminSession(adminSecret);
       const res = await fetch("/api/admin/new-document", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "x-admin-secret": adminSecret,
           "x-admin-csrf": "1",
         },
         body: JSON.stringify({
@@ -186,12 +186,13 @@ export default function NewDocumentPage() {
               rows={6}
             />
           </label>
-          <label>Admin Password <span aria-label="필수">*</span>
-            <input
-              type="password" value={adminSecret} onChange={e => setAdminSecret(e.target.value)} required
-              placeholder="관리자 비밀키"
-            />
-          </label>
+          <AdminSecretField
+            adminSecret={adminSecret}
+            setAdminSecret={setAdminSecret}
+            resetAdminSecret={resetAdminSecret}
+            label="Admin Secret *"
+            placeholder="관리자 비밀키"
+          />
           <button type="submit" disabled={loading}>{loading ? "생성 중..." : "Document 생성"}</button>
         </form>
       </section>

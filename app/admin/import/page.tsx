@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useState } from "react";
-import { ensureAdminSession } from "@/lib/admin-client";
+import { AdminSecretField, useAdminSecret } from "../AdminSecretProvider";
 
 const JSONL_PLACEHOLDER = `{"entity_id":"kr-person-athlete-son-001","type":"person_athlete","name":"손흥민 현재 소속팀","title":"손흥민 현재 소속팀","slug":"son-heung-min-current-team","category":"person_athlete","lang":"ko","country":"KR","jurisdiction":"KR","claims":[{"field_path":"athlete.current_team","claim_text":"현재 소속팀은 확인이 필요합니다.","claim_value":"확인 필요","confidence":"low","status":"needs_review","sources":[]}]}
 {"entity_id":"global-food-allergen-001","type":"product_food","name":"민트초코 알레르기 성분","title":"민트초코 알레르기 성분","slug":"mint-choco-allergens","category":"product_food","lang":"ko","country":"global","jurisdiction":"global","claims":[{"field_path":"food.allergens","claim_text":"알레르기 유발 성분은 확인이 필요합니다.","claim_value":"확인 필요","confidence":"low","status":"needs_review","sources":[]}]}`;
@@ -15,7 +15,7 @@ interface ImportResult {
 }
 
 export default function AdminImportPage() {
-  const [adminSecret, setAdminSecret] = useState("");
+  const { adminSecret, setAdminSecret, resetAdminSecret } = useAdminSecret();
   const [jsonlText, setJsonlText] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ImportResult | null>(null);
@@ -45,11 +45,11 @@ export default function AdminImportPage() {
 
     setLoading(true);
     try {
-      await ensureAdminSession(adminSecret);
       const res = await fetch("/api/admin/import", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "x-admin-secret": adminSecret,
           "x-admin-csrf": "1",
         },
         body: JSON.stringify({ rows }),
@@ -124,12 +124,13 @@ export default function AdminImportPage() {
               {parseError}
             </div>
           )}
-          <label>Admin Password <span aria-label="필수">*</span>
-            <input
-              type="password" value={adminSecret} onChange={e => setAdminSecret(e.target.value)} required
-              placeholder="관리자 비밀키"
-            />
-          </label>
+          <AdminSecretField
+            adminSecret={adminSecret}
+            setAdminSecret={setAdminSecret}
+            resetAdminSecret={resetAdminSecret}
+            label="Admin Secret *"
+            placeholder="관리자 비밀키"
+          />
           <button type="submit" disabled={loading || lineCount === 0}>
             {loading ? "등록 중..." : `${lineCount}개 후보 등록`}
           </button>

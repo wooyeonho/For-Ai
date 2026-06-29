@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ensureAdminSession } from "@/lib/admin-client";
+import { AdminSecretField, useAdminSecret } from "../AdminSecretProvider";
 
 const PROVIDER_ICONS: Record<string, string> = {
   perplexity: "🔍",
@@ -86,14 +86,13 @@ export default function AdminGeneratePage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<GenerateResult | null>(null);
   const [error, setError] = useState("");
-  const [adminSecret, setAdminSecret] = useState("");
+  const { adminSecret, setAdminSecret, resetAdminSecret } = useAdminSecret();
 
   useEffect(() => {
     async function loadProviders() {
       try {
         if (!adminSecret) { setProvidersLoading(false); return; }
-        await ensureAdminSession(adminSecret);
-        const res = await fetch("/api/admin/generate-candidates", { credentials: "same-origin" });
+        const res = await fetch("/api/admin/generate-candidates", { headers: { "x-admin-secret": adminSecret } });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
         const providers = (data.available_providers ?? []) as ProviderOption[];
@@ -122,11 +121,11 @@ export default function AdminGeneratePage() {
     setResult(null);
 
     try {
-      await ensureAdminSession(adminSecret);
       const res = await fetch("/api/admin/generate-candidates", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
+          "x-admin-secret": adminSecret,
           "x-admin-csrf": "1",
         },
         body: JSON.stringify({
@@ -161,41 +160,21 @@ export default function AdminGeneratePage() {
       </nav>
 
       <h1 style={{ fontSize: 24, marginBottom: 8 }}>AI Candidate Generator</h1>
-      <div style={{ color: "#6b7280", marginBottom: 32, lineHeight: 1.6 }}>
-        <p style={{ margin: "0 0 6px" }}>
-          멀티 AI로 claim-level 토픽 후보를 생성하고 topic_candidates 테이블에 저장합니다.
-        </p>
-        <p style={{ margin: 0 }}>
-          “AI 후보 자동 생성”은 후보 저장까지만 자동입니다. verified 승격은 사람이 출처를 직접 확인한 뒤 후보 검토 큐에서 승인해야 합니다.
-        </p>
-      </div>
+      <p style={{ color: "#6b7280", marginBottom: 32 }}>
+        멀티 AI로 토픽 후보를 자동 생성합니다. 생성된 후보는 topic_candidates 테이블에 저장됩니다.
+      </p>
 
       <div style={{ display: "grid", gap: 20 }}>
-        {/* Admin password */}
+        {/* Admin secret */}
         <div style={{ padding: 12, background: adminSecret ? "#f0fdf4" : "#fef3c7", borderRadius: 8, border: `1px solid ${adminSecret ? "#86efac" : "#f59e0b"}` }}>
-          <label style={{ fontWeight: 600, fontSize: 14, display: "block", marginBottom: 6 }}>
-            관리자 비밀번호 {adminSecret && "✓"}
-          </label>
-          <div style={{ display: "flex", gap: 8 }}>
-            <input
-              type="password"
-              value={adminSecret}
-              onChange={(e) => setAdminSecret(e.target.value)}
-              placeholder="관리자 비밀번호 입력"
-              style={{ flex: 1, padding: "8px 12px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 }}
-            />
-            {adminSecret && (
-              <button
-                onClick={() => setAdminSecret("")}
-                style={{ padding: "8px 12px", border: "1px solid #fca5a5", borderRadius: 6, background: "#fff", color: "#dc2626", fontSize: 12, cursor: "pointer" }}
-              >
-                초기화
-              </button>
-            )}
-          </div>
-          <p style={{ margin: "6px 0 0", fontSize: 11, color: "#6b7280" }}>
-            기존 관리자 인증 방식대로 ADMIN_SECRET을 입력해야 후보 생성 API를 호출할 수 있습니다. 보안을 위해 인증키는 브라우저에 저장되지 않습니다. 새로고침 시 다시 입력하세요.
-          </p>
+          <AdminSecretField
+            adminSecret={adminSecret}
+            setAdminSecret={setAdminSecret}
+            resetAdminSecret={resetAdminSecret}
+            label={`관리자 인증키 ${adminSecret ? "✓" : ""}`}
+            placeholder="ADMIN_SECRET 입력"
+            inputStyle={{ flex: 1, padding: "8px 12px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 }}
+          />
         </div>
 
         {/* Topic input */}
@@ -368,58 +347,6 @@ export default function AdminGeneratePage() {
               <div style={{ fontSize: 12, color: "#6b7280" }}>AI 사용</div>
             </div>
           </div>
-
-          <div style={{ padding: 16, background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 8, marginBottom: 16 }}>
-            <p style={{ margin: "0 0 12px", fontSize: 13, color: "#475569", lineHeight: 1.5 }}>
-              다음 단계: 생성된 후보는 자동으로 verified 처리되지 않습니다. 출처를 확인한 뒤 후보 검토 큐에서 승인하세요.
-            </p>
-            <Link
-              href="/admin/candidates"
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                padding: "9px 14px",
-                borderRadius: 8,
-                border: "1px solid #2563eb",
-                color: "#2563eb",
-                fontWeight: 600,
-                fontSize: 13,
-                textDecoration: "none",
-              }}
-            >
-              후보 검토 큐로 이동
-            </Link>
-          </div>
-
-          {result.saved > 0 && (
-            <div style={{ padding: 16, background: "#ecfdf5", border: "1px solid #86efac", borderRadius: 8, marginBottom: 16 }}>
-              <p style={{ margin: "0 0 12px", fontSize: 13, color: "#166534", lineHeight: 1.5 }}>
-                {result.saved}개 후보가 저장되었습니다. 사람이 출처를 확인한 뒤 승인해야 verified 상태가 됩니다.
-              </p>
-              <Link
-                href="/admin/candidates"
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  padding: "10px 16px",
-                  borderRadius: 8,
-                  background: "#16a34a",
-                  color: "#fff",
-                  fontWeight: 700,
-                  fontSize: 14,
-                  textDecoration: "none",
-                }}
-              >
-                후보 검토 큐에서 승인하세요
-              </Link>
-            </div>
-          )}
-
-          {result.save_status === "failed" && (
-            <div style={{ padding: 12, background: "#fff7ed", border: "1px solid #fed7aa", borderRadius: 8, marginBottom: 16, fontSize: 13, color: "#9a3412", lineHeight: 1.5 }}>
-              <strong>저장 설정 확인 필요:</strong> topic_candidates 저장에 실패했습니다. Supabase 환경변수 설정 또는 topic_candidates migration 적용 여부를 확인하세요.
-            </div>
-          )}
 
           {result.save_error && (
             <div style={{ padding: 12, background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, marginBottom: 16, fontSize: 13, color: "#b91c1c" }}>

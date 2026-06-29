@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { ensureAdminSession } from "@/lib/admin-client";
+import { AdminSecretField, useAdminSecret } from "../AdminSecretProvider";
 
 interface Post {
   id: string;
@@ -26,7 +26,7 @@ const STATUS_STYLE: Record<string, { bg: string; color: string }> = {
 export default function AdminPostsPage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
-  const [secret, setSecret] = useState("");
+  const { adminSecret, setAdminSecret, resetAdminSecret } = useAdminSecret();
   const [statusFilter, setStatusFilter] = useState("pending");
   const [authorFilter, setAuthorFilter] = useState("all");
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
@@ -38,14 +38,12 @@ export default function AdminPostsPage() {
   const [creating, setCreating] = useState(false);
 
   const load = useCallback(async () => {
-    if (!secret) { setLoading(false); return; }
+    if (!adminSecret) { setLoading(false); return; }
     setLoading(true);
     const params = new URLSearchParams({ status: statusFilter });
     if (authorFilter !== "all") params.set("author_type", authorFilter);
     try {
-      if (!secret) return;
-      await ensureAdminSession(secret);
-      const r = await fetch(`/api/admin/posts?${params.toString()}`, { credentials: "same-origin" });
+      const r = await fetch(`/api/admin/posts?${params.toString()}`, { headers: { "x-admin-secret": adminSecret } });
       const d = await r.json();
       setPosts(Array.isArray(d.posts) ? d.posts : []);
       if (!r.ok) flash(d.error ?? "조회 실패", false);
@@ -53,7 +51,7 @@ export default function AdminPostsPage() {
       flash("네트워크 오류", false);
     }
     setLoading(false);
-  }, [secret, statusFilter, authorFilter]);
+  }, [adminSecret, statusFilter, authorFilter]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -63,11 +61,10 @@ export default function AdminPostsPage() {
   }
 
   async function updateStatus(id: string, status: string) {
-    if (!secret) { flash("관리자 비밀번호를 입력하세요", false); return; }
-    try { await ensureAdminSession(secret); } catch (e) { flash(e instanceof Error ? e.message : String(e), false); return; }
+    if (!adminSecret) { flash("admin secret을 입력하세요", false); return; }
     const r = await fetch("/api/admin/posts", {
       method: "PATCH",
-      headers: { "Content-Type": "application/json", "x-admin-csrf": "1" },
+      headers: { "Content-Type": "application/json", "x-admin-secret": adminSecret, "x-admin-csrf": "1" },
       body: JSON.stringify({ id, status }),
     });
     const d = await r.json();
@@ -77,13 +74,12 @@ export default function AdminPostsPage() {
 
   async function createPost(e: React.FormEvent) {
     e.preventDefault();
-    if (!secret || !newContent.trim()) return;
+    if (!adminSecret || !newContent.trim()) return;
     setCreating(true);
     try {
-      await ensureAdminSession(secret);
       const r = await fetch("/api/admin/posts", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "x-admin-csrf": "1" },
+        headers: { "Content-Type": "application/json", "x-admin-secret": adminSecret, "x-admin-csrf": "1" },
         body: JSON.stringify({
           content: newContent.trim(),
           author_type: newAuthorType,
@@ -109,11 +105,17 @@ export default function AdminPostsPage() {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
           <div>
             <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>글 관리</h1>
-            <p style={{ color: "#6b7280", fontSize: 13, margin: "4px 0 0" }}>모든 커뮤니티 글을 관리합니다. 기존 관리자 인증 방식대로 ADMIN_SECRET을 입력한 뒤 글을 조회·관리하세요.</p>
+            <p style={{ color: "#6b7280", fontSize: 13, margin: "4px 0 0" }}>모든 커뮤니티 글을 관리합니다</p>
           </div>
           <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <input type="password" placeholder="ADMIN_SECRET" value={secret} onChange={(e) => setSecret(e.target.value)}
-              style={{ border: "1px solid #d1d5db", borderRadius: 6, padding: "6px 10px", fontSize: 13, width: 160 }} />
+            <AdminSecretField
+              adminSecret={adminSecret}
+              setAdminSecret={setAdminSecret}
+              resetAdminSecret={resetAdminSecret}
+              label="관리자 인증키"
+              placeholder="admin secret"
+              inputStyle={{ border: "1px solid #d1d5db", borderRadius: 6, padding: "6px 10px", fontSize: 13, width: 160 }}
+            />
             <Link href="/admin/candidates" style={{ fontSize: 13, color: "#2563eb" }}>후보 큐</Link>
             <Link href="/community" style={{ fontSize: 13, color: "#2563eb" }}>커뮤니티</Link>
           </div>
