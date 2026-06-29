@@ -21,6 +21,17 @@ export interface InProgressFile {
   remaining: string[];
 }
 
+export interface QueueClaim {
+  documentSlug: string;
+  country: string;
+  domain: string;
+  fieldPath: string;
+  status: string;
+  confidence: string;
+  sourcePresent: boolean;
+  stale: boolean;
+}
+
 export interface BacklogTopic {
   slug: string;
   title: string;
@@ -56,11 +67,13 @@ export function getVerificationQueue(): {
   progress: QueueProgress;
   inProgress: InProgressFile[];
   backlog: BacklogTopic[];
+  claims: QueueClaim[];
 } {
   const byCountryMap = new Map<string, { files: number; ready: number }>();
   const inProgress: InProgressFile[] = [];
   let totalClaims = 0;
   let citationReady = 0;
+  const claims: QueueClaim[] = [];
 
   for (const bundle of verifiedBundles) {
     const country = bundle.entity.country ?? "?";
@@ -71,6 +84,19 @@ export function getVerificationQueue(): {
     let ready = 0;
     for (const claim of bundle.claims) {
       totalClaims += 1;
+      const sourcePresent = Array.isArray(claim.sources) && claim.sources.length > 0;
+      const lastVerifiedAt = claim.last_verified_at;
+      const stale = Boolean(lastVerifiedAt) && Date.now() - new Date(lastVerifiedAt ?? "").getTime() > 180 * 24 * 60 * 60 * 1000;
+      claims.push({
+        documentSlug: bundle.document.slug,
+        country,
+        domain: bundle.document.category,
+        fieldPath: claim.field_path,
+        status: claim.status,
+        confidence: claim.confidence,
+        sourcePresent,
+        stale,
+      });
       if (isReady(claim)) {
         ready += 1;
         citationReady += 1;
@@ -121,5 +147,5 @@ export function getVerificationQueue(): {
     seedClaims,
   };
 
-  return { progress, inProgress, backlog };
+  return { progress, inProgress, backlog, claims };
 }

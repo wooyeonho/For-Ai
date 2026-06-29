@@ -19,8 +19,34 @@ function CodeBlock({ children }: { children: string }) {
   );
 }
 
-export default function VerifyQueuePage() {
-  const { progress, inProgress, backlog } = getVerificationQueue();
+export default function VerifyQueuePage({ searchParams }: { searchParams?: Record<string, string | string[] | undefined> }) {
+  const { progress, inProgress, backlog, claims } = getVerificationQueue();
+  const param = (key: string) => {
+    const value = searchParams?.[key];
+    return Array.isArray(value) ? value[0] : value;
+  };
+  const filters = {
+    country: param("country") ?? "all",
+    domain: param("domain") ?? "all",
+    source: param("source") ?? "all",
+    confidence: param("confidence") ?? "all",
+    status: param("status") ?? "all",
+    stale: param("stale") ?? "all",
+  };
+  const countries = [...new Set(claims.map((claim) => claim.country))].sort();
+  const domains = [...new Set(claims.map((claim) => claim.domain))].sort();
+  const filteredClaims = claims.filter((claim) => (filters.country === "all" || claim.country === filters.country)
+    && (filters.domain === "all" || claim.domain === filters.domain)
+    && (filters.source === "all" || (filters.source === "present" ? claim.sourcePresent : !claim.sourcePresent))
+    && (filters.confidence === "all" || claim.confidence === filters.confidence)
+    && (filters.status === "all" || claim.status === filters.status)
+    && (filters.stale === "all" || (filters.stale === "stale" ? claim.stale : !claim.stale)));
+  const filterHref = (key: string, value: string) => {
+    const params = new URLSearchParams();
+    for (const [k, v] of Object.entries({ ...filters, [key]: value })) if (v !== "all") params.set(k, v);
+    const qs = params.toString();
+    return qs ? `/admin/verify-queue?${qs}` : "/admin/verify-queue";
+  };
 
   return (
     <div style={PAGE}>
@@ -60,6 +86,25 @@ export default function VerifyQueuePage() {
               </span>
             ))}
           </div>
+        </div>
+
+        <div style={CARD}>
+          <h2 style={{ fontSize: 16, fontWeight: 700, margin: "0 0 8px" }}>검증 대기 claim 필터</h2>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", fontSize: 12 }}>
+            {[["country", countries], ["domain", domains], ["confidence", ["low", "medium", "high"]], ["status", ["needs_review", "verified"]]].map(([key, values]) => (
+              <span key={key as string}>
+                <strong>{key as string}</strong>: <Link href={filterHref(key as string, "all")}>all</Link> {(values as string[]).map((value) => <Link key={value} href={filterHref(key as string, value)} style={{ marginLeft: 6 }}>{value}</Link>)}
+              </span>
+            ))}
+            <span><strong>source</strong>: <Link href={filterHref("source", "all")}>all</Link> <Link href={filterHref("source", "present")}>present</Link> <Link href={filterHref("source", "missing")}>missing</Link></span>
+            <span><strong>stale</strong>: <Link href={filterHref("stale", "all")}>all</Link> <Link href={filterHref("stale", "stale")}>stale</Link> <Link href={filterHref("stale", "fresh")}>fresh</Link></span>
+          </div>
+          <p style={{ fontSize: 12, color: "#6b7280" }}>표시 중: {filteredClaims.length} / {claims.length} claims</p>
+          {filteredClaims.slice(0, 40).map((claim) => (
+            <div key={`${claim.documentSlug}-${claim.fieldPath}`} style={{ fontSize: 12, borderTop: "1px solid #f3f4f6", paddingTop: 6, marginTop: 6 }}>
+              <span style={MONO}>{claim.documentSlug}</span> · {claim.country} · {claim.domain} · {claim.fieldPath} · {claim.status} · {claim.confidence} · source {claim.sourcePresent ? "present" : "missing"}{claim.stale ? " · stale" : ""}
+            </div>
+          ))}
         </div>
 
         {/* In progress */}

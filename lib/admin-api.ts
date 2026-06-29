@@ -147,8 +147,10 @@ export function authorized(request: Request): boolean {
 
 export function safeRequestMetadata(request: Request): AdminAuditMetadata {
   const userAgent = request.headers.get("user-agent") ?? "unknown";
+  const adminActor = request.headers.get("x-admin-actor")?.trim();
   return {
     user_agent_hash: createHash("sha256").update(userAgent).digest("hex").slice(0, 16),
+    ...(adminActor ? { admin_actor_hash: createHash("sha256").update(adminActor).digest("hex").slice(0, 16) } : {}),
     method: request.method,
   };
 }
