@@ -45,6 +45,32 @@ export type RenderedDocumentJson = {
 };
 
 const UNKNOWN_TEXT = UNKNOWN_FACT_TEXT;
+const GOVERNMENT_FEE_FIELD_PATHS = [
+  "fee.amount",
+  "fee.adult",
+  "fee.child",
+  "processing.standard",
+  "processing.expedited",
+  "required_documents",
+  "application_channel",
+  "official_page",
+];
+const GOVERNMENT_FEE_DISCLAIMER =
+  "Always check the official government source before applying.";
+
+function isGovernmentFeeDocument(bundle: RegistryDocumentBundle): boolean {
+  const disclaimerType = bundle.document.data.disclaimer_type;
+  const category = bundle.document.category.toLowerCase();
+  const hasStandardGovernmentFeeClaim = bundle.claims.some((claim) =>
+    GOVERNMENT_FEE_FIELD_PATHS.includes(claim.field_path),
+  );
+
+  return (
+    disclaimerType === "check_official_source" &&
+    hasStandardGovernmentFeeClaim &&
+    (category.includes("government") || category.includes("administration"))
+  );
+}
 
 function getStringArrayDataValue(data: Record<string, unknown>, key: string): string[] {
   const value = data[key];
@@ -170,6 +196,9 @@ export function renderDocumentMarkdown(bundle: RegistryDocumentBundle): string {
     .join("\n");
   const sourcesMarkdown = renderTopLevelSources(claims);
   const citationStatus = getDocumentCitationStatus(bundle);
+  const governmentFeeTemplate = isGovernmentFeeDocument(bundle)
+    ? `\n## Government fee template\n\nStandard claim field paths:\n${GOVERNMENT_FEE_FIELD_PATHS.map((fieldPath) => `- ${fieldPath}`).join("\n")}\n\nDisclaimer: ${GOVERNMENT_FEE_DISCLAIMER}\n`
+    : "";
 
   const docCitationStatus = getDocumentCitationStatus(bundle);
 
@@ -177,7 +206,7 @@ export function renderDocumentMarkdown(bundle: RegistryDocumentBundle): string {
 
 status: ${citationStatus.label}
 citation_ready_claims: ${citationStatus.verifiedClaims}/${citationStatus.totalClaims}
-freshness: ${citationStatus.freshness}${citationStatus.oldestVerifiedAt ? ` (oldest verified ${citationStatus.oldestVerifiedAt})` : ""}
+freshness: ${citationStatus.freshness}${citationStatus.oldestVerifiedAt ? ` (oldest verified ${citationStatus.oldestVerifiedAt})` : ""}${governmentFeeTemplate}
 
 ## Direct answer\n\nquestion: ${directAnswer.question}\nanswer: ${directAnswer.answer}\nregion: ${directAnswer.region}\nlast_verified_at: ${directAnswer.last_verified_at ?? UNKNOWN_TEXT}\nconfidence: ${directAnswer.confidence}\nsource_count: ${directAnswer.source_count}\ncan_cite: ${directAnswer.can_cite}\nrelated_questions: ${directAnswer.related_questions.length > 0 ? directAnswer.related_questions.join(" | ") : "none"}\n\n## Claims\n\n${claimsMarkdown}\n\n## Confidence\n\n${document.confidence}\n\n## Verification status\n\n${document.status}\n\n## Sources\n\n${sourcesMarkdown}\n\n## License notice\n\n${licenseNotice}\n`;
 }

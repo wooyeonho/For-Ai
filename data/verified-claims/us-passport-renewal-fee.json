@@ -12,9 +12,9 @@
   "last_verified_at": "2026-06-27",
   "claims": [
     {
-      "claim_id": "us-passport-book-renewal-fee",
-      "field_path": "fee.passport_book_renewal",
-      "claim_text": "US passport book renewal fee (adult, by mail)",
+      "claim_id": "us-passport-renewal-fee-adult",
+      "field_path": "fee.adult",
+      "claim_text": "US adult passport book renewal fee by mail",
       "claim_value": "$130",
       "confidence": "high",
       "status": "verified",
@@ -25,7 +25,7 @@
           "title": "U.S. Department of State — Passport Fees",
           "url": "https://travel.state.gov/content/travel/en/passports/how-apply/fees.html",
           "observed_at": "2026-06-27",
-          "note": "Official fees page lists the adult passport book application fee as $130. Renewal by mail (Form DS-82) pays the application fee only; the $35 acceptance facility fee does not apply to mail renewals. Confirmed 2026-06-27."
+          "note": "Official fees page lists the adult passport book renewal/application fee as $130 for DS-82 mail renewal; acceptance facility fee does not apply to mail renewals."
         }
       ],
       "verification_event": {
@@ -36,33 +36,20 @@
       }
     },
     {
-      "claim_id": "us-passport-card-renewal-fee",
-      "field_path": "fee.passport_card_renewal",
-      "claim_text": "US passport card renewal fee (adult, by mail)",
-      "claim_value": "$30",
-      "confidence": "high",
-      "status": "verified",
-      "last_verified_at": "2026-06-27",
-      "sources": [
-        {
-          "source_type": "official",
-          "title": "U.S. Department of State — Passport Fees",
-          "url": "https://travel.state.gov/content/travel/en/passports/how-apply/fees.html",
-          "observed_at": "2026-06-27",
-          "note": "Official fees page lists the adult passport card application fee as $30. Renewal by mail (Form DS-82) pays the application fee only; the $35 acceptance facility fee does not apply to mail renewals. Confirmed 2026-06-27."
-        }
-      ],
-      "verification_event": {
-        "event_type": "source_verified",
-        "actor": "ai-source-fetch",
-        "verified_at": "2026-06-27",
-        "note": "Read directly from travel.state.gov official Passport Fees page. 2026-06-27 기준. 최종 사람 승인 대기."
-      }
+      "claim_id": "us-passport-renewal-fee-child",
+      "field_path": "fee.child",
+      "claim_text": "US child passport renewal fee",
+      "claim_value": "확인 필요",
+      "confidence": "low",
+      "status": "needs_review",
+      "last_verified_at": null,
+      "sources": [],
+      "verification_event": null
     },
     {
-      "claim_id": "us-passport-processing-time-routine",
-      "field_path": "processing.routine_weeks",
-      "claim_text": "US passport routine processing time in weeks",
+      "claim_id": "us-passport-renewal-processing-standard",
+      "field_path": "processing.standard",
+      "claim_text": "US passport routine processing time",
       "claim_value": "4-6 weeks",
       "confidence": "high",
       "status": "verified",
@@ -73,7 +60,7 @@
           "title": "U.S. Department of State — Get Your Processing Time",
           "url": "https://travel.state.gov/content/travel/en/passports/how-apply/processing-times.html",
           "observed_at": "2026-06-27",
-          "note": "Official processing times page (Last Updated April 16, 2026) states routine processing takes 4-6 weeks and expedited 2-3 weeks. Mailing time (up to 2 weeks each way) is separate. Processing time changes seasonally with demand."
+          "note": "Official processing times page states routine processing takes 4-6 weeks. Mailing time is separate."
         }
       ],
       "verification_event": {
@@ -81,6 +68,89 @@
         "actor": "ai-source-fetch",
         "verified_at": "2026-06-27",
         "note": "Read directly from travel.state.gov official Processing Times page. 2026-06-27 기준. Seasonal value — re-verify regularly. 최종 사람 승인 대기."
+      }
+    },
+    {
+      "claim_id": "us-passport-renewal-processing-expedited",
+      "field_path": "processing.expedited",
+      "claim_text": "US passport expedited processing time",
+      "claim_value": "2-3 weeks",
+      "confidence": "high",
+      "status": "verified",
+      "last_verified_at": "2026-06-27",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "U.S. Department of State — Get Your Processing Time",
+          "url": "https://travel.state.gov/content/travel/en/passports/how-apply/processing-times.html",
+          "observed_at": "2026-06-27",
+          "note": "Official processing times page states expedited processing takes 2-3 weeks. Mailing time is separate."
+        }
+      ],
+      "verification_event": {
+        "event_type": "source_verified",
+        "actor": "ai-source-fetch",
+        "verified_at": "2026-06-27",
+        "note": "Read directly from travel.state.gov official Processing Times page. 2026-06-27 기준. Seasonal value — re-verify regularly. 최종 사람 승인 대기."
+      }
+    },
+    {
+      "claim_id": "us-passport-renewal-required-documents",
+      "field_path": "required_documents",
+      "claim_text": "Documents required for US passport renewal by mail",
+      "claim_value": "확인 필요",
+      "confidence": "low",
+      "status": "needs_review",
+      "last_verified_at": null,
+      "sources": [],
+      "verification_event": null
+    },
+    {
+      "claim_id": "us-passport-renewal-application-channel",
+      "field_path": "application_channel",
+      "claim_text": "US passport renewal application channel",
+      "claim_value": "By mail with Form DS-82 when eligible",
+      "confidence": "high",
+      "status": "verified",
+      "last_verified_at": "2026-06-27",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "U.S. Department of State — Passport Fees",
+          "url": "https://travel.state.gov/content/travel/en/passports/how-apply/fees.html",
+          "observed_at": "2026-06-27",
+          "note": "Official fees guidance distinguishes DS-82 mail renewals from applications that require an acceptance facility fee."
+        }
+      ],
+      "verification_event": {
+        "event_type": "source_verified",
+        "actor": "ai-source-fetch",
+        "verified_at": "2026-06-27",
+        "note": "Read directly from travel.state.gov official Passport Fees page. 2026-06-27 기준. 최종 사람 승인 대기."
+      }
+    },
+    {
+      "claim_id": "us-passport-renewal-official-page",
+      "field_path": "official_page",
+      "claim_text": "Official government page for US passport renewal fees",
+      "claim_value": "https://travel.state.gov/content/travel/en/passports/how-apply/fees.html",
+      "confidence": "high",
+      "status": "verified",
+      "last_verified_at": "2026-06-27",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "U.S. Department of State — Passport Fees",
+          "url": "https://travel.state.gov/content/travel/en/passports/how-apply/fees.html",
+          "observed_at": "2026-06-27",
+          "note": "Official U.S. Department of State passport fees page."
+        }
+      ],
+      "verification_event": {
+        "event_type": "source_verified",
+        "actor": "ai-source-fetch",
+        "verified_at": "2026-06-27",
+        "note": "Official government source URL captured for the fee document."
       }
     }
   ]

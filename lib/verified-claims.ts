@@ -47,6 +47,21 @@ const verifiedFiles: VerifiedClaimFile[] = [
 ];
 
 function toRegistryBundle(file: VerifiedClaimFile): RegistryDocumentBundle {
+  const governmentFeeFieldPaths = new Set([
+    "fee.amount",
+    "fee.adult",
+    "fee.child",
+    "processing.standard",
+    "processing.expedited",
+    "required_documents",
+    "application_channel",
+    "official_page",
+  ]);
+  const isGovernmentFeeTemplate =
+    file.disclaimer_type === "check_official_source" &&
+    file.claims.some((claim) => governmentFeeFieldPaths.has(claim.field_path)) &&
+    (file.type.includes("government") || file.type.includes("administration"));
+
   const entity = {
     id: file.entity_id,
     type: file.type,
@@ -71,7 +86,7 @@ function toRegistryBundle(file: VerifiedClaimFile): RegistryDocumentBundle {
     country: file.country,
     title: file.name,
     category: file.type,
-    template: "fact-registry",
+    template: isGovernmentFeeTemplate ? "government-fee" : "fact-registry",
     status: docStatus,
     confidence: docConfidence,
     last_verified_at: file.last_verified_at,
