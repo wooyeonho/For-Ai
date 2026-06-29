@@ -1,0 +1,84 @@
+{
+  "entity_id": "template-education-exam-001",
+  "slug": "education-exam-template",
+  "type": "education.exam",
+  "name": "Education Exam Fact Template",
+  "lang": "en",
+  "country": "REQUIRED_COUNTRY_CODE",
+  "region": "REQUIRED_REGION_OR_COUNTRY_SUBDIVISION",
+  "jurisdiction": "REQUIRED_COUNTRY_CODE",
+  "risk_tier": "high",
+  "update_frequency": "weekly",
+  "stale_ttl_days": 14,
+  "disclaimer_type": "check_official_source",
+  "required_context": [
+    "country",
+    "region"
+  ],
+  "template_notes": "Exam schedules and registration rules vary by region/country. Replace REQUIRED_* placeholders before publishing a real verified claim file. Keep stale_ttl_days short because exam facts have high outdated risk.",
+  "claims": [
+    {
+      "claim_id": "education-exam-fee-template",
+      "field_path": "exam.fee",
+      "claim_text": "Official exam fee for this region/country",
+      "claim_value": "확인 필요",
+      "confidence": "low",
+      "status": "needs_review",
+      "sources": []
+    },
+    {
+      "claim_id": "education-exam-registration-deadline-template",
+      "field_path": "exam.registration_deadline",
+      "claim_text": "Official registration deadline for this exam in this region/country",
+      "claim_value": "확인 필요",
+      "confidence": "low",
+      "status": "needs_review",
+      "sources": []
+    },
+    {
+      "claim_id": "education-exam-test-dates-template",
+      "field_path": "exam.test_dates",
+      "claim_text": "Official test dates for this exam in this region/country",
+      "claim_value": "확인 필요",
+      "confidence": "low",
+      "status": "needs_review",
+      "sources": []
+    },
+    {
+      "claim_id": "education-score-validity-template",
+      "field_path": "score.validity",
+      "claim_text": "Official score validity period for this exam",
+      "claim_value": "확인 필요",
+      "confidence": "low",
+      "status": "needs_review",
+      "sources": []
+    },
+    {
+      "claim_id": "education-reschedule-fee-template",
+      "field_path": "reschedule.fee",
+      "claim_text": "Official reschedule fee for this exam in this region/country",
+      "claim_value": "확인 필요",
+      "confidence": "low",
+      "status": "needs_review",
+      "sources": []
+    },
+    {
+      "claim_id": "education-cancellation-refund-template",
+      "field_path": "cancellation.refund",
+      "claim_text": "Official cancellation refund rule for this exam in this region/country",
+      "claim_value": "확인 필요",
+      "confidence": "low",
+      "status": "needs_review",
+      "sources": []
+    },
+    {
+      "claim_id": "education-official-registration-url-template",
+      "field_path": "official_registration_url",
+      "claim_text": "Official registration URL for this exam in this region/country",
+      "claim_value": "확인 필요",
+      "confidence": "low",
+      "status": "needs_review",
+      "sources": []
+    }
+  ]
+}
