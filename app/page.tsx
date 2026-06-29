@@ -28,6 +28,86 @@ export const metadata: Metadata = {
     "A global claim-level fact registry where AI, search engines, and humans cite the same facts from the same verified sources. Every claim has confidence, sources, and verification status.",
 };
 
+
+const INITIAL_VERTICAL = {
+  title: "Public fees & civic processing times",
+  label: "Initial focus vertical",
+  description:
+    "For-Ai should start where AI answers are high-impact, frequently outdated, and source-verifiable: government fees, filing windows, renewal costs, and civil-service processing rules.",
+  examples: [
+    "Passport and resident ID reissue fees",
+    "Move-in report and tax payment windows",
+    "Official-source deadlines and eligibility rules",
+  ],
+};
+
+const AI_WRONG_QUESTIONS = [
+  "여권 재발급 수수료가 지금 얼마야?",
+  "전입신고는 며칠 안에 해야 해?",
+  "주민등록증 재발급 수수료는 무료야?",
+  "자동차세 납부 기간은 언제야?",
+];
+
+const VERTICAL_GROUPS = [
+  {
+    key: "public-civic",
+    title: "Public fees / civic processing",
+    description: "Fees, filing periods, deadlines, and civil-service requirements that should cite official public sources.",
+    matches: ["administration", "tax", "government", "civic", "passport", "resident", "move-in"],
+  },
+  {
+    key: "urban-transport",
+    title: "Urban transport fares / transfer rules",
+    description: "Transit prices, surcharge rules, and transfer policies where stale AI answers can mislead daily decisions.",
+    matches: ["transport", "metro", "bus", "taxi", "underground", "fare", "transit"],
+  },
+  {
+    key: "travel-visa",
+    title: "Travel / visa regulations",
+    description: "Entry, renewal, and traveler requirements that need jurisdiction-aware source checks before citation.",
+    matches: ["travel", "visa", "passport"],
+  },
+  {
+    key: "business-policy",
+    title: "Business policies / operating info",
+    description: "Refunds, hours, availability, and venue or service policies that businesses can later maintain with labels.",
+    matches: ["commerce", "business", "venue", "policy", "refund", "hours", "service"],
+  },
+];
+
+function verticalForBundle(bundle: RegistryDocumentBundle) {
+  const haystack = [
+    bundle.entity.type,
+    bundle.entity.canonical_name,
+    bundle.document.category,
+    bundle.document.title,
+    bundle.document.slug,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  return VERTICAL_GROUPS.find((group) => group.matches.some((match) => haystack.includes(match))) ?? null;
+}
+
+function groupedRegistryBundles(bundles: RegistryDocumentBundle[]) {
+  const grouped = VERTICAL_GROUPS.map((group) => ({ ...group, bundles: [] as RegistryDocumentBundle[] }));
+  const other = {
+    key: "other",
+    title: "Other claim-level candidates",
+    description: "Additional verified or candidate documents outside the initial focus verticals.",
+    bundles: [] as RegistryDocumentBundle[],
+  };
+
+  for (const bundle of bundles) {
+    const group = verticalForBundle(bundle);
+    const target = group ? grouped.find((item) => item.key === group.key) : other;
+    target?.bundles.push(bundle);
+  }
+
+  return [...grouped, other].filter((group) => group.bundles.length > 0);
+}
+
 function statusBadge(status: string): { className: string; label: string } {
   switch (status) {
     case "verified":
@@ -178,22 +258,28 @@ export default async function HomePage() {
     const r = statusRank(a) - statusRank(b);
     return r !== 0 ? r : a.document.title.localeCompare(b.document.title, "ko");
   });
-  const { verified: verifiedDocuments, candidates: candidateDocuments } = partitionRegistryBundles(sorted);
+  const { verified: verifiedDocuments } = partitionRegistryBundles(sorted);
+  const groupedDocuments = groupedRegistryBundles(sorted);
+  const primaryVerticalDocuments = verifiedDocuments.filter((bundle) => verticalForBundle(bundle)?.key === "public-civic");
 
   return (
     <div className="home">
       {/* Hero */}
       <section className="hero">
-        <p className="hero-eyebrow">A global fact registry for AI citation</p>
+        <p className="hero-eyebrow">{INITIAL_VERTICAL.label}: {INITIAL_VERTICAL.title}</p>
         <h1 className="hero-title">
-          AI, search engines, and humans cite the same facts
+          Start with civic facts AI often gets wrong
           <br />
-          from the same <span className="hero-accent">claim-level sources</span>.
+          then expand as a <span className="hero-accent">global claim-level registry</span>.
         </h1>
         <p className="hero-sub">
-          Every claim carries confidence, sources, and verification status.
-          Unverified information is never guessed — it stays as <strong>&ldquo;Needs verification&rdquo;</strong>.
+          {INITIAL_VERTICAL.description} Every claim carries confidence, sources, and verification status; unknowns stay as <strong>&ldquo;Needs verification&rdquo;</strong>.
         </p>
+        <ul className="hero-focus-list" aria-label="Initial focus examples">
+          {INITIAL_VERTICAL.examples.map((example) => (
+            <li key={example}>{example}</li>
+          ))}
+        </ul>
         <div className="hero-cta-row">
           <Link href="/#registry" className="btn btn-primary">
             Browse Registry
@@ -347,10 +433,13 @@ export default async function HomePage() {
       </section>
 
       <section className="section">
-        <p className="section-eyebrow">Daily Verified Intelligence</p>
-        <h2 className="section-title">Recently available verified documents</h2>
+        <p className="section-eyebrow">Daily Verified Intelligence · Initial Vertical</p>
+        <h2 className="section-title">Recently available verified civic documents</h2>
+        <p className="section-lede">
+          The first concentrated vertical is public fees and civic processing periods, because these answers are practical, frequently searched, and can be checked against official sources.
+        </p>
         <ul className="registry-index">
-          {verifiedDocuments.slice(0, 5).map((b) => {
+          {(primaryVerticalDocuments.length > 0 ? primaryVerticalDocuments : verifiedDocuments).slice(0, 5).map((b) => {
             const badge = statusBadge(b.document.status);
             return (
               <li key={b.document.slug} className="registry-row">
@@ -420,56 +509,59 @@ export default async function HomePage() {
         <HomeSearch docs={docs} />
       </section>
 
+      <section className="section" aria-labelledby="ai-wrong-questions">
+        <p className="section-eyebrow">Entry points</p>
+        <h2 className="section-title" id="ai-wrong-questions">AI가 자주 틀리는 질문으로 시작하기</h2>
+        <div className="question-grid">
+          {AI_WRONG_QUESTIONS.map((question) => (
+            <Link key={question} href="/suggest-topic" className="question-card">
+              <span>{question}</span>
+              <small>Submit or verify this claim →</small>
+            </Link>
+          ))}
+        </div>
+      </section>
+
       {/* Registry index */}
       <section className="section" id="registry">
         <p className="section-eyebrow">Registry</p>
-        <h2 className="section-title">Registered Documents ({bundles.length})</h2>
+        <h2 className="section-title">Registered Documents by Vertical ({bundles.length})</h2>
+        <p className="section-lede">
+          Documents are grouped by the post-MVP verticals instead of a flat list, so users and AI systems can enter through the domain where stale answers are most likely.
+        </p>
 
-        {verifiedDocuments.length > 0 && (
-          <>
-            <h3>Verified ({verifiedDocuments.length})</h3>
-            <ul className="registry-index">
-              {verifiedDocuments.map((b) => {
-                const badge = statusBadge(b.document.status);
-                return (
-                  <li key={b.document.slug} className="registry-row">
-                    <div className="registry-row-main">
-                      <Link href={`/en/wiki/${b.document.slug}`} className="registry-row-title">
-                        {b.document.title}
-                      </Link>
-                      <span className="registry-row-entity">{b.entity.canonical_name}</span>
-                    </div>
-                    <div className="registry-row-meta">
-                      <span className={badge.className}>Status: {badge.label}</span>
-                      <span className="badge">{b.entity.type}</span>
-                    </div>
-                  </li>
-                );
-              })}
-            </ul>
-          </>
-        )}
-
-        <h3>Candidates &middot; Needs Review ({candidateDocuments.length})</h3>
-        <ul className="registry-index">
-          {candidateDocuments.map((b) => {
-            const badge = statusBadge(b.document.status);
-            return (
-              <li key={b.document.slug} className="registry-row">
-                <div className="registry-row-main">
-                  <Link href={`/en/wiki/${b.document.slug}`} className="registry-row-title">
-                    {b.document.title}
-                  </Link>
-                  <span className="registry-row-entity">{b.entity.canonical_name}</span>
+        <div className="vertical-group-list">
+          {groupedDocuments.map((group) => (
+            <section key={group.key} className="vertical-group" aria-labelledby={`vertical-${group.key}`}>
+              <div className="vertical-group-header">
+                <div>
+                  <h3 id={`vertical-${group.key}`}>{group.title}</h3>
+                  <p>{group.description}</p>
                 </div>
-                <div className="registry-row-meta">
-                  <span className={badge.className}>Status: {badge.label}</span>
-                  <span className="badge">{b.entity.type}</span>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+                <span className="badge">{group.bundles.length} docs</span>
+              </div>
+              <ul className="registry-index">
+                {group.bundles.map((b) => {
+                  const badge = statusBadge(b.document.status);
+                  return (
+                    <li key={b.document.slug} className="registry-row">
+                      <div className="registry-row-main">
+                        <Link href={`/en/wiki/${b.document.slug}`} className="registry-row-title">
+                          {b.document.title}
+                        </Link>
+                        <span className="registry-row-entity">{b.entity.canonical_name}</span>
+                      </div>
+                      <div className="registry-row-meta">
+                        <span className={badge.className}>Status: {badge.label}</span>
+                        <span className="badge">{b.entity.type}</span>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          ))}
+        </div>
       </section>
     </div>
   );
