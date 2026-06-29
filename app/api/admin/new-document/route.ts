@@ -8,6 +8,11 @@ function stableId(prefix: string, slug: string): string {
 interface ClaimInput {
   field_path: string;
   claim_text?: string;
+  claim_value?: string;
+  placeholder_value?: string;
+  jurisdiction?: string;
+  required_source_type?: string;
+  source_hint?: string;
 }
 
 export async function POST(request: Request) {
@@ -39,6 +44,11 @@ export async function POST(request: Request) {
         return {
           field_path: String(obj.field_path ?? "").trim(),
           claim_text: String(obj.claim_text ?? obj.field_path ?? "").trim(),
+          claim_value: String(obj.claim_value ?? obj.placeholder_value ?? "").trim(),
+          placeholder_value: String(obj.placeholder_value ?? obj.claim_value ?? "").trim(),
+          jurisdiction: String(obj.jurisdiction ?? "").trim().toUpperCase(),
+          required_source_type: String(obj.required_source_type ?? "").trim(),
+          source_hint: String(obj.source_hint ?? "").trim(),
         };
       }).filter((c) => c.field_path)
     : [];
@@ -67,7 +77,19 @@ export async function POST(request: Request) {
     template,
     status: "ai_draft",
     confidence: "low",
-    data: {},
+    data: {
+      admin_draft_payload: {
+        version: "admin-document-draft-v1",
+        claims: claims.map((cl) => ({
+          field_path: cl.field_path,
+          claim_text: cl.claim_text || cl.field_path,
+          placeholder_value: cl.placeholder_value || cl.claim_value || "확인 필요",
+          jurisdiction: cl.jurisdiction || jurisdiction,
+          required_source_type: cl.required_source_type || null,
+          source_hint: cl.source_hint || null,
+        })),
+      },
+    },
   });
   if (docErr) return NextResponse.json({ error: docErr.message }, { status: 500 });
 
@@ -79,8 +101,8 @@ export async function POST(request: Request) {
       entity_id,
       field_path: cl.field_path,
       claim_text: cl.claim_text || cl.field_path,
-      claim_value: "확인 필요",
-      jurisdiction,
+      claim_value: cl.claim_value || cl.placeholder_value || "확인 필요",
+      jurisdiction: cl.jurisdiction || jurisdiction,
       confidence: "low" as const,
       status: "needs_review" as const,
     }));
