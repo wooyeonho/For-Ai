@@ -1,0 +1,115 @@
+{
+  "entity_id": "us-transport-mta-subway-bus-fare-001",
+  "slug": "new-york-subway-bus-fare",
+  "type": "transport.metro",
+  "name": "New York City subway and bus fares (2026)",
+  "lang": "en",
+  "country": "US",
+  "jurisdiction": "US-NY",
+  "risk_tier": "low",
+  "update_frequency": "event_based",
+  "disclaimer_type": "check_official_source",
+  "last_verified_at": "2026-06-29",
+  "claims": [
+    {
+      "claim_id": "mta-subway-local-bus-base-fare",
+      "field_path": "fare.subway_local_bus_base",
+      "claim_text": "New York City subway and local/limited/Select Bus Service bus base fare",
+      "claim_value": "$3.00",
+      "confidence": "high",
+      "status": "verified",
+      "last_verified_at": "2026-06-29",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "MTA — Subway and bus fares",
+          "publisher": "Metropolitan Transportation Authority (MTA)",
+          "url": "https://www.mta.info/fares-tolls/subway-bus",
+          "observed_at": "2026-06-29",
+          "note": "Official page states the fare is $3 for most riders on subways and local, limited, rush, and Select Bus Service buses."
+        }
+      ],
+      "verification_event": {
+        "event_type": "source_verified",
+        "actor": "ai-source-fetch",
+        "verified_at": "2026-06-29",
+        "note": "Read directly from Metropolitan Transportation Authority (MTA) official fare page on 2026-06-29. Final human approval pending."
+      }
+    },
+    {
+      "claim_id": "mta-express-bus-base-fare",
+      "field_path": "fare.express_bus_base",
+      "claim_text": "New York City express bus base fare",
+      "claim_value": "$7.25",
+      "confidence": "high",
+      "status": "verified",
+      "last_verified_at": "2026-06-29",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "MTA — Subway and bus fares",
+          "publisher": "Metropolitan Transportation Authority (MTA)",
+          "url": "https://www.mta.info/fares-tolls/subway-bus",
+          "observed_at": "2026-06-29",
+          "note": "Official page states express buses cost $7.25."
+        }
+      ],
+      "verification_event": {
+        "event_type": "source_verified",
+        "actor": "ai-source-fetch",
+        "verified_at": "2026-06-29",
+        "note": "Read directly from Metropolitan Transportation Authority (MTA) official fare page on 2026-06-29. Final human approval pending."
+      }
+    },
+    {
+      "claim_id": "mta-omny-weekly-cap-subway-local-bus",
+      "field_path": "fare_cap.weekly_subway_local_bus",
+      "claim_text": "OMNY weekly cap for NYC subway and local bus fares",
+      "claim_value": "$35 per 7-day period",
+      "confidence": "high",
+      "status": "verified",
+      "last_verified_at": "2026-06-29",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "MTA — Subway and bus fares",
+          "publisher": "Metropolitan Transportation Authority (MTA)",
+          "url": "https://www.mta.info/fares-tolls/subway-bus",
+          "observed_at": "2026-06-29",
+          "note": "Official page states riders will not spend more than $35 a week on subway and local bus fares using the same OMNY payment method."
+        }
+      ],
+      "verification_event": {
+        "event_type": "source_verified",
+        "actor": "ai-source-fetch",
+        "verified_at": "2026-06-29",
+        "note": "Read directly from Metropolitan Transportation Authority (MTA) official fare page on 2026-06-29. Final human approval pending."
+      }
+    },
+    {
+      "claim_id": "mta-free-transfer-window",
+      "field_path": "transfer.free_transfer_window",
+      "claim_text": "NYC subway/bus free transfer window",
+      "claim_value": "One free transfer within two hours",
+      "confidence": "high",
+      "status": "verified",
+      "last_verified_at": "2026-06-29",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "MTA — Subway and bus fares",
+          "publisher": "Metropolitan Transportation Authority (MTA)",
+          "url": "https://www.mta.info/fares-tolls/subway-bus",
+          "observed_at": "2026-06-29",
+          "note": "Official page states riders get one free transfer within two hours of paying their fare."
+        }
+      ],
+      "verification_event": {
+        "event_type": "source_verified",
+        "actor": "ai-source-fetch",
+        "verified_at": "2026-06-29",
+        "note": "Read directly from Metropolitan Transportation Authority (MTA) official fare page on 2026-06-29. Final human approval pending."
+      }
+    }
+  ]
+}

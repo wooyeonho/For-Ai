@@ -1,0 +1,140 @@
+{
+  "entity_id": "sg-transport-public-transit-adult-fares-001",
+  "slug": "singapore-mrt-bus-adult-fares",
+  "type": "transport.metro",
+  "name": "Singapore MRT/LRT and bus adult fares (Dec 2025)",
+  "lang": "en",
+  "country": "SG",
+  "jurisdiction": "SG",
+  "risk_tier": "low",
+  "update_frequency": "event_based",
+  "disclaimer_type": "check_official_source",
+  "last_verified_at": "2026-06-29",
+  "claims": [
+    {
+      "claim_id": "singapore-trunk-bus-card-up-to-3-2km",
+      "field_path": "fare.bus_trunk_card_up_to_3_2km",
+      "claim_text": "Singapore adult trunk bus card fare up to 3.2 km",
+      "claim_value": "S$1.28",
+      "confidence": "high",
+      "status": "verified",
+      "last_verified_at": "2026-06-29",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "SimplyGo — Adult Public Transport Fares",
+          "publisher": "SimplyGo / TransitLink",
+          "url": "https://simplygo.com.sg/travel-fares/adult-fares/",
+          "observed_at": "2026-06-29",
+          "note": "Official adult fare table updated 27 December 2025 lists trunk service card fare up to 3.2 km as 128 cents."
+        }
+      ],
+      "verification_event": {
+        "event_type": "source_verified",
+        "actor": "ai-source-fetch",
+        "verified_at": "2026-06-29",
+        "note": "Read directly from SimplyGo / TransitLink official fare page on 2026-06-29. Final human approval pending."
+      }
+    },
+    {
+      "claim_id": "singapore-trunk-bus-cash-up-to-3-2km",
+      "field_path": "fare.bus_trunk_cash_up_to_3_2km",
+      "claim_text": "Singapore adult trunk bus cash fare up to 3.2 km",
+      "claim_value": "S$2.10",
+      "confidence": "high",
+      "status": "verified",
+      "last_verified_at": "2026-06-29",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "SimplyGo — Adult Public Transport Fares",
+          "publisher": "SimplyGo / TransitLink",
+          "url": "https://simplygo.com.sg/travel-fares/adult-fares/",
+          "observed_at": "2026-06-29",
+          "note": "Official adult fare table updated 27 December 2025 lists trunk service cash fare up to 3.2 km as 210 cents."
+        }
+      ],
+      "verification_event": {
+        "event_type": "source_verified",
+        "actor": "ai-source-fetch",
+        "verified_at": "2026-06-29",
+        "note": "Read directly from SimplyGo / TransitLink official fare page on 2026-06-29. Final human approval pending."
+      }
+    },
+    {
+      "claim_id": "singapore-feeder-bus-card",
+      "field_path": "fare.bus_feeder_card",
+      "claim_text": "Singapore adult feeder bus card fare",
+      "claim_value": "S$1.28",
+      "confidence": "high",
+      "status": "verified",
+      "last_verified_at": "2026-06-29",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "SimplyGo — Adult Public Transport Fares",
+          "publisher": "SimplyGo / TransitLink",
+          "url": "https://simplygo.com.sg/travel-fares/adult-fares/",
+          "observed_at": "2026-06-29",
+          "note": "Official adult feeder service table lists aircon card fare as 128 cents."
+        }
+      ],
+      "verification_event": {
+        "event_type": "source_verified",
+        "actor": "ai-source-fetch",
+        "verified_at": "2026-06-29",
+        "note": "Read directly from SimplyGo / TransitLink official fare page on 2026-06-29. Final human approval pending."
+      }
+    },
+    {
+      "claim_id": "singapore-mrt-lrt-card-up-to-3-2km",
+      "field_path": "fare.mrt_lrt_card_up_to_3_2km",
+      "claim_text": "Singapore adult MRT/LRT card fare up to 3.2 km at all other timings",
+      "claim_value": "S$1.28",
+      "confidence": "high",
+      "status": "verified",
+      "last_verified_at": "2026-06-29",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "SimplyGo — Adult Public Transport Fares",
+          "publisher": "SimplyGo / TransitLink",
+          "url": "https://simplygo.com.sg/travel-fares/adult-fares/",
+          "observed_at": "2026-06-29",
+          "note": "Official adult MRT & LRT table lists up to 3.2 km card fare as 128 cents at all other timings."
+        }
+      ],
+      "verification_event": {
+        "event_type": "source_verified",
+        "actor": "ai-source-fetch",
+        "verified_at": "2026-06-29",
+        "note": "Read directly from SimplyGo / TransitLink official fare page on 2026-06-29. Final human approval pending."
+      }
+    },
+    {
+      "claim_id": "singapore-mrt-lrt-early-up-to-3-2km",
+      "field_path": "fare.mrt_lrt_early_up_to_3_2km",
+      "claim_text": "Singapore adult MRT/LRT card fare up to 3.2 km when tapping in before 7:45am",
+      "claim_value": "S$0.78",
+      "confidence": "high",
+      "status": "verified",
+      "last_verified_at": "2026-06-29",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "SimplyGo — Adult Public Transport Fares",
+          "publisher": "SimplyGo / TransitLink",
+          "url": "https://simplygo.com.sg/travel-fares/adult-fares/",
+          "observed_at": "2026-06-29",
+          "note": "Official adult MRT & LRT table lists up to 3.2 km fare as 78 cents when tapping in before 7:45am."
+        }
+      ],
+      "verification_event": {
+        "event_type": "source_verified",
+        "actor": "ai-source-fetch",
+        "verified_at": "2026-06-29",
+        "note": "Read directly from SimplyGo / TransitLink official fare page on 2026-06-29. Final human approval pending."
+      }
+    }
+  ]
+}
