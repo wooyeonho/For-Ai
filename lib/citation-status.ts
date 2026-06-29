@@ -1,4 +1,4 @@
-import type { ClaimWithSources, RegistryDocumentBundle, UpdateFrequency } from "./types";
+import type { ClaimWithSources, RegistryDocumentBundle, UpdateFrequency as RegistryUpdateFrequency } from "./types";
 
 export const UNKNOWN_FACT_TEXT = "확인 필요";
 
@@ -7,7 +7,7 @@ export const UNKNOWN_FACT_TEXT = "확인 필요";
 export const FRESHNESS_TTL_DAYS = 180;
 export const COMMERCE_POLICY_FRESHNESS_TTL_DAYS = 30;
 
-export const FRESHNESS_TTL_DAYS_BY_UPDATE_FREQUENCY: Record<UpdateFrequency, number> = {
+export const FRESHNESS_TTL_DAYS_BY_UPDATE_FREQUENCY: Record<RegistryUpdateFrequency, number> = {
   realtime: 1,
   daily: 2,
   weekly: 7,
@@ -19,7 +19,7 @@ export const FRESHNESS_TTL_DAYS_BY_UPDATE_FREQUENCY: Record<UpdateFrequency, num
   unknown: FRESHNESS_TTL_DAYS,
 };
 
-export function getFreshnessTtlDays(updateFrequency: UpdateFrequency | null | undefined): number {
+export function getFreshnessTtlDays(updateFrequency: RegistryUpdateFrequency | null | undefined): number {
   return updateFrequency ? FRESHNESS_TTL_DAYS_BY_UPDATE_FREQUENCY[updateFrequency] : FRESHNESS_TTL_DAYS;
 }
 
@@ -388,6 +388,8 @@ export function getFreshnessPolicy(bundle: RegistryDocumentBundle, ttlOverrideDa
       reason: "commerce policy freshness window",
     };
   }
+
+
 
   if (hasFastChangingSignal(bundle)) {
     return {
