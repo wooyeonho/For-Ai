@@ -23,7 +23,7 @@ function normalize(row: ImportRow, index: number) {
 }
 
 export async function POST(request: Request) {
-  const adminError = requireAdmin(request, "admin.import");
+  const adminError = await requireAdmin(request, "admin.import");
   if (adminError) return adminError;
   const sb = supabaseAdmin();
   if (!sb) return NextResponse.json({ error: "SUPABASE_SERVICE_ROLE_KEY not configured" }, { status: 500 });

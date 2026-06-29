@@ -9,6 +9,7 @@ create type confidence_level as enum ('low', 'medium', 'high');
 create type document_status as enum ('ai_draft', 'needs_review', 'verified', 'published', 'archived');
 create type claim_status as enum ('needs_review', 'verified', 'disputed', 'unknown');
 create type source_type as enum ('official', 'law', 'regulator', 'platform', 'review', 'user', 'phone', 'photo', 'document', 'web', 'other', 'unknown');
+create type admin_role as enum ('viewer', 'editor', 'verifier', 'moderator', 'admin');
 create type risk_tier as enum ('low', 'medium', 'high', 'forbidden');
 create type update_frequency as enum ('realtime', 'daily', 'weekly', 'monthly', 'quarterly', 'annual', 'event_based', 'static');
 create type disclaimer_type as enum ('none', 'check_official_source', 'not_medical_advice', 'not_financial_advice', 'not_legal_advice', 'not_genetic_or_medical_advice', 'public_profile_only', 'realtime_data_required');
@@ -207,9 +208,21 @@ create table listings (
 create unique index listings_lang_slug_key on listings (lang, slug);
 create index listings_entity_id_idx on listings (entity_id);
 
+create table admin_users (
+  user_id uuid primary key references auth.users(id) on delete cascade,
+  role admin_role not null default 'viewer',
+  active boolean not null default true,
+  display_name text,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
 create table admin_audit_events (
   id uuid primary key default gen_random_uuid(),
+  admin_user_id uuid references admin_users(user_id) on delete set null,
+  admin_user_hash text not null,
   action text not null,
+  target_id text,
   metadata jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now(),
   constraint admin_audit_no_raw_request_metadata check (
@@ -217,14 +230,20 @@ create table admin_audit_events (
   )
 );
 
-comment on table admin_audit_events is 'Admin-only audit trail. Do not store raw IP addresses; use safe metadata such as hashed user-agent or contributor_hash only.';
+comment on table admin_users is 'Admin authorization table mapped to Supabase Auth users. Service-role admin APIs enforce these roles.';
+comment on table admin_audit_events is 'Admin-only audit trail. Do not store raw IP addresses; use admin_user_id/admin_user_hash and safe metadata only.';
+comment on column admin_audit_events.admin_user_hash is 'SHA-256 hash of the admin identity or emergency ADMIN_SECRET fallback identity; never a raw IP address.';
 comment on column admin_audit_events.metadata is 'Safe request/action metadata only. Raw IP addresses and raw user-agent strings are forbidden; store only hashes or non-identifying action fields.';
 
+create index admin_users_role_idx on admin_users (role);
 create index admin_audit_events_created_at_idx on admin_audit_events (created_at desc);
+create index admin_audit_events_admin_user_id_idx on admin_audit_events (admin_user_id);
+create index admin_audit_events_target_id_idx on admin_audit_events (target_id);
 
 alter table edits enable row level security;
 alter table reports enable row level security;
 alter table hallucination_reports enable row level security;
+alter table admin_users enable row level security;
 alter table admin_audit_events enable row level security;
 
 create policy edits_public_insert_only on edits for insert to anon with check (status = 'new');
@@ -232,7 +251,7 @@ create policy reports_public_insert_only on reports for insert to anon with chec
 create policy hallucination_reports_public_insert_only on hallucination_reports for insert to anon with check (status = 'new');
 
 -- No public SELECT policies are defined for edits, reports, or hallucination_reports.
--- No public SELECT policies are defined for admin_audit_events.
+-- No public SELECT policies are defined for admin_users or admin_audit_events.
 -- Never store raw IP addresses. Store contributor_hash only for submissions/events.
 
 -- Core registry RLS: the public site reads these tables with the anon key, so

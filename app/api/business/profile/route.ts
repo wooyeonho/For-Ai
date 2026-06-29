@@ -123,7 +123,7 @@ export async function POST(request: Request) {
 
 // PATCH: Admin-only — verify/reject/suspend a business profile
 export async function PATCH(request: Request) {
-  const adminError = requireAdmin(request, "business_profiles.update");
+  const adminError = await requireAdmin(request, "business_profiles.update");
   if (adminError) return adminError;
   const sb = supabaseAdmin();
   if (!sb) return NextResponse.json({ error: "Database not configured" }, { status: 500 });

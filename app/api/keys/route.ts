@@ -5,7 +5,7 @@ import { API_TIER_CONFIG } from "@/lib/types-monetization";
 
 // GET: Admin — list API keys (with usage stats)
 export async function GET(request: Request) {
-  const adminError = requireAdmin(request, "api_keys.read");
+  const adminError = await requireAdmin(request, "api_keys.read");
   if (adminError) return adminError;
   const sb = supabaseAdmin();
   if (!sb) return NextResponse.json({ error: "Database not configured" }, { status: 500 });
@@ -28,7 +28,7 @@ export async function GET(request: Request) {
 
 // POST: Admin — create a new API key for a profile
 export async function POST(request: Request) {
-  const adminError = requireAdmin(request, "api_keys.create");
+  const adminError = await requireAdmin(request, "api_keys.create");
   if (adminError) return adminError;
   const sb = supabaseAdmin();
   if (!sb) return NextResponse.json({ error: "Database not configured" }, { status: 500 });
@@ -89,7 +89,7 @@ export async function POST(request: Request) {
 
 // PATCH: Admin — revoke or restore an API key
 export async function PATCH(request: Request) {
-  const adminError = requireAdmin(request, "api_keys.update");
+  const adminError = await requireAdmin(request, "api_keys.update");
   if (adminError) return adminError;
   const sb = supabaseAdmin();
   if (!sb) return NextResponse.json({ error: "Database not configured" }, { status: 500 });

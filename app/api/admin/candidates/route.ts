@@ -8,7 +8,7 @@ function defaultCountryForLang(lang: string): string {
 }
 
 export async function GET(request: Request) {
-  const adminError = requireAdmin(request, "candidates.read");
+  const adminError = await requireAdmin(request, "candidates.read");
   if (adminError) return adminError;
   const sb = supabaseAdmin();
   if (!sb) return NextResponse.json({ error: "SUPABASE_SERVICE_ROLE_KEY not configured" }, { status: 500 });
@@ -30,7 +30,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const adminError = requireAdmin(request, "candidates.bulk_import");
+  const adminError = await requireAdmin(request, "candidates.bulk_import");
   if (adminError) return adminError;
   const sb = supabaseAdmin();
   if (!sb) return NextResponse.json({ error: "SUPABASE_SERVICE_ROLE_KEY not configured" }, { status: 500 });
@@ -80,7 +80,7 @@ export async function POST(request: Request) {
 }
 
 export async function PATCH(request: Request) {
-  const adminError = requireAdmin(request, "candidates.update");
+  const adminError = await requireAdmin(request, "candidates.update");
   if (adminError) return adminError;
   const sb = supabaseAdmin();
   if (!sb) return NextResponse.json({ error: "SUPABASE_SERVICE_ROLE_KEY not configured" }, { status: 500 });

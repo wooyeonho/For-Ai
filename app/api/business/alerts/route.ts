@@ -3,7 +3,7 @@ import { supabaseAdmin, requireAdmin, logAdminAuditEvent } from "@/lib/admin-api
 
 // GET: Fetch reputation alerts for a profile (requires admin or API key auth)
 export async function GET(request: Request) {
-  const adminError = requireAdmin(request, "reputation_alerts.read");
+  const adminError = await requireAdmin(request, "reputation_alerts.read");
   if (adminError) return adminError;
   const sb = supabaseAdmin();
   if (!sb) return NextResponse.json({ error: "Database not configured" }, { status: 500 });
@@ -33,7 +33,7 @@ export async function GET(request: Request) {
 
 // POST: Admin — create a new reputation alert (triggered by system or admin)
 export async function POST(request: Request) {
-  const adminError = requireAdmin(request, "reputation_alerts.create");
+  const adminError = await requireAdmin(request, "reputation_alerts.create");
   if (adminError) return adminError;
   const sb = supabaseAdmin();
   if (!sb) return NextResponse.json({ error: "Database not configured" }, { status: 500 });
@@ -90,7 +90,7 @@ export async function POST(request: Request) {
 
 // PATCH: Mark alerts as read or resolved
 export async function PATCH(request: Request) {
-  const adminError = requireAdmin(request, "reputation_alerts.update");
+  const adminError = await requireAdmin(request, "reputation_alerts.update");
   if (adminError) return adminError;
   const sb = supabaseAdmin();
   if (!sb) return NextResponse.json({ error: "Database not configured" }, { status: 500 });

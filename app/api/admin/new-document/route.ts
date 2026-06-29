@@ -11,7 +11,7 @@ interface ClaimInput {
 }
 
 export async function POST(request: Request) {
-  const adminError = requireAdmin(request, "document.create");
+  const adminError = await requireAdmin(request, "document.create");
   if (adminError) return adminError;
 
   const sb = supabaseAdmin();

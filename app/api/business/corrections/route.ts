@@ -3,7 +3,7 @@ import { supabaseAdmin, requireAdmin, logAdminAuditEvent } from "@/lib/admin-api
 
 // GET: Admin — list business corrections (filterable by status/priority)
 export async function GET(request: Request) {
-  const adminError = requireAdmin(request, "business_corrections.read");
+  const adminError = await requireAdmin(request, "business_corrections.read");
   if (adminError) return adminError;
   const sb = supabaseAdmin();
   if (!sb) return NextResponse.json({ error: "Database not configured" }, { status: 500 });
@@ -112,7 +112,7 @@ export async function POST(request: Request) {
 
 // PATCH: Admin — review a correction (accept/reject)
 export async function PATCH(request: Request) {
-  const adminError = requireAdmin(request, "business_corrections.review");
+  const adminError = await requireAdmin(request, "business_corrections.review");
   if (adminError) return adminError;
   const sb = supabaseAdmin();
   if (!sb) return NextResponse.json({ error: "Database not configured" }, { status: 500 });
