@@ -92,6 +92,10 @@ export async function POST(
         prompt: normalizedBody.prompt || null,
         ai_answer: normalizedBody.ai_answer || null,
         expected_correction: normalizedBody.expected_correction || null,
+        claim_id: body.claim_id?.trim() || null,
+        wrong_answer_type: body.wrong_answer_type?.trim() || null,
+        correction_prompt: body.correction_prompt?.trim() || null,
+        share_card: body.share_card && typeof body.share_card === 'object' ? body.share_card : {},
         contributor_hash: contributorHash,
         status: spamCheck.status,
       });

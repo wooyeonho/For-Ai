@@ -117,6 +117,11 @@ create table hallucination_reports (
   prompt text,
   ai_answer text,
   expected_correction text,
+  claim_id text references claims(id) on delete set null,
+  wrong_answer_type text,
+  correction_prompt text,
+  share_card jsonb not null default '{}'::jsonb,
+  moderation_note text,
   contributor_hash text,
   status submission_status not null default 'new',
   created_at timestamptz not null default now()
@@ -134,6 +139,9 @@ create table verification_events (
   contributor_hash text,
   created_at timestamptz not null default now()
 );
+
+create index hallucination_reports_claim_id_idx on hallucination_reports (claim_id);
+create index hallucination_reports_status_idx on hallucination_reports (status);
 
 create index verification_events_claim_id_idx on verification_events (claim_id);
 
