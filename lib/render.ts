@@ -1,9 +1,20 @@
-import { getCanonicalDirectAnswer, getClaimCitationStatus, getDocumentCitationStatus, UNKNOWN_FACT_TEXT } from "./citation-status";
-import type { ClaimSource, RegistryDocumentBundle } from "./types";
+import { getClaimCitationStatus, getDocumentCitationStatus, UNKNOWN_FACT_TEXT } from "./citation-status";
+import type { ClaimSource, Confidence, RegistryDocumentBundle } from "./types";
 import { apiDocumentUrl, documentPageUrl, rawMarkdownUrl } from "./urls";
 
 export type RenderedClaim = RegistryDocumentBundle["claims"][number] & {
   citation_ready: boolean;
+};
+
+export type RenderedDirectAnswer = {
+  question: string;
+  answer: string;
+  region: string;
+  last_verified_at: string | null;
+  confidence: Confidence;
+  source_count: number;
+  can_cite: boolean;
+  related_questions: string[];
 };
 
 export type RenderedDocumentJson = {
@@ -11,6 +22,7 @@ export type RenderedDocumentJson = {
   document: RegistryDocumentBundle["document"];
   claims: RenderedClaim[];
   listing: RegistryDocumentBundle["listing"];
+  direct_answer: RenderedDirectAnswer;
   citation_guidance: {
     can_cite: boolean;
     do_not_cite_reason: string | null;
@@ -33,6 +45,43 @@ export type RenderedDocumentJson = {
 };
 
 const UNKNOWN_TEXT = UNKNOWN_FACT_TEXT;
+
+function getStringArrayDataValue(data: Record<string, unknown>, key: string): string[] {
+  const value = data[key];
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string" && item.trim().length > 0) : [];
+}
+
+export function getDocumentQuestionTitle(bundle: RegistryDocumentBundle): string {
+  const question = bundle.document.data.question;
+  return typeof question === "string" && question.trim().length > 0 ? question : bundle.document.title;
+}
+
+export function getDocumentRegion(bundle: RegistryDocumentBundle): string {
+  const data = bundle.document.data;
+  const dataRegion = data.jurisdiction ?? data.region ?? data.country;
+  if (typeof dataRegion === "string" && dataRegion.trim().length > 0) return dataRegion;
+  return [bundle.document.country, bundle.entity.region, bundle.entity.city].filter(Boolean).join(" / ") || "global";
+}
+
+export function getRelatedQuestions(bundle: RegistryDocumentBundle): string[] {
+  return getStringArrayDataValue(bundle.document.data, "related_questions");
+}
+
+export function getRenderedDirectAnswer(bundle: RegistryDocumentBundle): RenderedDirectAnswer {
+  const citationStatus = getDocumentCitationStatus(bundle);
+  const readyClaims = bundle.claims.filter((claim) => getClaimCitationStatus(claim).isCitationReady);
+  const answer = readyClaims[0]?.claim_value ?? "Needs verification";
+  return {
+    question: getDocumentQuestionTitle(bundle),
+    answer,
+    region: getDocumentRegion(bundle),
+    last_verified_at: readyClaims[0]?.last_verified_at ?? null,
+    confidence: readyClaims[0]?.confidence ?? "low",
+    source_count: readyClaims.reduce((count, claim) => count + claim.sources.length, 0),
+    can_cite: citationStatus.isVerifiedDocument,
+    related_questions: getRelatedQuestions(bundle),
+  };
+}
 
 function getStringDataValue(data: Record<string, unknown>, key: string, fallback: string): string {
   const value = data[key];
@@ -66,6 +115,7 @@ function renderTopLevelSources(claims: RegistryDocumentBundle["claims"]): string
 export function renderDocumentJson(bundle: RegistryDocumentBundle): RenderedDocumentJson {
   const { document } = bundle;
   const citationStatus = getDocumentCitationStatus(bundle);
+  const directAnswer = getRenderedDirectAnswer(bundle);
   const claimStatuses = bundle.claims.map((c) => ({ c, cs: getClaimCitationStatus(c) }));
   const verifiedCount = claimStatuses.filter((x) => x.cs.isCitationReady).length;
   const unverifiedPaths = claimStatuses.filter((x) => !x.cs.isCitationReady).map((x) => x.c.field_path);
@@ -75,6 +125,7 @@ export function renderDocumentJson(bundle: RegistryDocumentBundle): RenderedDocu
     document,
     claims: claimStatuses.map(({ c, cs }) => ({ ...c, citation_ready: cs.isCitationReady })),
     listing: bundle.listing,
+    direct_answer: directAnswer,
     citation_guidance: {
       can_cite: citationStatus.isVerifiedDocument,
       do_not_cite_reason: citationStatus.isVerifiedDocument
@@ -101,7 +152,7 @@ export function renderDocumentJson(bundle: RegistryDocumentBundle): RenderedDocu
 
 export function renderDocumentMarkdown(bundle: RegistryDocumentBundle): string {
   const { entity, document, claims } = bundle;
-  const directAnswer = getCanonicalDirectAnswer(bundle);
+  const directAnswer = getRenderedDirectAnswer(bundle);
   const licenseNotice = getStringDataValue(
     document.data,
     "license_notice",
@@ -128,5 +179,5 @@ status: ${citationStatus.label}
 citation_ready_claims: ${citationStatus.verifiedClaims}/${citationStatus.totalClaims}
 freshness: ${citationStatus.freshness}${citationStatus.oldestVerifiedAt ? ` (oldest verified ${citationStatus.oldestVerifiedAt})` : ""}
 
-## Direct answer\n\n${directAnswer}\n\n## Claims\n\n${claimsMarkdown}\n\n## Confidence\n\n${document.confidence}\n\n## Verification status\n\n${document.status}\n\n## Sources\n\n${sourcesMarkdown}\n\n## License notice\n\n${licenseNotice}\n`;
+## Direct answer\n\nquestion: ${directAnswer.question}\nanswer: ${directAnswer.answer}\nregion: ${directAnswer.region}\nlast_verified_at: ${directAnswer.last_verified_at ?? UNKNOWN_TEXT}\nconfidence: ${directAnswer.confidence}\nsource_count: ${directAnswer.source_count}\ncan_cite: ${directAnswer.can_cite}\nrelated_questions: ${directAnswer.related_questions.length > 0 ? directAnswer.related_questions.join(" | ") : "none"}\n\n## Claims\n\n${claimsMarkdown}\n\n## Confidence\n\n${document.confidence}\n\n## Verification status\n\n${document.status}\n\n## Sources\n\n${sourcesMarkdown}\n\n## License notice\n\n${licenseNotice}\n`;
 }

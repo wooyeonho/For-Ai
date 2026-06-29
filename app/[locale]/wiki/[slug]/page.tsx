@@ -9,7 +9,8 @@ import type { SupportedLocale } from "../../../../lib/i18n";
 import { getEntityLabels } from "../../../../lib/i18n/entity-labels";
 import type { RegistryDocumentBundle } from "../../../../lib/types";
 import { getRegistryBundleFromSupabase } from "../../../../lib/supabase-documents";
-import { getCanonicalDirectAnswer, getDocumentCitationStatus } from "../../../../lib/citation-status";
+import { getDocumentCitationStatus } from "../../../../lib/citation-status";
+import { getRenderedDirectAnswer } from "../../../../lib/render";
 import { DirectAnswerBox } from "../../../components/DirectAnswerBox";
 import { ClaimTable } from "../../../components/ClaimTable";
 import { ViewTracker } from "../../../components/ViewTracker";
@@ -59,14 +60,13 @@ export default async function WikiDocumentPage({
   const t = getTranslations(locale as SupportedLocale);
   const el = getEntityLabels(locale as SupportedLocale);
   const docData = document.data as Record<string, unknown>;
-  const directAnswer = getCanonicalDirectAnswer(bundle);
+  const directAnswer = getRenderedDirectAnswer(bundle);
   const whyPeopleAsk = (docData?.why_people_ask_ai as string) ?? null;
   const apiUrl = `/api/documents/${document.slug}`;
   const rawUrl = `/raw/${document.slug}.md`;
   const isPromoted = !getRegistryBundleBySlug(slug);
   const jsonLd = buildDocumentJsonLd(bundle);
   const citationStatus = getDocumentCitationStatus(bundle);
-  const totalSources = claims.reduce((n, c) => n + c.sources.length, 0);
 
   return (
     <article>
@@ -74,6 +74,20 @@ export default async function WikiDocumentPage({
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+
+      {/* Direct answer first — question, answer, and trust signals */}
+      <DirectAnswerBox
+        question={directAnswer.question}
+        answer={directAnswer.answer}
+        region={directAnswer.region}
+        confidence={directAnswer.confidence}
+        lastVerifiedAt={directAnswer.last_verified_at}
+        sourceCount={directAnswer.source_count}
+        canCite={directAnswer.can_cite}
+        canonicalUrl={siteUrl(`/${locale}/wiki/${document.slug}`)}
+        docTitle={document.title}
+        locale={locale}
       />
 
       {/* Clean header: title + status only, no technical IDs */}
@@ -108,18 +122,6 @@ export default async function WikiDocumentPage({
         </section>
       )}
 
-      {/* Answer first — with trust signals */}
-      <DirectAnswerBox
-        answer={directAnswer}
-        confidence={document.confidence}
-        lastVerifiedAt={document.last_verified_at ?? null}
-        sourceCount={totalSources}
-        canCite={citationStatus.isVerifiedDocument}
-        canonicalUrl={siteUrl(`/${locale}/wiki/${document.slug}`)}
-        docTitle={document.title}
-        locale={locale}
-      />
-
       {/* Claims — uses ClaimCard internally */}
       {claims.length === 0 ? (
         <section className="registry-panel">
@@ -127,6 +129,18 @@ export default async function WikiDocumentPage({
         </section>
       ) : (
         <ClaimTable claims={claims} locale={locale} />
+      )}
+
+
+      {directAnswer.related_questions.length > 0 && (
+        <section className="registry-panel" aria-labelledby="related-questions">
+          <h2 id="related-questions">Related questions</h2>
+          <ul className="link-list">
+            {directAnswer.related_questions.map((question) => (
+              <li key={question}>{question}</li>
+            ))}
+          </ul>
+        </section>
       )}
 
       {/* Citation guidance */}

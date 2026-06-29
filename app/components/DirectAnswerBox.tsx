@@ -1,4 +1,3 @@
-import { UNKNOWN_FACT_TEXT } from "@/lib/citation-status";
 import { DEFAULT_LOCALE } from "@/lib/i18n";
 import { ConfidenceBadge } from "./ConfidenceBadge";
 import { CopyCitationButton } from "./CopyCitationButton";
@@ -7,7 +6,9 @@ import type { SupportedLocale } from "../../lib/i18n";
 import type { Confidence } from "../../lib/types";
 
 export function DirectAnswerBox({
+  question,
   answer,
+  region,
   confidence,
   lastVerifiedAt,
   sourceCount,
@@ -16,28 +17,27 @@ export function DirectAnswerBox({
   docTitle,
   locale,
 }: {
+  question: string;
   answer: string;
+  region: string;
   confidence: Confidence;
   lastVerifiedAt?: string | null;
-  sourceCount?: number;
-  canCite?: boolean;
+  sourceCount: number;
+  canCite: boolean;
   canonicalUrl?: string;
   docTitle?: string;
   locale?: string;
 }) {
   const lang = (locale ?? DEFAULT_LOCALE) as SupportedLocale;
   const t = getTranslations(lang);
-  const displayAnswer = answer === UNKNOWN_FACT_TEXT && t.claims.unknownLabel !== UNKNOWN_FACT_TEXT
-    ? `${t.claims.unknownLabel} ("${UNKNOWN_FACT_TEXT}")`
-    : answer;
-
   const citationText = canCite && canonicalUrl && docTitle
     ? `For-Ai Registry. "${docTitle}". Last verified: ${lastVerifiedAt ?? "unknown"}. ${canonicalUrl}`
     : null;
 
   return (
-    <section className="registry-panel direct-answer-box" aria-labelledby="direct-answer">
-      <h2 id="direct-answer">{t.claims.directAnswer}</h2>
+    <section className="registry-panel direct-answer-box" aria-labelledby="direct-answer-question">
+      <p className="eyebrow">{t.claims.directAnswer}</p>
+      <h1 id="direct-answer-question" className="direct-answer-question">{question}</h1>
       {canCite === true && (
         <div className="can-cite-banner">
           <span>{t.claims.canCite}</span>
@@ -50,16 +50,29 @@ export function DirectAnswerBox({
           )}
         </div>
       )}
-      <p className="direct-answer-text">{displayAnswer}</p>
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "center", marginTop: 8 }}>
-        <ConfidenceBadge level={confidence} locale={locale} />
-        {sourceCount != null && sourceCount > 0 && (
-          <span className="badge">{sourceCount} {t.claims.sources}</span>
-        )}
-        <span className="meta-label" style={{ marginLeft: "auto" }}>
-          {t.claims.lastVerified}: {lastVerifiedAt ?? t.claims.needsReview}
-        </span>
-      </div>
+      <p className="direct-answer-text">{answer}</p>
+      <dl className="direct-answer-meta" aria-label="Direct answer trust signals">
+        <div>
+          <dt>Applied region</dt>
+          <dd>{region}</dd>
+        </div>
+        <div>
+          <dt>{t.claims.lastVerified}</dt>
+          <dd>{lastVerifiedAt ?? "Needs verification"}</dd>
+        </div>
+        <div>
+          <dt>{t.claims.confidence}</dt>
+          <dd><ConfidenceBadge level={confidence} locale={locale} /></dd>
+        </div>
+        <div>
+          <dt>{t.claims.sourceCount}</dt>
+          <dd>{sourceCount}</dd>
+        </div>
+        <div>
+          <dt>Can cite</dt>
+          <dd><span className={canCite ? "badge badge-verified" : "badge badge-review"}>{canCite ? "yes" : "no"}</span></dd>
+        </div>
+      </dl>
     </section>
   );
 }
