@@ -11,7 +11,8 @@
  *   artifacts  - fail if build/dependency output or oversized generated dumps are committed.
  *   claims     - fail if any verified-claims file violates the trust rules (delegates to verified-claims.mjs validate).
  *   diff-size  - fail if a PR changes an unexpected number of files (full-repo-rewrite guard).
- *   all        - run route + mojibake + artifacts + claims (and diff-size when a base SHA is available).
+ *   secrets    - fail if Supabase service-role secrets leak into client or non-route mutation code.
+ *   all        - run route + mojibake + artifacts + claims + secrets (and diff-size when a base SHA is available).
  *
  * Exit code 0 = pass, 1 = a guard failed, 2 = usage/internal error.
  */
@@ -24,6 +25,22 @@ import { join, extname } from "node:path";
 
 const SCAN_ROOTS = ["app", "lib"];
 const SOURCE_EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx", ".mjs", ".css", ".md", ".json"]);
+const API_ROUTE_RE = /^app\/api\/.+\/route\.(ts|tsx|js|jsx|mjs)$/;
+const SERVER_SECRET_MODULES = new Set([
+  "@/lib/supabase-server",
+  "../../../../lib/supabase-server",
+  "../../../lib/supabase-server",
+  "../../lib/supabase-server",
+  "../lib/supabase-server",
+  "./supabase-server",
+  "@/lib/admin-api",
+]);
+const SERVICE_ROLE_FACTORY_FILES = new Set(["lib/supabase-server.ts"]);
+const SERVICE_ROLE_ACCESS_FILES = new Set(["lib/supabase-server.ts"]);
+const SERVER_SECRET_HELPER_FILES = new Set(["lib/supabase-server.ts", "lib/admin-api.ts"]);
+const MUTATION_METHOD_RE = /\.(insert|update|upsert|delete)\s*\(/;
+const SERVICE_ROLE_NAME_RE = /\b(SUPABASE_SERVICE_ROLE_KEY|serviceKey|serviceRoleKey|createServiceRoleClient|createServerClient|supabaseAdmin)\b/;
+
 
 // Legitimate non-ASCII characters in the U+0080-U+00FF range. Everything else
 // in that range is treated as mojibake. Add here only after a conscious review.
@@ -67,6 +84,36 @@ function walk(dir, out = []) {
 
 function sourceFiles() {
   return SCAN_ROOTS.flatMap((root) => walk(root));
+}
+
+
+function normalizePath(file) {
+  return file.replace(/\\/g, "/");
+}
+
+function isApiRoute(file) {
+  return API_ROUTE_RE.test(normalizePath(file));
+}
+
+function isUseClientSource(text) {
+  const withoutBom = text.replace(/^\uFEFF/, "").trimStart();
+  return /^(?:"use client"|'use client')\s*;/.test(withoutBom);
+}
+
+function importedModules(text) {
+  const modules = [];
+  const importRe = /import(?:\s+type)?(?:[\s\S]*?from\s*)?["']([^"']+)["']/g;
+  let match;
+  while ((match = importRe.exec(text))) modules.push(match[1]);
+  return modules;
+}
+
+function linesWith(text, predicate) {
+  const hits = [];
+  text.split("\n").forEach((line, i) => {
+    if (predicate(line)) hits.push(`${i + 1}: ${line.trim()}`);
+  });
+  return hits;
 }
 
 function git(args) {
@@ -230,6 +277,58 @@ function guardDiffSize() {
   console.log("diff-size guard: ok");
 }
 
+
+function guardSecrets() {
+  const hits = [];
+
+  for (const rawFile of sourceFiles()) {
+    const file = normalizePath(rawFile);
+    const text = readFileSync(rawFile, "utf-8");
+    const client = isUseClientSource(text);
+    const modules = importedModules(text);
+
+    const badPublicEnvHits = linesWith(text, (line) => /NEXT_PUBLIC_[A-Z0-9_]*SERVICE_ROLE[A-Z0-9_]*/.test(line));
+    hits.push(...badPublicEnvHits.map((h) => `  ${file}:${h} (service-role env vars must never be NEXT_PUBLIC_*)`));
+
+    if (client) {
+      const serviceEnvHits = linesWith(text, (line) => /SUPABASE_SERVICE_ROLE_KEY/.test(line));
+      hits.push(...serviceEnvHits.map((h) => `  ${file}:${h} (client component references SUPABASE_SERVICE_ROLE_KEY)`));
+
+      const forbiddenImports = modules.filter((m) => SERVER_SECRET_MODULES.has(m));
+      hits.push(...forbiddenImports.map((m) => `  ${file}: imports server-secret module ${m} from a "use client" file`));
+    }
+
+    if (!SERVICE_ROLE_ACCESS_FILES.has(file)) {
+      const serviceEnvHits = linesWith(text, (line) => /process\.env\.SUPABASE_SERVICE_ROLE_KEY/.test(line));
+      hits.push(...serviceEnvHits.map((h) => `  ${file}:${h} (read SUPABASE_SERVICE_ROLE_KEY only in lib/supabase-server.ts)`));
+    }
+
+    if (!SERVICE_ROLE_FACTORY_FILES.has(file)) {
+      const factoryHits = linesWith(text, (line) => /createClient\s*\([^\n]*(SUPABASE_SERVICE_ROLE_KEY|serviceKey|serviceRoleKey)/.test(line));
+      hits.push(...factoryHits.map((h) => `  ${file}:${h} (service-role clients may only be created in lib/supabase-server.ts)`));
+    }
+
+    const importsServiceRole = modules.some((m) => SERVER_SECRET_MODULES.has(m));
+    if (!isApiRoute(file) && !SERVER_SECRET_HELPER_FILES.has(file) && importsServiceRole) {
+      const mutationHits = linesWith(text, (line) => MUTATION_METHOD_RE.test(line));
+      if (mutationHits.length) {
+        hits.push(...mutationHits.map((h) => `  ${file}:${h} (mutation-capable service-role helpers are only allowed in app/api/**/route.ts)`));
+      }
+      if (SERVICE_ROLE_NAME_RE.test(text)) {
+        hits.push(`  ${file}: imports mutation-capable service-role helper outside app/api/**/route.ts`);
+      }
+    }
+  }
+
+  if (hits.length) {
+    fail([
+      `secret exposure guard FAILED: Supabase service-role usage must stay server-only and route-scoped.`,
+      ...hits,
+    ]);
+  }
+  console.log("secret exposure guard: ok");
+}
+
 // --- main ------------------------------------------------------------------
 
 const guard = process.argv[2];
@@ -238,18 +337,20 @@ const guards = {
   mojibake: guardMojibake,
   artifacts: guardArtifacts,
   claims: guardClaims,
+  secrets: guardSecrets,
   "diff-size": guardDiffSize,
   all() {
     guardRoute();
     guardMojibake();
     guardArtifacts();
     guardClaims();
+    guardSecrets();
     guardDiffSize();
   },
 };
 
 if (!guard || !guards[guard]) {
-  console.error(`Usage: node scripts/ci-guards.mjs <route|mojibake|artifacts|claims|diff-size|all>`);
+  console.error(`Usage: node scripts/ci-guards.mjs <route|mojibake|artifacts|claims|secrets|diff-size|all>`);
   process.exit(2);
 }
 
