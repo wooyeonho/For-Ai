@@ -11,9 +11,10 @@
  *   artifacts  - fail if build/dependency output or oversized generated dumps are committed.
  *   claims     - fail if any verified-claims file violates the trust rules (delegates to verified-claims.mjs validate).
  *   surfaces   - fail if citation surfaces drift from the normalized claim-level contract.
+ *   schema-types - fail if schema-v3.sql enum/check values diverge from TypeScript unions.
  *   diff-size  - fail if a PR changes an unexpected number of files (full-repo-rewrite guard).
  *   secrets    - fail if Supabase service-role secrets leak into client or non-route mutation code.
- *   all        - run route + mojibake + artifacts + claims + secrets (and diff-size when a base SHA is available).
+ *   all        - run route + mojibake + artifacts + claims + secrets + surfaces + schema-types (and diff-size when a base SHA is available).
  *
  * Exit code 0 = pass, 1 = a guard failed, 2 = usage/internal error.
  */
@@ -228,6 +229,16 @@ function guardSurfaces() {
   }
 }
 
+function guardSchemaTypes() {
+  try {
+    const out = execFileSync("node", ["scripts/check-schema-types.mjs"], { encoding: "utf-8" });
+    process.stdout.write(`${out.trim()}\n`);
+  } catch (e) {
+    const detail = `${e.stdout ?? ""}${e.stderr ?? ""}`.trim();
+    fail([`schema-types guard FAILED: schema-v3.sql and TypeScript unions diverged.`, detail]);
+  }
+}
+
 function guardDiffSize() {
   const base = process.env.BASE_SHA;
   if (!base) {
@@ -350,6 +361,7 @@ const guards = {
   claims: guardClaims,
   secrets: guardSecrets,
   surfaces: guardSurfaces,
+  "schema-types": guardSchemaTypes,
   "diff-size": guardDiffSize,
   all() {
     guardRoute();
@@ -358,12 +370,13 @@ const guards = {
     guardClaims();
     guardSecrets();
     guardSurfaces();
+    guardSchemaTypes();
     guardDiffSize();
   },
 };
 
 if (!guard || !guards[guard]) {
-  console.error(`Usage: node scripts/ci-guards.mjs <route|mojibake|artifacts|claims|secrets|surfaces|diff-size|all>`);
+  console.error(`Usage: node scripts/ci-guards.mjs <route|mojibake|artifacts|claims|secrets|surfaces|schema-types|diff-size|all>`);
   process.exit(2);
 }
 
