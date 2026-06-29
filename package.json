@@ -23,7 +23,12 @@
     "claims:apply": "node scripts/verified-claims.mjs apply",
     "claims:batch": "node scripts/verified-claims.mjs batch",
     "claims:generate-payloads": "node scripts/verified-claims.mjs generate-payloads",
-    "smoke:production-submissions": "node scripts/production-submission-smoke.mjs"
+    "smoke:production-submissions": "node scripts/production-submission-smoke.mjs",
+    "job:triage-topic-candidates": "node scripts/jobs/triage-topic-candidates.mjs",
+    "job:find-stale-claims": "node scripts/jobs/find-stale-claims.mjs",
+    "job:check-source-health": "node scripts/jobs/check-source-health.mjs",
+    "job:generate-admin-digest": "node scripts/jobs/generate-admin-digest.mjs",
+    "job:check-security-baseline": "node scripts/jobs/check-security-baseline.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.8",
