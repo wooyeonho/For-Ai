@@ -44,23 +44,25 @@ export const FRESHNESS_WINDOWS_DAYS: Record<FreshnessDomain, number> = {
   default: FRESHNESS_TTL_DAYS,
 };
 
-export type UpdateFrequency = "static" | "annual" | "event_based" | "monthly" | "weekly" | "daily" | "unknown";
+export type FreshnessPolicyUpdateFrequency = UpdateFrequency | "unknown";
 
 export type FreshnessPolicy = {
   ttlDays: number;
-  updateFrequency: UpdateFrequency;
+  updateFrequency: FreshnessPolicyUpdateFrequency;
   riskTier: string | null;
   disclaimerType: string | null;
   reason: string;
 };
 
-const UPDATE_FREQUENCY_TTL_DAYS: Record<UpdateFrequency, number> = {
+const UPDATE_FREQUENCY_TTL_DAYS: Record<FreshnessPolicyUpdateFrequency, number> = {
+  realtime: 1,
+  daily: 3,
+  weekly: 14,
+  monthly: 45,
+  quarterly: 92,
   static: 365,
   annual: 370,
   event_based: 180,
-  monthly: 45,
-  weekly: 14,
-  daily: 3,
   unknown: FRESHNESS_TTL_DAYS,
 };
 
@@ -98,6 +100,14 @@ export function isStale(
   return age > (ttlDays ?? FRESHNESS_TTL_DAYS);
 }
 
+export type VerificationLevel = 0 | 1 | 2 | 3 | 4 | 5;
+
+export type VerificationLevelInfo = {
+  level: VerificationLevel;
+  label: string;
+  description: string;
+};
+
 export type ClaimCitationStatus = {
   isCitationReady: boolean;
   label: "verified" | "stale" | "unverified";
@@ -106,6 +116,7 @@ export type ClaimCitationStatus = {
   freshnessWindowDays: number;
   lastVerifiedAt: string | null;
   warning: string | null;
+  verificationLevel: VerificationLevelInfo;
 };
 
 export type DocumentCitationStatus = {
@@ -119,7 +130,79 @@ export type DocumentCitationStatus = {
   freshnessWindowDays: number;
   staleClaims: Array<{ claimId: string; fieldPath: string; lastVerifiedAt: string | null }>;
   freshnessPolicy: FreshnessPolicy;
+  verificationLevel: VerificationLevelInfo;
 };
+
+
+export function getVerificationLevelInfo(level: VerificationLevel): VerificationLevelInfo {
+  const levels: Record<VerificationLevel, VerificationLevelInfo> = {
+    0: {
+      level: 0,
+      label: "Level 0",
+      description: "unknown/no source",
+    },
+    1: {
+      level: 1,
+      label: "Level 1",
+      description: "source candidate submitted",
+    },
+    2: {
+      level: 2,
+      label: "Level 2",
+      description: "source attached",
+    },
+    3: {
+      level: 3,
+      label: "Level 3",
+      description: "human verified",
+    },
+    4: {
+      level: 4,
+      label: "Level 4",
+      description: "fresh verified",
+    },
+    5: {
+      level: 5,
+      label: "Level 5",
+      description: "multi-source verified",
+    },
+  };
+
+  return levels[level];
+}
+
+function hasClaimValue(claim: Pick<ClaimWithSources, "claim_value">): boolean {
+  return Boolean(claim.claim_value?.trim()) && claim.claim_value !== UNKNOWN_FACT_TEXT;
+}
+
+function hasSourceCandidateSignal(claim: ClaimWithSources): boolean {
+  return hasClaimValue(claim) || claim.verification_events.some((event) => event.event_type === "created" || event.event_type === "source_added");
+}
+
+export function getClaimVerificationLevel(
+  claim: ClaimWithSources,
+  ttlDays: number = FRESHNESS_TTL_DAYS,
+  now: Date = new Date(),
+): VerificationLevelInfo {
+  const hasSource = claim.sources.length > 0;
+  const hasVerificationEvent = claim.verification_events.some((event) =>
+    event.new_status === "verified" || event.event_type === "source_verified",
+  );
+  const humanVerified =
+    claim.status === "verified" &&
+    claim.confidence !== "low" &&
+    hasClaimValue(claim) &&
+    hasSource &&
+    hasVerificationEvent &&
+    Boolean(claim.last_verified_at);
+
+  if (humanVerified && claim.sources.length >= 2) return getVerificationLevelInfo(5);
+  if (humanVerified && !isStale(claim.last_verified_at, ttlDays, now)) return getVerificationLevelInfo(4);
+  if (humanVerified) return getVerificationLevelInfo(3);
+  if (hasSource) return getVerificationLevelInfo(2);
+  if (hasSourceCandidateSignal(claim)) return getVerificationLevelInfo(1);
+  return getVerificationLevelInfo(0);
+}
 
 export function getVerifiedClaimViolations(claim: VerifiedClaimInput): string[] {
   const violations: string[] = [];
@@ -172,9 +255,11 @@ export function getClaimCitationStatus(
       freshnessWindowDays: ttlDays,
       lastVerifiedAt: claim.last_verified_at ?? null,
       warning: null,
+      verificationLevel: getClaimVerificationLevel(claim, ttlDays, now),
     };
   }
 
+  const verificationLevel = getClaimVerificationLevel(claim, ttlDays, now);
   const hasSource = claim.sources.length > 0;
   const hasVerificationEvent = claim.verification_events.some((event) =>
     event.new_status === "verified" || event.event_type === "source_verified",
@@ -200,6 +285,7 @@ export function getClaimCitationStatus(
       freshnessWindowDays: ttlDays,
       lastVerifiedAt: claim.last_verified_at ?? null,
       warning: stale ? `Needs recheck: last verified at ${claim.last_verified_at ?? "unknown"}; freshness window is ${ttlDays} days.` : null,
+      verificationLevel,
     };
   }
 
@@ -211,6 +297,7 @@ export function getClaimCitationStatus(
     freshnessWindowDays: ttlDays,
     lastVerifiedAt: claim.last_verified_at ?? null,
     warning: null,
+    verificationLevel,
   };
 }
 
@@ -219,7 +306,7 @@ function getStringMetadata(data: Record<string, unknown>, key: string): string |
   return typeof value === "string" && value.trim() ? value.trim() : null;
 }
 
-function normalizeUpdateFrequency(value: string | null): UpdateFrequency {
+function normalizeUpdateFrequency(value: string | null): FreshnessPolicyUpdateFrequency {
   if (value === "static" || value === "annual" || value === "event_based" || value === "monthly" || value === "weekly" || value === "daily") {
     return value;
   }
@@ -280,6 +367,27 @@ export function getFreshnessPolicy(bundle: RegistryDocumentBundle, ttlOverrideDa
     };
   }
 
+  const categoryTemplateDomain = getFreshnessDomain(`${bundle.document.category} ${bundle.document.template}`);
+  if (categoryTemplateDomain !== "default") {
+    return {
+      ttlDays: FRESHNESS_WINDOWS_DAYS[categoryTemplateDomain],
+      updateFrequency,
+      riskTier,
+      disclaimerType,
+      reason: `freshness domain ${categoryTemplateDomain}`,
+    };
+  }
+
+  if (bundle.document.category.toLowerCase().includes("commerce") || bundle.document.template.toLowerCase().includes("commerce_policy")) {
+    return {
+      ttlDays: COMMERCE_POLICY_FRESHNESS_TTL_DAYS,
+      updateFrequency,
+      riskTier,
+      disclaimerType,
+      reason: "commerce policy freshness window",
+    };
+  }
+
   if (hasFastChangingSignal(bundle)) {
     return {
       ttlDays: 90,
@@ -326,6 +434,12 @@ export function getDocumentCitationStatus(
   const oldestVerifiedAt = readyDates.length > 0
     ? readyDates.reduce((oldest, current) => (Date.parse(current) < Date.parse(oldest) ? current : oldest))
     : null;
+  const documentLevel = claimStatuses.length === 0
+    ? getVerificationLevelInfo(0)
+    : claimStatuses.reduce((lowest, { status }) =>
+      status.verificationLevel.level < lowest.level ? status.verificationLevel : lowest,
+      claimStatuses[0].status.verificationLevel,
+    );
   const freshness: FreshnessLabel = !isVerifiedDocument
     ? "unknown"
     : isStale(oldestVerifiedAt, freshnessPolicy.ttlDays, now)
@@ -345,6 +459,7 @@ export function getDocumentCitationStatus(
       .filter(({ status }) => status.isCitationReady && status.freshness === "stale")
       .map(({ claim }) => ({ claimId: claim.id, fieldPath: claim.field_path, lastVerifiedAt: claim.last_verified_at ?? null })),
     freshnessPolicy,
+    verificationLevel: documentLevel,
   };
 }
 

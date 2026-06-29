@@ -1,5 +1,4 @@
 export type Confidence = "low" | "medium" | "high";
-export type TranslationStatus = "machine_translated" | "human_reviewed";
 export type DocumentStatus = "ai_draft" | "needs_review" | "verified" | "published" | "archived";
 export type ClaimStatus = "needs_review" | "verified" | "disputed" | "unknown";
 export type SourceCheckStatus = "unchecked" | "passed" | "warning" | "failed";
@@ -61,6 +60,7 @@ export type VerificationEventType =
   | "reviewed"
   | "source_added"
   | "source_removed"
+  | "source_verified"
   | "status_changed"
   | "confidence_changed";
 

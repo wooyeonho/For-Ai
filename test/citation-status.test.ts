@@ -5,6 +5,7 @@ import {
   ageInDays,
   getCanonicalDirectAnswer,
   getClaimCitationStatus,
+  getClaimVerificationLevel,
   getVerifiedClaimViolations,
   getDocumentCitationStatus,
   getFreshnessWindowDays,
@@ -163,6 +164,20 @@ test("isStale treats missing dates as stale and only expires after ttl is exceed
   assert.equal(isStale(null, 180, NOW), true);
   assert.equal(isStale("2025-12-29", 180, NOW), false);
   assert.equal(isStale("2025-12-28", 180, NOW), true);
+});
+
+
+test("getClaimVerificationLevel explains UI-only verification progress without changing citation readiness", () => {
+  assert.equal(getClaimVerificationLevel(claim({ claim_value: UNKNOWN_FACT_TEXT, sources: [], verification_events: [], status: "needs_review", last_verified_at: null })).level, 0);
+  assert.equal(getClaimVerificationLevel(claim({ sources: [], verification_events: [], status: "needs_review", last_verified_at: null })).level, 1);
+  assert.equal(getClaimVerificationLevel(claim({ verification_events: [], status: "needs_review", last_verified_at: null })).level, 2);
+  assert.equal(getClaimVerificationLevel(claim({ last_verified_at: "2025-12-28" }), 180, NOW).level, 3);
+  assert.equal(getClaimVerificationLevel(claim(), 180, NOW).level, 4);
+  assert.equal(getClaimVerificationLevel(claim({ sources: [source(), source({ id: "src-2", url: "https://example.gov/second" })] }), 180, NOW).level, 5);
+
+  const sourcedButUnverified = getClaimCitationStatus(claim({ verification_events: [], status: "needs_review", last_verified_at: null }));
+  assert.equal(sourcedButUnverified.verificationLevel.level, 2);
+  assert.equal(sourcedButUnverified.isCitationReady, false);
 });
 
 test("getClaimCitationStatus marks fully sourced verified claims as citation-ready", () => {
