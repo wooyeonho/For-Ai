@@ -67,7 +67,16 @@ export interface UITranslations {
     correctionReport: string;
     hallucinationReport: string;
     diagnostics: string;
-    governmentFeeDisclaimer: string;
+governmentFeeDisclaimer: string;
+    languagePolicy: string;
+    canonicalSlugPolicy: string;
+    localizedTitlePolicy: string;
+    sourceLanguagePolicy: string;
+    translatedClaimPolicy: string;
+    machineTranslationWarning: string;
+    translationStatusMachine: string;
+    translationStatusHuman: string;
+    originalClaim: string;
   };
   footer: {
     tagline: string;
@@ -155,7 +164,16 @@ const ko: UITranslations = {
     correctionReport: "정정 보고",
     hallucinationReport: "AI 할루시네이션 보고",
     diagnostics: "AI 준비도 진단",
-    governmentFeeDisclaimer: "신청 전 항상 공식 정부 출처를 확인하세요.",
+governmentFeeDisclaimer: "신청 전 항상 공식 정부 출처를 확인하세요.",
+    languagePolicy: "언어 정책",
+    canonicalSlugPolicy: "slug는 모든 언어에서 안정적인 영어 canonical slug를 유지합니다.",
+    localizedTitlePolicy: "title과 UI label은 현재 locale에 맞춰 표시합니다.",
+    sourceLanguagePolicy: "claim source는 출처의 원문 언어를 보존합니다.",
+    translatedClaimPolicy: "번역 claim은 원문 claim과 연결되어야 합니다.",
+    machineTranslationWarning: "이 번역 claim은 human reviewed 전이므로 번역 오류 가능성이 있습니다.",
+    translationStatusMachine: "자동 번역",
+    translationStatusHuman: "사람 검토 완료",
+    originalClaim: "원문 claim",
   },
   footer: {
     tagline: "AI·검색엔진·사람이 같은 사실을 같은 근거로 인용하도록 만드는 글로벌 claim-level 사실 레지스트리. 확인되지 않은 정보는 추측하지 않고 \"확인 필요\"로 남깁니다.",
@@ -243,7 +261,16 @@ const en: UITranslations = {
     correctionReport: "Correction report",
     hallucinationReport: "AI hallucination report",
     diagnostics: "AI-readiness diagnostics",
-    governmentFeeDisclaimer: "Always check the official government source before applying.",
+governmentFeeDisclaimer: "Always check the official government source before applying.",
+    languagePolicy: "Language policy",
+    canonicalSlugPolicy: "Slugs remain stable English canonical slugs across every locale.",
+    localizedTitlePolicy: "Titles and UI labels are displayed per locale.",
+    sourceLanguagePolicy: "Claim sources preserve their original source language.",
+    translatedClaimPolicy: "Translated claims must stay linked to the original claim.",
+    machineTranslationWarning: "This translated claim has not been human reviewed and may contain translation errors.",
+    translationStatusMachine: "Machine translated",
+    translationStatusHuman: "Human reviewed",
+    originalClaim: "Original claim",
   },
   footer: {
     tagline: "A global claim-level fact registry where AI, search engines, and humans cite the same facts from the same sources. Unverified information is marked as \"Needs verification\" (\"확인 필요\") instead of guessing.",
@@ -331,7 +358,16 @@ const hi: UITranslations = {
     correctionReport: "सुधार रिपोर्ट",
     hallucinationReport: "AI भ्रम रिपोर्ट",
     diagnostics: "AI-तत्परता निदान",
-    governmentFeeDisclaimer: "आवेदन करने से पहले हमेशा आधिकारिक सरकारी स्रोत देखें.",
+governmentFeeDisclaimer: "आवेदन करने से पहले हमेशा आधिकारिक सरकारी स्रोत देखें.",
+    languagePolicy: "भाषा नीति",
+    canonicalSlugPolicy: "Slug हर locale में स्थिर English canonical slug रहता है।",
+    localizedTitlePolicy: "Title और UI label locale के अनुसार दिखाए जाते हैं।",
+    sourceLanguagePolicy: "Claim source अपनी मूल स्रोत भाषा बनाए रखते हैं।",
+    translatedClaimPolicy: "अनूदित claims मूल claim से जुड़े रहने चाहिए।",
+    machineTranslationWarning: "इस अनूदित claim की human review नहीं हुई है और इसमें अनुवाद त्रुटियाँ हो सकती हैं।",
+    translationStatusMachine: "मशीन अनूदित",
+    translationStatusHuman: "मानव समीक्षा पूर्ण",
+    originalClaim: "मूल claim",
   },
   footer: {
     tagline: "एक स्थानीय तथ्य रजिस्ट्री जहाँ AI, खोज इंजन और लोग समान स्रोतों से समान तथ्य उद्धृत करते हैं। असत्यापित जानकारी को अनुमान लगाने के बजाय \"सत्यापन आवश्यक\" (\"확인 필요\") के रूप में चिह्नित किया जाता है।",
@@ -419,7 +455,16 @@ const ar: UITranslations = {
     correctionReport: "تقرير التصحيح",
     hallucinationReport: "تقرير هلوسة AI",
     diagnostics: "تشخيص جاهزية AI",
-    governmentFeeDisclaimer: "تحقق دائمًا من المصدر الحكومي الرسمي قبل التقديم.",
+governmentFeeDisclaimer: "تحقق دائمًا من المصدر الحكومي الرسمي قبل التقديم.",
+    languagePolicy: "سياسة اللغة",
+    canonicalSlugPolicy: "تبقى slugs معرّفات إنجليزية canonical ثابتة عبر كل locale.",
+    localizedTitlePolicy: "تُعرض العناوين وتسميات الواجهة حسب locale.",
+    sourceLanguagePolicy: "تحافظ مصادر claim على لغة المصدر الأصلية.",
+    translatedClaimPolicy: "يجب ربط claims المترجمة بالclaim الأصلي.",
+    machineTranslationWarning: "لم تتم مراجعة هذا claim المترجم بشريًا وقد يحتوي على أخطاء ترجمة.",
+    translationStatusMachine: "ترجمة آلية",
+    translationStatusHuman: "مراجعة بشرية مكتملة",
+    originalClaim: "claim الأصلي",
   },
   footer: {
     tagline: "سجل حقائق محلي حيث يستشهد الذكاء الاصطناعي ومحركات البحث والبشر بنفس الحقائق من نفس المصادر. المعلومات غير الموثقة تُعلَّم بـ \"بحاجة إلى تحقق\" (\"확인 필요\") بدلاً من التخمين.",
@@ -507,7 +552,16 @@ const es: UITranslations = {
     correctionReport: "Informe de corrección",
     hallucinationReport: "Informe de alucinación de IA",
     diagnostics: "Diagnóstico de preparación para IA",
-    governmentFeeDisclaimer: "Consulta siempre la fuente oficial del gobierno antes de presentar la solicitud.",
+governmentFeeDisclaimer: "Consulta siempre la fuente oficial del gobierno antes de presentar la solicitud.",
+    languagePolicy: "Política de idioma",
+    canonicalSlugPolicy: "Los slugs se mantienen como slugs canónicos estables en inglés en todos los locales.",
+    localizedTitlePolicy: "Los títulos y las etiquetas de UI se muestran por locale.",
+    sourceLanguagePolicy: "Las fuentes de claim conservan su idioma original.",
+    translatedClaimPolicy: "Los claims traducidos deben estar vinculados al claim original.",
+    machineTranslationWarning: "Este claim traducido no ha sido revisado por una persona y puede contener errores de traducción.",
+    translationStatusMachine: "Traducción automática",
+    translationStatusHuman: "Revisión humana",
+    originalClaim: "Claim original",
   },
   footer: {
     tagline: "Un registro local de hechos donde la IA, los motores de búsqueda y los humanos citan los mismos hechos de las mismas fuentes. La información no verificada se marca como \"Verificación pendiente\" (\"확인 필요\") en lugar de adivinar.",
@@ -595,7 +649,16 @@ const ja: UITranslations = {
     correctionReport: "訂正レポート",
     hallucinationReport: "AIハルシネーションレポート",
     diagnostics: "AI準備状況診断",
-    governmentFeeDisclaimer: "申請前に必ず政府の公式情報源を確認してください。",
+governmentFeeDisclaimer: "申請前に必ず政府の公式情報源を確認してください。",
+    languagePolicy: "言語ポリシー",
+    canonicalSlugPolicy: "slugは全localeで安定した英語canonical slugを維持します。",
+    localizedTitlePolicy: "titleとUI labelはlocaleごとに表示します。",
+    sourceLanguagePolicy: "claim sourceは出典の原文言語を保持します。",
+    translatedClaimPolicy: "翻訳claimは原文claimに接続されている必要があります。",
+    machineTranslationWarning: "この翻訳claimはhuman reviewed前のため、翻訳エラーの可能性があります。",
+    translationStatusMachine: "機械翻訳",
+    translationStatusHuman: "人間レビュー済み",
+    originalClaim: "原文claim",
   },
   footer: {
     tagline: "AI・検索エンジン・人間が同じ事実を同じ根拠で引用するローカル・ファクト・レジストリ。未確認情報は推測せず「要確認」（\"확인 필요\"）として残します。",
@@ -683,7 +746,16 @@ const zh: UITranslations = {
     correctionReport: "更正报告",
     hallucinationReport: "AI幻觉报告",
     diagnostics: "AI就绪性诊断",
-    governmentFeeDisclaimer: "申请前请务必查看政府官方来源。",
+governmentFeeDisclaimer: "申请前请务必查看政府官方来源。",
+    languagePolicy: "语言政策",
+    canonicalSlugPolicy: "slug 在所有 locale 中保持稳定的英文 canonical slug。",
+    localizedTitlePolicy: "title 和 UI label 按 locale 显示。",
+    sourceLanguagePolicy: "claim source 保留来源原文语言。",
+    translatedClaimPolicy: "翻译 claim 必须连接到原文 claim。",
+    machineTranslationWarning: "此翻译 claim 尚未经过人工审核，可能存在翻译错误。",
+    translationStatusMachine: "机器翻译",
+    translationStatusHuman: "人工审核",
+    originalClaim: "原文 claim",
   },
   footer: {
     tagline: "AI、搜索引擎和人类从相同来源引用相同事实的本地事实注册表。未验证的信息标记为“待核实”（\"확인 필요\"）而不是猜测。",

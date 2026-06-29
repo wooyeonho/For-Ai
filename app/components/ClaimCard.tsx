@@ -12,6 +12,12 @@ export function ClaimCard({ claim, locale }: { claim: ClaimWithSources; locale?:
   const displayValue = claim.claim_value === UNKNOWN_FACT_TEXT && t.claims.unknownLabel !== UNKNOWN_FACT_TEXT
     ? `${t.claims.unknownLabel} ("${UNKNOWN_FACT_TEXT}")`
     : claim.claim_value;
+  const isMachineTranslated = claim.translation_status === "machine_translated";
+  const translationStatusLabel = claim.translation_status === "human_reviewed"
+    ? t.wiki.translationStatusHuman
+    : claim.translation_status === "machine_translated"
+      ? t.wiki.translationStatusMachine
+      : null;
 
   return (
     <div className="claim-card">
@@ -31,9 +37,18 @@ export function ClaimCard({ claim, locale }: { claim: ClaimWithSources; locale?:
         <div className="claim-badges">
           <ConfidenceBadge level={claim.confidence} locale={locale} />
           <ClaimStatusBadge status={claim.status} locale={locale} />
+          {translationStatusLabel && <span className="badge">{translationStatusLabel}</span>}
           {claim.jurisdiction && <span className="badge">{claim.jurisdiction}</span>}
         </div>
       </div>
+
+      {(claim.original_claim_id || isMachineTranslated) && (
+        <p className="meta-label">
+          {claim.original_claim_id && `${t.wiki.originalClaim}: ${claim.original_claim_id}`}
+          {claim.original_claim_id && isMachineTranslated ? " · " : ""}
+          {isMachineTranslated && t.wiki.machineTranslationWarning}
+        </p>
+      )}
 
       {claim.sources.length > 0 && (
         <div className="claim-sources">
