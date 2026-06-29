@@ -17,6 +17,10 @@ create type source_authority as enum ('primary', 'official', 'regulator', 'legal
 create type translation_status as enum ('source_language', 'human_translated', 'machine_translated', 'needs_translation_review');
 create type submission_status as enum ('new', 'reviewing', 'accepted', 'rejected', 'spam', 'spam_suspected');
 create type verification_event_type as enum ('created', 'reviewed', 'source_added', 'source_removed', 'source_verified', 'status_changed', 'confidence_changed');
+create type notification_preference as enum ('none', 'in_app', 'email_digest', 'webhook');
+create type watch_event_type as enum ('claim_stale', 'source_update_needed', 'verified_fix');
+create type mission_status as enum ('open', 'in_progress', 'resolved', 'expired');
+create type reward_badge as enum ('stale_claim_fixer', 'source_updater', 'topic_steward');
 
 create table entities (
   id text primary key,
@@ -454,6 +458,118 @@ alter table topic_suggestions enable row level security;
 create policy topic_suggestions_public_insert_only on topic_suggestions for insert to anon with check (status in ('new', 'spam_suspected'));
 -- No public SELECT policy: suggestions are write-only and admin-reviewed.
 
+-- topic_adoptions: a contributor opts into stewardship for a topic slice.
+-- Adoption is scoped by the canonical registry axes (entity/document plus
+-- category/country). Anonymous public users are represented by contributor_hash;
+-- authenticated contributors may additionally use contributor_id.
+create table topic_adoptions (
+  id uuid primary key default gen_random_uuid(),
+  contributor_id uuid references auth.users(id) on delete set null,
+  contributor_hash text,
+  entity_id text references entities(id) on delete cascade,
+  document_id text references documents(id) on delete cascade,
+  category text,
+  country text not null default 'GLOBAL',
+  notification_preference notification_preference not null default 'in_app',
+  active boolean not null default true,
+  created_at timestamptz not null default now(),
+  constraint topic_adoptions_contributor_required check (
+    contributor_id is not null or length(coalesce(contributor_hash, '')) > 0
+  ),
+  constraint topic_adoptions_scope_required check (
+    entity_id is not null or document_id is not null or length(coalesce(category, '')) > 0 or length(country) > 0
+  )
+);
+
+comment on table topic_adoptions is 'Contributor stewardship intent for a topic/country/category/entity/document slice. Never store raw IP addresses; use contributor_hash for anonymous contributors.';
+comment on column topic_adoptions.contributor_hash is 'Salted contributor identifier only. Raw IP addresses are forbidden.';
+comment on column topic_adoptions.entity_id is 'Optional canonical entity scope; entity_id remains mandatory for factual claims themselves.';
+comment on column topic_adoptions.document_id is 'Optional document scope used to match stale claims and source-update missions.';
+
+create index topic_adoptions_contributor_id_idx on topic_adoptions(contributor_id) where contributor_id is not null;
+create index topic_adoptions_contributor_hash_idx on topic_adoptions(contributor_hash) where contributor_hash is not null;
+create index topic_adoptions_entity_id_idx on topic_adoptions(entity_id) where entity_id is not null;
+create index topic_adoptions_document_id_idx on topic_adoptions(document_id) where document_id is not null;
+create index topic_adoptions_category_country_idx on topic_adoptions(category, country) where active = true;
+create unique index topic_adoptions_unique_hash_scope
+  on topic_adoptions(coalesce(contributor_hash, ''), coalesce(entity_id, ''), coalesce(document_id, ''), coalesce(category, ''), country)
+  where contributor_id is null and active = true;
+create unique index topic_adoptions_unique_user_scope
+  on topic_adoptions(contributor_id, coalesce(entity_id, ''), coalesce(document_id, ''), coalesce(category, ''), country)
+  where contributor_id is not null and active = true;
+
+alter table topic_adoptions enable row level security;
+
+-- Public users may adopt topics without login, but only through privacy-safe
+-- contributor_hash values. No public SELECT policy is granted because watch
+-- intent can reveal private contributor interests.
+create policy topic_adoptions_public_insert
+  on topic_adoptions for insert to anon
+  with check (
+    contributor_id is null
+    and length(coalesce(contributor_hash, '')) > 0
+    and notification_preference in ('none', 'in_app')
+  );
+
+-- watch_subscriptions: event delivery and mission state derived from adoptions.
+-- When a claim becomes stale or a source needs re-checking, service-role jobs
+-- create/update rows here and can notify matching adopters. Verified fixes can
+-- resolve the mission and record the awarded badge/points.
+create table watch_subscriptions (
+  id uuid primary key default gen_random_uuid(),
+  topic_adoption_id uuid references topic_adoptions(id) on delete cascade,
+  contributor_id uuid references auth.users(id) on delete set null,
+  contributor_hash text,
+  entity_id text references entities(id) on delete cascade,
+  document_id text references documents(id) on delete cascade,
+  claim_id text references claims(id) on delete cascade,
+  category text,
+  country text not null default 'GLOBAL',
+  event_type watch_event_type not null,
+  notification_preference notification_preference not null default 'in_app',
+  mission_status mission_status not null default 'open',
+  source_update_needed boolean not null default false,
+  notification_sent_at timestamptz,
+  mission_created_at timestamptz,
+  resolved_at timestamptz,
+  resolved_by_contributor_hash text,
+  awarded_badge reward_badge,
+  awarded_points integer not null default 0 check (awarded_points >= 0),
+  created_at timestamptz not null default now(),
+  constraint watch_subscriptions_contributor_required check (
+    contributor_id is not null or length(coalesce(contributor_hash, '')) > 0
+  ),
+  constraint watch_subscriptions_scope_required check (
+    entity_id is not null or document_id is not null or claim_id is not null or length(coalesce(category, '')) > 0 or length(country) > 0
+  ),
+  constraint watch_subscriptions_mission_timestamp check (
+    mission_status = 'open' or mission_created_at is not null
+  ),
+  constraint watch_subscriptions_reward_requires_verified_fix check (
+    (awarded_badge is null and awarded_points = 0)
+    or (event_type = 'verified_fix' and mission_status = 'resolved' and resolved_at is not null)
+  )
+);
+
+comment on table watch_subscriptions is 'Private watch queue for stale-claim alerts, source-update missions, and verified-fix rewards derived from topic_adoptions.';
+comment on column watch_subscriptions.source_update_needed is 'True when a stale/changed source should be shown as a contributor mission.';
+comment on column watch_subscriptions.awarded_points is 'Points granted only after a human-approved verified fix.';
+comment on column watch_subscriptions.resolved_by_contributor_hash is 'Privacy-safe contributor hash for the fixer; raw IP addresses are forbidden.';
+
+create index watch_subscriptions_adoption_idx on watch_subscriptions(topic_adoption_id) where topic_adoption_id is not null;
+create index watch_subscriptions_contributor_id_idx on watch_subscriptions(contributor_id) where contributor_id is not null;
+create index watch_subscriptions_contributor_hash_idx on watch_subscriptions(contributor_hash) where contributor_hash is not null;
+create index watch_subscriptions_claim_event_idx on watch_subscriptions(claim_id, event_type);
+create index watch_subscriptions_document_status_idx on watch_subscriptions(document_id, mission_status);
+create index watch_subscriptions_category_country_idx on watch_subscriptions(category, country, mission_status);
+create index watch_subscriptions_notification_due_idx on watch_subscriptions(notification_preference, notification_sent_at) where mission_status in ('open', 'in_progress');
+
+alter table watch_subscriptions enable row level security;
+
+-- No public SELECT/UPDATE policies: watch rows can expose contributor interests,
+-- notification preferences, and reward history. Service-role API routes/jobs own
+-- subscription matching, notifications, mission transitions, and reward grants.
+
 
 -- Source contribution system for public source candidates.
 -- Points reward contribution activity only; points never determine claim truth.
@@ -558,4 +674,5 @@ create policy source_candidates_public_insert_only
 -- - Never persist raw IP addresses. Public contributors are identified only by contributor_hash.
 -- - Raw user-agent strings are not stored in admin audit metadata; store a short salted/one-way hash or omit.
 -- - Public intake submissions (edits, reports, hallucination_reports, topic_suggestions, topic_candidates) should be reviewed and deleted/anonymized within 180 days after final status, unless retained as accepted claim provenance.
+-- - Inactive topic_adoptions and resolved watch_subscriptions should be anonymized or aggregated after 365 days unless needed for contributor reward accounting.
 -- - Admin audit events should be retained for 365 days, then deleted or aggregated.

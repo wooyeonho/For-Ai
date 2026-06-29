@@ -250,3 +250,44 @@ export type DocumentStats = {
   ai_citation_count: number;
   updated_at: string;
 };
+
+export type NotificationPreference = "none" | "in_app" | "email_digest" | "webhook";
+export type WatchEventType = "claim_stale" | "source_update_needed" | "verified_fix";
+export type MissionStatus = "open" | "in_progress" | "resolved" | "expired";
+export type RewardBadge = "stale_claim_fixer" | "source_updater" | "topic_steward";
+
+export type TopicAdoption = {
+  id: string;
+  contributor_id: string | null;
+  contributor_hash: string | null;
+  entity_id: string | null;
+  document_id: string | null;
+  category: string | null;
+  country: string;
+  notification_preference: NotificationPreference;
+  active: boolean;
+  created_at: string;
+};
+
+export type WatchSubscription = {
+  id: string;
+  topic_adoption_id: string | null;
+  contributor_id: string | null;
+  contributor_hash: string | null;
+  entity_id: string | null;
+  document_id: string | null;
+  claim_id: string | null;
+  category: string | null;
+  country: string;
+  event_type: WatchEventType;
+  notification_preference: NotificationPreference;
+  mission_status: MissionStatus;
+  source_update_needed: boolean;
+  notification_sent_at: string | null;
+  mission_created_at: string | null;
+  resolved_at: string | null;
+  resolved_by_contributor_hash: string | null;
+  awarded_badge: RewardBadge | null;
+  awarded_points: number;
+  created_at: string;
+};
