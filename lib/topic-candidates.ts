@@ -6,6 +6,15 @@ export type CandidateStatus = "new"|"reviewing"|"approved"|"rejected"|"promoted"
 export type CandidateSource = "ai_generated"|"user_suggested"|"admin_created";
 export type RiskTier = "low"|"medium"|"high"|"forbidden";
 export type RequiredSourceType = "official"|"law"|"platform"|"document"|"news";
+export type UpdateFrequency = "static"|"event_based"|"realtime"|"short_ttl";
+export type CommercePolicyFieldPath =
+  | "return.window_days"
+  | "refund.method"
+  | "refund.processing_time"
+  | "cancellation.deadline"
+  | "shipping.return_cost"
+  | "exceptions"
+  | "official_policy_url";
 
 export interface ClaimStub {
   field_path: string;
@@ -25,11 +34,16 @@ export interface TopicCandidate {
   status: CandidateStatus;
   source: CandidateSource;
   lang: string;
+  country: string;
+  jurisdiction: string;
   title: string;
   slug: string;
   category: string;
   subcategory: string|null;
   risk_tier: RiskTier;
+  template?: string;
+  update_frequency?: UpdateFrequency;
+  freshness_ttl_days?: number;
   why_people_ask_ai: string|null;
   why_ai_gets_wrong: string|null;
   claims: ClaimStub[];
@@ -60,6 +74,7 @@ export const TAXONOMY: Record<string, { label: string; subcategories: string[]; 
   medical:       { label: "의료/진료비", subcategories: ["진료비","응급실","검진","본인부담률"], risk_tier: "high" },
   medicine_terms:{ label: "의학용어", subcategories: ["혈액검사","영상검사CT/MRI","병리검사","증상용어"], risk_tier: "high" },
   ecommerce:     { label: "쇼핑/환불", subcategories: ["반품기한","청약철회","환불절차","배송비"], risk_tier: "low" },
+  commerce_policy:{ label: "Commerce policy", subcategories: ["returns","refunds","cancellations","shipping","exceptions"], risk_tier: "low" },
   delivery_food: { label: "음식배달", subcategories: ["최소주문금액","취소정책","수수료"], risk_tier: "low" },
   telecom:       { label: "통신", subcategories: ["요금제","번호이동","해지위약금","알뜰폰"], risk_tier: "low" },
   home_goods:    { label: "생활용품/설비", subcategories: ["변기종류","수도꼭지","콘센트타입","배관구조","전기설비"], risk_tier: "low" },
@@ -94,8 +109,36 @@ export const TAXONOMY: Record<string, { label: string; subcategories: string[]; 
 export const TAXONOMY_KEYS = Object.keys(TAXONOMY);
 
 export type ClaimTemplateStub = { field_path: string; question: string; required_source_type: RequiredSourceType };
+export type CommercePolicyClaimTemplateStub = ClaimTemplateStub & { field_path: CommercePolicyFieldPath };
+
+export const COMMERCE_POLICY_FRESHNESS_TTL_DAYS = 30;
+
+export const COMMERCE_POLICY_TEMPLATE: {
+  template: "commerce_policy";
+  category: "commerce";
+  required_context: ["country", "jurisdiction"];
+  freshness_ttl_days: number;
+  update_frequency: "short_ttl";
+  claims: CommercePolicyClaimTemplateStub[];
+} = {
+  template: "commerce_policy",
+  category: "commerce",
+  required_context: ["country", "jurisdiction"],
+  freshness_ttl_days: COMMERCE_POLICY_FRESHNESS_TTL_DAYS,
+  update_frequency: "short_ttl",
+  claims: [
+    { field_path: "return.window_days", question: "반품 가능 기간은 며칠인가?", required_source_type: "platform" },
+    { field_path: "refund.method", question: "환불 방식은 무엇인가?", required_source_type: "platform" },
+    { field_path: "refund.processing_time", question: "환불 처리 시간은 얼마나 걸리는가?", required_source_type: "platform" },
+    { field_path: "cancellation.deadline", question: "주문/예약 취소 마감 시점은 언제인가?", required_source_type: "platform" },
+    { field_path: "shipping.return_cost", question: "반품 배송비는 누가 부담하는가?", required_source_type: "platform" },
+    { field_path: "exceptions", question: "반품/환불/취소 예외 조건은 무엇인가?", required_source_type: "platform" },
+    { field_path: "official_policy_url", question: "공식 정책 URL은 무엇인가?", required_source_type: "platform" },
+  ],
+};
 
 export const CLAIM_TEMPLATES: Partial<Record<string, ClaimTemplateStub[]>> = {
+  commerce_policy: COMMERCE_POLICY_TEMPLATE.claims,
   person_athlete: [
     { field_path: "bio.full_name",        question: "선수 본명은?",      required_source_type: "official" },
     { field_path: "bio.date_of_birth",    question: "생년월일은?",       required_source_type: "official" },

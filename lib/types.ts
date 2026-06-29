@@ -15,6 +15,15 @@ export const transportFareFieldPaths = [
 
 export type TransportFareFieldPath = (typeof transportFareFieldPaths)[number];
 
+export type CommercePolicyFieldPath =
+  | "return.window_days"
+  | "refund.method"
+  | "refund.processing_time"
+  | "cancellation.deadline"
+  | "shipping.return_cost"
+  | "exceptions"
+  | "official_policy_url";
+
 export type SourceType =
   | "official"
   | "law"
@@ -63,6 +72,7 @@ export type Document = {
   last_verified_at: string | null;
   license_code: string;
   data: Record<string, unknown>;
+  freshness_ttl_days?: number | null;
   created_at: string | null;
   updated_at: string | null;
 };
@@ -75,6 +85,7 @@ export type Claim = {
   claim_text: string;
   claim_value: string;
   jurisdiction: string | null;
+  country?: string | null;
   confidence: Confidence;
   status: ClaimStatus;
   last_verified_at: string | null;
