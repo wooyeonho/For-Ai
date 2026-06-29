@@ -61,7 +61,7 @@ function claimDate(row: ClaimWithDocument) {
 }
 
 export async function GET(request: Request) {
-  const adminError = requireAdmin(request, "claims.read_for_review");
+  const adminError = await requireAdmin(request, "claims.read_for_review");
   if (adminError) return adminError;
   const sb = supabaseAdmin();
   if (!sb) return NextResponse.json({ error: "SUPABASE_SERVICE_ROLE_KEY not configured" }, { status: 500 });
@@ -133,7 +133,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const adminError = requireAdmin(request, "claims.verify");
+  const adminError = await requireAdmin(request, "claims.verify");
   if (adminError) return adminError;
   const sb = supabaseAdmin();
   if (!sb) return NextResponse.json({ error: "SUPABASE_SERVICE_ROLE_KEY not configured" }, { status: 500 });

@@ -106,7 +106,7 @@ function isHighRiskCategory(category?: string | null, riskTier?: string | null) 
 }
 
 export async function GET(request: Request) {
-  const adminError = requireAdmin(request, "admin.review.read");
+  const adminError = await requireAdmin(request, "admin.review.read");
   if (adminError) return adminError;
   const sb = supabaseAdmin();
   if (!sb) return NextResponse.json({ error: "SUPABASE_SERVICE_ROLE_KEY not configured" }, { status: 500 });

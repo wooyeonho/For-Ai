@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { logAdminAuditEvent, requireAdmin, supabaseAdmin } from "@/lib/admin-api";
 
 export async function GET(request: Request) {
-  const adminError = requireAdmin(request, "posts.list");
+  const adminError = await requireAdmin(request, "posts.list");
   if (adminError) return adminError;
 
   const sb = supabaseAdmin();
@@ -31,7 +31,7 @@ export async function GET(request: Request) {
 }
 
 export async function PATCH(request: Request) {
-  const adminError = requireAdmin(request, "posts.update");
+  const adminError = await requireAdmin(request, "posts.update");
   if (adminError) return adminError;
 
   const sb = supabaseAdmin();
@@ -65,7 +65,7 @@ export async function PATCH(request: Request) {
 }
 
 export async function POST(request: Request) {
-  const adminError = requireAdmin(request, "posts.create");
+  const adminError = await requireAdmin(request, "posts.create");
   if (adminError) return adminError;
 
   const sb = supabaseAdmin();

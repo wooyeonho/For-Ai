@@ -8,7 +8,7 @@ function stableId(prefix: string, slug: string): string {
 }
 
 export async function POST(request: Request) {
-  const adminError = requireAdmin(request, "candidates.promote");
+  const adminError = await requireAdmin(request, "candidates.promote");
   if (adminError) return adminError;
 
   const body = await request.json();

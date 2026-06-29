@@ -271,7 +271,7 @@ function applyConsensus(
 }
 
 export async function POST(request: Request) {
-  const adminError = requireAdmin(request, "candidates.generate");
+  const adminError = await requireAdmin(request, "candidates.generate");
   if (adminError) return adminError;
 
   const body = await request.json();
@@ -504,7 +504,7 @@ export async function POST(request: Request) {
 }
 
 export async function GET(request: Request) {
-  const adminError = requireAdmin(request, "candidates.generate_metadata");
+  const adminError = await requireAdmin(request, "candidates.generate_metadata");
   if (adminError) return adminError;
   const available = getAvailableProviders();
   return NextResponse.json({

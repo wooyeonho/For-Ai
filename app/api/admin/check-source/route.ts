@@ -44,7 +44,7 @@ function matchTokens(text: string, needle: string): { matched: string[]; missing
 }
 
 export async function POST(request: Request) {
-  const adminError = requireAdmin(request, "claims.check_source");
+  const adminError = await requireAdmin(request, "claims.check_source");
   if (adminError) return adminError;
 
   const body = await request.json().catch(() => ({}));

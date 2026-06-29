@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { logAdminAuditEvent, requireAdmin, supabaseAdmin } from "@/lib/admin-api";
 
 export async function POST(request: Request) {
-  const adminError = requireAdmin(request, "entity.create");
+  const adminError = await requireAdmin(request, "entity.create");
   if (adminError) return adminError;
 
   const sb = supabaseAdmin();

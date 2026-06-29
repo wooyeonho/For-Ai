@@ -16,7 +16,7 @@ const VALID_EVENTS: WebhookEventType[] = [
 
 // GET: List webhook subscriptions (admin)
 export async function GET(request: Request) {
-  const adminError = requireAdmin(request, "webhooks.read");
+  const adminError = await requireAdmin(request, "webhooks.read");
   if (adminError) return adminError;
   const sb = supabaseAdmin();
   if (!sb) return NextResponse.json({ error: "Database not configured" }, { status: 500 });
@@ -39,7 +39,7 @@ export async function GET(request: Request) {
 
 // POST: Create a webhook subscription (admin)
 export async function POST(request: Request) {
-  const adminError = requireAdmin(request, "webhooks.create");
+  const adminError = await requireAdmin(request, "webhooks.create");
   if (adminError) return adminError;
   const sb = supabaseAdmin();
   if (!sb) return NextResponse.json({ error: "Database not configured" }, { status: 500 });
@@ -102,7 +102,7 @@ export async function POST(request: Request) {
 
 // PATCH: Update webhook (activate/deactivate)
 export async function PATCH(request: Request) {
-  const adminError = requireAdmin(request, "webhooks.update");
+  const adminError = await requireAdmin(request, "webhooks.update");
   if (adminError) return adminError;
   const sb = supabaseAdmin();
   if (!sb) return NextResponse.json({ error: "Database not configured" }, { status: 500 });
@@ -152,7 +152,7 @@ export async function PATCH(request: Request) {
 
 // DELETE: Remove a webhook subscription
 export async function DELETE(request: Request) {
-  const adminError = requireAdmin(request, "webhooks.delete");
+  const adminError = await requireAdmin(request, "webhooks.delete");
   if (adminError) return adminError;
   const sb = supabaseAdmin();
   if (!sb) return NextResponse.json({ error: "Database not configured" }, { status: 500 });
