@@ -175,6 +175,54 @@ function checkLoaderWiring(files, errors) {
   }
 }
 
+function checkMonetizationGuards(errors) {
+  const schemaPath = join(ROOT, "schema-v3-monetization.sql");
+  const componentPath = join(ROOT, "app", "components", "SponsoredPlacement.tsx");
+  const typesPath = join(ROOT, "lib", "types-monetization.ts");
+
+  if (existsSync(schemaPath)) {
+    const schema = readFileSync(schemaPath, "utf8").toLowerCase();
+    const required = [
+      ["business_claim_proposals", "business claim proposals must be intake-only"],
+      ["business_claim_proposal_status as enum ('new', 'reviewing', 'accepted', 'rejected', 'withdrawn')", "business proposals must not define a verified status"],
+      ["sponsored_placements_label_required", "sponsored placements must require a disclosure label"],
+      ["promote_claim_with_human_verification", "verified promotion must use a human verification function"],
+      ["claims_require_human_verification", "direct verified claim promotion must be guarded"],
+      ["verification_events", "verified promotion must record a verification event"],
+    ];
+    for (const [token, message] of required) {
+      if (!schema.includes(token)) errors.push(`schema-v3-monetization.sql: ${message}`);
+    }
+    if (schema.includes("business_claim_proposal_status as enum") && schema.includes("business_claim_proposal_status as enum ('new', 'reviewing', 'accepted', 'rejected', 'withdrawn', 'verified')")) {
+      errors.push("schema-v3-monetization.sql: business proposal statuses must not include verified");
+    }
+  }
+
+  if (existsSync(componentPath)) {
+    const component = readFileSync(componentPath, "utf8");
+    const required = [
+      ["Sponsored — not a verified factual claim", "SponsoredPlacement must show that sponsored content is not verified factual claim data"],
+      ["data-content-kind=\"sponsored-placement\"", "SponsoredPlacement must identify sponsored content for guardrails/crawlers"],
+      ["data-claim-status=\"not-a-factual-claim\"", "SponsoredPlacement must not look like a claim status"],
+      ["separate from verified claim data", "SponsoredPlacement must visually/textually separate promotional content from claims"],
+      ["rel=\"noopener noreferrer sponsored\"", "Sponsored links must use rel=sponsored"],
+    ];
+    for (const [token, message] of required) {
+      if (!component.includes(token)) errors.push(`app/components/SponsoredPlacement.tsx: ${message}`);
+    }
+  }
+
+  if (existsSync(typesPath)) {
+    const types = readFileSync(typesPath, "utf8");
+    if (!types.includes('BusinessClaimProposalStatus = "new" | "reviewing" | "accepted" | "rejected" | "withdrawn"')) {
+      errors.push("lib/types-monetization.ts: BusinessClaimProposalStatus must be intake-only and exclude verified");
+    }
+    if (!types.includes("SPONSORED_NOT_FACTUAL_CLAIM_LABEL")) {
+      errors.push("lib/types-monetization.ts: sponsored labels must expose a not-factual-claim disclosure constant");
+    }
+  }
+}
+
 function cmdValidate() {
   const files = listClaimFiles();
   const errors = [];
@@ -182,6 +230,7 @@ function cmdValidate() {
   const entityIds = new Set();
   for (const path of files) validateFile(path, errors, slugs, entityIds);
   checkLoaderWiring(files, errors);
+  checkMonetizationGuards(errors);
 
   if (errors.length > 0) {
     console.error(`verified-claims validate: ${errors.length} violation(s)\n`);

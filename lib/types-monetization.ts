@@ -4,6 +4,7 @@
 export type ApiTier = "free" | "pro" | "enterprise";
 export type BusinessProfileStatus = "pending" | "verified" | "suspended" | "rejected";
 export type CorrectionPriority = "standard" | "priority" | "urgent";
+export type BusinessClaimProposalStatus = "new" | "reviewing" | "accepted" | "rejected" | "withdrawn";
 export type AlertSeverity = "info" | "warning" | "critical";
 export type AlertType =
   | "incorrect_citation"
@@ -67,6 +68,26 @@ export type BusinessCorrection = {
   updated_at: string;
 };
 
+
+export type BusinessClaimProposal = {
+  id: string;
+  profile_id: string;
+  entity_id: string;
+  document_id: string | null;
+  claim_id: string | null;
+  field_path: string;
+  proposed_claim_text: string;
+  proposed_value: string;
+  source_url: string | null;
+  source_type: string;
+  status: BusinessClaimProposalStatus;
+  reviewer_note: string | null;
+  reviewed_at: string | null;
+  contributor_hash: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type ReputationAlert = {
   id: string;
   profile_id: string;
@@ -82,6 +103,9 @@ export type ReputationAlert = {
   resolved_at: string | null;
   created_at: string;
 };
+
+export const REQUIRED_SPONSORED_LABEL = "Sponsored" as const;
+export const SPONSORED_NOT_FACTUAL_CLAIM_LABEL = "Sponsored — not a verified factual claim" as const;
 
 export type SponsoredPlacement = {
   id: string;
