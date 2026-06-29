@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { getVerificationQueue } from "@/lib/verification-queue";
+import { adminClaimActions, adminClaimReviewFields, getVerificationQueue } from "@/lib/verification-queue";
 
 export const metadata: Metadata = {
   title: { absolute: "Verification Queue — For-Ai Admin" },
@@ -105,6 +105,14 @@ export default function VerifyQueuePage({ searchParams }: { searchParams?: Recor
               <span style={MONO}>{claim.documentSlug}</span> · {claim.country} · {claim.domain} · {claim.fieldPath} · {claim.status} · {claim.confidence} · source {claim.sourcePresent ? "present" : "missing"}{claim.stale ? " · stale" : ""}
             </div>
           ))}
+          <h2 style={{ fontSize: 16, fontWeight: 700, margin: "16px 0 8px" }}>Claim 승인 화면 필수 정보</h2>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+            {adminClaimReviewFields.map((field) => <span key={field.key} style={CHIP("#f3f4f6", "#374151")}>{field.label}</span>)}
+          </div>
+          <h3 style={{ fontSize: 14, margin: "16px 0 8px" }}>관리자 액션과 audit</h3>
+          <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13, color: "#374151" }}>
+            {adminClaimActions.map((action, index) => <li key={action.key}>{index + 1}. {action.label} — {action.audit}</li>)}
+          </ul>
         </div>
 
         {/* In progress */}
