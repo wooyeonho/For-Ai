@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { logAdminAuditEvent, requireAdmin, supabaseAdmin } from "@/lib/admin-api";
+import { scoreSourceTrust } from "@/lib/source-trust";
 import { siteUrl } from "@/lib/urls";
 
 const SOURCE_CHECK_UA = `For-Ai-SourceCheck/1.0 (+${siteUrl("").replace(/\/+$/, "")})`;
@@ -50,6 +51,10 @@ export async function POST(request: Request) {
   const body = await request.json().catch(() => ({}));
   const url = String(body.url ?? "").trim();
   const match = String(body.match ?? "").trim();
+  const claimText = String(body.claim_text ?? "").trim();
+  const sourceType = String(body.source_type ?? "unknown").trim();
+  const suppliedTitle = String(body.title ?? "").trim();
+  const observedAt = String(body.observed_at ?? new Date().toISOString()).trim();
 
   if (!url) return NextResponse.json({ error: "url is required" }, { status: 400 });
 
@@ -82,9 +87,12 @@ export async function POST(request: Request) {
     let exactMatch: boolean | null = null;
     let tokenMatch: { matched: string[]; missing: string[] } | null = null;
     let snippet: string | null = null;
+    let extractedTitle: string | null = null;
 
     if (res.ok && isHtml) {
       const raw = (await res.text()).slice(0, MAX_BYTES);
+      const titleMatch = raw.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
+      extractedTitle = titleMatch ? stripHtml(titleMatch[1]) : null;
       const text = stripHtml(raw);
       if (match) {
         exactMatch = normalize(text).includes(normalize(match));
@@ -97,6 +105,15 @@ export async function POST(request: Request) {
       }
     }
 
+    const trust = scoreSourceTrust({
+      url: parsed.toString(),
+      source_type: sourceType,
+      fetch_ok: res.ok,
+      title: suppliedTitle || extractedTitle,
+      observed_at: observedAt,
+      claim_text: claimText || match,
+    });
+
     const sb = supabaseAdmin();
     if (sb) {
       await logAdminAuditEvent(sb, request, "admin.check_source", {
@@ -104,6 +121,8 @@ export async function POST(request: Request) {
         status: res.status,
         ok: res.ok,
         exact_match: exactMatch,
+        source_check_status: trust.source_check_status,
+        source_trust_score: trust.source_trust_score,
       });
     }
 
@@ -112,6 +131,11 @@ export async function POST(request: Request) {
       reachable: res.ok,
       status: res.status,
       content_type: contentType || null,
+      extracted_title: extractedTitle,
+      source_check_status: trust.source_check_status,
+      source_trust_score: trust.source_trust_score,
+      source_check_notes: trust.source_check_notes,
+      source_check_details: trust.checks,
       elapsed_ms: Date.now() - startedAt,
       exact_match: exactMatch,
       token_match: tokenMatch,
@@ -120,12 +144,24 @@ export async function POST(request: Request) {
   } catch (err) {
     clearTimeout(timeout);
     const aborted = err instanceof Error && err.name === "AbortError";
+    const trust = scoreSourceTrust({
+      url: parsed.toString(),
+      source_type: sourceType,
+      fetch_ok: false,
+      title: suppliedTitle,
+      observed_at: observedAt,
+      claim_text: claimText || match,
+    });
     return NextResponse.json({
       url: parsed.toString(),
       reachable: false,
       status: 0,
       error: aborted ? `시간 초과 (${FETCH_TIMEOUT_MS}ms)` : `요청 실패: ${err instanceof Error ? err.message : String(err)}`,
       elapsed_ms: Date.now() - startedAt,
+      source_check_status: trust.source_check_status,
+      source_trust_score: trust.source_trust_score,
+      source_check_notes: trust.source_check_notes,
+      source_check_details: trust.checks,
     });
   }
 }

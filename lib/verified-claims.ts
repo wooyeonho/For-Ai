@@ -1,5 +1,6 @@
 import { getDocumentCitationStatus } from "./citation-status";
-import type { ClaimWithSources, RegistryDocumentBundle, VerificationEventType } from "./types";
+import { scoreSourceTrust } from "./source-trust";
+import type { ClaimWithSources, RegistryDocumentBundle, SourceType, VerificationEventType } from "./types";
 
 import seoulMetroFare from "../data/verified-claims/seoul-metro-base-fare.json";
 import passportFee from "../data/verified-claims/passport-reissue-fee.json";
@@ -147,19 +148,32 @@ function toRegistryBundle(file: VerifiedClaimFile): RegistryDocumentBundle {
     last_verified_at: c.last_verified_at,
     created_at: null,
     updated_at: null,
-    sources: (c.sources ?? []).map((s, i) => ({
-      id: `src-${c.claim_id}-${i}`,
-      claim_id: c.claim_id,
-      source_type: s.source_type as ClaimWithSources["sources"][number]["source_type"],
-      source_authority: s.source_authority as ClaimWithSources["sources"][number]["source_authority"],
-      title: s.title,
-      url: s.url,
-      citation: s.note,
-      observed_at: s.observed_at,
-      lang: file.lang,
-      contributor_hash: null,
-      created_at: null,
-    })),
+    sources: (c.sources ?? []).map((s, i) => {
+      const trust = scoreSourceTrust({
+        url: s.url,
+        source_type: s.source_type,
+        fetch_ok: null,
+        title: s.title,
+        observed_at: s.observed_at,
+        claim_text: c.claim_text,
+      });
+      return {
+        id: `src-${c.claim_id}-${i}`,
+        claim_id: c.claim_id,
+        source_type: s.source_type as SourceType,
+        source_authority: s.source_authority as ClaimWithSources["sources"][number]["source_authority"],
+        title: s.title,
+        url: s.url,
+        citation: s.note,
+        observed_at: s.observed_at,
+        lang: file.lang,
+        source_check_status: trust.source_check_status,
+        source_trust_score: trust.source_trust_score,
+        source_check_notes: trust.source_check_notes.join(" "),
+        contributor_hash: null,
+        created_at: null,
+      };
+    }),
     verification_events: c.verification_event
       ? [
           {

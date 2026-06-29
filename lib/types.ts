@@ -2,6 +2,7 @@ export type Confidence = "low" | "medium" | "high";
 export type TranslationStatus = "machine_translated" | "human_reviewed";
 export type DocumentStatus = "ai_draft" | "needs_review" | "verified" | "published" | "archived";
 export type ClaimStatus = "needs_review" | "verified" | "disputed" | "unknown";
+export type SourceCheckStatus = "unchecked" | "passed" | "warning" | "failed";
 export type ClaimSourceOfClaim = "independent" | "business_submitted" | "sponsored";
 
 export const transportFareFieldPaths = [
@@ -25,6 +26,7 @@ export type CommercePolicyFieldPath =
   | "shipping.return_cost"
   | "exceptions"
   | "official_policy_url";
+
 
 export type SourceType =
   | "official"
@@ -138,6 +140,9 @@ export type ClaimSource = {
   citation: string | null;
   lang: string | null;
   observed_at: string | null;
+  source_check_status?: SourceCheckStatus | null;
+  source_trust_score?: number | null;
+  source_check_notes?: string | null;
   contributor_hash: string | null;
   created_at: string | null;
 };

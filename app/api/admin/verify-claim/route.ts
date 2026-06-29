@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { logAdminAuditEvent, requireAdmin, supabaseAdmin } from "@/lib/admin-api";
+import { scoreSourceTrust } from "@/lib/source-trust";
 
 const DEFAULT_STATUS = "needs_review";
 const DEFAULT_LIMIT = 50;
@@ -282,6 +283,14 @@ export async function POST(request: Request) {
   const url = clean(source.url);
   const citation = clean(source.citation) ?? clean(body.citation);
   const shouldAttachSource = ["verify", "attach_source"].includes(action) || Boolean(title || url || citation);
+  const sourceTrust = scoreSourceTrust({
+    url,
+    source_type: sourceType,
+    fetch_ok: typeof body.fetch_ok === "boolean" ? body.fetch_ok : null,
+    title,
+    observed_at: observedAt,
+    claim_text: String(body.claim_text ?? "").trim(),
+  });
 
   if (!claimId) return NextResponse.json({ error: "claim_id is required" }, { status: 400 });
   if (!["verify", "reject", "mark_unknown", "edit_value", "attach_source", "promote_document"].includes(action)) return NextResponse.json({ error: "invalid action" }, { status: 400 });
@@ -301,7 +310,19 @@ export async function POST(request: Request) {
   try {
     if (shouldAttachSource) {
       sourceId = `src-${claimId}-${Date.now()}`;
-      const { error: sourceError } = await sb.from("claim_sources").insert({ id: sourceId, claim_id: claimId, source_type: sourceType, title, url, citation, observed_at: observedAt, contributor_hash: contributorHash });
+      const { error: sourceError } = await sb.from("claim_sources").insert({
+        id: sourceId,
+        claim_id: claimId,
+        source_type: sourceType,
+        title,
+        url,
+        citation,
+        observed_at: observedAt,
+        contributor_hash: contributorHash,
+        source_check_status: String(body.source_check_status ?? sourceTrust.source_check_status),
+        source_trust_score: Number(body.source_trust_score ?? sourceTrust.source_trust_score),
+        source_check_notes: Array.isArray(body.source_check_notes) ? body.source_check_notes.join(" ") : sourceTrust.source_check_notes.join(" "),
+      });
       if (sourceError) throw new Error(`source insert failed: ${sourceError.message}`);
       await writeVerificationEvent(sb, existingClaim, "source_added", { note: citation ?? title ?? url, contributor_hash: contributorHash });
     }
@@ -355,7 +376,8 @@ export async function POST(request: Request) {
       entity_id: existingClaim.entity_id,
       source_id: sourceId,
       source_type: shouldAttachSource ? sourceType : null,
-      source_trust_score: shouldAttachSource ? sourceTrustScore(sourceType, Boolean(url), Boolean(citation)) : null,
+      source_check_status: shouldAttachSource ? String(body.source_check_status ?? sourceTrust.source_check_status) : null,
+      source_trust_score: shouldAttachSource ? Number(body.source_trust_score ?? sourceTrust.source_trust_score) : null,
       previous_status: existingClaim.status,
       new_status: nextStatus,
       previous_confidence: existingClaim.confidence,
@@ -363,7 +385,7 @@ export async function POST(request: Request) {
       document_all_verified: documentAllVerified,
     });
 
-    return NextResponse.json({ claim: updatedClaim, source_id: sourceId, source_trust_score: sourceId ? sourceTrustScore(sourceType, Boolean(url), Boolean(citation)) : null, document_all_verified: documentAllVerified });
+    return NextResponse.json({ claim: updatedClaim, source_id: sourceId, source_trust_score: sourceId ? sourceTrust.source_trust_score : null, document_all_verified: documentAllVerified });
   } catch (error) {
     if (sourceId) await sb.from("claim_sources").delete().eq("id", sourceId);
     const message = error instanceof Error ? error.message : "claim action failed";
