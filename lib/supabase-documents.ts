@@ -1,5 +1,5 @@
-import { createClient } from "@supabase/supabase-js";
-import type { ClaimSource, ClaimStatus, Confidence, RegistryDocumentBundle, VerificationEvent } from "./types";
+import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import type { ClaimSource, ClaimStatus, ClaimWithSources, Confidence, RegistryDocumentBundle, VerificationEvent } from "./types";
 
 function isClaimStatus(value: unknown): value is ClaimStatus {
   return ["needs_review", "verified", "disputed", "unknown"].includes(String(value));
@@ -40,6 +40,82 @@ function sourceFromRow(row: Record<string, unknown>): ClaimSource {
   };
 }
 
+function claimFromRow(
+  cl: Record<string, unknown>,
+  documentId: string,
+  entityId: string,
+): ClaimWithSources {
+  return {
+    id: String(cl.id),
+    document_id: documentId,
+    entity_id: entityId,
+    field_path: String(cl.field_path ?? ""),
+    claim_text: String(cl.claim_text ?? ""),
+    claim_value: String(cl.claim_value ?? "확인 필요"),
+    jurisdiction: (cl.jurisdiction ?? null) as string | null,
+    confidence: toConfidence(cl.confidence),
+    status: isClaimStatus(cl.status) ? cl.status : "needs_review",
+    last_verified_at: (cl.last_verified_at ?? null) as string | null,
+    created_at: (cl.created_at ?? null) as string | null,
+    updated_at: (cl.updated_at ?? null) as string | null,
+    source_of_claim: String(cl.source_of_claim ?? "independent") as ClaimWithSources["source_of_claim"],
+    business_submission_status: (cl.business_submission_status ?? null) as ClaimWithSources["business_submission_status"],
+    submitted_by_business_name: (cl.submitted_by_business_name ?? null) as string | null,
+    sources: ((cl.claim_sources ?? []) as Record<string, unknown>[]).map(sourceFromRow),
+    verification_events: ((cl.verification_events ?? []) as Record<string, unknown>[]).map(eventFromRow),
+  };
+}
+
+async function getPendingBusinessSubmittedClaims(
+  sb: SupabaseClient,
+  documentId: string,
+  entityId: string,
+): Promise<ClaimWithSources[]> {
+  const { data, error } = await sb
+    .from("business_submitted_claims")
+    .select("*, verified_business_profiles(business_name)")
+    .eq("document_id", documentId)
+    .eq("entity_id", entityId)
+    .eq("status", "pending_verification")
+    .order("created_at", { ascending: false });
+
+  if (error || !data) return [];
+
+  return (data as Record<string, unknown>[]).map((row) => {
+    const profile = (row.verified_business_profiles ?? {}) as Record<string, unknown>;
+    const sourceUrl = typeof row.source_url === "string" ? row.source_url : null;
+    return {
+      id: String(row.id),
+      document_id: documentId,
+      entity_id: entityId,
+      field_path: String(row.field_path ?? ""),
+      claim_text: String(row.claim_text ?? `Business-submitted update for ${String(row.field_path ?? "claim")}`),
+      claim_value: String(row.claim_value ?? "확인 필요"),
+      jurisdiction: null,
+      confidence: "low",
+      status: "needs_review",
+      last_verified_at: null,
+      created_at: (row.created_at ?? null) as string | null,
+      updated_at: (row.updated_at ?? null) as string | null,
+      source_of_claim: "business_submitted",
+      business_submission_status: "pending_verification",
+      submitted_by_business_name: (profile.business_name ?? null) as string | null,
+      sources: sourceUrl ? [{
+        id: `${String(row.id)}-source`,
+        claim_id: String(row.id),
+        source_type: String(row.source_type ?? "official") as ClaimSource["source_type"],
+        title: "Business-submitted source",
+        url: sourceUrl,
+        citation: null,
+        observed_at: null,
+        contributor_hash: null,
+        created_at: (row.created_at ?? null) as string | null,
+      }] : [],
+      verification_events: [],
+    };
+  });
+}
+
 export async function getRegistryBundleFromSupabase(slug: string): Promise<RegistryDocumentBundle | null> {
   try {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -58,31 +134,9 @@ export async function getRegistryBundleFromSupabase(slug: string): Promise<Regis
     if (v3Doc && v3Doc.entities) {
       const ent = v3Doc.entities as Record<string, unknown>;
       const rawClaims = (v3Doc.claims ?? []) as Record<string, unknown>[];
-      const claims = rawClaims.map((cl) => ({
-        id: String(cl.id),
-        document_id: String(v3Doc.id),
-        entity_id: String(ent.id),
-        field_path: String(cl.field_path ?? ""),
-        claim_text: String(cl.claim_text ?? ""),
-        claim_value: String(cl.claim_value ?? "확인 필요"),
-        jurisdiction: String(cl.jurisdiction ?? v3Doc.jurisdiction ?? ent.country ?? "GLOBAL"),
-        country: String(cl.country ?? v3Doc.country ?? ent.country ?? "GLOBAL"),
-        region: (cl.region ?? v3Doc.region ?? ent.region ?? null) as string | null,
-        city: (cl.city ?? v3Doc.city ?? ent.city ?? null) as string | null,
-        risk_tier: String(cl.risk_tier ?? v3Doc.risk_tier ?? "low") as RegistryDocumentBundle["claims"][number]["risk_tier"],
-        update_frequency: String(cl.update_frequency ?? v3Doc.update_frequency ?? "event_based") as RegistryDocumentBundle["claims"][number]["update_frequency"],
-        disclaimer_type: String(cl.disclaimer_type ?? v3Doc.disclaimer_type ?? "check_official_source") as RegistryDocumentBundle["claims"][number]["disclaimer_type"],
-        lang: String(cl.lang ?? v3Doc.lang ?? "en"),
-        original_claim_id: (cl.original_claim_id ?? null) as string | null,
-        translation_status: (cl.translation_status ?? null) as RegistryDocumentBundle["claims"][number]["translation_status"],
-        confidence: toConfidence(cl.confidence),
-        status: isClaimStatus(cl.status) ? cl.status : "needs_review",
-        last_verified_at: (cl.last_verified_at ?? null) as string | null,
-        created_at: (cl.created_at ?? null) as string | null,
-        updated_at: (cl.updated_at ?? null) as string | null,
-        sources: ((cl.claim_sources ?? []) as Record<string, unknown>[]).map(sourceFromRow),
-        verification_events: ((cl.verification_events ?? []) as Record<string, unknown>[]).map(eventFromRow),
-      }));
+      const canonicalClaims = rawClaims.map((cl) => claimFromRow(cl, String(v3Doc.id), String(ent.id)));
+      const pendingBusinessClaims = await getPendingBusinessSubmittedClaims(sb, String(v3Doc.id), String(ent.id));
+      const claims = [...canonicalClaims, ...pendingBusinessClaims];
 
       return {
         entity: {

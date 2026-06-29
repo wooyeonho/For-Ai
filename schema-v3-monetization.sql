@@ -336,6 +336,47 @@ comment on column webhook_subscriptions.events is 'Array of event types: claim.v
 comment on column webhook_subscriptions.secret is 'HMAC-SHA256 signing secret for payload verification. Sent as X-ForAi-Signature header.';
 
 
+-- ─────────────────────────────────────────────────────────────────────────────
+-- Business-submitted claims (pending verification)
+-- Store business-proposed facts separately from canonical verified claims.
+-- These rows MUST NOT overwrite claims until a human accepts them and records a
+-- normal claim + verification event in the canonical chain.
+-- ─────────────────────────────────────────────────────────────────────────────
+create type claim_source_of_claim as enum ('independent', 'business_submitted', 'sponsored');
+create type business_submitted_claim_status as enum ('pending_verification', 'accepted', 'rejected');
+
+alter table claims
+  add column if not exists source_of_claim claim_source_of_claim not null default 'independent';
+
+create table business_submitted_claims (
+  id              uuid primary key default gen_random_uuid(),
+  profile_id      uuid not null references verified_business_profiles(id) on delete cascade,
+  entity_id       text not null references entities(id) on delete restrict,
+  document_id     text references documents(id) on delete set null,
+  conflicts_with_claim_id text references claims(id) on delete set null,
+  field_path      text not null,
+  claim_text      text not null,
+  claim_value     text not null,
+  source_url      text,
+  source_type     source_type not null default 'official',
+  status          business_submitted_claim_status not null default 'pending_verification',
+  citation_ready  boolean not null default false check (citation_ready = false),
+  reviewed_at     timestamptz,
+  reviewer_note   text,
+  created_at      timestamptz not null default now(),
+  updated_at      timestamptz not null default now()
+);
+
+create index business_submitted_claims_profile_id_idx on business_submitted_claims(profile_id);
+create index business_submitted_claims_entity_id_idx on business_submitted_claims(entity_id);
+create index business_submitted_claims_document_id_idx on business_submitted_claims(document_id);
+create index business_submitted_claims_pending_idx on business_submitted_claims(status) where status = 'pending_verification';
+
+alter table business_submitted_claims enable row level security;
+
+comment on column claims.source_of_claim is 'Origin of a canonical claim. independent is default; sponsored/business values require visible labeling.';
+comment on table business_submitted_claims is 'Business-submitted facts waiting for human verification. They are displayed as pending and citation_ready=false; they never overwrite canonical verified claims directly.';
+
 -- Privacy/retention policy notes:
 -- - Public contributors are identified only by contributor_hash derived with a secret salt; raw IP addresses are never persisted.
 -- - Public intake submissions (reports, hallucination_reports, edits, topic_suggestions, topic_candidates) should be reviewed and deleted/anonymized within 180 days after final status, unless retained as accepted claim provenance.

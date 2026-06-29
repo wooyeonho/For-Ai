@@ -308,3 +308,25 @@ test("getCanonicalDirectAnswer returns the first citation-ready value or the unk
   assert.equal(getCanonicalDirectAnswer(bundle([claim({ claim_value: UNKNOWN_FACT_TEXT }), claim({ id: "claim-2", claim_value: "Ready value" })])), "Ready value");
   assert.equal(getCanonicalDirectAnswer(bundle([claim({ claim_value: UNKNOWN_FACT_TEXT })])), UNKNOWN_FACT_TEXT);
 });
+
+test("business-submitted pending claims stay citation-ready false even if they look sourced", () => {
+  const status = getClaimCitationStatus(claim({
+    source_of_claim: "business_submitted",
+    business_submission_status: "pending_verification",
+  }));
+
+  assert.equal(status.isCitationReady, false);
+  assert.equal(status.reason, "business-submitted claim is pending human verification");
+
+  const documentStatus = getDocumentCitationStatus(bundle([
+    claim(),
+    claim({
+      id: "business-claim-1",
+      source_of_claim: "business_submitted",
+      business_submission_status: "pending_verification",
+    }),
+  ]));
+  assert.equal(documentStatus.isVerifiedDocument, false);
+  assert.equal(documentStatus.verifiedClaims, 1);
+  assert.equal(documentStatus.unverifiedClaims, 1);
+});

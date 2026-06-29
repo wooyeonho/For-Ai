@@ -163,6 +163,18 @@ export function getClaimCitationStatus(
   ttlDays: number = FRESHNESS_TTL_DAYS,
   now: Date = new Date(),
 ): ClaimCitationStatus {
+  if (claim.source_of_claim === "business_submitted" && claim.business_submission_status === "pending_verification") {
+    return {
+      isCitationReady: false,
+      label: "unverified",
+      reason: "business-submitted claim is pending human verification",
+      freshness: "unknown",
+      freshnessWindowDays: ttlDays,
+      lastVerifiedAt: claim.last_verified_at ?? null,
+      warning: null,
+    };
+  }
+
   const hasSource = claim.sources.length > 0;
   const hasVerificationEvent = claim.verification_events.some((event) =>
     event.new_status === "verified" || event.event_type === "source_verified",

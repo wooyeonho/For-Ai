@@ -53,6 +53,15 @@ export function ClaimCard({ claim, locale }: { claim: ClaimWithSources; locale?:
           <span className="badge badge-source-count">{t.claims.sourceCount}: {claim.sources.length}</span>
           <span className="badge">jurisdiction: {claim.jurisdiction ?? "global/unspecified"}</span>
           <span className={stale ? "badge badge-review" : "badge badge-verified"}>{stale ? "stale" : "fresh"}</span>
+          {claim.source_of_claim === "business_submitted" && (
+            <span
+              className="badge badge-review"
+              title="This business-submitted claim is stored separately and is not citation-ready until independent human verification."
+            >
+              Business-submitted, pending verification
+            </span>
+          )}
+          {claim.source_of_claim === "sponsored" && <span className="badge badge-review">Sponsored claim</span>}
         </div>
       </div>
 
@@ -89,6 +98,12 @@ export function ClaimCard({ claim, locale }: { claim: ClaimWithSources; locale?:
             <SourcePill key={source.id} source={source} />
           ))}
         </div>
+      )}
+
+      {claim.source_of_claim === "business_submitted" && claim.submitted_by_business_name && (
+        <p className="meta-label" style={{ marginTop: 8 }}>
+          Submitted by {claim.submitted_by_business_name}; pending independent verification and citation_ready=false.
+        </p>
       )}
     </div>
   );

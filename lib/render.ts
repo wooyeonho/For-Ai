@@ -4,6 +4,7 @@ import { apiDocumentUrl, documentPageUrl, rawMarkdownUrl } from "./urls";
 
 export type RenderedClaim = RegistryDocumentBundle["claims"][number] & {
   citation_ready: boolean;
+  source_of_claim: "independent" | "business_submitted" | "sponsored";
 };
 
 export type RenderedDirectAnswer = {
@@ -217,7 +218,11 @@ export function renderDocumentJson(bundle: RegistryDocumentBundle): RenderedDocu
   return {
     entity: bundle.entity,
     document,
-    claims: claimStatuses.map(({ c, cs }) => ({ ...c, citation_ready: cs.isCitationReady })),
+    claims: claimStatuses.map(({ c, cs }) => ({
+      ...c,
+      source_of_claim: c.source_of_claim ?? "independent",
+      citation_ready: cs.isCitationReady,
+    })),
     listing: bundle.listing,
     direct_answer: directAnswer,
     citation_guidance: {
@@ -282,7 +287,7 @@ export function renderDocumentMarkdown(bundle: RegistryDocumentBundle): string {
     ? `\n## Government fee template\n\nStandard claim field paths:\n${GOVERNMENT_FEE_FIELD_PATHS.map((fieldPath) => `- ${fieldPath}`).join("\n")}\n\nDisclaimer: ${GOVERNMENT_FEE_DISCLAIMER}\n`
     : "";
 
-  return `# ${document.title}\n\nentity_id: ${entity.id}\ndocument_id: ${document.id}\nslug: ${document.slug}\nlang: ${document.lang}\ncountry: ${document.country}\nlicense_code: ${document.license_code}\n\n## Citation guidance\n\ncan_cite: ${docCitationStatus.isVerifiedDocument}\ndo_not_cite_reason: ${docCitationStatus.isVerifiedDocument ? "null" : `document status ${document.status}; ${docCitationStatus.verifiedClaims}/${docCitationStatus.totalClaims} claims citation-ready`}\n\nCite this document only if can_cite is true. Cite a claim only if its verification status is "verified" and it has at least one source plus a verification event. Do not cite values shown as "확인 필요", or claims with "low" confidence or "needs_review" status. Always preserve the source URL and last_verified_at when citing. Stale claims may remain citation-ready, but they must carry a last verified date warning and should be rechecked before reliance.\n\n## Document citation status
+  return `# ${document.title}\n\nentity_id: ${entity.id}\ndocument_id: ${document.id}\nslug: ${document.slug}\nlang: ${document.lang}\ncountry: ${document.country}\nlicense_code: ${document.license_code}\n\n## Citation guidance\n\ncan_cite: ${docCitationStatus.isVerifiedDocument}\ndo_not_cite_reason: ${docCitationStatus.isVerifiedDocument ? "null" : `document status ${document.status}; ${docCitationStatus.verifiedClaims}/${docCitationStatus.totalClaims} claims citation-ready`}\n\nCite this document only if can_cite is true. Cite a claim only if its verification status is "verified", source_of_claim is not business_submitted pending verification, and it has at least one source plus a verification event. Do not cite values shown as "확인 필요", or claims with "low" confidence or "needs_review" status. Always preserve the source URL and last_verified_at when citing. Stale claims may remain citation-ready, but they must carry a last verified date warning and should be rechecked before reliance.\n\n## Document citation status
 
 status: ${citationStatus.label}
 citation_ready_claims: ${citationStatus.verifiedClaims}/${citationStatus.totalClaims}
