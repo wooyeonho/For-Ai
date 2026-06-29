@@ -2122,3 +2122,34 @@ body {
   .badge-disputed, .badge-danger { border-color: #4a2a27; background: #2a1717; color: #d87a6e; }
   .hero-accent { background: linear-gradient(180deg, transparent 64%, rgba(231, 211, 160, 0.18) 64%); }
 }
+
+.direct-answer-question {
+  margin-top: 6px;
+}
+
+.direct-answer-meta {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  margin: 16px 0 0;
+}
+
+.direct-answer-meta div {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 10px 12px;
+  background: var(--soft);
+}
+
+.direct-answer-meta dt {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.direct-answer-meta dd {
+  margin: 4px 0 0;
+  font-weight: 600;
+}
