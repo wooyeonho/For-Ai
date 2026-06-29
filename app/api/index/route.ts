@@ -46,6 +46,8 @@ export async function GET(request: Request) {
     status: item.doc_status,
     can_cite: item.can_cite,
     freshness: item.freshness,
+    freshness_ttl_days: item.freshness_ttl_days,
+    freshness_policy_reason: item.freshness_policy_reason,
     verified_claims: item.verified_claims,
     total_claims: item.total_claims,
     last_verified_at: item.last_verified_at,

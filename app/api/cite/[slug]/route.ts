@@ -161,8 +161,15 @@ export async function GET(
       total_claims: docStatus.totalClaims,
       freshness: docStatus.freshness,
       oldest_verified_at: docStatus.oldestVerifiedAt,
-      freshness_window_days: freshnessWindowDays,
+      freshness_window_days: docStatus.freshnessWindowDays,
       stale_claims: docStatus.staleClaims,
+      freshness_policy: {
+        update_frequency: docStatus.freshnessPolicy.updateFrequency,
+        risk_tier: docStatus.freshnessPolicy.riskTier,
+        disclaimer_type: docStatus.freshnessPolicy.disclaimerType,
+        reason: docStatus.freshnessPolicy.reason,
+      },
+      freshness_description: `Freshness is ${docStatus.freshness}; TTL is ${docStatus.freshnessWindowDays} days based on ${docStatus.freshnessPolicy.reason}.`,
       warning: excludedClaims.length > 0
         ? "Only verified_claims are included in copy-ready citation text. Needs verification or low confidence claims are excluded."
         : null,

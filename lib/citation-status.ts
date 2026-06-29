@@ -44,6 +44,38 @@ export const FRESHNESS_WINDOWS_DAYS: Record<FreshnessDomain, number> = {
   default: FRESHNESS_TTL_DAYS,
 };
 
+export type UpdateFrequency = "static" | "annual" | "event_based" | "monthly" | "weekly" | "daily" | "unknown";
+
+export type FreshnessPolicy = {
+  ttlDays: number;
+  updateFrequency: UpdateFrequency;
+  riskTier: string | null;
+  disclaimerType: string | null;
+  reason: string;
+};
+
+const UPDATE_FREQUENCY_TTL_DAYS: Record<UpdateFrequency, number> = {
+  static: 365,
+  annual: 370,
+  event_based: 180,
+  monthly: 45,
+  weekly: 14,
+  daily: 3,
+  unknown: FRESHNESS_TTL_DAYS,
+};
+
+const FAST_CHANGING_TYPE_PATTERNS = [
+  "sport",
+  "sports",
+  "price",
+  "pricing",
+  "fare",
+  "fee",
+  "hours",
+  "opening_hours",
+  "business_hours",
+];
+
 export type FreshnessLabel = "fresh" | "stale" | "unknown";
 export type VerifiedClaimInput = Pick<ClaimWithSources, "claim_value" | "confidence" | "status" | "last_verified_at" | "sources" | "verification_events">;
 
@@ -86,6 +118,7 @@ export type DocumentCitationStatus = {
   oldestVerifiedAt: string | null;
   freshnessWindowDays: number;
   staleClaims: Array<{ claimId: string; fieldPath: string; lastVerifiedAt: string | null }>;
+  freshnessPolicy: FreshnessPolicy;
 };
 
 export function getVerifiedClaimViolations(claim: VerifiedClaimInput): string[] {
@@ -169,12 +202,98 @@ export function getClaimCitationStatus(
   };
 }
 
+function getStringMetadata(data: Record<string, unknown>, key: string): string | null {
+  const value = data[key];
+  return typeof value === "string" && value.trim() ? value.trim() : null;
+}
+
+function normalizeUpdateFrequency(value: string | null): UpdateFrequency {
+  if (value === "static" || value === "annual" || value === "event_based" || value === "monthly" || value === "weekly" || value === "daily") {
+    return value;
+  }
+  return "unknown";
+}
+
+function hasFastChangingSignal(bundle: RegistryDocumentBundle): boolean {
+  const haystack = [
+    bundle.entity.type,
+    bundle.document.category,
+    bundle.document.template,
+    bundle.document.slug,
+    ...bundle.claims.flatMap((claim) => [claim.field_path, claim.claim_text]),
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+
+  return FAST_CHANGING_TYPE_PATTERNS.some((pattern) => haystack.includes(pattern));
+}
+
+export function getFreshnessPolicy(bundle: RegistryDocumentBundle, ttlOverrideDays?: number): FreshnessPolicy {
+  const data = bundle.document.data ?? {};
+  const riskTier = getStringMetadata(data, "risk_tier");
+  const disclaimerType = getStringMetadata(data, "disclaimer_type");
+  const explicitTtl = typeof data.freshness_ttl_days === "number" && Number.isFinite(data.freshness_ttl_days)
+    ? Math.max(1, Math.floor(data.freshness_ttl_days))
+    : null;
+  const updateFrequency = normalizeUpdateFrequency(getStringMetadata(data, "update_frequency"));
+
+  if (typeof ttlOverrideDays === "number") {
+    return {
+      ttlDays: ttlOverrideDays,
+      updateFrequency,
+      riskTier,
+      disclaimerType,
+      reason: `explicit ttl override (${ttlOverrideDays} days)`,
+    };
+  }
+
+  if (explicitTtl !== null) {
+    return {
+      ttlDays: explicitTtl,
+      updateFrequency,
+      riskTier,
+      disclaimerType,
+      reason: "document.data.freshness_ttl_days",
+    };
+  }
+
+  if (updateFrequency !== "unknown") {
+    return {
+      ttlDays: UPDATE_FREQUENCY_TTL_DAYS[updateFrequency],
+      updateFrequency,
+      riskTier,
+      disclaimerType,
+      reason: `document.data.update_frequency=${updateFrequency}`,
+    };
+  }
+
+  if (hasFastChangingSignal(bundle)) {
+    return {
+      ttlDays: 90,
+      updateFrequency,
+      riskTier,
+      disclaimerType,
+      reason: "fast-changing topic signal",
+    };
+  }
+
+  return {
+    ttlDays: FRESHNESS_TTL_DAYS,
+    updateFrequency,
+    riskTier,
+    disclaimerType,
+    reason: "default freshness policy",
+  };
+}
+
 export function getDocumentCitationStatus(
   bundle: RegistryDocumentBundle,
-  ttlDays: number = getFreshnessWindowDays(bundle.document.category || bundle.entity.type),
+  ttlDays?: number,
   now: Date = new Date(),
 ): DocumentCitationStatus {
-  const claimStatuses = bundle.claims.map((claim) => ({ claim, status: getClaimCitationStatus(claim, ttlDays, now) }));
+  const freshnessPolicy = getFreshnessPolicy(bundle, ttlDays);
+  const claimStatuses = bundle.claims.map((claim) => ({ claim, status: getClaimCitationStatus(claim, freshnessPolicy.ttlDays, now) }));
   const verifiedClaims = claimStatuses.filter(({ status }) => status.isCitationReady).length;
   const totalClaims = bundle.claims.length;
   const unverifiedClaims = totalClaims - verifiedClaims;
@@ -197,7 +316,7 @@ export function getDocumentCitationStatus(
     : null;
   const freshness: FreshnessLabel = !isVerifiedDocument
     ? "unknown"
-    : isStale(oldestVerifiedAt, ttlDays, now)
+    : isStale(oldestVerifiedAt, freshnessPolicy.ttlDays, now)
       ? "stale"
       : "fresh";
 
@@ -209,10 +328,11 @@ export function getDocumentCitationStatus(
     isVerifiedDocument,
     freshness,
     oldestVerifiedAt,
-    freshnessWindowDays: ttlDays,
+    freshnessWindowDays: freshnessPolicy.ttlDays,
     staleClaims: claimStatuses
       .filter(({ status }) => status.isCitationReady && status.freshness === "stale")
       .map(({ claim }) => ({ claimId: claim.id, fieldPath: claim.field_path, lastVerifiedAt: claim.last_verified_at ?? null })),
+    freshnessPolicy,
   };
 }
 

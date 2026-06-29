@@ -8,6 +8,7 @@ import {
   getVerifiedClaimViolations,
   getDocumentCitationStatus,
   getFreshnessWindowDays,
+  getFreshnessPolicy,
   isStale,
   type ClaimCitationStatus,
 } from "../lib/citation-status";
@@ -276,6 +277,32 @@ test("domain freshness windows are applied and stale claims stay citable with wa
   assert.deepEqual(docStatus.staleClaims, [{ claimId: "claim-1", fieldPath: "fare.base_adult", lastVerifiedAt: "2026-05-20" }]);
 });
 
+test("getFreshnessPolicy uses document update_frequency metadata", () => {
+  const staticPolicy = getFreshnessPolicy(bundle([claim()], { document: document({ data: { update_frequency: "static" } }) }));
+  assert.equal(staticPolicy.ttlDays, 365);
+  assert.equal(staticPolicy.updateFrequency, "static");
+
+  const annualPolicy = getFreshnessPolicy(bundle([claim()], { document: document({ data: { update_frequency: "annual" } }) }));
+  assert.equal(annualPolicy.ttlDays, 370);
+
+  const eventPolicy = getFreshnessPolicy(bundle([claim()], { document: document({ data: { update_frequency: "event_based" } }) }));
+  assert.equal(eventPolicy.ttlDays, 180);
+});
+
+test("getDocumentCitationStatus applies metadata TTL unless explicitly overridden", () => {
+  const oldStatic = bundle([claim({ last_verified_at: "2025-07-01" })], {
+    document: document({ data: { update_frequency: "static" } }),
+  });
+  assert.equal(getDocumentCitationStatus(oldStatic, undefined).freshness, "fresh");
+  assert.equal(getDocumentCitationStatus(oldStatic, undefined).freshnessWindowDays, 365);
+  assert.equal(getDocumentCitationStatus(oldStatic, 180).freshness, "stale");
+
+  const explicitTtl = bundle([claim({ last_verified_at: "2026-03-01" })], {
+    document: document({ data: { update_frequency: "static", freshness_ttl_days: 30 } }),
+  });
+  assert.equal(getDocumentCitationStatus(explicitTtl, undefined).freshnessWindowDays, 30);
+  assert.equal(getDocumentCitationStatus(explicitTtl, undefined).freshness, "stale");
+});
 
 test("getCanonicalDirectAnswer returns the first citation-ready value or the unknown placeholder", () => {
   assert.equal(getCanonicalDirectAnswer(bundle([claim({ claim_value: UNKNOWN_FACT_TEXT }), claim({ id: "claim-2", claim_value: "Ready value" })])), "Ready value");

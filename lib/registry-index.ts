@@ -23,6 +23,8 @@ export type RegistryIndexItem = {
   doc_status: string;
   can_cite: boolean;
   freshness: FreshnessLabel;
+  freshness_ttl_days: number;
+  freshness_policy_reason: string;
   verified_claims: number;
   total_claims: number;
   last_verified_at: string | null;
@@ -129,6 +131,8 @@ function staticIndexItems(): RegistryIndexItem[] {
       doc_status: document.status,
       can_cite: status.isVerifiedDocument,
       freshness: status.freshness,
+      freshness_ttl_days: status.freshnessTtlDays,
+      freshness_policy_reason: status.freshnessPolicy.reason,
       verified_claims: status.verifiedClaims,
       total_claims: status.totalClaims,
       last_verified_at: document.last_verified_at,
@@ -177,6 +181,8 @@ export async function getSupabaseIndexItems(staticSlugs: Set<string>): Promise<R
           doc_status: row.status ?? "needs_review",
           can_cite: verified,
           freshness: (verified ? (isStale(row.last_verified_at ?? null) ? "stale" : "fresh") : "unknown") as FreshnessLabel,
+          freshness_ttl_days: 180,
+          freshness_policy_reason: "default freshness policy",
           verified_claims: verifiedClaimCount(row.claims),
           total_claims: totalClaims,
           last_verified_at: row.last_verified_at ?? null,

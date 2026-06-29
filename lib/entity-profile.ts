@@ -64,7 +64,7 @@ function summarize(documents: RegistryDocumentBundle[]): EntityProfileSummary {
     totalClaims += status.totalClaims;
     if (status.isVerifiedDocument) {
       citable += 1;
-      if (isStale(status.oldestVerifiedAt)) anyStale = true;
+      if (isStale(status.oldestVerifiedAt, status.freshnessTtlDays)) anyStale = true;
     }
   }
 
