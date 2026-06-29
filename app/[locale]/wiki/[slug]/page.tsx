@@ -67,6 +67,21 @@ export default async function WikiDocumentPage({
   const jsonLd = buildDocumentJsonLd(bundle);
   const citationStatus = getDocumentCitationStatus(bundle);
   const totalSources = claims.reduce((n, c) => n + c.sources.length, 0);
+  const standardGovernmentFeeFieldPaths = [
+    "fee.amount",
+    "fee.adult",
+    "fee.child",
+    "processing.standard",
+    "processing.expedited",
+    "required_documents",
+    "application_channel",
+    "official_page",
+  ];
+  const isGovernmentFeeTemplate =
+    docData.disclaimer_type === "check_official_source" &&
+    claims.some((claim) => standardGovernmentFeeFieldPaths.includes(claim.field_path)) &&
+    (document.category.toLowerCase().includes("government") ||
+      document.category.toLowerCase().includes("administration"));
 
   return (
     <article>
@@ -119,6 +134,18 @@ export default async function WikiDocumentPage({
         docTitle={document.title}
         locale={locale}
       />
+
+      {isGovernmentFeeTemplate && (
+        <section className="registry-panel" aria-labelledby="government-fee-template">
+          <p className="eyebrow">Government fee template</p>
+          <h2 id="government-fee-template">{t.wiki.governmentFeeDisclaimer}</h2>
+          <ul className="link-list" aria-label="Standard government fee claim field paths">
+            {standardGovernmentFeeFieldPaths.map((fieldPath) => (
+              <li key={fieldPath}><code>{fieldPath}</code></li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       {/* Claims — uses ClaimCard internally */}
       {claims.length === 0 ? (
