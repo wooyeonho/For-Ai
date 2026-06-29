@@ -12,8 +12,8 @@
   "last_verified_at": "2026-06-28",
   "claims": [
     {
-      "claim_id": "resident-id-reissue-fee-fee-reissue",
-      "field_path": "fee.reissue",
+      "claim_id": "resident-id-reissue-fee-amount",
+      "field_path": "fee.amount",
       "claim_text": "주민등록증 재발급 수수료는?",
       "claim_value": "5,000원 (IC칩 미포함) / 10,000원 (IC칩 포함)",
       "confidence": "high",
@@ -36,9 +36,9 @@
       }
     },
     {
-      "claim_id": "resident-id-reissue-fee-processing-days",
-      "field_path": "processing.days",
-      "claim_text": "주민등록증 재발급 소요 기간은?",
+      "claim_id": "resident-id-reissue-processing-standard",
+      "field_path": "processing.standard",
+      "claim_text": "주민등록증 재발급 표준 처리기간은?",
       "claim_value": "총 14일 (법정 처리기간)",
       "confidence": "high",
       "status": "verified",
@@ -57,6 +57,63 @@
         "actor": "ai-source-fetch",
         "verified_at": "2026-06-28",
         "note": "정부24(gov.kr) 공식 민원안내 페이지에서 직접 확인. 2026-06-28 기준. 최종 사람 승인 대기."
+      }
+    },
+    {
+      "claim_id": "resident-id-reissue-processing-expedited",
+      "field_path": "processing.expedited",
+      "claim_text": "주민등록증 재발급 긴급/신속 처리기간은?",
+      "claim_value": "확인 필요",
+      "confidence": "low",
+      "status": "needs_review",
+      "last_verified_at": null,
+      "sources": [],
+      "verification_event": null
+    },
+    {
+      "claim_id": "resident-id-reissue-required-documents",
+      "field_path": "required_documents",
+      "claim_text": "주민등록증 재발급 필요 서류는?",
+      "claim_value": "확인 필요",
+      "confidence": "low",
+      "status": "needs_review",
+      "last_verified_at": null,
+      "sources": [],
+      "verification_event": null
+    },
+    {
+      "claim_id": "resident-id-reissue-application-channel",
+      "field_path": "application_channel",
+      "claim_text": "주민등록증 재발급 신청 채널은?",
+      "claim_value": "확인 필요",
+      "confidence": "low",
+      "status": "needs_review",
+      "last_verified_at": null,
+      "sources": [],
+      "verification_event": null
+    },
+    {
+      "claim_id": "resident-id-reissue-official-page",
+      "field_path": "official_page",
+      "claim_text": "주민등록증 재발급 공식 정부 안내 페이지",
+      "claim_value": "https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=13100000018",
+      "confidence": "high",
+      "status": "verified",
+      "last_verified_at": "2026-06-28",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "정부24 — 주민등록증 재발급 신청 민원안내",
+          "url": "https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=13100000018",
+          "observed_at": "2026-06-28",
+          "note": "정부24 주민등록증 재발급 신청 공식 민원안내 페이지."
+        }
+      ],
+      "verification_event": {
+        "event_type": "source_verified",
+        "actor": "ai-source-fetch",
+        "verified_at": "2026-06-28",
+        "note": "공식 정부 출처 URL을 문서 claim으로 기록."
       }
     }
   ]

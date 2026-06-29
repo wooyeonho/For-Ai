@@ -67,6 +67,7 @@ export interface UITranslations {
     correctionReport: string;
     hallucinationReport: string;
     diagnostics: string;
+    governmentFeeDisclaimer: string;
   };
   footer: {
     tagline: string;
@@ -154,6 +155,7 @@ const ko: UITranslations = {
     correctionReport: "정정 보고",
     hallucinationReport: "AI 할루시네이션 보고",
     diagnostics: "AI 준비도 진단",
+    governmentFeeDisclaimer: "신청 전 항상 공식 정부 출처를 확인하세요.",
   },
   footer: {
     tagline: "AI·검색엔진·사람이 같은 사실을 같은 근거로 인용하도록 만드는 글로벌 claim-level 사실 레지스트리. 확인되지 않은 정보는 추측하지 않고 \"확인 필요\"로 남깁니다.",
@@ -241,6 +243,7 @@ const en: UITranslations = {
     correctionReport: "Correction report",
     hallucinationReport: "AI hallucination report",
     diagnostics: "AI-readiness diagnostics",
+    governmentFeeDisclaimer: "Always check the official government source before applying.",
   },
   footer: {
     tagline: "A global claim-level fact registry where AI, search engines, and humans cite the same facts from the same sources. Unverified information is marked as \"Needs verification\" (\"확인 필요\") instead of guessing.",
@@ -328,6 +331,7 @@ const hi: UITranslations = {
     correctionReport: "सुधार रिपोर्ट",
     hallucinationReport: "AI भ्रम रिपोर्ट",
     diagnostics: "AI-तत्परता निदान",
+    governmentFeeDisclaimer: "आवेदन करने से पहले हमेशा आधिकारिक सरकारी स्रोत देखें.",
   },
   footer: {
     tagline: "एक स्थानीय तथ्य रजिस्ट्री जहाँ AI, खोज इंजन और लोग समान स्रोतों से समान तथ्य उद्धृत करते हैं। असत्यापित जानकारी को अनुमान लगाने के बजाय \"सत्यापन आवश्यक\" (\"확인 필요\") के रूप में चिह्नित किया जाता है।",
@@ -415,6 +419,7 @@ const ar: UITranslations = {
     correctionReport: "تقرير التصحيح",
     hallucinationReport: "تقرير هلوسة AI",
     diagnostics: "تشخيص جاهزية AI",
+    governmentFeeDisclaimer: "تحقق دائمًا من المصدر الحكومي الرسمي قبل التقديم.",
   },
   footer: {
     tagline: "سجل حقائق محلي حيث يستشهد الذكاء الاصطناعي ومحركات البحث والبشر بنفس الحقائق من نفس المصادر. المعلومات غير الموثقة تُعلَّم بـ \"بحاجة إلى تحقق\" (\"확인 필요\") بدلاً من التخمين.",
@@ -502,6 +507,7 @@ const es: UITranslations = {
     correctionReport: "Informe de corrección",
     hallucinationReport: "Informe de alucinación de IA",
     diagnostics: "Diagnóstico de preparación para IA",
+    governmentFeeDisclaimer: "Consulta siempre la fuente oficial del gobierno antes de presentar la solicitud.",
   },
   footer: {
     tagline: "Un registro local de hechos donde la IA, los motores de búsqueda y los humanos citan los mismos hechos de las mismas fuentes. La información no verificada se marca como \"Verificación pendiente\" (\"확인 필요\") en lugar de adivinar.",
@@ -589,6 +595,7 @@ const ja: UITranslations = {
     correctionReport: "訂正レポート",
     hallucinationReport: "AIハルシネーションレポート",
     diagnostics: "AI準備状況診断",
+    governmentFeeDisclaimer: "申請前に必ず政府の公式情報源を確認してください。",
   },
   footer: {
     tagline: "AI・検索エンジン・人間が同じ事実を同じ根拠で引用するローカル・ファクト・レジストリ。未確認情報は推測せず「要確認」（\"확인 필요\"）として残します。",
@@ -676,6 +683,7 @@ const zh: UITranslations = {
     correctionReport: "更正报告",
     hallucinationReport: "AI幻觉报告",
     diagnostics: "AI就绪性诊断",
+    governmentFeeDisclaimer: "申请前请务必查看政府官方来源。",
   },
   footer: {
     tagline: "AI、搜索引擎和人类从相同来源引用相同事实的本地事实注册表。未验证的信息标记为“待核实”（\"확인 필요\"）而不是猜测。",
