@@ -80,6 +80,7 @@ export function generatePlaceholderClaimsStub(input: {
     claim_text: `${fieldPath} 값은 확인이 필요합니다.`,
     claim_value: "확인 필요",
     jurisdiction: null,
+    lang: "ko", original_claim_id: null, translation_status: null,
     confidence: "low",
     status: "needs_review",
     last_verified_at: null,

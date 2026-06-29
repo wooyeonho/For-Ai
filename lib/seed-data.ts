@@ -10,7 +10,9 @@ function claimStub(
   return {
     id, document_id: docId, entity_id: entityId,
     field_path: fieldPath, claim_text: text,
-    claim_value: "확인 필요", jurisdiction: entityId.slice(0, 2).toUpperCase(), confidence: "low", status: "needs_review",
+    claim_value: "확인 필요", jurisdiction: entityId.slice(0, 2).toUpperCase(),
+    lang: "ko", original_claim_id: null, translation_status: null,
+    confidence: "low", status: "needs_review",
     last_verified_at: null, created_at: null, updated_at: null,
     sources: [], verification_events: [],
   };
@@ -30,12 +32,13 @@ function vClaim(
     id, document_id: docId, entity_id: entityId,
     field_path: fieldPath, claim_text: text, claim_value: value,
     jurisdiction: entityId.slice(0, 2).toUpperCase(),
+    lang: "ko", original_claim_id: null, translation_status: null,
     confidence, status: "verified", last_verified_at: observedAt,
     created_at: null, updated_at: null,
     sources: [{
       id: `src-${id}`, claim_id: id, source_type: "official",
       title: sourceTitle, url: sourceUrl, citation: sourceCitation,
-      observed_at: observedAt, contributor_hash: null, created_at: null,
+      observed_at: observedAt, lang: "ko", contributor_hash: null, created_at: null,
     } as ClaimSource],
     verification_events: [{
       id: `ve-${id}`, claim_id: id, event_type: "source_verified",

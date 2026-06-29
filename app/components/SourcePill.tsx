@@ -16,12 +16,13 @@ const SOURCE_TYPE_LABELS: Record<string, string> = {
 export function SourcePill({ source }: { source: ClaimSource }) {
   const label = SOURCE_TYPE_LABELS[source.source_type] ?? source.source_type;
   const title = source.title ?? source.url ?? source.citation ?? "출처";
+  const sourceLanguage = source.lang ? ` · ${source.lang}` : "";
 
   if (source.url) {
     return (
       <a href={source.url} className="source-pill" target="_blank" rel="noopener noreferrer">
         <span className="source-type">{label}</span>
-        <span className="source-title">{title}</span>
+        <span className="source-title">{title}{sourceLanguage}</span>
       </a>
     );
   }
@@ -29,7 +30,7 @@ export function SourcePill({ source }: { source: ClaimSource }) {
   return (
     <span className="source-pill">
       <span className="source-type">{label}</span>
-      <span className="source-title">{title}</span>
+      <span className="source-title">{title}{sourceLanguage}</span>
     </span>
   );
 }

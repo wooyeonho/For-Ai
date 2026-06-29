@@ -9,6 +9,7 @@ create type confidence_level as enum ('low', 'medium', 'high');
 create type document_status as enum ('ai_draft', 'needs_review', 'verified', 'published', 'archived');
 create type claim_status as enum ('needs_review', 'verified', 'disputed', 'unknown');
 create type source_type as enum ('official', 'platform', 'review', 'user', 'phone', 'photo', 'document', 'web', 'other', 'unknown');
+create type translation_status as enum ('machine_translated', 'human_reviewed');
 create type submission_status as enum ('new', 'reviewing', 'accepted', 'rejected', 'spam', 'spam_suspected');
 create type verification_event_type as enum ('created', 'reviewed', 'source_added', 'source_removed', 'status_changed', 'confidence_changed');
 
@@ -59,17 +60,25 @@ create table claims (
   claim_text text not null,
   claim_value text not null,
   jurisdiction text,
+  lang text not null default 'en',
+  original_claim_id text references claims(id) on delete restrict,
+  translation_status translation_status,
   confidence confidence_level not null default 'low',
   status claim_status not null default 'needs_review',
   last_verified_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   constraint claims_entity_id_required check (length(entity_id) > 0),
-  constraint claims_field_path_required check (length(field_path) > 0)
+  constraint claims_field_path_required check (length(field_path) > 0),
+  constraint claims_lang_required check (length(lang) > 0),
+  constraint translated_claims_link_to_original check (
+    translation_status is null or original_claim_id is not null
+  )
 );
 
 create index claims_document_id_idx on claims (document_id);
 create index claims_entity_id_idx on claims (entity_id);
+create index claims_original_claim_id_idx on claims (original_claim_id);
 create unique index claims_document_field_path_key on claims (document_id, field_path);
 
 create table claim_sources (
@@ -79,10 +88,18 @@ create table claim_sources (
   title text,
   url text,
   citation text,
+  lang text,
   observed_at timestamptz,
   contributor_hash text,
   created_at timestamptz not null default now()
 );
+
+comment on column documents.slug is 'Canonical stable English slug shared across locale routes.';
+comment on column documents.title is 'Locale-specific display title; do not use as canonical identity.';
+comment on column claims.lang is 'Language of this claim text/value.';
+comment on column claims.original_claim_id is 'For translated claims, references the original source-language claim.';
+comment on column claims.translation_status is 'machine_translated until human review; human_reviewed after approval.';
+comment on column claim_sources.lang is 'Original language of the source; preserve instead of translating source identity.';
 
 create index claim_sources_claim_id_idx on claim_sources (claim_id);
 
