@@ -2,14 +2,53 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { makeContributorHashForRequest } from "@/lib/contributor-hash";
 import {
-  SUGGEST_TOPIC_MESSAGE_MAX_LENGTH,
-  contributorSubmissionRateLimited,
   hasHoneypotValue,
   inspectSubmissionText,
 } from "@/lib/submission-limits";
+import { rateLimited } from "@/lib/rate-limit";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const SUPABASE_ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
+
+const SUPPORTED_LANGUAGES = new Set(["en", "ko", "ja", "zh", "es", "hi", "ar"]);
+const MAX_PER_HOUR = 5;
+const HOUR_MS = 60 * 60 * 1000;
+
+function text(body: Record<string, unknown>, key: string, max = 500): string {
+  return String(body[key] ?? "").trim().slice(0, max);
+}
+
+function optionalUrl(value: string): string | null {
+  if (!value) return null;
+  try {
+    const parsed = new URL(value);
+    if (!["http:", "https:"].includes(parsed.protocol)) return null;
+    return parsed.toString();
+  } catch {
+    return null;
+  }
+}
+
+function optionalEmail(value: string): string | null {
+  if (!value) return null;
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ? value.slice(0, 254) : null;
+}
+
+function slugify(input: string): string {
+  return input
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[^a-z0-9가-힣\u3040-\u30ff\u3400-\u9fff]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 80) || `suggested-topic-${Date.now()}`;
+}
+
+function looksLikeSpam(fields: string[]): boolean {
+  const combined = fields.join("\n").toLowerCase();
+  const urlCount = (combined.match(/https?:\/\//g) ?? []).length;
+  const blockedTerms = ["casino", "viagra", "crypto giveaway", "loan guaranteed"];
+  return urlCount > 3 || blockedTerms.some((term) => combined.includes(term));
+}
 
 export async function POST(request: Request) {
   let body: Record<string, unknown>;
@@ -20,41 +59,59 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "invalid JSON" }, { status: 400 });
   }
 
+  // honeypot check (submission-limits) + new global fields
   if (hasHoneypotValue(body)) {
-    return NextResponse.json({ error: "submission rejected", code: "HONEYPOT_FILLED" }, { status: 400 });
+    return NextResponse.json({ accepted: true, status: "candidate", raw_ip_stored: false });
   }
 
-  const question    = String(body.question    ?? "").trim();
-  const category    = String(body.category    ?? "").trim();
-  const suggestedSlug = String(body.suggested_slug ?? "").trim() || null;
-  const reason      = String(body.reason      ?? "").trim();
-  const sourceUrl   = String(body.source_url  ?? "").trim() || null;
-  const relatedUrl  = String(body.related_url ?? "").trim() || null;
-  const aiContext   = String(body.ai_context  ?? "").trim() || null;
+  const question = text(body, "question", 300);
+  const country = text(body, "country", 120);
+  const cityRegion = text(body, "city_region", 120) || text(body, "city", 120) || null;
+  const category = text(body, "category", 80);
+  const languageInput = text(body, "language", 10) || text(body, "lang", 10) || "en";
+  const language = SUPPORTED_LANGUAGES.has(languageInput) ? languageInput : "en";
+  const whyThisMatters = text(body, "why_this_matters", 1000) || text(body, "reason", 1000);
+  const sourceUrlInput = text(body, "source_url", 500);
+  const sourceUrl = optionalUrl(sourceUrlInput);
+  const emailInput = text(body, "email", 254);
+  const email = optionalEmail(emailInput);
+  const honeypot = text(body, "website", 200);
 
-  if (question.length > SUGGEST_TOPIC_MESSAGE_MAX_LENGTH || reason.length > SUGGEST_TOPIC_MESSAGE_MAX_LENGTH || (aiContext?.length ?? 0) > SUGGEST_TOPIC_MESSAGE_MAX_LENGTH) {
+  if (honeypot) {
+    return NextResponse.json({ accepted: true, status: "candidate", raw_ip_stored: false });
+  }
+
+  if (!question || !country || !category || !language || !whyThisMatters) {
     return NextResponse.json(
-      { error: `message fields must be ${SUGGEST_TOPIC_MESSAGE_MAX_LENGTH} characters or fewer`, code: "MESSAGE_TOO_LONG", max_length: SUGGEST_TOPIC_MESSAGE_MAX_LENGTH },
+      { error: "question, country, category, language, and why_this_matters are required" },
       { status: 400 }
     );
   }
 
-  if (!question || !category || !reason) {
-    return NextResponse.json(
-      { error: "question, category, and reason are required" },
-      { status: 400 }
-    );
+  if (sourceUrlInput && !sourceUrl) {
+    return NextResponse.json({ error: "source_url must be a valid http(s) URL" }, { status: 400 });
   }
 
-  let hash: string;
+  if (emailInput && !email) {
+    return NextResponse.json({ error: "email must be valid when provided" }, { status: 400 });
+  }
+
+  if (looksLikeSpam([question, country, cityRegion ?? "", category, whyThisMatters, sourceUrl ?? ""])) {
+    return NextResponse.json({ error: "spam_detected" }, { status: 422 });
+  }
+
+  let contributorHash: string;
   try {
-    hash = makeContributorHashForRequest(request);
+    contributorHash = makeContributorHashForRequest(request);
   } catch (error) {
-    console.error('[suggest-topic] Contributor salt missing:', error);
-    return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+    console.error("[suggest-topic] Contributor salt missing:", error);
+    return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
   }
 
-  // Supabase must be configured for durable storage
+  if (rateLimited("suggest-topic", contributorHash, MAX_PER_HOUR, HOUR_MS)) {
+    return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+  }
+
   if (!SUPABASE_URL || !SUPABASE_ANON) {
     return NextResponse.json(
       { accepted: false, error: "DB not configured — submission was not stored" },
@@ -62,58 +119,61 @@ export async function POST(request: Request) {
     );
   }
 
-  const lang = String(body.lang ?? "en").trim().slice(0, 5);
+  const spamCheck = inspectSubmissionText([question, country, cityRegion ?? "", category, whyThisMatters, sourceUrl ?? ""]);
 
-  let storage: "db" | "none" = "none";
-  let submissionStatus = "new";
   try {
     const sb = createClient(SUPABASE_URL, SUPABASE_ANON);
-    const limit = contributorSubmissionRateLimited(hash);
-    if (limit) {
-      return NextResponse.json(
-        { error: "submission rate limit exceeded", code: `RATE_LIMIT_${limit.toUpperCase()}` },
-        { status: 429 }
-      );
-    }
-
-    const spamCheck = inspectSubmissionText([question, category, reason, sourceUrl, relatedUrl, aiContext]);
-    submissionStatus = spamCheck.status;
-    const { error: suggestionError } = await sb.from("topic_suggestions").insert({
-      contributor_hash: hash,
+    const suggestionPayload = {
+      contributor_hash: contributorHash,
       question,
+      country,
+      city_region: cityRegion,
       category,
-      reason,
-      related_url: relatedUrl,
+      language,
+      reason: whyThisMatters,
       source_url: sourceUrl,
+      contact_email: email,
       status: spamCheck.status,
-    });
+    };
 
-    const { error } = await sb.from("topic_candidates").insert({
+    const candidatePayload = {
       source: "user_suggested",
       status: spamCheck.status,
-      lang,
+      lang: language,
+      country: country.toLowerCase(),
       title: question,
-      slug: suggestedSlug ?? question.toLowerCase().replace(/[^a-z0-9가-힣]+/g, "-").slice(0, 80),
+      slug: slugify(`${country}-${cityRegion ?? "global"}-${question}-${Date.now().toString(36)}`),
       category,
+      subcategory: cityRegion,
       risk_tier: "medium",
-      why_people_ask_ai: reason,
-      why_ai_gets_wrong: aiContext,
+      why_people_ask_ai: whyThisMatters,
+      why_ai_gets_wrong: "Public suggestion awaiting admin review; no factual claim is verified yet.",
       claims: [{
         field_path: "claim.main",
         question,
-        placeholder_value: "확인 필요",
-        required_source_type: sourceUrl ? "official" : "document",
+        placeholder_value: language === "ko" ? "확인 필요" : "Needs verification",
+        confidence: "low",
+        verification_status: "needs_review",
+        required_source_type: sourceUrl ? "official" : "traceable_source",
       }],
-      source_hints: sourceUrl ? [{ url: sourceUrl, title: "제보자 제출", hint_type: "official" }] : [],
-      contributor_hash: hash,
-    });
+      source_hints: sourceUrl ? [{ url: sourceUrl, title: "Submitted source URL", hint_type: "source_hint" }] : [],
+      contributor_hash: contributorHash,
+    };
 
-    if (!suggestionError || !error) storage = "db";
-  } catch {
-    // DB write failed
-  }
+    const [{ error: suggestionError }, { error: candidateError }] = await Promise.all([
+      sb.from("topic_suggestions").insert(suggestionPayload),
+      sb.from("topic_candidates").insert(candidatePayload),
+    ]);
 
-  if (storage === "none") {
+    if (suggestionError || candidateError) {
+      console.error("[suggest-topic] Supabase insert failed", { suggestionError, candidateError });
+      return NextResponse.json(
+        { accepted: false, error: "Failed to save suggestion — please try again later" },
+        { status: 500 }
+      );
+    }
+  } catch (error) {
+    console.error("[suggest-topic] Unexpected save failure", error);
     return NextResponse.json(
       { accepted: false, error: "Failed to save suggestion — please try again later" },
       { status: 500 }
@@ -122,8 +182,8 @@ export async function POST(request: Request) {
 
   return NextResponse.json({
     accepted: true,
-    status: submissionStatus,
-    storage,
+    status: spamCheck.status === "spam_suspected" ? "spam_suspected" : "candidate",
+    admin_queue: "topic_candidates.status=new",
     raw_ip_stored: false,
   });
 }
