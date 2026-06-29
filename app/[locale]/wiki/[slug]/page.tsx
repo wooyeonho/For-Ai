@@ -142,6 +142,18 @@ export default async function WikiDocumentPage({
         </ul>
       </section>
 
+      {/* Language policy */}
+      <section className="registry-panel" aria-labelledby="language-policy">
+        <h2 id="language-policy">{t.wiki.languagePolicy}</h2>
+        <ul className="link-list">
+          <li>{t.wiki.canonicalSlugPolicy}</li>
+          <li>{t.wiki.localizedTitlePolicy}</li>
+          <li>{t.wiki.sourceLanguagePolicy}</li>
+          <li>{t.wiki.translatedClaimPolicy}</li>
+          <li>{t.wiki.machineTranslationWarning}</li>
+        </ul>
+      </section>
+
       {/* Machine-readable links */}
       <nav className="registry-panel" aria-labelledby="machine-links">
         <h2 id="machine-links">{t.wiki.machineReadable}</h2>

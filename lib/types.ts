@@ -1,4 +1,5 @@
 export type Confidence = "low" | "medium" | "high";
+export type TranslationStatus = "machine_translated" | "human_reviewed";
 export type DocumentStatus = "ai_draft" | "needs_review" | "verified" | "published" | "archived";
 export type ClaimStatus = "needs_review" | "verified" | "disputed" | "unknown";
 export type SourceType =
@@ -61,6 +62,9 @@ export type Claim = {
   claim_text: string;
   claim_value: string;
   jurisdiction: string | null;
+  lang: string;
+  original_claim_id: string | null;
+  translation_status: TranslationStatus | null;
   confidence: Confidence;
   status: ClaimStatus;
   last_verified_at: string | null;
@@ -75,6 +79,7 @@ export type ClaimSource = {
   title: string | null;
   url: string | null;
   citation: string | null;
+  lang: string | null;
   observed_at: string | null;
   contributor_hash: string | null;
   created_at: string | null;
