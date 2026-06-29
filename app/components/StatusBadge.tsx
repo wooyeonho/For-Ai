@@ -17,7 +17,7 @@ export function ClaimStatusBadge({ status, locale }: { status: ClaimStatus; loca
     disputed:     t.claims.disputed,
     unknown:      t.claims.statusUnknown,
   };
-  return <span className={statusClass(status)}>{labels[status]}</span>;
+  return <span className={statusClass(status)} title={`verification status: ${status}`}>{labels[status]}</span>;
 }
 
 export function DocumentStatusBadge({ status, locale }: { status: DocumentStatus; locale?: string }) {
@@ -29,5 +29,5 @@ export function DocumentStatusBadge({ status, locale }: { status: DocumentStatus
     published:    t.claims.statusPublished,
     archived:     t.claims.statusArchived,
   };
-  return <span className={statusClass(status)}>{labels[status]}</span>;
+  return <span className={statusClass(status)} title={`verification status: ${status}`}>{labels[status]}</span>;
 }

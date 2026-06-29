@@ -77,6 +77,20 @@ export default async function WikiDocumentPage({
         ? 30
         : null;
   const isCommercePolicy = document.template === "commerce_policy";
+  const topCitationLabel = citationStatus.freshness === "stale"
+    ? "Stale"
+    : citationStatus.isVerifiedDocument
+      ? "Citation-ready"
+      : citationStatus.verifiedClaims > 0
+        ? "Mixed"
+        : "Needs verification";
+  const topCitationClass = topCitationLabel === "Citation-ready"
+    ? "document-citation-status document-citation-status--ready"
+    : topCitationLabel === "Stale"
+      ? "document-citation-status document-citation-status--stale"
+      : topCitationLabel === "Mixed"
+        ? "document-citation-status document-citation-status--mixed"
+        : "document-citation-status document-citation-status--review";
   const totalSources = claims.reduce((n, c) => n + c.sources.length, 0);
   const standardGovernmentFeeFieldPaths = [
     "fee.amount",
@@ -127,6 +141,10 @@ export default async function WikiDocumentPage({
           {isPromoted ? t.wiki.aiGenerated : t.wiki.claimRegistry}
         </p>
         <h1>{document.title}</h1>
+        <div className={topCitationClass} aria-label="Document citation status">
+          <strong>{topCitationLabel}</strong>
+          <span>{citationStatus.verifiedClaims}/{citationStatus.totalClaims} citation-ready · freshness: {citationStatus.freshness}</span>
+        </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
           <span className={citationStatus.isVerifiedDocument ? "badge badge-verified" : "badge badge-review"}>
             {citationStatus.label}

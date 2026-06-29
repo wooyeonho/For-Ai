@@ -17,7 +17,7 @@ export function ConfidenceBadge({ level, locale }: { level: Confidence; locale?:
     high: t.claims.confidenceHigh,
   };
   return (
-    <span className={CONFIDENCE_STYLES[level]}>
+    <span className={CONFIDENCE_STYLES[level]} title={`confidence: ${level}`}>
       {t.claims.confidence}: {labels[level]}
     </span>
   );
