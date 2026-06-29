@@ -56,6 +56,39 @@ async function getCitation(slug: string): Promise<Record<string, unknown> | null
   return res.json();
 }
 
+interface CitationFact {
+  field_path: string;
+  text?: string;
+  value?: string;
+  last_verified_at?: string | null;
+  sources: string[];
+}
+
+/** Return only claims that are safe to cite, preserving source URLs. */
+async function getCitationReadyFacts(slug: string): Promise<CitationFact[]> {
+  const citation = await getCitation(slug);
+  const claims = (citation?.claims as Claim[] | undefined) ?? [];
+
+  return claims
+    .filter((claim) => claim.citation_ready === true)
+    .map((claim) => ({
+      field_path: claim.field_path,
+      text: (claim as Claim & { claim_text?: string }).claim_text,
+      value: claim.claim_value,
+      last_verified_at: (claim as Claim & { last_verified_at?: string | null }).last_verified_at,
+      sources: claim.sources.map((source) => source.url).filter(Boolean),
+    }));
+}
+
+/** Discover verified-only, citation-ready documents before selecting a slug. */
+async function getVerifiedIndex(limit = 10): Promise<Array<Record<string, unknown>>> {
+  const params = new URLSearchParams({ verification: "verified", cite: "true", limit: String(limit) });
+  const res = await fetch(`${BASE_URL}/api/index?${params}`, { headers });
+  if (!res.ok) throw new Error(`HTTP ${res.status}: ${await res.text()}`);
+  const data = await res.json();
+  return data.items ?? [];
+}
+
 /** Get rate limit status from response headers. */
 function getRateLimitInfo(res: Response) {
   return {
@@ -70,15 +103,19 @@ function getRateLimitInfo(res: Response) {
 async function main() {
   const slug = "seoul-metro-base-fare";
 
+  // 0. Discover verified-only facts when you do not already know a slug
+  const verifiedDocuments = await getVerifiedIndex(3);
+  console.log(`Verified discovery results: ${verifiedDocuments.length}`);
+
   // 1. Check citation safety
   const canCite = await checkCitationSafety(slug);
   console.log(`${canCite ? "✓" : "✗"} ${slug} is ${canCite ? "" : "NOT "}citation-ready`);
 
   if (canCite) {
-    // 2. Get structured citation
-    const citation = await getCitation(slug);
-    if (citation) {
-      console.log(`  URL: ${citation.url}`);
+    // 2. Get actual citation-ready facts for AI answers
+    const facts = await getCitationReadyFacts(slug);
+    for (const fact of facts) {
+      console.log(`  Cite: ${fact.field_path} = ${fact.value} (${fact.sources[0] ?? "no source URL"})`);
     }
   }
 
@@ -88,7 +125,11 @@ async function main() {
   console.log(`Claims: ${doc.claims.length}`);
   console.log(`Verified: ${doc.citation_guidance.verified_claims_count}/${doc.citation_guidance.total_claims_count}`);
 
-  // 4. Filter citation-ready claims only
+  // 4. Inspect rate-limit headers if you need client-side throttling
+  const rateLimitRes = await fetch(`${BASE_URL}/api/documents/${slug}`, { method: "HEAD", headers });
+  console.log("Rate limit:", getRateLimitInfo(rateLimitRes));
+
+  // 5. Filter citation-ready claims only
   const citableClaims = doc.claims.filter((c) => c.citation_ready);
   for (const claim of citableClaims) {
     console.log(`  [${claim.confidence}] ${claim.field_path}: ${claim.claim_value}`);
