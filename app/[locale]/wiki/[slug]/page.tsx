@@ -15,6 +15,7 @@ import { ClaimTable } from "../../../components/ClaimTable";
 import { ViewTracker } from "../../../components/ViewTracker";
 import { DocumentStatsBar } from "../../../components/DocumentStatsBar";
 import { WikiPostSection } from "../../../components/WikiPostSection";
+import { CorrectionCTA } from "../../../components/CorrectionCTA";
 
 export const revalidate = 60;
 
@@ -119,6 +120,10 @@ export default async function WikiDocumentPage({
         docTitle={document.title}
         locale={locale}
       />
+
+      {!citationStatus.isVerifiedDocument && (
+        <CorrectionCTA slug={document.slug} unverified />
+      )}
 
       {/* Claims — uses ClaimCard internally */}
       {claims.length === 0 ? (
