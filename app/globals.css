@@ -2782,3 +2782,70 @@ body {
 .mission-card .meta-item dd { font-family: inherit; word-break: normal; }
 .mission-card .cta-link { margin-top: auto; }
 @media (max-width: 760px) { .mission-grid { grid-template-columns: 1fr; } }
+
+/* Community challenges */
+.challenge-page {
+  display: grid;
+  gap: 16px;
+}
+
+.challenge-hero {
+  border-inline-start: 6px solid var(--accent);
+}
+
+.challenge-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
+.challenge-card {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.challenge-sponsored-label {
+  margin: 0;
+  padding: 10px 12px;
+  border: 1px solid rgba(245, 190, 92, 0.44);
+  border-radius: 8px;
+  background: var(--warning-bg);
+  color: var(--warning);
+  font-weight: 700;
+}
+
+.challenge-meta {
+  margin: 0;
+}
+
+.challenge-progress {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--soft);
+}
+
+.challenge-progress strong {
+  font-size: 1.35rem;
+}
+
+.challenge-progress-large strong {
+  font-size: 2rem;
+}
+
+.challenge-progress-bar {
+  block-size: 12px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #d8dee8;
+}
+
+.challenge-progress-bar span {
+  display: block;
+  block-size: 100%;
+  border-radius: inherit;
+  background: var(--success);
+}
