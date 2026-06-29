@@ -3,8 +3,9 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 
-type SourceRow = { id: string; title?: string | null; url?: string | null; source_type?: string | null };
+type SourceRow = { id: string; title?: string | null; url?: string | null; source_type?: string | null; citation?: string | null; observed_at?: string | null };
 type VerificationEventRow = { id: string; note?: string | null; created_at?: string | null; new_status?: string | null };
+type SourceCandidate = { title?: string; url?: string; source_type?: string; citation?: string };
 type ClaimRow = {
   id: string;
   field_path: string;
@@ -13,6 +14,11 @@ type ClaimRow = {
   confidence: string;
   status: string;
   last_verified_at?: string | null;
+  contributor_hash?: string | null;
+  submitter?: string | null;
+  ai_provider?: string | null;
+  ai_model?: string | null;
+  source_candidates?: SourceCandidate[];
   claim_sources?: SourceRow[];
   verification_events?: VerificationEventRow[];
 };
@@ -25,13 +31,20 @@ type DocumentRow = {
   status: string;
   confidence: string;
   lang?: string;
-  country?: string;
-  category?: string;
+  entity_id?: string;
+  source_hints?: SourceCandidate[];
+  ai_provider?: string | null;
+  ai_model?: string | null;
   claims?: ClaimRow[];
 };
 type ClaimListMeta = { count: number; limit: number; offset: number; has_more: boolean };
 
-const SOURCE_TYPES = ["official", "platform", "document", "web", "review", "other"];
+const SOURCE_TYPES = ["official", "platform", "document", "web", "review", "user", "phone", "photo", "other", "unknown"];
+const SOURCE_TRUST: Record<string, number> = { official: 95, platform: 85, document: 80, web: 65, photo: 60, phone: 55, review: 40, user: 30, other: 25, unknown: 0 };
+function trustScore(sourceType?: string | null, url?: string | null, citation?: string | null) {
+  const base = SOURCE_TRUST[sourceType ?? "unknown"] ?? 0;
+  return Math.min(100, base + (url ? 3 : 0) + (citation ? 2 : 0));
+}
 
 export default function VerifyClaimPage() {
   const [secret, setSecret] = useState("");
@@ -45,7 +58,7 @@ export default function VerifyClaimPage() {
   const [url, setUrl] = useState("");
   const [citation, setCitation] = useState("");
   const [confidence, setConfidence] = useState("high");
-  const [filters, setFilters] = useState({ country: "all", domain: "all", source: "all", confidence: "all", status: "all", stale: "all" });
+  const [localFilters, setLocalFilters] = useState({ country: "all", domain: "all", source: "all", confidence: "all", status: "all", stale: "all" });
   const [selectedClaimIds, setSelectedClaimIds] = useState<string[]>([]);
   const [reason, setReason] = useState("");
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
@@ -154,13 +167,13 @@ export default function VerifyClaimPage() {
     }
   }
 
-  async function submitVerify() {
+  async function runClaimAction(action: "verify" | "reject" | "mark_unknown" | "edit_value" | "attach_source" | "promote_document") {
     if (!selectedClaim) return;
     const res = await fetch("/api/admin/verify-claim", {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-admin-secret": secret, "x-admin-csrf": "1", ...(adminActor.trim() ? { "x-admin-actor": adminActor.trim() } : {}) },
       body: JSON.stringify({
-        action: "verify",
+        action,
         claim_id: selectedClaim.id,
         claim_value: claimValue,
         source_type: sourceType,
@@ -173,11 +186,11 @@ export default function VerifyClaimPage() {
     });
     const data = await res.json();
     if (res.ok) {
-      setMessage({ ok: true, text: "검증 저장 완료" });
+      setMessage({ ok: true, text: `액션 저장 완료: ${action}` });
       setSelectedClaim(null);
       await load();
     } else {
-      setMessage({ ok: false, text: data.error ?? "검증 저장 실패" });
+      setMessage({ ok: false, text: data.error ?? "액션 저장 실패" });
     }
   }
 
@@ -226,17 +239,19 @@ export default function VerifyClaimPage() {
     return Date.now() - new Date(claim.last_verified_at).getTime() > 180 * 24 * 60 * 60 * 1000;
   }
 
+  async function submitVerify() { return runClaimAction("verify"); }
+
   const allClaims = documents.flatMap((doc) => (doc.claims ?? []).map((claim) => ({ doc, claim })));
   const countries = [...new Set(documents.map((doc) => doc.country).filter(Boolean))].sort();
   const domains = [...new Set(documents.map((doc) => doc.category).filter(Boolean))].sort();
   const filteredClaims = allClaims.filter(({ doc, claim }) => {
     const sourceCount = claim.claim_sources?.length ?? 0;
-    return (filters.country === "all" || doc.country === filters.country)
-      && (filters.domain === "all" || doc.category === filters.domain)
-      && (filters.source === "all" || (filters.source === "present" ? sourceCount > 0 : sourceCount === 0))
-      && (filters.confidence === "all" || claim.confidence === filters.confidence)
-      && (filters.status === "all" || claim.status === filters.status)
-      && (filters.stale === "all" || (filters.stale === "stale" ? isStale(claim) : !isStale(claim)));
+    return (localFilters.country === "all" || doc.country === localFilters.country)
+      && (localFilters.domain === "all" || doc.category === localFilters.domain)
+      && (localFilters.source === "all" || (localFilters.source === "present" ? sourceCount > 0 : sourceCount === 0))
+      && (localFilters.confidence === "all" || claim.confidence === localFilters.confidence)
+      && (localFilters.status === "all" || claim.status === localFilters.status)
+      && (localFilters.stale === "all" || (localFilters.stale === "stale" ? isStale(claim) : !isStale(claim)));
   });
   const visibleDocIds = new Set(filteredClaims.map(({ doc }) => doc.id));
   const visibleClaimIds = new Set(filteredClaims.map(({ claim }) => claim.id));
@@ -247,7 +262,7 @@ export default function VerifyClaimPage() {
     <div style={{ maxWidth: 960, margin: "0 auto", padding: "40px 20px" }}>
       <nav style={{ marginBottom: 24, fontSize: 13 }}><Link href="/admin/review">← Admin</Link></nav>
       <h1>Claim 검증 관리</h1>
-      <p style={{ color: "#6b7280" }}>Promoted 문서의 claim에 출처를 붙이고 verified 상태로 승격합니다.</p>
+      <p style={{ color: "#6b7280" }}>Promoted 문서의 claim별 승인 흐름을 관리합니다: verify, reject, unknown, value edit, source attach, 전체 verified 시 document promotion.</p>
       <p style={{ color: "#374151", fontSize: 13 }}>
         승격 전 반드시 <a href="/docs/operations/CLAIM_VERIFICATION_POLICY.md">verified 승격 기준 문서</a>를 확인하세요.
         AI 생성 후보는 사람이 출처를 검토하기 전까지 verified로 올릴 수 없습니다.
@@ -296,12 +311,12 @@ export default function VerifyClaimPage() {
       <section className="registry-panel">
         <h2>검증 대기 claim 필터</h2>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 8 }}>
-          <label>country<select value={filters.country} onChange={(e) => setFilters({ ...filters, country: e.target.value })}><option value="all">all</option>{countries.map((v) => <option key={v} value={v}>{v}</option>)}</select></label>
-          <label>domain<select value={filters.domain} onChange={(e) => setFilters({ ...filters, domain: e.target.value })}><option value="all">all</option>{domains.map((v) => <option key={v} value={v}>{v}</option>)}</select></label>
-          <label>source<select value={filters.source} onChange={(e) => setFilters({ ...filters, source: e.target.value })}><option value="all">all</option><option value="present">present</option><option value="missing">missing</option></select></label>
-          <label>confidence<select value={filters.confidence} onChange={(e) => setFilters({ ...filters, confidence: e.target.value })}><option value="all">all</option><option value="low">low</option><option value="medium">medium</option><option value="high">high</option></select></label>
-          <label>status<select value={filters.status} onChange={(e) => setFilters({ ...filters, status: e.target.value })}><option value="all">all</option><option value="needs_review">needs_review</option><option value="verified">verified</option><option value="disputed">disputed/rejected</option><option value="unknown">unknown</option></select></label>
-          <label>stale<select value={filters.stale} onChange={(e) => setFilters({ ...filters, stale: e.target.value })}><option value="all">all</option><option value="stale">stale</option><option value="fresh">not stale</option></select></label>
+          <label>country<select value={localFilters.country} onChange={(e) => setLocalFilters({ ...localFilters, country: e.target.value })}><option value="all">all</option>{countries.map((v) => <option key={v} value={v}>{v}</option>)}</select></label>
+          <label>domain<select value={localFilters.domain} onChange={(e) => setLocalFilters({ ...localFilters, domain: e.target.value })}><option value="all">all</option>{domains.map((v) => <option key={v} value={v}>{v}</option>)}</select></label>
+          <label>source<select value={localFilters.source} onChange={(e) => setLocalFilters({ ...localFilters, source: e.target.value })}><option value="all">all</option><option value="present">present</option><option value="missing">missing</option></select></label>
+          <label>confidence<select value={localFilters.confidence} onChange={(e) => setLocalFilters({ ...localFilters, confidence: e.target.value })}><option value="all">all</option><option value="low">low</option><option value="medium">medium</option><option value="high">high</option></select></label>
+          <label>status<select value={localFilters.status} onChange={(e) => setLocalFilters({ ...localFilters, status: e.target.value })}><option value="all">all</option><option value="needs_review">needs_review</option><option value="verified">verified</option><option value="disputed">disputed/rejected</option><option value="unknown">unknown</option></select></label>
+          <label>stale<select value={localFilters.stale} onChange={(e) => setLocalFilters({ ...localFilters, stale: e.target.value })}><option value="all">all</option><option value="stale">stale</option><option value="fresh">not stale</option></select></label>
         </div>
         <p className="meta-label">표시 중: {filteredClaims.length} / {allClaims.length} claims · bulk verify는 비활성화되어 있고, bulk needs-verification만 허용됩니다.</p>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -333,14 +348,23 @@ export default function VerifyClaimPage() {
           {(doc.claims ?? []).map((claim) => (
             <div className="claim-card" key={claim.id}>
               <label style={{ float: "right", fontSize: 12 }}><input type="checkbox" checked={selectedClaimIds.includes(claim.id)} onChange={(e) => setSelectedClaimIds((ids) => e.target.checked ? [...ids, claim.id] : ids.filter((id) => id !== claim.id))} /> bulk 선택</label>
-              <p className="eyebrow">{claim.field_path}</p>
+              <p className="eyebrow">entity_id: {doc.entity_id ?? "-"} · document_id: {doc.id} · field_path: {claim.field_path}</p>
               <p><strong>{claim.claim_value}</strong></p>
               <p>{claim.claim_text}</p>
-              <p><span className="badge">status: {claim.status}</span> <span className="badge">confidence: {claim.confidence}</span> <span className="badge">sources: {claim.claim_sources?.length ?? 0}</span> {isStale(claim) && <span className="badge">stale</span>}</p>
-              {(claim.claim_sources?.length ?? 0) > 0 && <ul>{claim.claim_sources?.map((source) => <li key={source.id}><a href={source.url ?? "#"} target="_blank" rel="noopener noreferrer">{source.title ?? source.url ?? source.source_type}</a></li>)}</ul>}
+              <p>
+                <span className="badge">status: {claim.status}</span> <span className="badge">confidence: {claim.confidence}</span>
+                <span className="badge">sources: {claim.claim_sources?.length ?? 0}</span>
+                <span className="badge">last_verified_at: {claim.last_verified_at ?? "확인 필요"}</span>
+                {isStale(claim) && <span className="badge">stale</span>}
+              </p>
+              <p className="meta-label">submitter: {claim.submitter ?? claim.contributor_hash ?? "-"} · AI: {[claim.ai_provider, claim.ai_model].filter(Boolean).join(" / ") || "-"}</p>
+              {(claim.source_candidates?.length ?? 0) > 0 && (
+                <div><strong>source 후보</strong><ul>{claim.source_candidates?.map((source, i) => <li key={`${source.url ?? source.title ?? i}`}>{source.source_type ?? "web"} · trust {trustScore(source.source_type, source.url, source.citation)} · {source.url ? <a href={source.url}>{source.title ?? source.url}</a> : (source.title ?? source.citation)}</li>)}</ul></div>
+              )}
+              {(claim.claim_sources?.length ?? 0) > 0 && <ul>{claim.claim_sources?.map((source) => <li key={source.id}>{source.source_type} · trust {trustScore(source.source_type, source.url, source.citation)} · <a href={source.url ?? "#"}>{source.title ?? source.url ?? source.citation ?? source.source_type}</a></li>)}</ul>}
               {(claim.verification_events?.length ?? 0) > 0 && <p className="meta-label">latest reason: {claim.verification_events?.at(-1)?.note ?? "—"}</p>}
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                {claim.status !== "verified" && <button onClick={() => openVerify(claim)}>출처 추가 + verified 승격</button>}
+                {claim.status !== "verified" && <button onClick={() => openVerify(claim)}>관리자 액션 열기</button>}
                 <button type="button" onClick={() => markClaim("needs_verification", claim)}>needs verification + reason</button>
                 <button type="button" onClick={() => markClaim("reject", claim)}>reject/dispute + reason</button>
               </div>
@@ -383,8 +407,13 @@ export default function VerifyClaimPage() {
           )}
           <label>citation / 메모<textarea value={citation} onChange={(e) => setCitation(e.target.value)} placeholder="어떤 문구/근거를 확인했는지" /></label>
           <label>confidence<select value={confidence} onChange={(e) => setConfidence(e.target.value)}><option value="high">high</option><option value="medium">medium</option></select></label>
-          <div style={{ display: "flex", gap: 8 }}>
-            <button onClick={submitVerify}>저장하고 verified로 승격</button>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button onClick={submitVerify}>1. verify claim</button>
+            <button onClick={() => runClaimAction("reject")} type="button">2. reject claim</button>
+            <button onClick={() => runClaimAction("mark_unknown")} type="button">3. mark as unknown</button>
+            <button onClick={() => runClaimAction("edit_value")} type="button">4. edit claim value</button>
+            <button onClick={() => runClaimAction("attach_source")} type="button">5. attach source</button>
+            <button onClick={() => runClaimAction("promote_document")} type="button">6. promote document if all required claims are verified</button>
             <button onClick={() => setSelectedClaim(null)} type="button">취소</button>
           </div>
         </section>

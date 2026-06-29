@@ -29,11 +29,19 @@ type PendingCommunityPost = {
 
 type PriorityClaim = {
   id: string;
+  entity_id?: string | null;
+  document_id?: string | null;
   field_path: string;
   claim_text: string;
   claim_value: string;
   confidence: string;
   status: string;
+  last_verified_at?: string | null;
+  contributor_hash?: string | null;
+  ai_provider?: string | null;
+  ai_model?: string | null;
+  source_candidates?: { title?: string; url?: string; source_type?: string }[];
+  source_trust_scores?: { id: string; score: number }[];
   document_url?: string | null;
   verify_url?: string | null;
   documents?: { title?: string | null; slug?: string | null; lang?: string | null; status?: string | null; category?: string | null } | null;
@@ -245,9 +253,13 @@ export default function AdminReviewPage() {
         {data?.priorities.needs_review_claims.map((claim) => (
           <div className="claim-card" key={claim.id}>
             <p className="eyebrow">{claim.documents?.title ?? claim.documents?.slug ?? claim.id} · {claim.field_path}</p>
+            <p className="meta-label">entity_id: {claim.entity_id ?? "-"} · document_id: {claim.document_id ?? "-"}</p>
             <p><strong>{claim.claim_value}</strong></p>
             <p>{claim.claim_text}</p>
-            <p><span className="badge badge-review">{claim.status}</span> <span className="badge badge-low">confidence: {claim.confidence}</span></p>
+            <p><span className="badge badge-review">{claim.status}</span> <span className="badge badge-low">confidence: {claim.confidence}</span> <span className="badge">last_verified_at: {claim.last_verified_at ?? "확인 필요"}</span></p>
+            <p className="meta-label">contributor_hash: {claim.contributor_hash ?? "-"} · AI: {[claim.ai_provider, claim.ai_model].filter(Boolean).join(" / ") || "-"}</p>
+            {(claim.source_candidates?.length ?? 0) > 0 && <p className="meta-label">source 후보: {claim.source_candidates?.map((s: {title?: string; url?: string; source_type?: string}) => s.title ?? s.url ?? s.source_type).join(", ")}</p>}
+            {(claim.source_trust_scores?.length ?? 0) > 0 && <p className="meta-label">trust scores: {claim.source_trust_scores?.map((s: {id?: string; score?: number}) => `${s.id}:${s.score}`).join(", ")}</p>}
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
               <Link href={claim.verify_url ?? "/admin/verify-claim"} style={primaryButtonStyle}>claim 검증</Link>
               {claim.document_url && <a href={claim.document_url} target="_blank" rel="noopener noreferrer" style={secondaryButtonStyle}>문서 보기</a>}

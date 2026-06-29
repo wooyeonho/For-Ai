@@ -83,6 +83,8 @@ export async function POST(request: Request) {
     category: candidate.category,
     data: {
       source_hints: candidate.source_hints ?? [],
+      ai_provider: typeof candidate.generation_model === "string" && candidate.generation_model.includes("/") ? candidate.generation_model.split("/")[0] : null,
+      generation_model: candidate.generation_model ?? null,
       why_people_ask_ai: candidate.why_people_ask_ai ?? null,
       why_ai_gets_wrong: candidate.why_ai_gets_wrong ?? null,
       promoted_from_candidate: candidateId,

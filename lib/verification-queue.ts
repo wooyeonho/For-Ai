@@ -42,6 +42,40 @@ export interface BacklogTopic {
   requiredSourceTypes: string[];
 }
 
+export interface AdminClaimReviewField {
+  key: string;
+  label: string;
+}
+
+export interface AdminClaimAction {
+  key: string;
+  label: string;
+  audit: string;
+}
+
+export const adminClaimReviewFields: AdminClaimReviewField[] = [
+  { key: "entity_id", label: "entity_id" },
+  { key: "document_id", label: "document_id" },
+  { key: "field_path", label: "field_path" },
+  { key: "claim_text", label: "claim_text" },
+  { key: "claim_value", label: "proposed claim_value" },
+  { key: "status_confidence", label: "current status/confidence" },
+  { key: "source_candidates", label: "source 후보" },
+  { key: "source_trust_score", label: "source trust score" },
+  { key: "last_verified_at", label: "last_verified_at" },
+  { key: "contributor_hash", label: "submitter/contributor_hash" },
+  { key: "ai_provider_model", label: "AI provider/model" },
+];
+
+export const adminClaimActions: AdminClaimAction[] = [
+  { key: "verify", label: "verify claim", audit: "verification_events + admin_audit_events" },
+  { key: "reject", label: "reject claim", audit: "verification_events + admin_audit_events" },
+  { key: "mark_unknown", label: "mark as unknown", audit: "verification_events + admin_audit_events" },
+  { key: "edit_value", label: "edit claim value", audit: "verification_events + admin_audit_events" },
+  { key: "attach_source", label: "attach source", audit: "verification_events + admin_audit_events" },
+  { key: "promote_document", label: "promote document if all required claims are verified", audit: "verification_events + admin_audit_events" },
+];
+
 interface SeedClaim {
   field_path?: string;
   question?: string;

@@ -105,6 +105,17 @@ function isHighRiskCategory(category?: string | null, riskTier?: string | null) 
   return riskTier === "high" || riskTier === "forbidden" || HIGH_RISK_CATEGORY_KEYS.some((key) => normalized.includes(key));
 }
 
+function sourceTrustScore(sourceType?: string | null, url?: string | null, citation?: string | null) {
+  const base: Record<string, number> = { official: 95, platform: 85, document: 80, web: 65, photo: 60, phone: 55, review: 40, user: 30, other: 25, unknown: 0 };
+  return Math.min(100, (base[sourceType ?? "unknown"] ?? 0) + (url ? 3 : 0) + (citation ? 2 : 0));
+}
+
+function providerFromModel(model: unknown): string | null {
+  const text = typeof model === "string" ? model.trim() : "";
+  if (!text) return null;
+  return text.includes("/") ? text.split("/")[0] : text;
+}
+
 export async function GET(request: Request) {
   const adminError = await requireAdmin(request, "admin.review.read");
   if (adminError) return adminError;
@@ -156,7 +167,7 @@ export async function GET(request: Request) {
 
     const { data: priorityClaims, error: claimsError } = await sb
       .from("claims")
-      .select("id, document_id, entity_id, field_path, claim_text, claim_value, confidence, status, updated_at, documents(slug, lang, title, status, category)")
+      .select("id, document_id, entity_id, field_path, claim_text, claim_value, confidence, status, last_verified_at, contributor_hash, updated_at, claim_sources(*), documents(slug, lang, title, status, category, data)")
       .eq("status", "needs_review")
       .order("updated_at", { ascending: true })
       .limit(10);
@@ -316,7 +327,18 @@ export async function GET(request: Request) {
       priorities: {
         needs_review_claims: (priorityClaims ?? []).map((claim) => {
           const doc = Array.isArray(claim.documents) ? claim.documents[0] : claim.documents;
-          return { ...claim, document_url: publicDocumentLink(doc ?? {}), verify_url: verifyClaimLink(doc?.slug) };
+          const docData = ((doc as { data?: Record<string, unknown> } | null)?.data ?? {}) as Record<string, unknown>;
+          const generationModel = typeof docData.generation_model === "string" ? docData.generation_model : null;
+          const sourceHints = Array.isArray(docData.source_hints) ? docData.source_hints : [];
+          return {
+            ...claim,
+            document_url: publicDocumentLink(doc ?? {}),
+            verify_url: verifyClaimLink(doc?.slug),
+            source_candidates: sourceHints,
+            source_trust_scores: (claim.claim_sources ?? []).map((source: Record<string, string | null>) => ({ id: source.id, score: sourceTrustScore(source.source_type, source.url, source.citation) })),
+            ai_provider: typeof docData.ai_provider === "string" ? docData.ai_provider : providerFromModel(generationModel),
+            ai_model: generationModel,
+          };
         }),
         new_candidates: newCandidates ?? [],
         generated_candidates: generatedCandidates ?? [],
