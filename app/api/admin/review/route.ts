@@ -5,6 +5,8 @@ import { documentPageUrl } from "../../../../lib/urls";
 
 type SupabaseAdminClient = NonNullable<ReturnType<typeof supabaseAdmin>>;
 
+type OptionalCount = number | null;
+
 async function countRows(
   sb: SupabaseAdminClient,
   table: string,
@@ -15,6 +17,66 @@ async function countRows(
   const { count, error } = await query;
   if (error) throw error;
   return count ?? 0;
+}
+
+async function optionalCountRows(
+  sb: SupabaseAdminClient,
+  table: string,
+  filters: Record<string, string> = {},
+): Promise<OptionalCount> {
+  try {
+    return await countRows(sb, table, filters);
+  } catch (error) {
+    console.warn(`[admin-dashboard] optional count skipped for ${table}`, error instanceof Error ? error.message : error);
+    return null;
+  }
+}
+
+async function countStaleVerifiedClaims(sb: SupabaseAdminClient): Promise<number> {
+  const cutoff = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString();
+  const { count, error } = await sb
+    .from("claims")
+    .select("id", { count: "exact", head: true })
+    .eq("status", "verified")
+    .or(`last_verified_at.is.null,last_verified_at.lt.${cutoff}`);
+  if (error) throw error;
+  return count ?? 0;
+}
+
+async function countApiAbuseWarnings(sb: SupabaseAdminClient): Promise<OptionalCount> {
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  try {
+    const { count, error } = await sb
+      .from("api_usage_events")
+      .select("id", { count: "exact", head: true })
+      .gte("created_at", since)
+      .gte("status_code", 429);
+    if (error) throw error;
+    return count ?? 0;
+  } catch (error) {
+    console.warn("[admin-dashboard] api abuse count skipped", error instanceof Error ? error.message : error);
+    return null;
+  }
+}
+
+async function getRecentAdminActions(sb: SupabaseAdminClient) {
+  try {
+    const { data, error } = await sb
+      .from("admin_audit_events")
+      .select("id, action, metadata, created_at")
+      .order("created_at", { ascending: false })
+      .limit(8);
+    if (error) throw error;
+    return data ?? [];
+  } catch (error) {
+    console.warn("[admin-dashboard] recent admin actions skipped", error instanceof Error ? error.message : error);
+    return [];
+  }
+}
+
+function sumOptional(...values: OptionalCount[]): OptionalCount {
+  if (values.every((value) => value == null)) return null;
+  return values.reduce<number>((sum, value) => sum + (value ?? 0), 0);
 }
 
 function publicDocumentLink(doc: { slug?: string | null; lang?: string | null }) {
@@ -37,6 +99,13 @@ export async function GET(request: Request) {
       claimsNeedsReview,
       claimsVerified,
       documentsVerified,
+      staleClaims,
+      newHallucinationReports,
+      sourceCheckFailures,
+      pendingBusinessProfiles,
+      pendingBusinessCorrections,
+      apiAbuseWarnings,
+      recentAdminActions,
     ] = await Promise.all([
       countRows(sb, "topic_candidates", { status: "new" }),
       countRows(sb, "topic_candidates", { status: "approved" }),
@@ -45,6 +114,13 @@ export async function GET(request: Request) {
       countRows(sb, "claims", { status: "needs_review" }),
       countRows(sb, "claims", { status: "verified" }),
       countRows(sb, "documents", { status: "verified" }),
+      countStaleVerifiedClaims(sb),
+      optionalCountRows(sb, "hallucination_reports", { status: "new" }),
+      optionalCountRows(sb, "claim_sources", { source_type: "unknown" }),
+      optionalCountRows(sb, "verified_business_profiles", { status: "pending" }),
+      optionalCountRows(sb, "business_corrections", { status: "new" }),
+      countApiAbuseWarnings(sb),
+      getRecentAdminActions(sb),
     ]);
 
     const { data: priorityClaims, error: claimsError } = await sb
@@ -113,6 +189,11 @@ export async function GET(request: Request) {
       approved_candidates_count: approvedCandidates?.length ?? 0,
       verified_documents_count: verifiedDocuments?.length ?? 0,
       top_cited_count: topCited.length,
+      stale_claims: staleClaims,
+      new_hallucination_reports: newHallucinationReports,
+      source_check_failures: sourceCheckFailures,
+      business_verification_requests: sumOptional(pendingBusinessProfiles, pendingBusinessCorrections),
+      api_abuse_warnings: apiAbuseWarnings,
     });
 
     return NextResponse.json({
@@ -140,6 +221,18 @@ export async function GET(request: Request) {
         total_views: totalViews,
         total_citations: totalCitations,
         top_cited: topCited,
+      },
+      dashboard: {
+        counts: {
+          pending_claim_reviews: claimsNeedsReview,
+          new_topic_suggestions: candidatesNew,
+          new_hallucination_reports: newHallucinationReports,
+          stale_claims: staleClaims,
+          source_check_failures: sourceCheckFailures,
+          business_verification_requests: sumOptional(pendingBusinessProfiles, pendingBusinessCorrections),
+          api_abuse_warnings: apiAbuseWarnings,
+        },
+        recent_admin_actions: recentAdminActions,
       },
     });
   } catch (error) {
