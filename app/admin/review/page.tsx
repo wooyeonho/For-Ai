@@ -117,6 +117,7 @@ export default function AdminReviewPage() {
         <h1>For-Ai admin review checklist</h1>
         <p>
           후보 생성부터 verified 문서 공유까지 claim-level 운영 상태를 admin API count로 확인합니다.
+          기존 관리자 인증 방식은 유지됩니다. 이 페이지에서 ADMIN_SECRET을 입력한 뒤 count를 불러오세요.
           오늘 해야 할 일은 needs_review claim과 approved candidate를 먼저 처리합니다.
         </p>
         <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
