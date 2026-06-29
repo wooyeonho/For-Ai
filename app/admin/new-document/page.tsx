@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { ensureAdminSession } from "@/lib/admin-client";
 
 const CLAIM_PLACEHOLDER = `parking.availability::주차 가능 여부는?
 parking.free_minutes::무료 주차 시간은?
@@ -47,11 +48,11 @@ export default function NewDocumentPage() {
     setLoading(true);
     setResult(null);
     try {
+      await ensureAdminSession(adminSecret);
       const res = await fetch("/api/admin/new-document", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-admin-secret": adminSecret,
           "x-admin-csrf": "1",
         },
         body: JSON.stringify({
@@ -185,7 +186,7 @@ export default function NewDocumentPage() {
               rows={6}
             />
           </label>
-          <label>Admin Secret <span aria-label="필수">*</span>
+          <label>Admin Password <span aria-label="필수">*</span>
             <input
               type="password" value={adminSecret} onChange={e => setAdminSecret(e.target.value)} required
               placeholder="관리자 비밀키"

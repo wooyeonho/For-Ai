@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { ensureAdminSession } from "@/lib/admin-client";
 interface Candidate {
   id:string;title:string;slug:string;category:string;subcategory?:string;
   risk_tier:string;why_people_ask_ai?:string;why_ai_gets_wrong?:string;
@@ -27,25 +28,29 @@ export default function CandidatesPage(){
   const [promoting,setPromoting]=useState<string|null>(null);
   const load=useCallback(async()=>{
     setLoading(true);
+    if (!secret) { setLoading(false); return; }
+    try { await ensureAdminSession(secret); } catch (e) { setLoading(false); flash(`❌ ${e instanceof Error ? e.message : String(e)}`, false); return; }
     const params=new URLSearchParams({status:filter,source_hints:sourceHintFilter});
-    const r=await fetch(`/api/admin/candidates?${params.toString()}`,{headers:{"x-admin-secret":secret}});
+    const r=await fetch(`/api/admin/candidates?${params.toString()}`,{credentials:"same-origin"});
     const d=await r.json();setItems(Array.isArray(d.candidates)?d.candidates:[]);setLoading(false);
     if(!r.ok) flash(`❌ ${d.error??"후보 조회 실패"}`,false);
   },[filter,sourceHintFilter,secret]);
   useEffect(()=>{load();},[load]);
   function flash(text:string,ok=true){setMsg({text,ok});setTimeout(()=>setMsg(null),4000);}
   async function act(id:string,st:string){
-    if(!secret){flash("❌ admin secret을 입력하세요",false);return;}
-    const r=await fetch("/api/admin/candidates",{method:"PATCH",headers:{"Content-Type":"application/json","x-admin-secret":secret,"x-admin-csrf":"1"},body:JSON.stringify({id,status:st})});
+    if(!secret){flash("❌ 관리자 비밀번호를 입력하세요",false);return;}
+    try { await ensureAdminSession(secret); } catch (e) { flash(`❌ ${e instanceof Error ? e.message : String(e)}`, false); return; }
+    const r=await fetch("/api/admin/candidates",{method:"PATCH",headers:{"Content-Type":"application/json","x-admin-csrf":"1"},body:JSON.stringify({id,status:st})});
     const d=await r.json();
     if(r.ok){flash(`✅ ${st}`);setSelected(null);load();}
-    else flash(`❌ ${d.error??"권한 오류 — admin secret 확인"}`,false);
+    else flash(`❌ ${d.error??"권한 오류 — 관리자 비밀번호 확인"}`,false);
   }
   async function promote(id:string){
-    if(!secret){flash("❌ admin secret을 입력하세요",false);return;}
+    if(!secret){flash("❌ 관리자 비밀번호를 입력하세요",false);return;}
     setPromoting(id);
     try{
-      const r=await fetch("/api/admin/promote-candidate",{method:"POST",headers:{"Content-Type":"application/json","x-admin-secret":secret,"x-admin-csrf":"1"},body:JSON.stringify({candidateId:id})});
+      await ensureAdminSession(secret);
+      const r=await fetch("/api/admin/promote-candidate",{method:"POST",headers:{"Content-Type":"application/json","x-admin-csrf":"1"},body:JSON.stringify({candidateId:id})});
       const d=await r.json();
       if(r.ok&&d.success){flash(`🚀 공개 등록 완료 → 이제 ${d.claims_created??0}개 claim을 검증하세요 (검증하기 버튼)`);setSelected(null);load();}
       else flash(`❌ ${d.error??"등록 실패"}`,false);
@@ -58,7 +63,7 @@ export default function CandidatesPage(){
           <div><h1 style={{fontSize:22,fontWeight:700,margin:0}}>📋 후보 검토 큐</h1>
             <p style={{color:"#6b7280",fontSize:13,margin:"4px 0 0"}}>AI 생성 후보 → 검토 → 승인 → 🚀 공개 등록</p></div>
           <div style={{display:"flex",gap:8,alignItems:"center"}}>
-            <input type="password" placeholder="admin secret" value={secret} onChange={e=>setSecret(e.target.value)}
+            <input type="password" placeholder="관리자 비밀번호" value={secret} onChange={e=>setSecret(e.target.value)}
               style={{border:"1px solid #d1d5db",borderRadius:6,padding:"6px 10px",fontSize:13,width:160}}/>
             <Link href="/admin/generate" style={{fontSize:13,color:"#2563eb"}}>→ 생성</Link>
           </div>

@@ -1,4 +1,5 @@
 "use client";
+import { ensureAdminSession } from "@/lib/admin-client";
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
@@ -51,7 +52,8 @@ export default function VerifyClaimPage() {
   const load = useCallback(async () => {
     if (!secret) return;
     setLoading(true);
-    const res = await fetch("/api/admin/verify-claim", { headers: { "x-admin-secret": secret } });
+    try { await ensureAdminSession(secret); } catch (e) { setLoading(false); setMessage({ ok: false, text: e instanceof Error ? e.message : String(e) }); return; }
+    const res = await fetch("/api/admin/verify-claim", { credentials: "same-origin" });
     const data = await res.json();
     setLoading(false);
     if (res.ok) setDocuments(Array.isArray(data.documents) ? data.documents : []);
@@ -99,9 +101,10 @@ export default function VerifyClaimPage() {
     setChecking(true);
     setSourceCheck(null);
     try {
+      await ensureAdminSession(secret);
       const res = await fetch("/api/admin/check-source", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "x-admin-secret": secret, "x-admin-csrf": "1" },
+        headers: { "Content-Type": "application/json", "x-admin-csrf": "1" },
         body: JSON.stringify({ url: url.trim(), match: claimValue.trim() }),
       });
       const data = await res.json();
@@ -119,9 +122,10 @@ export default function VerifyClaimPage() {
 
   async function submitVerify() {
     if (!selectedClaim) return;
+    try { await ensureAdminSession(secret); } catch (e) { setMessage({ ok: false, text: e instanceof Error ? e.message : String(e) }); return; }
     const res = await fetch("/api/admin/verify-claim", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-admin-secret": secret, "x-admin-csrf": "1" },
+      headers: { "Content-Type": "application/json", "x-admin-csrf": "1" },
       body: JSON.stringify({
         claim_id: selectedClaim.id,
         claim_value: claimValue,
@@ -158,9 +162,9 @@ export default function VerifyClaimPage() {
       </p>
 
       <section className="registry-panel">
-        <label style={{ fontWeight: 600 }}>Admin secret</label>
+        <label style={{ fontWeight: 600 }}>Admin password</label>
         <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-          <input type="password" value={secret} onChange={(e) => setSecret(e.target.value)} placeholder="ADMIN_SECRET" style={{ flex: 1, padding: 8 }} />
+          <input type="password" value={secret} onChange={(e) => setSecret(e.target.value)} placeholder="관리자 비밀번호" style={{ flex: 1, padding: 8 }} />
           <button onClick={load} disabled={!secret || loading}>{loading ? "불러오는 중..." : "불러오기"}</button>
         </div>
       </section>

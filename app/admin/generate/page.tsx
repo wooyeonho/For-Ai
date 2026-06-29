@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { ensureAdminSession } from "@/lib/admin-client";
 
 const PROVIDER_ICONS: Record<string, string> = {
   perplexity: "🔍",
@@ -91,7 +92,8 @@ export default function AdminGeneratePage() {
     async function loadProviders() {
       try {
         if (!adminSecret) { setProvidersLoading(false); return; }
-        const res = await fetch("/api/admin/generate-candidates", { headers: { "x-admin-secret": adminSecret } });
+        await ensureAdminSession(adminSecret);
+        const res = await fetch("/api/admin/generate-candidates", { credentials: "same-origin" });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
         const providers = (data.available_providers ?? []) as ProviderOption[];
@@ -120,11 +122,11 @@ export default function AdminGeneratePage() {
     setResult(null);
 
     try {
+      await ensureAdminSession(adminSecret);
       const res = await fetch("/api/admin/generate-candidates", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-admin-secret": adminSecret,
           "x-admin-csrf": "1",
         },
         body: JSON.stringify({
@@ -164,17 +166,17 @@ export default function AdminGeneratePage() {
       </p>
 
       <div style={{ display: "grid", gap: 20 }}>
-        {/* Admin secret */}
+        {/* Admin password */}
         <div style={{ padding: 12, background: adminSecret ? "#f0fdf4" : "#fef3c7", borderRadius: 8, border: `1px solid ${adminSecret ? "#86efac" : "#f59e0b"}` }}>
           <label style={{ fontWeight: 600, fontSize: 14, display: "block", marginBottom: 6 }}>
-            관리자 인증키 {adminSecret && "✓"}
+            관리자 비밀번호 {adminSecret && "✓"}
           </label>
           <div style={{ display: "flex", gap: 8 }}>
             <input
               type="password"
               value={adminSecret}
               onChange={(e) => setAdminSecret(e.target.value)}
-              placeholder="ADMIN_SECRET 입력"
+              placeholder="관리자 비밀번호 입력"
               style={{ flex: 1, padding: "8px 12px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 }}
             />
             {adminSecret && (

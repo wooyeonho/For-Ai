@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useState } from "react";
+import { ensureAdminSession } from "@/lib/admin-client";
 
 export default function NewEntityPage() {
   const [adminSecret, setAdminSecret] = useState("");
@@ -18,11 +19,11 @@ export default function NewEntityPage() {
     setLoading(true);
     setResult(null);
     try {
+      await ensureAdminSession(adminSecret);
       const res = await fetch("/api/admin/new-entity", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-admin-secret": adminSecret,
           "x-admin-csrf": "1",
         },
         body: JSON.stringify({
@@ -122,7 +123,7 @@ export default function NewEntityPage() {
               placeholder="중구"
             />
           </label>
-          <label>Admin Secret <span aria-label="필수">*</span>
+          <label>Admin Password <span aria-label="필수">*</span>
             <input
               type="password" value={adminSecret} onChange={e => setAdminSecret(e.target.value)} required
               placeholder="관리자 비밀키"

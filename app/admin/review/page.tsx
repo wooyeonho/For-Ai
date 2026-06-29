@@ -1,4 +1,5 @@
 "use client";
+import { ensureAdminSession } from "@/lib/admin-client";
 
 import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
@@ -97,7 +98,8 @@ export default function AdminReviewPage() {
   const load = useCallback(async () => {
     setLoading(true);
     setMessage(null);
-    const res = await fetch("/api/admin/review", { headers: { "x-admin-secret": secret } });
+    try { await ensureAdminSession(secret); } catch (e) { setLoading(false); setMessage({ ok: false, text: e instanceof Error ? e.message : String(e) }); return; }
+    const res = await fetch("/api/admin/review", { credentials: "same-origin" });
     const payload = await res.json();
     setLoading(false);
     if (res.ok) {
@@ -119,11 +121,11 @@ export default function AdminReviewPage() {
         </p>
         <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
           <input
-            aria-label="Admin secret"
+            aria-label="Admin password"
             type="password"
             value={secret}
             onChange={(event) => setSecret(event.target.value)}
-            placeholder="ADMIN_SECRET"
+            placeholder="관리자 비밀번호"
             style={{ flex: 1, padding: 10 }}
           />
           <button onClick={load} disabled={loading}>{loading ? "불러오는 중..." : "count 불러오기"}</button>
