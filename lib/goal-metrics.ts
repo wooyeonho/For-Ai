@@ -1,16 +1,30 @@
 import fs from "fs";
 import path from "path";
-import { getAllRegistryBundles, isVerifiedDocumentBundle } from "./data";
+import { getClaimCitationStatus, isStale } from "./citation-status";
+import { getAllRegistryBundles } from "./data";
 
 export type GoalMetric = { label: string; value: string | number; detail: string };
-export type GoalMetrics = {
+export type CountBucket = { key: string; count: number };
+export type CoverageMetrics = {
+  totalDocuments: number;
+  totalClaims: number;
+  verifiedClaims: number;
+  staleClaims: number;
+  documentsByVertical: CountBucket[];
+  documentsByCountry: CountBucket[];
+  verifiedClaimsLast7Days: number;
+  verifiedClaimsLast30Days: number;
+  citationReadyClaims: number;
+  citationReadyRatio: number;
+  citationReadyPercentage: number;
+  generatedAt: string;
+};
+export type GoalMetrics = CoverageMetrics & {
   generatedQuestionCandidates: number;
   longTailTopicCandidates: number;
   verifiedSeedTopics: number;
   candidateClaims: number;
   needsReviewClaims: number;
-  verifiedClaims: number;
-  citationReadyClaims: number;
   highRiskCandidates: number;
   medicalCandidates: number;
   realtimeCandidates: number;
@@ -54,14 +68,54 @@ function scanJsonl(relativePath: string, test: (row: Record<string, unknown>) =>
   } catch { return 0; }
 }
 
-export function getGoalMetrics(): GoalMetrics {
+function daysSince(iso: string | null | undefined, now: Date): number | null {
+  if (!iso) return null;
+  const timestamp = Date.parse(iso);
+  if (Number.isNaN(timestamp)) return null;
+  return Math.floor((now.getTime() - timestamp) / 86_400_000);
+}
+
+function bucketCounts(values: string[]): CountBucket[] {
+  const counts = new Map<string, number>();
+  for (const value of values) {
+    const key = value.trim() || "unknown";
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  return [...counts.entries()]
+    .map(([key, count]) => ({ key, count }))
+    .sort((a, b) => b.count - a.count || a.key.localeCompare(b.key));
+}
+
+export function getCoverageMetrics(now: Date = new Date()): CoverageMetrics {
   const bundles = getAllRegistryBundles();
   const claims = bundles.flatMap((bundle) => bundle.claims);
-  const verifiedClaims = claims.filter((claim) => claim.status === "verified" && claim.claim_value !== "확인 필요").length;
-  const citationReadyClaims = bundles
-    .filter(isVerifiedDocumentBundle)
-    .flatMap((bundle) => bundle.claims)
-    .filter((claim) => claim.status === "verified" && claim.sources.length > 0 && claim.last_verified_at).length;
+  const verifiedClaims = claims.filter((claim) => claim.status === "verified" && claim.claim_value !== "확인 필요");
+  const citationReadyClaims = claims.filter((claim) => getClaimCitationStatus(claim).isCitationReady);
+  const verifiedWithinDays = (days: number) => verifiedClaims.filter((claim) => {
+    const age = daysSince(claim.last_verified_at, now);
+    return age !== null && age >= 0 && age <= days;
+  }).length;
+
+  return {
+    totalDocuments: bundles.length,
+    totalClaims: claims.length,
+    verifiedClaims: verifiedClaims.length,
+    staleClaims: verifiedClaims.filter((claim) => isStale(claim.last_verified_at, undefined, now)).length,
+    documentsByVertical: bucketCounts(bundles.map((bundle) => bundle.entity.type || bundle.document.category || "unknown")),
+    documentsByCountry: bucketCounts(bundles.map((bundle) => bundle.document.country || bundle.entity.country || "unknown")),
+    verifiedClaimsLast7Days: verifiedWithinDays(7),
+    verifiedClaimsLast30Days: verifiedWithinDays(30),
+    citationReadyClaims: citationReadyClaims.length,
+    citationReadyRatio: claims.length ? citationReadyClaims.length / claims.length : 0,
+    citationReadyPercentage: claims.length ? Math.round((citationReadyClaims.length / claims.length) * 100) : 0,
+    generatedAt: now.toISOString(),
+  };
+}
+
+export function getGoalMetrics(): GoalMetrics {
+  const coverage = getCoverageMetrics();
+  const bundles = getAllRegistryBundles();
+  const claims = bundles.flatMap((bundle) => bundle.claims);
 
   const candidateFiles = ["data/question-candidates/one-click-sample.jsonl", "data/topic-candidates/long-tail-combination-sample.jsonl"];
   const highRiskCandidates = candidateFiles.reduce((sum, file) => sum + scanJsonl(file, (row) => row.risk_tier === "high"), 0);
@@ -69,13 +123,12 @@ export function getGoalMetrics(): GoalMetrics {
   const realtimeCandidates = candidateFiles.reduce((sum, file) => sum + scanJsonl(file, (row) => ["realtime", "daily", "monthly", "annual"].includes(String(row.update_frequency ?? ""))), 0);
 
   return {
+    ...coverage,
     generatedQuestionCandidates: countJsonl("data/question-candidates/one-click-sample.jsonl"),
     longTailTopicCandidates: countJsonl("data/topic-candidates/long-tail-combination-sample.jsonl"),
     verifiedSeedTopics: countJsonArray("data/verified-seed-set.json"),
     candidateClaims: claims.length,
     needsReviewClaims: claims.filter((claim) => claim.status !== "verified" || claim.claim_value === "확인 필요").length,
-    verifiedClaims,
-    citationReadyClaims,
     highRiskCandidates,
     medicalCandidates,
     realtimeCandidates,
@@ -86,6 +139,7 @@ export function getTrustReadiness(): GoalMetric[] {
   const m = getGoalMetrics();
   return [
     { label: "Citation-ready claims", value: m.citationReadyClaims, detail: "verified + source-backed + last_verified_at present" },
+    { label: "Citation-ready ratio", value: `${m.citationReadyPercentage}%`, detail: `${m.citationReadyClaims}/${m.totalClaims} total claims are citation-ready` },
     { label: "Needs-review claims", value: m.needsReviewClaims, detail: "must show 확인 필요 / low until reviewed" },
     { label: "High-risk candidates", value: m.highRiskCandidates, detail: "medical/legal/finance/realtime candidates require source review" },
     { label: "Generated queues", value: m.generatedQuestionCandidates + m.longTailTopicCandidates, detail: "candidate inventory, not published truth" },

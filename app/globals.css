@@ -2229,3 +2229,45 @@ body {
   white-space: nowrap;
   border: 0;
 }
+
+.stat-link {
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.stat-link:hover,
+.stat-link:focus-visible {
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.coverage-list {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0 0;
+  padding: 0;
+}
+
+.coverage-list div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid var(--line);
+  padding: 8px 0;
+}
+
+.coverage-list dt,
+.coverage-list dd {
+  margin: 0;
+}
+
+.coverage-list dt {
+  font-family: var(--font-mono);
+  overflow-wrap: anywhere;
+}
+
+.coverage-list dd {
+  font-weight: 700;
+  color: var(--accent);
+}

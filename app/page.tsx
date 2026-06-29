@@ -228,12 +228,12 @@ export default async function HomePage() {
           <span className="stat-num">{needsReviewClaims}</span>
           <span className="stat-label">Needs Review</span>
         </div>
-        <div className="stat">
+        <Link href="/goal#coverage" className="stat stat-link" aria-label="Open public coverage dashboard">
           <span className="stat-num">{verifiedPct}%</span>
           <span className="stat-label">Verified Percentage</span>
-        </div>
+        </Link>
         <p className="stat-note">
-          These figures are calculated from the current registry bundles. We mark what we don&apos;t know.
+          These figures are calculated from the current registry bundles. <Link href="/goal#coverage">Open the public coverage dashboard</Link>. We mark what we don&apos;t know.
         </p>
       </section>
 

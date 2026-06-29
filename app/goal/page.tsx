@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { getGoalMetrics, getTrustReadiness } from "@/lib/goal-metrics";
 
 export const dynamic = "force-static";
@@ -32,13 +33,13 @@ const protocolFields = [
 export default function GoalPage() {
   const metrics = getGoalMetrics();
   const cards = [
-    ["Verification queue", metrics.generatedQuestionCandidates, "candidate questions awaiting source review"],
-    ["Claim registry backlog", metrics.longTailTopicCandidates, "global topic expansion candidates"],
-    ["Source-backed claims", metrics.verifiedSeedTopics, "seed topics with traceable source review"],
+    ["Total documents", metrics.totalDocuments, "registered public documents across verified-claims and seed bundles"],
+    ["Verified claims", metrics.verifiedClaims, "claims marked verified with a known value"],
+    ["Stale claims", metrics.staleClaims, "verified claims past the freshness TTL or missing a verification date"],
+    ["Citation-ready ratio", `${metrics.citationReadyPercentage}%`, `${metrics.citationReadyClaims}/${metrics.totalClaims} claims are verified, sourced, and dated`],
+    ["Verified in 7 days", metrics.verifiedClaimsLast7Days, "claims with last_verified_at in the last 7 days"],
+    ["Verified in 30 days", metrics.verifiedClaimsLast30Days, "claims with last_verified_at in the last 30 days"],
     ["Needs-review claims", metrics.needsReviewClaims, "확인 필요 / Needs verification / low / needs_review"],
-    ["AI citation policy", metrics.verifiedClaims, "only verified, source-backed claims may be cited"],
-    ["Citation-ready claims", metrics.citationReadyClaims, "verified + sources + last_verified_at"],
-    ["Risk policy", metrics.highRiskCandidates, "high-risk claims must not be cited before review"],
     ["Freshness review queue", metrics.realtimeCandidates, "time-sensitive claims require current sources"],
   ];
 
@@ -56,7 +57,22 @@ export default function GoalPage() {
         <div className="registry-panel"><h2>For-Ai is not</h2><ul><li>AI wiki</li><li>generated answer farm</li><li>unsourced encyclopedia</li><li>legal/medical/financial advice engine</li><li>SEO content farm</li></ul></div>
       </section>
 
-      <section className="registry-panel"><h2>Current Registry State</h2><p>AI-citable facts require source-backed verification; unknown facts stay 확인 필요 / Needs verification with low confidence.</p><div className="goal-metric-grid">{cards.map(([label, value, detail]) => <div className="goal-metric-card" key={label}><span>{label}</span><strong>{value}</strong><small>{detail}</small></div>)}</div></section>
+      <section className="registry-panel" id="coverage"><h2>Public Coverage Dashboard</h2><p>AI-citable facts require source-backed verification; unknown facts stay 확인 필요 / Needs verification with low confidence. The same coverage metrics are available as JSON at <Link href="/api/coverage"><code>/api/coverage</code></Link>.</p><div className="goal-metric-grid">{cards.map(([label, value, detail]) => <div className="goal-metric-card" key={label}><span>{label}</span><strong>{value}</strong><small>{detail}</small></div>)}</div></section>
+
+      <section className="goal-two-column">
+        <div className="registry-panel">
+          <h2>Documents by vertical</h2>
+          <dl className="coverage-list">
+            {metrics.documentsByVertical.map((bucket) => <div key={bucket.key}><dt>{bucket.key}</dt><dd>{bucket.count}</dd></div>)}
+          </dl>
+        </div>
+        <div className="registry-panel">
+          <h2>Documents by country</h2>
+          <dl className="coverage-list">
+            {metrics.documentsByCountry.map((bucket) => <div key={bucket.key}><dt>{bucket.key}</dt><dd>{bucket.count}</dd></div>)}
+          </dl>
+        </div>
+      </section>
 
       <section className="registry-panel">
         <h2>Claim Lifecycle</h2>
