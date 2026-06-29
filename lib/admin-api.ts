@@ -13,6 +13,16 @@ export const ADMIN_AUDIT_TABLE = "admin_audit_events";
 
 type AdminAuditMetadata = Record<string, string | number | boolean | null | string[]>;
 
+const FORBIDDEN_AUDIT_METADATA_KEYS = new Set([
+  "ip",
+  "raw_ip",
+  "client_ip",
+  "x_forwarded_for",
+  "x_real_ip",
+  "user_agent",
+  "raw_user_agent",
+]);
+
 const buckets = new Map<string, { count: number; resetAt: number }>();
 
 function clientKey(request: Request): string {
@@ -92,6 +102,12 @@ export function safeRequestMetadata(request: Request): AdminAuditMetadata {
   };
 }
 
+function sanitizeAdminAuditMetadata(metadata: AdminAuditMetadata): AdminAuditMetadata {
+  return Object.fromEntries(
+    Object.entries(metadata).filter(([key]) => !FORBIDDEN_AUDIT_METADATA_KEYS.has(key.toLowerCase()))
+  );
+}
+
 export async function logAdminAuditEvent(
   sb: SupabaseClient,
   request: Request,
@@ -102,7 +118,7 @@ export async function logAdminAuditEvent(
     action,
     metadata: {
       ...safeRequestMetadata(request),
-      ...metadata,
+      ...sanitizeAdminAuditMetadata(metadata),
     },
   });
 

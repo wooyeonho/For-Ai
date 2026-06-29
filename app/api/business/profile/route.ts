@@ -31,11 +31,31 @@ export async function POST(request: Request) {
   const country = String(body.country ?? "").trim();
   const industry = String(body.industry ?? "").trim() || null;
   const contactName = String(body.contact_name ?? "").trim() || null;
+  const contactEmailConsent = body.contact_email_consent === true;
+  const contactEmailPurpose = String(body.contact_email_purpose ?? "business_profile_verification").trim();
   const verificationMethod = String(body.verification_method ?? "email").trim();
+  const verificationReviewUrl = String(body.verification_review_url ?? "").trim() || null;
+
+  if ("verification_document" in body || "verification_document_blob" in body) {
+    return NextResponse.json(
+      { error: "Do not submit verification document contents. Provide verification_review_url for external/manual review instead." },
+      { status: 400 },
+    );
+  }
 
   if (!entityId || !businessName || !businessEmail || !country) {
     return NextResponse.json(
       { error: "entity_id, business_name, business_email, and country are required" },
+      { status: 400 },
+    );
+  }
+
+  if (!contactEmailConsent || !contactEmailPurpose) {
+    return NextResponse.json(
+      {
+        error: "contact_email_consent=true and contact_email_purpose are required to store business_email",
+        purpose: "business_profile_verification",
+      },
       { status: 400 },
     );
   }
@@ -85,7 +105,10 @@ export async function POST(request: Request) {
       country,
       industry,
       contact_name: contactName,
+      contact_email_consent: contactEmailConsent,
+      contact_email_purpose: contactEmailPurpose,
       verification_method: verificationMethod,
+      verification_review_url: verificationReviewUrl,
       status: "pending",
       tier: "free",
       contributor_hash: contributorHash,
