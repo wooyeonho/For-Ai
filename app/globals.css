@@ -650,6 +650,49 @@ textarea::placeholder {
   gap: 6px;
 }
 
+
+.site-nav-menu {
+  position: relative;
+}
+
+.site-nav-menu summary {
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  list-style: none;
+  padding: 6px 10px;
+  border-radius: 6px;
+}
+
+.site-nav-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+.site-nav-menu summary:hover,
+.site-nav-menu[open] summary {
+  color: var(--text);
+  background: var(--soft);
+}
+
+.site-nav-menu-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  z-index: 20;
+  min-width: 180px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+  box-shadow: 0 14px 30px rgba(15, 23, 42, 0.16);
+}
+
+.site-nav .site-nav-menu-panel a {
+  display: block;
+  white-space: nowrap;
+}
+
 .site-nav a {
   color: var(--muted);
   text-decoration: none;

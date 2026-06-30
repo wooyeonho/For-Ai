@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { getLocaleFromPathname, getTranslations, withLocaleLink } from "../../lib/i18n/translations";
 import { LanguageSelector } from "./LanguageSelector";
+import { DEFAULT_LOCALE, isValidLocale } from "../../lib/i18n/locales";
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
