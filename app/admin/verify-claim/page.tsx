@@ -23,6 +23,9 @@ type ClaimRow = {
   source_candidates?: SourceCandidate[];
   claim_sources?: SourceRow[];
   verification_events?: VerificationEventRow[];
+  freshness_ttl_days?: number;
+  age_days?: number | null;
+  stale_reason?: string;
 };
 type DocumentRow = {
   id: string;
@@ -111,6 +114,7 @@ export default function VerifyClaimPage() {
     category: "",
     slug: "",
     sort: "high_risk",
+    stale: "false",
     limit: "50",
     offset: "0",
   });
@@ -169,6 +173,7 @@ export default function VerifyClaimPage() {
     if (filters.slug.trim()) params.set("slug", filters.slug.trim());
     if (targetClaimId) params.set("claim_id", targetClaimId);
     if (filters.sort) params.set("sort", filters.sort);
+    if (filters.stale === "true") params.set("stale", "true");
     return params.toString();
   }, [search, claimStatusFilter, docStatusFilter, page, filters, targetClaimId]);
 
@@ -201,7 +206,7 @@ export default function VerifyClaimPage() {
     const claimId = params.get("claim_id");
     if (slug) {
       setTargetSlug(slug);
-      setFilters((current) => ({ ...current, slug, offset: "0" }));
+      setFilters((current) => ({ ...current, slug, offset: "0", ...(stale ? { stale: "true", status: "verified", sort: "oldest" } : {}) }));
     }
     if (claimId) {
       setTargetClaimId(claimId);
@@ -483,10 +488,16 @@ export default function VerifyClaimPage() {
             </select>
           </label>
           <label>limit<input type="number" min="1" max="200" value={filters.limit} onChange={(e) => setFilters({ ...filters, limit: e.target.value, offset: "0" })} /></label>
+          <label>stale
+            <select value={filters.stale} onChange={(e) => { const stale = e.target.value; setFilters({ ...filters, stale, status: stale === "true" ? "verified" : filters.status, offset: "0" }); if (stale === "true") setClaimStatusFilter("verified"); }}>
+              <option value="false">all freshness</option>
+              <option value="true">stale verified only</option>
+            </select>
+          </label>
         </div>
         <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
           <button onClick={() => { setPage(1); load(1); }} disabled={!secret || loading}>{loading ? "적용 중..." : "필터 적용"}</button>
-          <button type="button" onClick={() => setFilters({ status: "needs_review", country: "", lang: "", category: "", slug: "", sort: "high_risk", limit: "50", offset: "0" })}>초기화</button>
+          <button type="button" onClick={() => setFilters({ status: "needs_review", country: "", lang: "", category: "", slug: "", sort: "high_risk", stale: "false", limit: "50", offset: "0" })}>초기화</button>
         </div>
       </section>
 

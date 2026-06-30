@@ -27,6 +27,7 @@ type ClaimWithDocument = {
   created_at?: string | null;
   updated_at?: string | null;
   claim_sources?: unknown[];
+  update_frequency?: string | null;
   documents?: (DocumentForReview & { entities?: unknown }) | DocumentForReview[] | null;
 };
 
@@ -44,6 +45,7 @@ type DocumentForReview = {
   last_verified_at?: string | null;
   created_at?: string | null;
   updated_at?: string | null;
+  update_frequency?: string | null;
   entities?: unknown;
   claims?: ClaimWithDocument[];
 };
@@ -240,6 +242,7 @@ export async function GET(request: Request) {
   const slug = params.get("slug")?.trim();
   const claimId = params.get("claim_id")?.trim();
   const sort = params.get("sort")?.trim() || "high_risk";
+  const staleOnly = params.get("stale") === "true";
   const limit = boundedInt(params.get("limit"), DEFAULT_LIMIT, MAX_LIMIT);
 
   // PR params: search, claim_status, doc_status, page
@@ -286,6 +289,27 @@ export async function GET(request: Request) {
     documents = documents.map((doc) => ({
       ...doc,
       claims: ((doc.claims ?? []) as ClaimWithDocument[]).filter((c) => c.status === claimStatus),
+    })).filter((doc) => (doc.claims ?? []).length > 0);
+  }
+
+  if (staleOnly) {
+    documents = documents.map((doc) => ({
+      ...doc,
+      claims: ((doc.claims ?? []) as ClaimWithDocument[]).filter((c) => {
+        if (c.status !== "verified") return false;
+        const ttlDays = getFreshnessTtlDays((c.update_frequency ?? doc.update_frequency ?? null) as Parameters<typeof getFreshnessTtlDays>[0]);
+        return isStale(c.last_verified_at, ttlDays);
+      }).map((c) => {
+        const ttlDays = getFreshnessTtlDays((c.update_frequency ?? doc.update_frequency ?? null) as Parameters<typeof getFreshnessTtlDays>[0]);
+        return {
+          ...c,
+          freshness_ttl_days: ttlDays,
+          age_days: ageInDays(c.last_verified_at),
+          stale_reason: c.last_verified_at
+            ? `last verified ${ageInDays(c.last_verified_at) ?? "unknown"} days ago; TTL ${ttlDays} days`
+            : `missing last_verified_at; TTL ${ttlDays} days`,
+        };
+      }),
     })).filter((doc) => (doc.claims ?? []).length > 0);
   }
 
