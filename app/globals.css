@@ -707,6 +707,54 @@ textarea::placeholder {
   background: var(--soft);
 }
 
+.explore-menu {
+  position: relative;
+}
+
+.explore-menu summary {
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 600;
+  list-style: none;
+  padding: 6px 10px;
+  border-radius: 6px;
+}
+
+.explore-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+.explore-menu summary::after {
+  content: "▾";
+  font-size: 0.68rem;
+  margin-inline-start: 6px;
+}
+
+.explore-menu[open] summary,
+.explore-menu summary:hover {
+  color: var(--text);
+  background: var(--soft);
+}
+
+.explore-menu-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  z-index: 30;
+  min-width: 220px;
+  padding: 8px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 16px 36px rgba(16, 24, 40, 0.14);
+}
+
+.explore-menu-panel a {
+  display: block;
+  padding: 9px 10px;
+}
+
 .site-nav .site-nav-cta {
   color: #fff;
   background: var(--accent);
@@ -777,6 +825,29 @@ textarea::placeholder {
 
 .site-nav-mobile-lang {
   padding: 8px 0 0;
+}
+
+.site-nav-mobile .explore-menu {
+  position: static;
+}
+
+.site-nav-mobile .explore-menu summary {
+  color: var(--text);
+  font-size: 1rem;
+  padding: 12px 8px;
+}
+
+.site-nav-mobile .explore-menu-panel {
+  position: static;
+  min-width: 0;
+  box-shadow: none;
+  border-radius: 8px;
+  margin: 0 0 6px;
+  padding: 4px;
+}
+
+.site-nav-mobile .explore-menu-panel a {
+  padding: 10px 12px;
 }
 
 @media (max-width: 560px) {
@@ -2891,4 +2962,34 @@ body {
   block-size: 100%;
   border-radius: inherit;
   background: var(--success);
+}
+
+.explore-home-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 10px;
+}
+
+.explore-home-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 48px;
+  padding: 12px 14px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: var(--text);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.explore-home-link::after {
+  content: "→";
+  color: var(--muted);
+}
+
+.explore-home-link:hover {
+  border-color: var(--accent);
+  background: var(--soft);
 }

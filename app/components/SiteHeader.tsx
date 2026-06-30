@@ -6,6 +6,39 @@ import { getLocaleFromPathname, getTranslations, withLocaleLink } from "../../li
 import { LanguageSelector } from "./LanguageSelector";
 import { DEFAULT_LOCALE, isValidLocale } from "../../lib/i18n/locales";
 
+interface ExploreLink {
+  label: string;
+  path: string;
+  localized?: boolean;
+}
+
+const EXPLORE_LINKS: ExploreLink[] = [
+  { label: "Registry", path: "/#registry" },
+  { label: "Topics", path: "/topics/government", localized: true },
+  { label: "Countries", path: "/country/kr", localized: true },
+  { label: "Community", path: "/community" },
+  { label: "Contribute", path: "/contribute" },
+  { label: "Bounties", path: "/bounties", localized: true },
+  { label: "Challenges", path: "/challenges", localized: true },
+  { label: "Missions", path: "/missions", localized: true },
+  { label: "Leaderboard", path: "/leaderboard", localized: true },
+  { label: "API Docs", path: "/api-docs" },
+  { label: "Suggest Topic", path: "/suggest-topic" },
+];
+
+function currentLocaleFromPath(pathname: string, localeParam?: string | null): SupportedLocale {
+  const firstSegment = pathname.split("/").filter(Boolean)[0] ?? "";
+  if (isValidLocale(firstSegment)) return firstSegment;
+  return localeParam && isValidLocale(localeParam) ? localeParam : "en";
+}
+
+function hrefForLocale(link: ExploreLink, locale: SupportedLocale): string {
+  if (link.localized) return `/${locale}${link.path}`;
+  if (link.path.includes("?")) return `${link.path}&locale=${locale}`;
+  const [path, hash] = link.path.split("#");
+  return `${path}?locale=${locale}${hash ? `#${hash}` : ""}`;
+}
+
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
