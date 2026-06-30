@@ -37,14 +37,16 @@ export const LOCALE_CONFIG: Record<SupportedLocale, {
   dir: "ltr" | "rtl";
   country: string;
   flag: string;
+  htmlLang: string;
+  ogLocale: string;
 }> = {
-  ko: { label: "Korean", nativeName: "한국어", dir: "ltr", country: "KR", flag: "🇰🇷" },
-  en: { label: "English", nativeName: "English", dir: "ltr", country: "US", flag: "🇺🇸" },
-  hi: { label: "Hindi", nativeName: "हिन्दी", dir: "ltr", country: "IN", flag: "🇮🇳" },
-  ar: { label: "Arabic", nativeName: "العربية", dir: "rtl", country: "SA", flag: "🇸🇦" },
-  es: { label: "Spanish", nativeName: "Español", dir: "ltr", country: "ES", flag: "🇪🇸" },
-  ja: { label: "Japanese", nativeName: "日本語", dir: "ltr", country: "JP", flag: "🇯🇵" },
-  zh: { label: "Chinese", nativeName: "中文", dir: "ltr", country: "CN", flag: "🇨🇳" },
+  ko: { label: "Korean", nativeName: "한국어", dir: "ltr", country: "KR", flag: "🇰🇷", htmlLang: "ko", ogLocale: "ko_KR" },
+  en: { label: "English", nativeName: "English", dir: "ltr", country: "US", flag: "🇺🇸", htmlLang: "en", ogLocale: "en_US" },
+  hi: { label: "Hindi", nativeName: "हिन्दी", dir: "ltr", country: "IN", flag: "🇮🇳", htmlLang: "hi", ogLocale: "hi_IN" },
+  ar: { label: "Arabic", nativeName: "العربية", dir: "rtl", country: "SA", flag: "🇸🇦", htmlLang: "ar", ogLocale: "ar_SA" },
+  es: { label: "Spanish", nativeName: "Español", dir: "ltr", country: "ES", flag: "🇪🇸", htmlLang: "es", ogLocale: "es_ES" },
+  ja: { label: "Japanese", nativeName: "日本語", dir: "ltr", country: "JP", flag: "🇯🇵", htmlLang: "ja", ogLocale: "ja_JP" },
+  zh: { label: "Chinese", nativeName: "中文", dir: "ltr", country: "CN", flag: "🇨🇳", htmlLang: "zh", ogLocale: "zh_CN" },
 };
 
 export function isValidLocale(locale: string): locale is SupportedLocale {
@@ -53,4 +55,19 @@ export function isValidLocale(locale: string): locale is SupportedLocale {
 
 export function getLocaleDir(locale: SupportedLocale): "ltr" | "rtl" {
   return LOCALE_CONFIG[locale].dir;
+}
+
+export function getHtmlLang(locale: SupportedLocale): string {
+  return LOCALE_CONFIG[locale].htmlLang;
+}
+
+export function getOgLocale(locale: SupportedLocale): string {
+  return LOCALE_CONFIG[locale].ogLocale;
+}
+
+export function getLocaleAlternates(pathForLocale: (locale: SupportedLocale) => string): Record<string, string> {
+  const alternates: Record<string, string> = {};
+  for (const locale of SUPPORTED_LOCALES) alternates[locale] = pathForLocale(locale);
+  alternates["x-default"] = pathForLocale(DEFAULT_LOCALE);
+  return alternates;
 }

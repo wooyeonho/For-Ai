@@ -4,7 +4,7 @@ import type { EntityProfile } from "./entity-profile";
 import { documentPageUrl, apiDocumentUrl, rawMarkdownUrl, apiEntityUrl, entityPageUrl, siteUrl } from "./urls";
 import { getClaimCitationStatus, getDocumentCitationStatus, getCanonicalDirectAnswer } from "./citation-status";
 import { normalizeCitationSurface } from "./render";
-import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from "./i18n";
+import { DEFAULT_LOCALE, getLocaleAlternates, getOgLocale, isValidLocale } from "./i18n";
 
 // Map a free-form entity.type (e.g. "transport.metro", "telecom.mobile") to the
 // closest schema.org type so structured data is meaningful to search/AI.
@@ -67,16 +67,8 @@ export function buildDocumentMetadata(
   const description = buildSeoDescription(bundle);
   const url = documentPageUrl(document.slug, lang);
 
-  const hreflang: Record<string, string> = {};
-  for (const l of SUPPORTED_LOCALES) {
-    hreflang[l] = siteUrl(`/${l}/wiki/${document.slug}`);
-  }
-  hreflang["x-default"] = siteUrl(`/${DEFAULT_LOCALE}/wiki/${document.slug}`);
-
-  const ogLocaleMap: Record<string, string> = {
-    ko: "ko_KR", en: "en_US", hi: "hi_IN", ar: "ar_SA",
-    es: "es_ES", ja: "ja_JP", zh: "zh_CN",
-  };
+  const hreflang = getLocaleAlternates((alternateLocale) => siteUrl(`/${alternateLocale}/wiki/${document.slug}`));
+  const ogLocale = isValidLocale(lang) ? getOgLocale(lang) : getOgLocale(DEFAULT_LOCALE);
 
   return {
     title,
@@ -91,7 +83,7 @@ export function buildDocumentMetadata(
       url,
       siteName: "For-Ai",
       type: "article",
-      locale: ogLocaleMap[lang] ?? "en_US",
+      locale: ogLocale,
     },
     other: {
       "api-url": apiDocumentUrl(document.slug),
@@ -231,15 +223,14 @@ export function buildEntityMetadata(profile: EntityProfile, locale?: string): Me
     `${summary.verified_claims}/${summary.total_claims} claims verified.`;
   const url = entityPageUrl(entity.id, lang);
 
-  const hreflang: Record<string, string> = {};
-  for (const l of SUPPORTED_LOCALES) hreflang[l] = entityPageUrl(entity.id, l);
-  hreflang["x-default"] = entityPageUrl(entity.id, DEFAULT_LOCALE);
+  const hreflang = getLocaleAlternates((alternateLocale) => entityPageUrl(entity.id, alternateLocale));
+  const ogLocale = isValidLocale(lang) ? getOgLocale(lang) : getOgLocale(DEFAULT_LOCALE);
 
   return {
     title,
     description,
     alternates: { canonical: url, languages: hreflang },
-    openGraph: { title: `${title} — For-Ai`, description, url, siteName: "For-Ai", type: "profile" },
+    openGraph: { title: `${title} — For-Ai`, description, url, siteName: "For-Ai", type: "profile", locale: ogLocale },
     other: { "api-url": apiEntityUrl(entity.id) },
   };
 }

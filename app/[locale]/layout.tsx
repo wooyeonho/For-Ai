@@ -1,5 +1,29 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { isValidLocale } from "../../lib/i18n";
+import { getHtmlLang, getLocaleAlternates, getLocaleDir, getOgLocale, isValidLocale } from "../../lib/i18n";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  if (!isValidLocale(locale)) return {};
+
+  return {
+    alternates: {
+      canonical: `/${locale}`,
+      languages: getLocaleAlternates((alternateLocale) => `/${alternateLocale}`),
+    },
+    openGraph: {
+      locale: getOgLocale(locale),
+    },
+    other: {
+      "content-language": getHtmlLang(locale),
+      "for-ai-locale-scope": locale,
+    },
+  };
+}
 
 export default async function LocaleLayout({
   children,
@@ -11,10 +35,11 @@ export default async function LocaleLayout({
   const { locale } = await params;
   if (!isValidLocale(locale)) notFound();
 
-  const dir = locale === "ar" ? "rtl" : "ltr";
+  const htmlLang = getHtmlLang(locale);
+  const dir = getLocaleDir(locale);
 
   return (
-    <div lang={locale} dir={dir}>
+    <div lang={htmlLang} dir={dir} data-locale={locale}>
       {children}
     </div>
   );

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { DEFAULT_LOCALE } from "../lib/i18n";
+import { DEFAULT_LOCALE, getHtmlLang } from "../lib/i18n";
 import { siteUrl } from "../lib/urls";
 import { SiteHeader } from "./components/SiteHeader";
 import { SiteFooter } from "./components/SiteFooter";
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang={DEFAULT_LOCALE}>
+    <html lang={getHtmlLang(DEFAULT_LOCALE)}>
       <body>
         <SiteHeader />
         <main className="page-shell">{children}</main>

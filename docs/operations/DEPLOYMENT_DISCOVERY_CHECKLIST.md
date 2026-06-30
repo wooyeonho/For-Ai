@@ -124,3 +124,4 @@ Record the production URL, date/time, checker, and result before closing the rel
 - No Supabase runtime integration — submissions are stubs only
 - No DB persistence — all data is static seed
 - Admin tools are UI stubs only
+- App Router root `<html lang>` is emitted from the global root layout and remains the configured default locale (`en`) for now. Locale routes keep static-first content scoped with an inner `<div lang dir>`, plus locale-specific `hreflang`, `x-default`, Open Graph locale, and content-language metadata. Accessibility backlog: evaluate a multi-root route-group structure or another Next-supported approach that lets `/[locale]` routes emit path-specific root `<html lang>` without breaking non-locale routes or static-first rendering.
