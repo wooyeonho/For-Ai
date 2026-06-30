@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { isValidLocale } from "@/lib/i18n";
 import { HALLUCINATION_FIELD_MAX_LENGTHS } from "@/lib/submission-limits";
 
 export function HallucinationForm({
@@ -15,6 +17,20 @@ export function HallucinationForm({
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const searchParams = useSearchParams();
+  const returnUrl = useMemo(() => {
+    const explicitReturn = searchParams.get("return");
+    if (explicitReturn?.startsWith("/") && !explicitReturn.startsWith("//")) {
+      return explicitReturn;
+    }
+
+    const queryLocale = searchParams.get("lang");
+    if (queryLocale && isValidLocale(queryLocale)) {
+      return `/${queryLocale}/wiki/${slug}`;
+    }
+
+    return `/en/wiki/${slug}`;
+  }, [searchParams, slug]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -54,7 +70,7 @@ export function HallucinationForm({
     return (
       <div className="submission-success">
         <p>AI 오답 신고가 접수되었습니다. 검토 후 반영됩니다.</p>
-        <a href={`/en/wiki/${slug}`} className="cta-link">
+        <a href={returnUrl} className="cta-link">
           문서로 돌아가기
         </a>
       </div>

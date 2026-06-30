@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { isValidLocale } from "@/lib/i18n";
 import { REPORT_MESSAGE_MAX_LENGTH } from "@/lib/submission-limits";
 
 type ClaimOption = {
@@ -28,6 +30,20 @@ export function ReportForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [pointsAwarded, setPointsAwarded] = useState<number | null>(null);
+  const searchParams = useSearchParams();
+  const returnUrl = useMemo(() => {
+    const explicitReturn = searchParams.get("return");
+    if (explicitReturn?.startsWith("/") && !explicitReturn.startsWith("//")) {
+      return explicitReturn;
+    }
+
+    const queryLocale = searchParams.get("lang");
+    if (queryLocale && isValidLocale(queryLocale)) {
+      return `/${queryLocale}/wiki/${slug}`;
+    }
+
+    return `/en/wiki/${slug}`;
+  }, [searchParams, slug]);
 
   const copy = useMemo(() => {
     if (intent === "source") {
@@ -106,7 +122,7 @@ export function ReportForm({
       <div className="submission-success">
         <p>{copy.success}</p>
         {pointsAwarded !== null ? <p className="meta-label">points awarded: {pointsAwarded}</p> : null}
-        <a href={`/en/wiki/${slug}`} className="cta-link">
+        <a href={returnUrl} className="cta-link">
           문서로 돌아가기
         </a>
       </div>
