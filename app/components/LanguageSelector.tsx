@@ -1,7 +1,7 @@
 "use client";
 import { usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { SUPPORTED_LOCALES, DEFAULT_LOCALE, LOCALE_CONFIG, isValidLocale } from "../../lib/i18n";
+import { SUPPORTED_LOCALES, DEFAULT_LOCALE, LOCALE_CONFIG, isValidLocale, type SupportedLocale } from "../../lib/i18n";
 
 const QUERY_LANGUAGE_ROUTES = new Set(["community", "suggest-topic", "report", "hallucination"]);
 const DOCUMENT_LANGUAGE_ROUTES = new Set(["report", "hallucination", "diagnostics"]);
@@ -78,6 +78,10 @@ export function LanguageSelector() {
 
   function getPathForLocale(locale: string): string {
     return getLocalePath(pathname, locale, searchParams);
+  }
+
+  function isSameDestination(href: string): boolean {
+    return href === `${pathname}${currentSearch}` || href === pathname;
   }
 
   return (
