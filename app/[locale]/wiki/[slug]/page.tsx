@@ -78,17 +78,17 @@ export default async function WikiDocumentPage({
         : null;
   const isCommercePolicy = document.template === "commerce_policy";
   const topCitationLabel = citationStatus.freshness === "stale"
-    ? "Stale"
+    ? t.wiki.stale
     : citationStatus.isVerifiedDocument
-      ? "Citation-ready"
+      ? t.wiki.citationReady
       : citationStatus.verifiedClaims > 0
-        ? "Mixed"
-        : "Needs verification";
-  const topCitationClass = topCitationLabel === "Citation-ready"
+        ? t.wiki.mixed
+        : t.claims.needsReview;
+  const topCitationClass = topCitationLabel === t.wiki.citationReady
     ? "document-citation-status document-citation-status--ready"
-    : topCitationLabel === "Stale"
+    : topCitationLabel === t.wiki.stale
       ? "document-citation-status document-citation-status--stale"
-      : topCitationLabel === "Mixed"
+      : topCitationLabel === t.wiki.mixed
         ? "document-citation-status document-citation-status--mixed"
         : "document-citation-status document-citation-status--review";
   const totalSources = claims.reduce((n, c) => n + c.sources.length, 0);
@@ -143,7 +143,7 @@ export default async function WikiDocumentPage({
         <h1>{document.title}</h1>
         <div className={topCitationClass} aria-label="Document citation status">
           <strong>{topCitationLabel}</strong>
-          <span>{citationStatus.verifiedClaims}/{citationStatus.totalClaims} citation-ready · freshness: {citationStatus.freshness}</span>
+          <span>{t.wiki.citationReadyClaims} {citationStatus.verifiedClaims}/{citationStatus.totalClaims} · freshness: {citationStatus.freshness}</span>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
           <span className={citationStatus.isVerifiedDocument ? "badge badge-verified" : "badge badge-review"}>
@@ -174,16 +174,13 @@ export default async function WikiDocumentPage({
             borderInlineStart: "6px solid #be123c",
           }}
         >
-          <p className="eyebrow" style={{ color: "#be123c" }}>DO NOT CITE · 확인 필요</p>
-          <h2 id="unverified-document-warning" style={{ marginTop: 0 }}>Unverified document — not citation ready</h2>
-          <p>
-            This page is publicly readable for review, but it is not an AI-citable fact record.
-            Do not cite this document unless the citation status is <strong>citation ready</strong>.
-          </p>
+          <p className="eyebrow" style={{ color: "#be123c" }}>{t.wiki.doNotCite} · {t.claims.needsReview}</p>
+          <h2 id="unverified-document-warning" style={{ marginTop: 0 }}>{t.wiki.unverifiedDocumentTitle}</h2>
+          <p>{t.wiki.unverifiedDocumentBody}</p>
           <ul className="link-list">
-            <li>Document status: <strong>{document.status}</strong></li>
-            <li>Citation-ready claims: <strong>{citationStatus.verifiedClaims}/{citationStatus.totalClaims}</strong></li>
-            <li>Required before citation: document status <strong>verified</strong> and every claim verified with source-backed evidence.</li>
+            <li>{t.wiki.documentStatus}: <strong>{document.status}</strong></li>
+            <li>{t.wiki.citationReadyClaims} <strong>{citationStatus.verifiedClaims}/{citationStatus.totalClaims}</strong></li>
+            <li>{t.wiki.requiredBeforeCitation}</li>
           </ul>
         </section>
       )}
@@ -191,12 +188,12 @@ export default async function WikiDocumentPage({
       {/* Commerce policy template guardrails */}
       {isCommercePolicy && (
         <section className="registry-panel" style={{ background: "#eff6ff", borderInlineStart: "3px solid #3b82f6" }}>
-          <p className="eyebrow">Commerce policy template</p>
-          <p>Country and jurisdiction are required because return, refund, cancellation, and shipping policies can differ by market.</p>
+          <p className="eyebrow">{t.wiki.commercePolicyTemplate}</p>
+          <p>{t.wiki.commercePolicyBody}</p>
           <ul className="link-list">
-            <li>country: <strong>{document.country || entity.country}</strong></li>
-            <li>jurisdiction: <strong>{claims.find((claim) => claim.jurisdiction)?.jurisdiction ?? entity.country}</strong></li>
-            {freshnessTtlDays && <li>freshness TTL: <strong>{freshnessTtlDays} days</strong></li>}
+            <li>{t.wiki.country}: <strong>{document.country || entity.country}</strong></li>
+            <li>{t.wiki.jurisdiction}: <strong>{claims.find((claim) => claim.jurisdiction)?.jurisdiction ?? entity.country}</strong></li>
+            {freshnessTtlDays && <li>{t.wiki.freshnessTtl}: <strong>{freshnessTtlDays} days</strong></li>}
           </ul>
         </section>
       )}
@@ -215,7 +212,7 @@ export default async function WikiDocumentPage({
 
       {isGovernmentFeeTemplate && (
         <section className="registry-panel" aria-labelledby="government-fee-template">
-          <p className="eyebrow">Government fee template</p>
+          <p className="eyebrow">{t.wiki.governmentFeeTemplate}</p>
           <h2 id="government-fee-template">{t.wiki.governmentFeeDisclaimer}</h2>
           <ul className="link-list" aria-label="Standard government fee claim field paths">
             {standardGovernmentFeeFieldPaths.map((fieldPath) => (

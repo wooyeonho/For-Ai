@@ -26,6 +26,126 @@ export interface UITranslations {
     noDocs: string;
     suggestFirst: string;
   };
+  topics: {
+    eyebrow: string;
+    factsSuffix: string;
+    documents: string;
+    verified: string;
+    needsReview: string;
+    stale: string;
+    countryIndex: string;
+    popularFactsByCountry: string;
+    noCountryFacts: string;
+    citableClaims: string;
+    verifiedFacts: string;
+    noVerifiedFacts: string;
+    verificationQueue: string;
+    needsReviewTopics: string;
+    noNeedsReviewTopics: string;
+    freshnessMonitoring: string;
+    staleFacts: string;
+    noStaleFacts: string;
+    missingFactEyebrow: string;
+    submitMissingFact: string;
+    submitMissingFactBody: string;
+    submitMissingFactCtaPrefix: string;
+    submitMissingFactCtaSuffix: string;
+  };
+  country: {
+    eyebrow: string;
+    intro: string;
+    verifiedFacts: string;
+    needsReviewFacts: string;
+    staleFacts: string;
+    targetFacts: string;
+    questProgress: string;
+    targetHeadingSuffix: string;
+    progressNote: string;
+    categoryProgress: string;
+    topNeededSources: string;
+    noNeededSources: string;
+    recentContributors: string;
+    noContributors: string;
+    contribution: string;
+    lastSeen: string;
+    recentlyVerifiedFacts: string;
+    noStaleFacts: string;
+    oldestVerified: string;
+    popularQuestions: string;
+    documents: string;
+    verified: string;
+    submitSourceEyebrow: string;
+    submitSourceHeadingPrefix: string;
+    submitSourceHeadingSuffix: string;
+    submitSourceBodyPrefix: string;
+    submitSourceBodySuffix: string;
+    submitSourceCta: string;
+  };
+  bounties: {
+    eyebrow: string;
+    title: string;
+    intro: string;
+    open: string;
+    sponsoredLabeled: string;
+    contributorsSubmitSourcesOnly: string;
+    policyEyebrow: string;
+    policyTitle: string;
+    tasksEyebrow: string;
+    tasksTitle: string;
+    target: string;
+    sponsoredBounty: string;
+    unsponsoredTask: string;
+    points: string;
+  };
+  challenges: {
+    eyebrow: string;
+    title: string;
+    subtitle: string;
+    intro: string;
+    rulesTitle: string;
+    ruleAcceptedOnly: string;
+    ruleNoAutoVerification: string;
+    ruleSponsoredLabeled: string;
+    listLabel: string;
+    sponsored: string;
+    challengeId: string;
+    category: string;
+    country: string;
+    window: string;
+    completeSuffix: string;
+    detailsCta: string;
+  };
+  leaderboard: {
+    eyebrow: string;
+    title: string;
+    intro: string;
+    acceptedSources: string;
+    verifiedClaims: string;
+    staleFixes: string;
+    countryCoverage: string;
+    rankingEyebrow: string;
+    rankingTitle: string;
+    noLiveData: string;
+    noEligibleActivity: string;
+    countries: string;
+    categories: string;
+    abuseAdjustedScore: string;
+    acceptedHallucinationReports: string;
+    moderationPenalties: string;
+    duplicateUrlCap: string;
+    points: string;
+    scoringEyebrow: string;
+    scoringTitle: string;
+    abuseEyebrow: string;
+    abuseTitle: string;
+    rewardTitle: string;
+    actionsTitle: string;
+    actionsBody: string;
+    actionsCta: string;
+  };
+  compare: { title: string; description: string };
+  aiWrongAbout: { title: string; description: string };
+
   claims: {
     needsReview: string;
     unknownLabel: string;
@@ -77,6 +197,20 @@ governmentFeeDisclaimer: string;
     translationStatusMachine: string;
     translationStatusHuman: string;
     originalClaim: string;
+    stale: string;
+    citationReady: string;
+    mixed: string;
+    doNotCite: string;
+    unverifiedDocumentTitle: string;
+    unverifiedDocumentBody: string;
+    documentStatus: string;
+    requiredBeforeCitation: string;
+    commercePolicyTemplate: string;
+    commercePolicyBody: string;
+    country: string;
+    jurisdiction: string;
+    freshnessTtl: string;
+    governmentFeeTemplate: string;
   };
   footer: {
     tagline: string;
@@ -99,6 +233,138 @@ governmentFeeDisclaimer: string;
     back: string;
   };
 }
+
+
+const englishPageNamespaces: Pick<UITranslations, "topics" | "country" | "bounties" | "challenges" | "leaderboard" | "compare" | "aiWrongAbout"> = {
+  topics: {
+    eyebrow: "Claim-level topic registry",
+    factsSuffix: "facts",
+    documents: "documents",
+    verified: "verified",
+    needsReview: "needs review",
+    stale: "stale",
+    countryIndex: "Country index",
+    popularFactsByCountry: "Popular facts by country",
+    noCountryFacts: "No country-specific facts are registered for this category yet. Unknown facts remain Needs verification until a source-backed claim is added.",
+    citableClaims: "Citable claims",
+    verifiedFacts: "Verified facts",
+    noVerifiedFacts: "No fully verified facts are available in this category yet.",
+    verificationQueue: "Verification queue",
+    needsReviewTopics: "Needs review topics",
+    noNeedsReviewTopics: "No topics currently need review in this category.",
+    freshnessMonitoring: "Freshness monitoring",
+    staleFacts: "Stale facts",
+    noStaleFacts: "No stale verified facts are flagged in this category.",
+    missingFactEyebrow: "Missing fact?",
+    submitMissingFact: "Submit missing fact",
+    submitMissingFactBody: "If a fact is missing, submit the topic without logging in. For-Ai will keep it as Needs verification until a traceable source and human review are added.",
+    submitMissingFactCtaPrefix: "Submit a missing",
+    submitMissingFactCtaSuffix: "fact",
+  },
+  country: {
+    eyebrow: "Country registry",
+    intro: "A static-first country dashboard for source-backed For-Ai documents. Counts are derived from the registry index; Supabase-backed rows can be included when the optional index connection is configured.",
+    verifiedFacts: "Verified facts",
+    needsReviewFacts: "Needs review facts",
+    staleFacts: "Stale facts",
+    targetFacts: "Target facts",
+    questProgress: "Quest progress",
+    targetHeadingSuffix: "to the current country target",
+    progressNote: "Progress = verified claims / target claims. It is a participation signal only; it never replaces source quality, confidence, freshness, or human verification.",
+    categoryProgress: "Category progress",
+    topNeededSources: "Top needed sources",
+    noNeededSources: "No missing source needs detected in this country index.",
+    recentContributors: "Recent contributors",
+    noContributors: "Contributor hashes are not yet available for this country. Raw IP addresses are never stored.",
+    contribution: "contribution(s)",
+    lastSeen: "last seen",
+    recentlyVerifiedFacts: "Recently verified facts",
+    noStaleFacts: "No stale facts in this country index.",
+    oldestVerified: "oldest verified",
+    popularQuestions: "Popular questions",
+    documents: "Documents",
+    verified: "verified",
+    submitSourceEyebrow: "Submit source CTA",
+    submitSourceHeadingPrefix: "Know an official source for a needed",
+    submitSourceHeadingSuffix: "fact?",
+    submitSourceBodyPrefix: "Submit a source or topic for",
+    submitSourceBodySuffix: "Public submissions start as needs-review candidates and must be human verified before citation.",
+    submitSourceCta: "Submit a source",
+  },
+  bounties: {
+    eyebrow: "Claim-level source bounties",
+    title: "Source bounties for verifiable facts",
+    intro: "Bounties help contributors find source candidates for claims or topic candidates. They do not buy verification, rankings, or factual conclusions.",
+    open: "open",
+    sponsoredLabeled: "sponsored labeled",
+    contributorsSubmitSourcesOnly: "contributors submit sources only",
+    policyEyebrow: "Non-negotiable policy",
+    policyTitle: "Sponsorship is separate from verification",
+    tasksEyebrow: "Available tasks",
+    tasksTitle: "Bounty queue",
+    target: "target",
+    sponsoredBounty: "Sponsored bounty",
+    unsponsoredTask: "Unsponsored community verification task",
+    points: "pts",
+  },
+  challenges: {
+    eyebrow: "Community challenges",
+    title: "Collect source-backed candidates without shortcutting verification.",
+    subtitle: "Challenge progress counts accepted contributions only. Completion never means claims are automatically verified.",
+    intro: "Each challenge is a structured intake goal for the For-Ai fact registry. Accepted contributions can help reviewers create or update claims, but verified status still requires source-backed human approval.",
+    rulesTitle: "Non-negotiable progress rules",
+    ruleAcceptedOnly: "Only accepted contributions are reflected in progress.",
+    ruleNoAutoVerification: "Challenge completion is not automatic claim verification.",
+    ruleSponsoredLabeled: "Sponsored challenges are labeled clearly and cannot compromise fact integrity.",
+    listLabel: "Challenge list",
+    sponsored: "Sponsored",
+    challengeId: "Challenge ID",
+    category: "Category",
+    country: "Country",
+    window: "Window",
+    completeSuffix: "complete from accepted contributions only.",
+    detailsCta: "View challenge details",
+  },
+  leaderboard: {
+    eyebrow: "Contributor trust leaderboard",
+    title: "For-Ai leaderboard",
+    intro: "This leaderboard rewards accepted, source-backed, claim-level work. It intentionally excludes raw submission count so spam, repeated URLs, and noisy public intake cannot outrank verified contributions.",
+    acceptedSources: "accepted sources",
+    verifiedClaims: "verified claims",
+    staleFixes: "stale fixes",
+    countryCoverage: "country coverage",
+    rankingEyebrow: "Ranked by accepted impact, not volume",
+    rankingTitle: "Current ranking",
+    noLiveData: "Live contributor rows require the server-side Supabase service role. The public page still renders the scoring policy statically without exposing edits, reports, hallucination_reports, or raw contributor hashes.",
+    noEligibleActivity: "No accepted contributor activity is eligible for ranking yet.",
+    countries: "countries",
+    categories: "categories",
+    abuseAdjustedScore: "abuse-adjusted score",
+    acceptedHallucinationReports: "accepted hallucination reports",
+    moderationPenalties: "moderation penalties",
+    duplicateUrlCap: "duplicate URL cap",
+    points: "pts",
+    scoringEyebrow: "Scoring design",
+    scoringTitle: "Leaderboard criteria",
+    abuseEyebrow: "Abuse resistance",
+    abuseTitle: "Spam prevention rules",
+    rewardTitle: "Reward rules",
+    actionsTitle: "Contribute source-backed facts",
+    actionsBody: "Submit missing facts without logging in. They remain Needs verification until a traceable source and human approval are recorded.",
+    actionsCta: "Submit a missing fact",
+  },
+  compare: { title: "Compare claims", description: "Compare source-backed claim records without treating unverified facts as citation-ready." },
+  aiWrongAbout: { title: "What AI gets wrong", description: "Track recurring AI errors as claim-level facts that require traceable sources and human verification." },
+};
+
+const koPageNamespaces: typeof englishPageNamespaces = {
+  ...englishPageNamespaces,
+  topics: { ...englishPageNamespaces.topics, eyebrow: "Claim 단위 토픽 레지스트리", factsSuffix: "사실", documents: "문서", verified: "검증됨", needsReview: "확인 필요", stale: "오래됨", countryIndex: "국가 인덱스", popularFactsByCountry: "국가별 인기 사실", citableClaims: "인용 가능 claim", verifiedFacts: "검증된 사실", verificationQueue: "검증 대기열", needsReviewTopics: "확인 필요 토픽", freshnessMonitoring: "최신성 모니터링", staleFacts: "오래된 사실", missingFactEyebrow: "누락된 사실?", submitMissingFact: "누락된 사실 제출", submitMissingFactCtaPrefix: "누락된", submitMissingFactCtaSuffix: "사실 제출" },
+  country: { ...englishPageNamespaces.country, eyebrow: "국가 레지스트리", verifiedFacts: "검증된 사실", needsReviewFacts: "확인 필요 사실", staleFacts: "오래된 사실", targetFacts: "목표 사실", questProgress: "퀘스트 진행", categoryProgress: "카테고리 진행", topNeededSources: "가장 필요한 출처", recentContributors: "최근 기여자", recentlyVerifiedFacts: "최근 검증된 사실", popularQuestions: "인기 질문", documents: "문서", verified: "검증됨", submitSourceEyebrow: "출처 제출 CTA", submitSourceCta: "출처 제출" },
+  bounties: { ...englishPageNamespaces.bounties, eyebrow: "Claim 단위 출처 바운티", title: "검증 가능한 사실을 위한 출처 바운티", open: "공개", sponsoredLabeled: "스폰서 표시됨", contributorsSubmitSourcesOnly: "기여자는 출처 후보만 제출", policyEyebrow: "필수 정책", tasksEyebrow: "가능한 작업", tasksTitle: "바운티 대기열", target: "대상", sponsoredBounty: "스폰서 바운티", unsponsoredTask: "커뮤니티 검증 작업", points: "점" },
+  challenges: { ...englishPageNamespaces.challenges, eyebrow: "커뮤니티 챌린지", rulesTitle: "필수 진행 규칙", sponsored: "스폰서", challengeId: "챌린지 ID", category: "카테고리", country: "국가", window: "기간", detailsCta: "챌린지 자세히 보기" },
+  leaderboard: { ...englishPageNamespaces.leaderboard, eyebrow: "기여자 신뢰 리더보드", title: "For-Ai 리더보드", acceptedSources: "승인된 출처", verifiedClaims: "검증된 claim", staleFixes: "오래된 사실 수정", countryCoverage: "국가 커버리지", rankingTitle: "현재 순위", countries: "국가", categories: "카테고리", points: "점", rewardTitle: "보상 규칙", actionsTitle: "출처 기반 사실 기여", actionsCta: "누락된 사실 제출" },
+};
 
 const ko: UITranslations = {
   site: {
@@ -123,6 +389,7 @@ const ko: UITranslations = {
     noDocs: "아직 공개된 문서가 없습니다.",
     suggestFirst: "첫 번째 토픽을 제안해보세요 →",
   },
+  ...koPageNamespaces,
   claims: {
     unknownLabel: "확인 필요",
     needsReview: "확인 필요",
@@ -174,6 +441,20 @@ governmentFeeDisclaimer: "신청 전 항상 공식 정부 출처를 확인하세
     translationStatusMachine: "자동 번역",
     translationStatusHuman: "사람 검토 완료",
     originalClaim: "원문 claim",
+    stale: "Stale",
+    citationReady: "Citation-ready",
+    mixed: "Mixed",
+    doNotCite: "DO NOT CITE",
+    unverifiedDocumentTitle: "Unverified document — not citation ready",
+    unverifiedDocumentBody: "This page is publicly readable for review, but it is not an AI-citable fact record. Do not cite this document unless the citation status is citation ready.",
+    documentStatus: "Document status",
+    requiredBeforeCitation: "Required before citation: document status verified and every claim verified with source-backed evidence.",
+    commercePolicyTemplate: "Commerce policy template",
+    commercePolicyBody: "Country and jurisdiction are required because return, refund, cancellation, and shipping policies can differ by market.",
+    country: "country",
+    jurisdiction: "jurisdiction",
+    freshnessTtl: "freshness TTL",
+    governmentFeeTemplate: "Government fee template",
   },
   footer: {
     tagline: "AI·검색엔진·사람이 같은 사실을 같은 근거로 인용하도록 만드는 글로벌 claim-level 사실 레지스트리. 확인되지 않은 정보는 추측하지 않고 \"확인 필요\"로 남깁니다.",
@@ -220,6 +501,7 @@ const en: UITranslations = {
     noDocs: "No published documents yet.",
     suggestFirst: "Suggest the first topic →",
   },
+  ...englishPageNamespaces,
   claims: {
     unknownLabel: "Needs verification",
     needsReview: "Needs review",
@@ -271,6 +553,20 @@ governmentFeeDisclaimer: "Always check the official government source before app
     translationStatusMachine: "Machine translated",
     translationStatusHuman: "Human reviewed",
     originalClaim: "Original claim",
+    stale: "Stale",
+    citationReady: "Citation-ready",
+    mixed: "Mixed",
+    doNotCite: "DO NOT CITE",
+    unverifiedDocumentTitle: "Unverified document — not citation ready",
+    unverifiedDocumentBody: "This page is publicly readable for review, but it is not an AI-citable fact record. Do not cite this document unless the citation status is citation ready.",
+    documentStatus: "Document status",
+    requiredBeforeCitation: "Required before citation: document status verified and every claim verified with source-backed evidence.",
+    commercePolicyTemplate: "Commerce policy template",
+    commercePolicyBody: "Country and jurisdiction are required because return, refund, cancellation, and shipping policies can differ by market.",
+    country: "country",
+    jurisdiction: "jurisdiction",
+    freshnessTtl: "freshness TTL",
+    governmentFeeTemplate: "Government fee template",
   },
   footer: {
     tagline: "A global claim-level fact registry where AI, search engines, and humans cite the same facts from the same sources. Unverified information is marked as \"Needs verification\" (\"확인 필요\") instead of guessing.",
@@ -317,6 +613,7 @@ const hi: UITranslations = {
     noDocs: "अभी तक कोई प्रकाशित दस्तावेज़ नहीं।",
     suggestFirst: "पहला विषय सुझाएँ →",
   },
+  ...englishPageNamespaces,
   claims: {
     unknownLabel: "सत्यापन आवश्यक",
     needsReview: "समीक्षा आवश्यक",
@@ -368,6 +665,20 @@ governmentFeeDisclaimer: "आवेदन करने से पहले ह�
     translationStatusMachine: "मशीन अनूदित",
     translationStatusHuman: "मानव समीक्षा पूर्ण",
     originalClaim: "मूल claim",
+    stale: "Stale",
+    citationReady: "Citation-ready",
+    mixed: "Mixed",
+    doNotCite: "DO NOT CITE",
+    unverifiedDocumentTitle: "Unverified document — not citation ready",
+    unverifiedDocumentBody: "This page is publicly readable for review, but it is not an AI-citable fact record. Do not cite this document unless the citation status is citation ready.",
+    documentStatus: "Document status",
+    requiredBeforeCitation: "Required before citation: document status verified and every claim verified with source-backed evidence.",
+    commercePolicyTemplate: "Commerce policy template",
+    commercePolicyBody: "Country and jurisdiction are required because return, refund, cancellation, and shipping policies can differ by market.",
+    country: "country",
+    jurisdiction: "jurisdiction",
+    freshnessTtl: "freshness TTL",
+    governmentFeeTemplate: "Government fee template",
   },
   footer: {
     tagline: "एक स्थानीय तथ्य रजिस्ट्री जहाँ AI, खोज इंजन और लोग समान स्रोतों से समान तथ्य उद्धृत करते हैं। असत्यापित जानकारी को अनुमान लगाने के बजाय \"सत्यापन आवश्यक\" (\"확인 필요\") के रूप में चिह्नित किया जाता है।",
@@ -414,6 +725,7 @@ const ar: UITranslations = {
     noDocs: "لا توجد مستندات منشورة بعد.",
     suggestFirst: "اقترح الموضوع الأول →",
   },
+  ...englishPageNamespaces,
   claims: {
     unknownLabel: "بحاجة إلى تحقق",
     needsReview: "يحتاج مراجعة",
@@ -465,6 +777,20 @@ governmentFeeDisclaimer: "تحقق دائمًا من المصدر الحكومي
     translationStatusMachine: "ترجمة آلية",
     translationStatusHuman: "مراجعة بشرية مكتملة",
     originalClaim: "claim الأصلي",
+    stale: "Stale",
+    citationReady: "Citation-ready",
+    mixed: "Mixed",
+    doNotCite: "DO NOT CITE",
+    unverifiedDocumentTitle: "Unverified document — not citation ready",
+    unverifiedDocumentBody: "This page is publicly readable for review, but it is not an AI-citable fact record. Do not cite this document unless the citation status is citation ready.",
+    documentStatus: "Document status",
+    requiredBeforeCitation: "Required before citation: document status verified and every claim verified with source-backed evidence.",
+    commercePolicyTemplate: "Commerce policy template",
+    commercePolicyBody: "Country and jurisdiction are required because return, refund, cancellation, and shipping policies can differ by market.",
+    country: "country",
+    jurisdiction: "jurisdiction",
+    freshnessTtl: "freshness TTL",
+    governmentFeeTemplate: "Government fee template",
   },
   footer: {
     tagline: "سجل حقائق محلي حيث يستشهد الذكاء الاصطناعي ومحركات البحث والبشر بنفس الحقائق من نفس المصادر. المعلومات غير الموثقة تُعلَّم بـ \"بحاجة إلى تحقق\" (\"확인 필요\") بدلاً من التخمين.",
@@ -511,6 +837,7 @@ const es: UITranslations = {
     noDocs: "Aún no hay documentos publicados.",
     suggestFirst: "Sugiere el primer tema →",
   },
+  ...englishPageNamespaces,
   claims: {
     unknownLabel: "Verificación pendiente",
     needsReview: "Necesita revisión",
@@ -562,6 +889,20 @@ governmentFeeDisclaimer: "Consulta siempre la fuente oficial del gobierno antes 
     translationStatusMachine: "Traducción automática",
     translationStatusHuman: "Revisión humana",
     originalClaim: "Claim original",
+    stale: "Stale",
+    citationReady: "Citation-ready",
+    mixed: "Mixed",
+    doNotCite: "DO NOT CITE",
+    unverifiedDocumentTitle: "Unverified document — not citation ready",
+    unverifiedDocumentBody: "This page is publicly readable for review, but it is not an AI-citable fact record. Do not cite this document unless the citation status is citation ready.",
+    documentStatus: "Document status",
+    requiredBeforeCitation: "Required before citation: document status verified and every claim verified with source-backed evidence.",
+    commercePolicyTemplate: "Commerce policy template",
+    commercePolicyBody: "Country and jurisdiction are required because return, refund, cancellation, and shipping policies can differ by market.",
+    country: "country",
+    jurisdiction: "jurisdiction",
+    freshnessTtl: "freshness TTL",
+    governmentFeeTemplate: "Government fee template",
   },
   footer: {
     tagline: "Un registro local de hechos donde la IA, los motores de búsqueda y los humanos citan los mismos hechos de las mismas fuentes. La información no verificada se marca como \"Verificación pendiente\" (\"확인 필요\") en lugar de adivinar.",
@@ -608,6 +949,7 @@ const ja: UITranslations = {
     noDocs: "まだ公開されたドキュメントはありません。",
     suggestFirst: "最初のトピックを提案する →",
   },
+  ...englishPageNamespaces,
   claims: {
     unknownLabel: "要確認",
     needsReview: "確認必要",
@@ -659,6 +1001,20 @@ governmentFeeDisclaimer: "申請前に必ず政府の公式情報源を確認し
     translationStatusMachine: "機械翻訳",
     translationStatusHuman: "人間レビュー済み",
     originalClaim: "原文claim",
+    stale: "Stale",
+    citationReady: "Citation-ready",
+    mixed: "Mixed",
+    doNotCite: "DO NOT CITE",
+    unverifiedDocumentTitle: "Unverified document — not citation ready",
+    unverifiedDocumentBody: "This page is publicly readable for review, but it is not an AI-citable fact record. Do not cite this document unless the citation status is citation ready.",
+    documentStatus: "Document status",
+    requiredBeforeCitation: "Required before citation: document status verified and every claim verified with source-backed evidence.",
+    commercePolicyTemplate: "Commerce policy template",
+    commercePolicyBody: "Country and jurisdiction are required because return, refund, cancellation, and shipping policies can differ by market.",
+    country: "country",
+    jurisdiction: "jurisdiction",
+    freshnessTtl: "freshness TTL",
+    governmentFeeTemplate: "Government fee template",
   },
   footer: {
     tagline: "AI・検索エンジン・人間が同じ事実を同じ根拠で引用するローカル・ファクト・レジストリ。未確認情報は推測せず「要確認」（\"확인 필요\"）として残します。",
@@ -705,6 +1061,7 @@ const zh: UITranslations = {
     noDocs: "暂无已发布文档。",
     suggestFirst: "建议第一个主题 →",
   },
+  ...englishPageNamespaces,
   claims: {
     unknownLabel: "待核实",
     needsReview: "待确认",
@@ -756,6 +1113,20 @@ governmentFeeDisclaimer: "申请前请务必查看政府官方来源。",
     translationStatusMachine: "机器翻译",
     translationStatusHuman: "人工审核",
     originalClaim: "原文 claim",
+    stale: "Stale",
+    citationReady: "Citation-ready",
+    mixed: "Mixed",
+    doNotCite: "DO NOT CITE",
+    unverifiedDocumentTitle: "Unverified document — not citation ready",
+    unverifiedDocumentBody: "This page is publicly readable for review, but it is not an AI-citable fact record. Do not cite this document unless the citation status is citation ready.",
+    documentStatus: "Document status",
+    requiredBeforeCitation: "Required before citation: document status verified and every claim verified with source-backed evidence.",
+    commercePolicyTemplate: "Commerce policy template",
+    commercePolicyBody: "Country and jurisdiction are required because return, refund, cancellation, and shipping policies can differ by market.",
+    country: "country",
+    jurisdiction: "jurisdiction",
+    freshnessTtl: "freshness TTL",
+    governmentFeeTemplate: "Government fee template",
   },
   footer: {
     tagline: "AI、搜索引擎和人类从相同来源引用相同事实的本地事实注册表。未验证的信息标记为“待核实”（\"확인 필요\"）而不是猜测。",

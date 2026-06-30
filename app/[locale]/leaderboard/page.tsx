@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { SUPPORTED_LOCALES, isValidLocale } from "../../../lib/i18n";
+import { SUPPORTED_LOCALES, getTranslations, isValidLocale } from "../../../lib/i18n";
+import type { SupportedLocale } from "../../../lib/i18n";
 import { createServiceRoleClient, isServiceRoleConfigured } from "../../../lib/supabase-server";
 
 export const revalidate = 300;
@@ -111,34 +112,35 @@ export default async function LeaderboardPage({ params }: { params: Promise<Lead
   const { locale } = await params;
   if (!isValidLocale(locale)) notFound();
 
+  const t = getTranslations(locale as SupportedLocale);
   const leaderboard = await getLeaderboard();
   const hasLiveData = isServiceRoleConfigured();
 
   return (
     <article>
       <header className="registry-panel">
-        <p className="eyebrow">Contributor trust leaderboard</p>
-        <h1>For-Ai leaderboard</h1>
+        <p className="eyebrow">{t.leaderboard.eyebrow}</p>
+        <h1>{t.leaderboard.title}</h1>
         <p style={{ maxWidth: 780 }}>
-          This leaderboard rewards accepted, source-backed, claim-level work. It intentionally excludes raw submission count so spam, repeated URLs, and noisy public intake cannot outrank verified contributions.
+          {t.leaderboard.intro}
         </p>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
-          <span className="badge badge-verified">accepted sources × {WEIGHTS.accepted_sources}</span>
-          <span className="badge badge-verified">verified claims × {WEIGHTS.verified_claims}</span>
-          <span className="badge badge-warning">stale fixes × {WEIGHTS.stale_fixes}</span>
-          <span className="badge">country coverage × {WEIGHTS.country_coverage}</span>
+          <span className="badge badge-verified">{t.leaderboard.acceptedSources} × {WEIGHTS.accepted_sources}</span>
+          <span className="badge badge-verified">{t.leaderboard.verifiedClaims} × {WEIGHTS.verified_claims}</span>
+          <span className="badge badge-warning">{t.leaderboard.staleFixes} × {WEIGHTS.stale_fixes}</span>
+          <span className="badge">{t.leaderboard.countryCoverage} × {WEIGHTS.country_coverage}</span>
         </div>
       </header>
 
       <section className="registry-panel" aria-labelledby="leaderboard-ranking">
-        <p className="eyebrow">Ranked by accepted impact, not volume</p>
-        <h2 id="leaderboard-ranking">Current ranking</h2>
+        <p className="eyebrow">{t.leaderboard.rankingEyebrow}</p>
+        <h2 id="leaderboard-ranking">{t.leaderboard.rankingTitle}</h2>
         {!hasLiveData ? (
           <p className="stat-note">
-            Live contributor rows require the server-side Supabase service role. The public page still renders the scoring policy statically without exposing edits, reports, hallucination_reports, or raw contributor hashes.
+            {t.leaderboard.noLiveData}
           </p>
         ) : leaderboard.length === 0 ? (
-          <p className="stat-note">No accepted contributor activity is eligible for ranking yet.</p>
+          <p className="stat-note">{t.leaderboard.noEligibleActivity}</p>
         ) : (
           <ol className="registry-index">
             {leaderboard.map((entry, index) => (
@@ -146,16 +148,16 @@ export default async function LeaderboardPage({ params }: { params: Promise<Lead
                 <div className="registry-row-main">
                   <strong className="registry-row-title">#{index + 1} {displayContributor(entry.contributorHash)}</strong>
                   <span className="registry-row-entity">
-                    {entry.countries.length} countries · {entry.categories.length} categories · abuse-adjusted score {entry.score}
+                    {entry.countries.length} {t.leaderboard.countries} · {entry.categories.length} {t.leaderboard.categories} · {t.leaderboard.abuseAdjustedScore} {entry.score}
                   </span>
                   <span className="meta-label">
-                    accepted sources {entry.acceptedSources}, verified claims {entry.verifiedClaims}, stale fixes {entry.staleFixes}, accepted hallucination reports {entry.acceptedHallucinations}
+                    {t.leaderboard.acceptedSources} {entry.acceptedSources}, {t.leaderboard.verifiedClaims} {entry.verifiedClaims}, {t.leaderboard.staleFixes} {entry.staleFixes}, {t.leaderboard.acceptedHallucinationReports} {entry.acceptedHallucinations}
                   </span>
                 </div>
                 <div className="registry-row-meta">
-                  <span className="badge badge-verified">{entry.score} pts</span>
-                  {entry.rejectedOrSpam > 0 ? <span className="badge badge-warning">moderation penalties {entry.rejectedOrSpam}</span> : null}
-                  {entry.duplicateUrlOverflow > 0 ? <span className="badge badge-warning">duplicate URL cap {entry.duplicateUrlOverflow}</span> : null}
+                  <span className="badge badge-verified">{entry.score} {t.leaderboard.points}</span>
+                  {entry.rejectedOrSpam > 0 ? <span className="badge badge-warning">{t.leaderboard.moderationPenalties} {entry.rejectedOrSpam}</span> : null}
+                  {entry.duplicateUrlOverflow > 0 ? <span className="badge badge-warning">{t.leaderboard.duplicateUrlCap} {entry.duplicateUrlOverflow}</span> : null}
                 </div>
               </li>
             ))}
@@ -164,8 +166,8 @@ export default async function LeaderboardPage({ params }: { params: Promise<Lead
       </section>
 
       <section className="registry-panel" aria-labelledby="leaderboard-rules">
-        <p className="eyebrow">Scoring design</p>
-        <h2 id="leaderboard-rules">Leaderboard criteria</h2>
+        <p className="eyebrow">{t.leaderboard.scoringEyebrow}</p>
+        <h2 id="leaderboard-rules">{t.leaderboard.scoringTitle}</h2>
         <ul className="link-list">
           <li><strong>Accepted sources:</strong> claim_sources that pass review or are attached to a verified claim. Repeated identical URLs from the same contributor are capped after {DUPLICATE_URL_FREE_LIMIT} credits.</li>
           <li><strong>Verified claim contributions:</strong> contributor_hash values on verification_events that move claims to verified or record human review of a verified claim.</li>
@@ -177,8 +179,8 @@ export default async function LeaderboardPage({ params }: { params: Promise<Lead
       </section>
 
       <section className="registry-panel" aria-labelledby="spam-controls" style={{ background: "#fffbeb", borderInlineStart: "3px solid #f59e0b" }}>
-        <p className="eyebrow">Abuse resistance</p>
-        <h2 id="spam-controls">Spam prevention rules</h2>
+        <p className="eyebrow">{t.leaderboard.abuseEyebrow}</p>
+        <h2 id="spam-controls">{t.leaderboard.abuseTitle}</h2>
         <ul className="link-list">
           <li>Raw submission count is never part of the score.</li>
           <li>Rejected or spam submissions are excluded and subtract {REJECTED_OR_SPAM_PENALTY} points each when visible to server-side moderation queries.</li>
@@ -189,7 +191,7 @@ export default async function LeaderboardPage({ params }: { params: Promise<Lead
       </section>
 
       <section className="registry-panel" aria-labelledby="reward-rules">
-        <h2 id="reward-rules">Reward rules</h2>
+        <h2 id="reward-rules">{t.leaderboard.rewardTitle}</h2>
         <ul>
           <li>Source submitted: 1 point, pending review.</li>
           <li>Source accepted: 5 points after admin acceptance.</li>
@@ -200,9 +202,9 @@ export default async function LeaderboardPage({ params }: { params: Promise<Lead
       </section>
 
       <nav className="registry-panel" aria-labelledby="leaderboard-actions">
-        <h2 id="leaderboard-actions">Contribute source-backed facts</h2>
-        <p>Submit missing facts without logging in. They remain Needs verification until a traceable source and human approval are recorded.</p>
-        <Link className="btn btn-primary" href={`/suggest-topic?lang=${encodeURIComponent(locale)}`}>Submit a missing fact</Link>
+        <h2 id="leaderboard-actions">{t.leaderboard.actionsTitle}</h2>
+        <p>{t.leaderboard.actionsBody}</p>
+        <Link className="btn btn-primary" href={`/suggest-topic?lang=${encodeURIComponent(locale)}`}>{t.leaderboard.actionsCta}</Link>
       </nav>
     </article>
   );

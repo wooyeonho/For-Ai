@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { getAllRegistryBundles } from "../../../../lib/data";
 import { getClaimCitationStatus, getDocumentCitationStatus } from "../../../../lib/citation-status";
 import { getRegistryIndex, type RegistryIndexItem } from "../../../../lib/registry-index";
-import { SUPPORTED_LOCALES, isValidLocale } from "../../../../lib/i18n";
+import { SUPPORTED_LOCALES, getTranslations, isValidLocale } from "../../../../lib/i18n";
 import type { SupportedLocale } from "../../../../lib/i18n";
 
 export const revalidate = 60;
@@ -209,6 +209,7 @@ export default async function CountryRegistryPage({
   if (!isValidLocale(locale)) notFound();
 
   const supportedLocale = locale as SupportedLocale;
+  const t = getTranslations(supportedLocale);
   const normalizedCountry = normalizeCountry(country);
   const items = await getRegistryIndex({ country: normalizedCountry });
   const name = countryName(normalizedCountry, supportedLocale);
@@ -223,31 +224,30 @@ export default async function CountryRegistryPage({
   return (
     <article>
       <header className="registry-panel">
-        <p className="eyebrow">Country registry</p>
+        <p className="eyebrow">{t.country.eyebrow}</p>
         <h1>{name}</h1>
         <p style={{ maxWidth: 760 }}>
-          A static-first country dashboard for source-backed For-Ai documents. Counts are derived from the registry index;
-          Supabase-backed rows can be included when the optional index connection is configured.
+          {t.country.intro}
         </p>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
-          <span className="badge badge-verified">Verified facts: {questStats.verifiedClaims}</span>
-          <span className="badge badge-review">Needs review facts: {questStats.needsReviewClaims}</span>
-          <span className="badge">Stale facts: {questStats.staleClaims}</span>
-          <span className="badge">Target facts: {questStats.targetClaims}</span>
+          <span className="badge badge-verified">{t.country.verifiedFacts}: {questStats.verifiedClaims}</span>
+          <span className="badge badge-review">{t.country.needsReviewFacts}: {questStats.needsReviewClaims}</span>
+          <span className="badge">{t.country.staleFacts}: {questStats.staleClaims}</span>
+          <span className="badge">{t.country.targetFacts}: {questStats.targetClaims}</span>
         </div>
       </header>
 
       <section className="registry-panel" aria-labelledby="country-progress">
-        <p className="eyebrow">Quest progress</p>
-        <h2 id="country-progress">{overallProgress}% to the current country target</h2>
-        <p className="meta-label">Progress = verified claims / target claims. It is a participation signal only; it never replaces source quality, confidence, freshness, or human verification.</p>
+        <p className="eyebrow">{t.country.questProgress}</p>
+        <h2 id="country-progress">{overallProgress}% {t.country.targetHeadingSuffix}</h2>
+        <p className="meta-label">{t.country.progressNote}</p>
         <div aria-label={`Overall progress ${overallProgress}%`} style={{ background: "#e5e7eb", borderRadius: 999, height: 12, overflow: "hidden", marginTop: 12 }}>
           <div style={{ width: `${overallProgress}%`, background: "#2563eb", height: "100%" }} />
         </div>
       </section>
 
       <section className="registry-panel" aria-labelledby="country-categories">
-        <h2 id="country-categories">Category progress</h2>
+        <h2 id="country-categories">{t.country.categoryProgress}</h2>
         {questStats.categoryProgress.length === 0 ? (
           <p>{unknownLabel}</p>
         ) : (
@@ -266,9 +266,9 @@ export default async function CountryRegistryPage({
       </section>
 
       <section className="registry-panel" aria-labelledby="needed-sources">
-        <h2 id="needed-sources">Top needed sources</h2>
+        <h2 id="needed-sources">{t.country.topNeededSources}</h2>
         {questStats.neededSources.length === 0 ? (
-          <p>No missing source needs detected in this country index.</p>
+          <p>{t.country.noNeededSources}</p>
         ) : (
           <ul className="link-list">
             {questStats.neededSources.map((source) => (
@@ -279,15 +279,15 @@ export default async function CountryRegistryPage({
       </section>
 
       <section className="registry-panel" aria-labelledby="recent-contributors">
-        <h2 id="recent-contributors">Recent contributors</h2>
+        <h2 id="recent-contributors">{t.country.recentContributors}</h2>
         {questStats.contributors.length === 0 ? (
-          <p>Contributor hashes are not yet available for this country. Raw IP addresses are never stored.</p>
+          <p>{t.country.noContributors}</p>
         ) : (
           <ul className="link-list">
             {questStats.contributors.map((contributor) => (
               <li key={contributor.hash}>
                 <code>{displayContributorHash(contributor.hash)}</code>
-                <span className="meta-label"> · {contributor.count} contribution(s) · last seen {dateLabel(contributor.lastSeenAt)}</span>
+                <span className="meta-label"> · {contributor.count} {t.country.contribution} · {t.country.lastSeen} {dateLabel(contributor.lastSeenAt)}</span>
               </li>
             ))}
           </ul>
@@ -295,7 +295,7 @@ export default async function CountryRegistryPage({
       </section>
 
       <section className="registry-panel" aria-labelledby="recent-facts">
-        <h2 id="recent-facts">Recently verified facts</h2>
+        <h2 id="recent-facts">{t.country.recentlyVerifiedFacts}</h2>
         {recentFacts.length === 0 ? (
           <p>{unknownLabel}</p>
         ) : (
@@ -311,15 +311,15 @@ export default async function CountryRegistryPage({
       </section>
 
       <section className="registry-panel" aria-labelledby="stale-facts">
-        <h2 id="stale-facts">Stale facts</h2>
+        <h2 id="stale-facts">{t.country.staleFacts}</h2>
         {staleFacts.length === 0 ? (
-          <p>No stale facts in this country index.</p>
+          <p>{t.country.noStaleFacts}</p>
         ) : (
           <ul className="link-list">
             {staleFacts.map((item) => (
               <li key={item.slug}>
                 <Link href={`/${locale}/wiki/${item.slug}`}>{item.title}</Link>
-                <span className="meta-label"> · oldest verified: {dateLabel(item.oldest_verified_at)} · {item.type}</span>
+                <span className="meta-label"> · {t.country.oldestVerified}: {dateLabel(item.oldest_verified_at)} · {item.type}</span>
               </li>
             ))}
           </ul>
@@ -327,7 +327,7 @@ export default async function CountryRegistryPage({
       </section>
 
       <section className="registry-panel" aria-labelledby="popular-questions">
-        <h2 id="popular-questions">Popular questions</h2>
+        <h2 id="popular-questions">{t.country.popularQuestions}</h2>
         {popularQuestions.length === 0 ? (
           <p>{unknownLabel}</p>
         ) : (
@@ -340,7 +340,7 @@ export default async function CountryRegistryPage({
       </section>
 
       <section className="registry-panel" aria-labelledby="country-documents">
-        <h2 id="country-documents">Documents</h2>
+        <h2 id="country-documents">{t.country.documents}</h2>
         {items.length === 0 ? (
           <p>{unknownLabel}</p>
         ) : (
@@ -349,7 +349,7 @@ export default async function CountryRegistryPage({
               <li key={`${item.source}-${item.slug}`}>
                 <Link href={`/${locale}/wiki/${item.slug}`}>{item.title}</Link>{" "}
                 <span className={item.can_cite ? "badge badge-verified" : "badge badge-review"}>
-                  {item.can_cite ? "verified" : "needs review"}
+                  {item.can_cite ? t.country.verified : t.topics.needsReview}
                 </span>
               </li>
             ))}
@@ -358,10 +358,10 @@ export default async function CountryRegistryPage({
       </section>
 
       <section className="registry-panel" style={{ background: "#f8fafc", borderInlineStart: "3px solid #2563eb" }}>
-        <p className="eyebrow">Submit source CTA</p>
-        <h2>Know an official source for a needed {name} fact?</h2>
-        <p>Submit a source or topic for {name}. Public submissions start as needs-review candidates and must be human verified before citation.</p>
-        <Link className="button" href={submitTopicHref}>Submit a source</Link>
+        <p className="eyebrow">{t.country.submitSourceEyebrow}</p>
+        <h2>{t.country.submitSourceHeadingPrefix} {name} {t.country.submitSourceHeadingSuffix}</h2>
+        <p>{t.country.submitSourceBodyPrefix} {name}. {t.country.submitSourceBodySuffix}</p>
+        <Link className="button" href={submitTopicHref}>{t.country.submitSourceCta}</Link>
       </section>
     </article>
   );
