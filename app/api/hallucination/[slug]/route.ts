@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServerClient, isSupabaseConfigured } from '@/lib/supabase-server';
 import { makeContributorHashForRequest } from '@/lib/contributor-hash';
-import { getDocumentBySlug } from '@/lib/data';
+import { resolveDocumentMetadataBySlug } from '@/lib/document-resolver';
 import { buildPublicTopicCandidate } from '@/lib/topic-candidates';
 import { recordContributionEvent } from '@/lib/contributions';
 import {
@@ -58,10 +58,10 @@ export async function POST(
     }
   }
 
-  // Resolve document + entity from slug (static seed data)
-  const doc = getDocumentBySlug(slug);
-  const documentId = doc?.id ?? null;
-  const entityId = doc?.entity_id ?? null;
+  // Resolve document + entity from static seed data, then Supabase fallback.
+  const resolvedDocument = await resolveDocumentMetadataBySlug(slug);
+  const documentId = resolvedDocument.documentId;
+  const entityId = resolvedDocument.entityId;
 
   // Generate contributor hash — never store raw IP
   let contributorHash: string;
@@ -114,10 +114,10 @@ export async function POST(
       if (!error) {
         const { error: topicCandidateError } = await supabase.from('topic_candidates').insert(buildPublicTopicCandidate({
           kind: 'hallucination_report',
-          title: `AI hallucination report: ${doc?.title ?? slug}`,
+          title: `AI hallucination report: ${resolvedDocument.title}`,
           slugSeed: `hallucination-${slug}`,
-          lang: doc?.lang ?? 'en',
-          category: doc?.category ?? 'hallucination_report',
+          lang: resolvedDocument.lang,
+          category: resolvedDocument.category,
           reason: normalizedBody.expected_correction || normalizedBody.ai_answer || `AI hallucination reported from ${aiService}`,
           aiContext: `AI service: ${aiService}\nPrompt: ${normalizedBody.prompt || '(not provided)'}\nAI answer: ${normalizedBody.ai_answer || '(not provided)'}\nDocument: ${documentId ?? 'unknown'} / Entity: ${entityId ?? 'unknown'}`,
           sourceUrls: [publicSourceUrl],
@@ -132,7 +132,7 @@ export async function POST(
         await recordContributionEvent(supabase, {
           contributor_hash: contributorHash,
           event_type: 'source_submitted',
-          country: doc?.country ?? null,
+          country: resolvedDocument.country,
           source_type: 'web',
           claim_id: body.claim_id?.trim() || null,
           document_id: documentId,

@@ -264,3 +264,25 @@ export async function getRegistryBundleFromSupabase(slug: string): Promise<Regis
     return null;
   }
 }
+export type SupabaseDocumentMetadata = {
+  documentId: string | null;
+  entityId: string | null;
+  title: string;
+  lang: string;
+  category: string;
+  country: string | null;
+};
+
+export async function getDocumentMetadataFromSupabase(slug: string): Promise<SupabaseDocumentMetadata | null> {
+  const bundle = await getRegistryBundleFromSupabase(slug);
+  if (!bundle) return null;
+
+  return {
+    documentId: bundle.document.id,
+    entityId: bundle.document.entity_id,
+    title: bundle.document.title,
+    lang: bundle.document.lang || "en",
+    category: bundle.document.category || "unknown",
+    country: bundle.document.country || bundle.entity.country || null,
+  };
+}
