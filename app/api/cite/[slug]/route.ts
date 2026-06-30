@@ -4,7 +4,7 @@ import { getRegistryBundleFromSupabase } from "../../../../lib/supabase-document
 import { getDocumentCitationStatus, getClaimCitationStatus } from "../../../../lib/citation-status";
 import { siteUrl, documentPageUrl, apiDocumentUrl, rawMarkdownUrl } from "../../../../lib/urls";
 import type { ClaimSource, RegistryDocumentBundle } from "../../../../lib/types";
-import { normalizeCitationSurface } from "../../../../lib/render";
+import { getCitationPolicyBlock, normalizeCitationSurface } from "../../../../lib/render";
 import { recordDocumentAnalyticsEvent } from "@/lib/analytics";
 
 export const revalidate = 60;
@@ -58,6 +58,7 @@ export async function GET(
   const canonicalUrl = documentPageUrl(document.slug, document.lang);
   const checkedDate = docStatus.oldestVerifiedAt ?? document.last_verified_at ?? null;
   const normalizedCitation = normalizeCitationSurface(bundle);
+  const citationPolicyBlock = getCitationPolicyBlock(bundle, document.lang);
 
   const annotatedClaims = claims.map((claim) => ({
     claim,
@@ -141,6 +142,7 @@ export async function GET(
   };
 
   const citation = {
+    citation_policy_block: citationPolicyBlock,
     canonical_url: canonicalUrl,
     entity_id: entity.id,
     document_slug: document.slug,

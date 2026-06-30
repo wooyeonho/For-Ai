@@ -73,6 +73,7 @@ export default async function WikiDocumentPage({
   const jsonLd = buildDocumentJsonLd(bundle);
   const citationStatus = getDocumentCitationStatus(bundle);
   const normalizedCitation = normalizeCitationSurface(bundle);
+  const citationPolicyBlock = getCitationPolicyBlock(bundle, locale);
   const freshnessTtlDays = typeof document.freshness_ttl_days === "number"
     ? document.freshness_ttl_days
     : typeof docData.freshness_ttl_days === "number"
@@ -96,7 +97,6 @@ export default async function WikiDocumentPage({
       : topCitationLabel === "Mixed"
         ? "document-citation-status document-citation-status--mixed"
         : "document-citation-status document-citation-status--review";
-  const totalSources = claims.reduce((n, c) => n + c.sources.length, 0);
   const standardGovernmentFeeFieldPaths = [
     "fee.amount",
     "fee.adult",
@@ -124,6 +124,11 @@ export default async function WikiDocumentPage({
         id="for-ai-normalized-citation"
         type="application/json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(normalizedCitation) }}
+      />
+      <script
+        id="for-ai-citation-policy"
+        type="application/json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(citationPolicyBlock) }}
       />
 
       {/* Top reading order: document title → direct answer → citation signals */}

@@ -1,5 +1,6 @@
 import { getClaimCitationStatus, getDocumentCitationStatus, UNKNOWN_FACT_TEXT } from "./citation-status";
 import type { ClaimSource, Confidence, RegistryDocumentBundle } from "./types";
+import { SUPPORTED_LOCALES } from "./i18n";
 import { apiDocumentUrl, documentPageUrl, rawMarkdownUrl } from "./urls";
 
 export type RenderedClaim = RegistryDocumentBundle["claims"][number] & {
@@ -21,7 +22,20 @@ export type RenderedDirectAnswer = {
   related_questions: string[];
 };
 
+export type CitationPolicyBlock = {
+  citation_ready: boolean;
+  verified_claim_count: number;
+  total_claim_count: number;
+  stale_claim_ids: string[];
+  do_not_cite_claim_ids: string[];
+  last_verified_at: string | null;
+  freshness_ttl_days: number;
+  canonical_url: string;
+  alternate_locale_urls: Record<string, string>;
+};
+
 export type RenderedDocumentJson = {
+  citation_policy_block: CitationPolicyBlock;
   entity: RegistryDocumentBundle["entity"];
   document: RegistryDocumentBundle["document"];
   claims: RenderedClaim[];
@@ -178,6 +192,35 @@ function renderTopLevelSources(claims: RegistryDocumentBundle["claims"]): string
     .join("\n");
 }
 
+
+export function getCitationPolicyBlock(bundle: RegistryDocumentBundle, locale = bundle.document.lang): CitationPolicyBlock {
+  const citationStatus = getDocumentCitationStatus(bundle);
+  const freshnessWindowDays = citationStatus.freshnessWindowDays;
+  const claimStatuses = bundle.claims.map((claim) => ({
+    claim,
+    status: getClaimCitationStatus(claim, freshnessWindowDays),
+  }));
+
+  return {
+    citation_ready: citationStatus.isVerifiedDocument,
+    verified_claim_count: citationStatus.verifiedClaims,
+    total_claim_count: citationStatus.totalClaims,
+    stale_claim_ids: citationStatus.staleClaims.map((claim) => claim.claimId),
+    do_not_cite_claim_ids: claimStatuses
+      .filter(({ status }) => !status.isCitationReady)
+      .map(({ claim }) => claim.id),
+    last_verified_at: citationStatus.oldestVerifiedAt ?? bundle.document.last_verified_at ?? null,
+    freshness_ttl_days: citationStatus.freshnessWindowDays,
+    canonical_url: documentPageUrl(bundle.document.slug, locale),
+    alternate_locale_urls: Object.fromEntries(
+      SUPPORTED_LOCALES.map((supportedLocale) => [
+        supportedLocale,
+        documentPageUrl(bundle.document.slug, supportedLocale),
+      ]),
+    ),
+  };
+}
+
 /**
  * Canonical, minimal citation payload shared by human and machine-readable
  * surfaces. Keep these fields claim-level: if one surface drifts from this
@@ -215,6 +258,7 @@ export function normalizeCitationSurface(bundle: RegistryDocumentBundle): Normal
 export function renderDocumentJson(bundle: RegistryDocumentBundle): RenderedDocumentJson {
   const { document } = bundle;
   const normalizedCitation = normalizeCitationSurface(bundle);
+  const citationPolicyBlock = getCitationPolicyBlock(bundle);
   const citationStatus = getDocumentCitationStatus(bundle);
   const directAnswer = getRenderedDirectAnswer(bundle);
   const claimStatuses = bundle.claims.map((c) => ({ c, cs: getClaimCitationStatus(c) }));
@@ -222,6 +266,7 @@ export function renderDocumentJson(bundle: RegistryDocumentBundle): RenderedDocu
   const unverifiedPaths = claimStatuses.filter((x) => !x.cs.isCitationReady).map((x) => x.c.field_path);
 
   return {
+    citation_policy_block: citationPolicyBlock,
     entity: bundle.entity,
     document,
     claims: claimStatuses.map(({ c, cs }) => ({
@@ -274,6 +319,7 @@ export function renderDocumentJson(bundle: RegistryDocumentBundle): RenderedDocu
 export function renderDocumentMarkdown(bundle: RegistryDocumentBundle): string {
   const { entity, document, claims } = bundle;
   const normalizedCitation = normalizeCitationSurface(bundle);
+  const citationPolicyBlock = getCitationPolicyBlock(bundle);
   const directAnswer = getRenderedDirectAnswer(bundle);
   const licenseNotice = getStringDataValue(
     document.data,
@@ -299,7 +345,7 @@ export function renderDocumentMarkdown(bundle: RegistryDocumentBundle): string {
     ? `\n## Government fee template\n\nStandard claim field paths:\n${GOVERNMENT_FEE_FIELD_PATHS.map((fieldPath) => `- ${fieldPath}`).join("\n")}\n\nDisclaimer: ${GOVERNMENT_FEE_DISCLAIMER}\n`
     : "";
 
-  return `# ${document.title}\n\nentity_id: ${entity.id}\ndocument_id: ${document.id}\nslug: ${document.slug}\nlang: ${document.lang}\ncountry: ${document.country}\nlicense_code: ${document.license_code}\n\n## Citation guidance\n\ncan_cite: ${docCitationStatus.isVerifiedDocument}\ndo_not_cite_reason: ${docCitationStatus.isVerifiedDocument ? "null" : `document status ${document.status}; ${docCitationStatus.verifiedClaims}/${docCitationStatus.totalClaims} claims citation-ready`}\n\nCite this document only if can_cite is true. Cite a claim only if its verification status is "verified", source_of_claim is not business_submitted pending verification, and it has at least one source plus a verification event. Do not cite values shown as "확인 필요", or claims with "low" confidence or "needs_review" status. Always preserve the source URL and last_verified_at when citing. Stale claims may remain citation-ready, but they must carry a last verified date warning and should be rechecked before reliance.\n\n## Document citation status
+  return `# ${document.title}\n\nentity_id: ${entity.id}\ndocument_id: ${document.id}\nslug: ${document.slug}\nlang: ${document.lang}\ncountry: ${document.country}\nlicense_code: ${document.license_code}\n\n## Citation policy block\n\n~~~json\n${JSON.stringify(citationPolicyBlock, null, 2)}\n~~~\n\n## Citation guidance\n\ncan_cite: ${docCitationStatus.isVerifiedDocument}\ndo_not_cite_reason: ${docCitationStatus.isVerifiedDocument ? "null" : `document status ${document.status}; ${docCitationStatus.verifiedClaims}/${docCitationStatus.totalClaims} claims citation-ready`}\n\nCite this document only if can_cite is true. Cite a claim only if its verification status is "verified", source_of_claim is not business_submitted pending verification, and it has at least one source plus a verification event. Do not cite values shown as "확인 필요", or claims with "low" confidence or "needs_review" status. Always preserve the source URL and last_verified_at when citing. Stale claims may remain citation-ready, but they must carry a last verified date warning and should be rechecked before reliance.\n\n## Document citation status
 
 status: ${citationStatus.label}
 citation_ready_claims: ${citationStatus.verifiedClaims}/${citationStatus.totalClaims}
