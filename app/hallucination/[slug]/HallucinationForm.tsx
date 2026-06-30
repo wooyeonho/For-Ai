@@ -18,6 +18,12 @@ export function HallucinationForm({
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const searchParams = useSearchParams();
+  const lang = searchParams.get("lang") || "en";
+  const returnParam = searchParams.get("return");
+  const returnHref = returnParam && returnParam.startsWith("/") && !returnParam.startsWith("//")
+    ? returnParam
+    : `/${lang}/wiki/${slug}`;
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -42,6 +48,7 @@ export function HallucinationForm({
 
       if (response.ok) {
         setSubmitted(true);
+        window.location.assign(returnHref);
       } else {
         const data = await response.json().catch(() => ({}));
         setError("제출 실패: " + (data?.error ?? response.status));

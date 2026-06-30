@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { getAllRegistryBundles } from "../../lib/data";
 import CommunityClient from "./CommunityClient";
@@ -66,5 +67,9 @@ async function getDocumentList(): Promise<CommunityDocumentOption[]> {
 
 export default async function CommunityPage() {
   const documents = await getDocumentList();
-  return <CommunityClient documents={documents} />;
+  return (
+    <Suspense fallback={null}>
+      <CommunityClient documents={documents} />
+    </Suspense>
+  );
 }

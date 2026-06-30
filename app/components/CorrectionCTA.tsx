@@ -3,9 +3,14 @@ import Link from "next/link";
 type CorrectionCTAProps = {
   slug: string;
   unverified?: boolean;
+  locale?: string;
 };
 
-export function CorrectionCTA({ slug, unverified = false }: CorrectionCTAProps) {
+export function CorrectionCTA({ slug, unverified = false, locale = "en" }: CorrectionCTAProps) {
+  const returnUrl = `/${locale}/wiki/${slug}`;
+  const reportHref = `/report/${slug}?lang=${locale}&return=${encodeURIComponent(returnUrl)}`;
+  const sourceHref = `/report/${slug}?intent=source&lang=${locale}&return=${encodeURIComponent(returnUrl)}`;
+  const notifyHref = `/report/${slug}?intent=notify&lang=${locale}&return=${encodeURIComponent(returnUrl)}`;
   if (!unverified) {
     return (
       <Link href={`/report/${slug}`} className="btn btn-primary cta-correction">
