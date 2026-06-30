@@ -143,6 +143,8 @@ export async function GET(request: Request) {
   if (!sb) return NextResponse.json({ error: "SUPABASE_SERVICE_ROLE_KEY not configured" }, { status: 500 });
 
   const params = new URL(request.url).searchParams;
+
+  // HEAD params: rich filter state
   const status = params.get("status")?.trim() || DEFAULT_STATUS;
   const country = params.get("country")?.trim();
   const lang = params.get("lang")?.trim();
@@ -150,70 +152,111 @@ export async function GET(request: Request) {
   const slug = params.get("slug")?.trim();
   const sort = params.get("sort")?.trim() || "high_risk";
   const limit = boundedInt(params.get("limit"), DEFAULT_LIMIT, MAX_LIMIT);
-  const offset = boundedInt(params.get("offset"), 0);
 
-  let query = sb
-    .from("claims")
-    .select("*, claim_sources(*), documents!inner(*, entities(*))", { count: "exact" })
-    .eq("status", status);
+  // PR params: search, claim_status, doc_status, page
+  const search = params.get("search")?.trim() ?? "";
+  const claimStatus = params.get("claim_status") ?? "all"; // "needs_review" | "verified" | "all"
+  const docStatus = params.get("doc_status") ?? "all";     // "published" | "verified" | "all"
+  const page = Math.max(1, parseInt(params.get("page") ?? "1", 10));
+  const offset = boundedInt(params.get("offset"), (page - 1) * limit);
 
-  if (country) query = query.eq("documents.country", country.toUpperCase());
-  if (lang) query = query.eq("documents.lang", lang.toLowerCase());
-  if (category) query = query.eq("documents.category", category);
-  if (slug) query = query.ilike("documents.slug", `%${slug}%`);
+  // Build query over documents (PR approach, with HEAD's rich filters applied)
+  let docQuery = sb
+    .from("documents")
+    .select("*, entities(*), claims(*, claim_sources(*), verification_events(*))", { count: "exact" });
 
-  const { data, error, count } = await query.order("created_at", { ascending: true }).limit(1000);
+  // Apply status filter: prefer claim_status/doc_status (PR) when set, else use HEAD's status on claims
+  if (docStatus !== "all") docQuery = docQuery.eq("status", docStatus);
+  if (search) docQuery = docQuery.or(`title.ilike.%${search}%,slug.ilike.%${search}%`);
+  if (country) docQuery = docQuery.eq("country", country.toUpperCase());
+  if (lang) docQuery = docQuery.eq("lang", lang.toLowerCase());
+  if (category) docQuery = docQuery.eq("category", category);
+  if (slug) docQuery = docQuery.ilike("slug", `%${slug}%`);
 
+  docQuery = docQuery.order("updated_at", { ascending: false }).range(offset, offset + limit - 1);
+
+  const { data: rawData, error, count } = await docQuery;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  const sortedClaims = [...((data ?? []) as ClaimWithDocument[])].sort((a, b) => {
-    const docA = firstDocument(a);
-    const docB = firstDocument(b);
-    if (sort === "oldest") return claimDate(a) - claimDate(b);
-    const riskDelta = riskRank(docA?.category) - riskRank(docB?.category);
-    if (riskDelta !== 0) return riskDelta;
-    return claimDate(a) - claimDate(b);
-  });
-  const pagedClaims = sortedClaims.slice(offset, offset + limit);
-  const documentsById = new Map<string, DocumentForReview>();
-
-  for (const claim of pagedClaims) {
-    const document = firstDocument(claim);
-    if (!document) continue;
-    const docData = ((document as unknown as { data?: Record<string, unknown> }).data ?? {}) as Record<string, unknown>;
+  // Enrich documents with AI provider info (HEAD's approach)
+  let documents = (rawData ?? []).map((doc) => {
+    const docData = ((doc as unknown as { data?: Record<string, unknown> }).data ?? {}) as Record<string, unknown>;
     const generationModel = clean(docData.generation_model) ?? clean(docData.ai_model);
     const sourceHints = Array.isArray(docData.source_hints) ? docData.source_hints : [];
-    const existing = documentsById.get(document.id) ?? {
-      ...document,
+    return {
+      ...doc,
       source_hints: sourceHints,
       ai_provider: clean(docData.ai_provider) ?? providerFromModel(generationModel),
       ai_model: generationModel,
-      claims: [],
     };
-    const claimWithoutDocument = { ...claim } as Partial<ClaimWithDocument>;
-    delete claimWithoutDocument.documents;
-    existing.claims = [...(existing.claims ?? []), { ...claimWithoutDocument, source_candidates: sourceHints } as ClaimWithDocument];
-    documentsById.set(document.id, existing);
+  });
+
+  // Apply claim_status filter (PR approach): filter claims inside each document
+  if (claimStatus !== "all") {
+    documents = documents.map((doc) => ({
+      ...doc,
+      claims: ((doc.claims ?? []) as ClaimWithDocument[]).filter((c) => c.status === claimStatus),
+    })).filter((doc) => (doc.claims ?? []).length > 0);
   }
 
+  // Apply HEAD's status filter on claims when claim_status is "all" but status param is set
+  if (claimStatus === "all" && status !== "all") {
+    documents = documents.map((doc) => ({
+      ...doc,
+      claims: ((doc.claims ?? []) as ClaimWithDocument[]).filter((c) => c.status === status),
+    })).filter((doc) => (doc.claims ?? []).length > 0);
+  }
+
+  // Sort documents so high-risk categories come first (HEAD's approach)
+  if (sort === "high_risk") {
+    documents = documents.sort((a, b) => {
+      const riskDelta = riskRank(a.category) - riskRank(b.category);
+      if (riskDelta !== 0) return riskDelta;
+      return new Date(a.updated_at ?? 0).getTime() - new Date(b.updated_at ?? 0).getTime();
+    });
+  }
+
+  // Aggregate claim stats (PR approach)
+  const allClaims = (rawData ?? []).flatMap((doc) => (doc.claims ?? []) as ClaimWithDocument[]);
+  const claimStats = {
+    total: allClaims.length,
+    needs_review: allClaims.filter((c) => c.status === "needs_review").length,
+    verified: allClaims.filter((c) => c.status === "verified").length,
+  };
+
   await logAdminAuditEvent(sb, request, "admin.verify_claim.list", {
-    result_count: pagedClaims.length,
-    count: count ?? sortedClaims.length,
+    result_count: documents.length,
+    total_docs: count ?? 0,
+    count: count ?? 0,
     limit,
     offset,
+    page,
     status,
+    search,
+    claim_status: claimStatus,
+    doc_status: docStatus,
     country: country ?? null,
     lang: lang ?? null,
     category: category ?? null,
     slug: slug ?? null,
     sort,
   });
+
   return NextResponse.json({
-    documents: Array.from(documentsById.values()),
-    count: count ?? sortedClaims.length,
+    documents,
+    // HEAD-compatible fields
+    count: count ?? 0,
     limit,
     offset,
-    has_more: offset + limit < (count ?? sortedClaims.length),
+    has_more: offset + limit < (count ?? 0),
+    // PR-compatible fields
+    pagination: {
+      page,
+      limit,
+      total: count ?? 0,
+      total_pages: Math.ceil((count ?? 0) / limit),
+    },
+    claim_stats: claimStats,
   });
 }
 

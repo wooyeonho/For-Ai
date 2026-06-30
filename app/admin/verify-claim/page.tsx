@@ -38,6 +38,8 @@ type DocumentRow = {
   claims?: ClaimRow[];
 };
 type ClaimListMeta = { count: number; limit: number; offset: number; has_more: boolean };
+type Pagination = { page: number; limit: number; total: number; total_pages: number };
+type ClaimStats = { total: number; needs_review: number; verified: number };
 
 const SOURCE_TYPES = ["official", "law", "platform", "document", "web", "review", "user", "phone", "photo", "other", "unknown"];
 const SOURCE_TRUST: Record<string, number> = { official: 95, platform: 85, document: 80, web: 65, photo: 60, phone: 55, review: 40, user: 30, other: 25, unknown: 0 };
@@ -46,11 +48,43 @@ function trustScore(sourceType?: string | null, url?: string | null, citation?: 
   return Math.min(100, base + (url ? 3 : 0) + (citation ? 2 : 0));
 }
 
+const POLICY_ITEMS = [
+  "AI 생성 후보는 사람이 출처를 검토하기 전까지 verified로 올릴 수 없습니다.",
+  "claim_value가 '확인 필요'인 채로 verified 승격은 금지됩니다.",
+  "출처 URL은 반드시 공개 접근 가능한 주소여야 합니다.",
+  "인용 근거(citation)에는 페이지 내 실제 문구 또는 수치를 명시해야 합니다.",
+  "confidence: high — 공식 기관/법령/공식 플랫폼 출처만 해당됩니다.",
+  "confidence: medium — 신뢰할 수 있는 3자 출처 (리뷰, 언론, 공신력 있는 웹페이지).",
+  "한 claim에 복수 출처를 추가하면 신뢰도가 높아집니다. 최소 1개 이상 필수.",
+  "출처 자동 확인(출처 확인 버튼)은 보조 수단입니다. 직접 육안으로 확인 후 저장하세요.",
+];
+
 export default function VerifyClaimPage() {
   const [secret, setSecret] = useState("");
   const [adminActor, setAdminActor] = useState("");
   const [documents, setDocuments] = useState<DocumentRow[]>([]);
+  const [pagination, setPagination] = useState<Pagination>({ page: 1, limit: 20, total: 0, total_pages: 0 });
+  const [claimStats, setClaimStats] = useState<ClaimStats>({ total: 0, needs_review: 0, verified: 0 });
   const [loading, setLoading] = useState(false);
+
+  // Server-side filters
+  const [search, setSearch] = useState("");
+  const [claimStatusFilter, setClaimStatusFilter] = useState("needs_review");
+  const [docStatusFilter, setDocStatusFilter] = useState("all");
+  const [page, setPage] = useState(1);
+  const [filters, setFilters] = useState({
+    status: "needs_review",
+    country: "",
+    lang: "",
+    category: "",
+    slug: "",
+    sort: "high_risk",
+    limit: "50",
+    offset: "0",
+  });
+  const [meta, setMeta] = useState<ClaimListMeta>({ count: 0, limit: 50, offset: 0, has_more: false });
+
+  // Verification form state
   const [selectedClaim, setSelectedClaim] = useState<ClaimRow | null>(null);
   const [claimValue, setClaimValue] = useState("");
   const [sourceType, setSourceType] = useState("official");
@@ -76,45 +110,48 @@ export default function VerifyClaimPage() {
     source_check_notes?: string[];
     source_check_details?: Record<string, boolean | null>;
   } | null>(null);
-  const [filters, setFilters] = useState({
-    status: "needs_review",
-    country: "",
-    lang: "",
-    category: "",
-    slug: "",
-    sort: "high_risk",
-    limit: "50",
-    offset: "0",
-  });
-  const [meta, setMeta] = useState<ClaimListMeta>({ count: 0, limit: 50, offset: 0, has_more: false });
+  const [showPolicy, setShowPolicy] = useState(false);
+  const [targetSlug, setTargetSlug] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
+  const buildQuery = useCallback((overridePage?: number) => {
+    const params = new URLSearchParams();
+    if (search) params.set("search", search);
+    if (claimStatusFilter !== "all") params.set("claim_status", claimStatusFilter);
+    if (docStatusFilter !== "all") params.set("doc_status", docStatusFilter);
+    params.set("page", String(overridePage ?? page));
+    params.set("limit", filters.limit);
+    // Also pass through rich filters from the full filter state
+    if (filters.country.trim()) params.set("country", filters.country.trim());
+    if (filters.lang.trim()) params.set("lang", filters.lang.trim());
+    if (filters.category.trim()) params.set("category", filters.category.trim());
+    if (filters.slug.trim()) params.set("slug", filters.slug.trim());
+    if (filters.sort) params.set("sort", filters.sort);
+    return params.toString();
+  }, [search, claimStatusFilter, docStatusFilter, page, filters]);
+
+  const load = useCallback(async (overridePage?: number) => {
     if (!secret) return;
     setLoading(true);
-    const params = new URLSearchParams();
-    Object.entries(filters).forEach(([key, value]) => {
-      if (value.trim()) params.set(key, value.trim());
+    const res = await fetch(`/api/admin/verify-claim?${buildQuery(overridePage)}`, {
+      headers: { "x-admin-secret": secret, ...(adminActor.trim() ? { "x-admin-actor": adminActor.trim() } : {}) },
     });
-    const res = await fetch(`/api/admin/verify-claim?${params.toString()}`, { headers: { "x-admin-secret": secret, ...(adminActor.trim() ? { "x-admin-actor": adminActor.trim() } : {}) } });
     const data = await res.json();
     setLoading(false);
     if (res.ok) {
       setDocuments(Array.isArray(data.documents) ? data.documents : []);
+      if (data.pagination) setPagination(data.pagination);
+      if (data.claim_stats) setClaimStats(data.claim_stats);
       setMeta({
-        count: Number(data.count ?? 0),
+        count: Number(data.count ?? data.pagination?.total ?? 0),
         limit: Number(data.limit ?? filters.limit),
-        offset: Number(data.offset ?? filters.offset),
-        has_more: Boolean(data.has_more),
+        offset: Number(data.offset ?? 0),
+        has_more: Boolean(data.has_more ?? (data.pagination ? data.pagination.page < data.pagination.total_pages : false)),
       });
+    } else {
+      setMessage({ ok: false, text: data.error ?? "claim 목록 조회 실패" });
     }
-    else setMessage({ ok: false, text: data.error ?? "claim 목록 조회 실패" });
-  }, [filters, secret]);
+  }, [secret, adminActor, buildQuery, filters.limit]);
 
-  const [targetSlug, setTargetSlug] = useState<string | null>(null);
-
-  useEffect(() => { load(); }, [load]);
-
-  // Deep-link target: /admin/verify-claim?slug=<slug> (set by candidates promote flow)
   useEffect(() => {
     const slug = new URLSearchParams(window.location.search).get("slug");
     if (slug) {
@@ -123,7 +160,6 @@ export default function VerifyClaimPage() {
     }
   }, []);
 
-  // Once documents load, scroll the targeted doc into view and open its first unverified claim.
   useEffect(() => {
     if (!targetSlug || documents.length === 0) return;
     const doc = documents.find((d) => d.slug === targetSlug);
@@ -144,13 +180,12 @@ export default function VerifyClaimPage() {
     setSourceType("official");
     setConfidence("high");
     setSourceCheck(null);
+    setMessage(null);
+    setTimeout(() => document.getElementById("verify-form")?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
   }
 
   async function checkSource() {
-    if (!url.trim()) {
-      setMessage({ ok: false, text: "확인할 출처 URL을 입력하세요" });
-      return;
-    }
+    if (!url.trim()) { setMessage({ ok: false, text: "확인할 출처 URL을 입력하세요" }); return; }
     setChecking(true);
     setSourceCheck(null);
     try {
@@ -167,16 +202,11 @@ export default function VerifyClaimPage() {
         }),
       });
       const data = await res.json();
-      if (!res.ok) {
-        setMessage({ ok: false, text: data.error ?? "출처 확인 실패" });
-      } else {
-        setSourceCheck(data);
-      }
+      if (!res.ok) setMessage({ ok: false, text: data.error ?? "출처 확인 실패" });
+      else setSourceCheck(data);
     } catch (e) {
       setMessage({ ok: false, text: `출처 확인 오류: ${String(e)}` });
-    } finally {
-      setChecking(false);
-    }
+    } finally { setChecking(false); }
   }
 
   async function runClaimAction(action: "verify" | "reject" | "mark_unknown" | "edit_value" | "attach_source" | "promote_document") {
@@ -189,10 +219,7 @@ export default function VerifyClaimPage() {
         claim_id: selectedClaim.id,
         claim_value: claimValue,
         source_type: sourceType,
-        title,
-        url,
-        citation,
-        confidence,
+        title, url, citation, confidence,
         observed_at: new Date().toISOString(),
         claim_text: selectedClaim.claim_text,
         fetch_ok: sourceCheck?.reachable ?? null,
@@ -203,14 +230,13 @@ export default function VerifyClaimPage() {
     });
     const data = await res.json();
     if (res.ok) {
-      setMessage({ ok: true, text: `액션 저장 완료: ${action}` });
+      setMessage({ ok: true, text: data.document_all_verified ? "✓ 검증 저장 완료 — 문서 전체 verified 승격!" : `✓ 액션 저장 완료: ${action}` });
       setSelectedClaim(null);
-      await load();
+      await load(page);
     } else {
       setMessage({ ok: false, text: data.error ?? "액션 저장 실패" });
     }
   }
-
 
   async function markClaim(action: "needs_verification" | "reject", claim: ClaimRow) {
     const actionReason = window.prompt(action === "reject" ? "Rejected reason" : "Needs-verification reason", reason);
@@ -224,7 +250,7 @@ export default function VerifyClaimPage() {
     if (res.ok) {
       setMessage({ ok: true, text: action === "reject" ? "rejected/disputed 처리 완료" : "needs verification 처리 완료" });
       setReason(actionReason.trim());
-      await load();
+      await load(page);
     } else {
       setMessage({ ok: false, text: data.error ?? "상태 변경 실패" });
     }
@@ -245,7 +271,7 @@ export default function VerifyClaimPage() {
     if (res.ok) {
       setMessage({ ok: true, text: `${selectedClaimIds.length}개 claim을 needs verification으로 처리했습니다` });
       setSelectedClaimIds([]);
-      await load();
+      await load(page);
     } else {
       setMessage({ ok: false, text: data.error ?? "bulk 처리 실패" });
     }
@@ -257,6 +283,12 @@ export default function VerifyClaimPage() {
   }
 
   async function submitVerify() { return runClaimAction("verify"); }
+
+  function handleSearch(e: React.FormEvent) {
+    e.preventDefault();
+    setPage(1);
+    load(1);
+  }
 
   const allClaims = documents.flatMap((doc) => (doc.claims ?? []).map((claim) => ({ doc, claim })));
   const countries = [...new Set(documents.map((doc) => doc.country).filter(Boolean))].sort();
@@ -271,29 +303,57 @@ export default function VerifyClaimPage() {
       && (localFilters.stale === "all" || (localFilters.stale === "stale" ? isStale(claim) : !isStale(claim)));
   });
   const visibleDocIds = new Set(filteredClaims.map(({ doc }) => doc.id));
-  const visibleClaimIds = new Set(filteredClaims.map(({ claim }) => claim.id));
   const reviewCount = allClaims.filter(({ claim }) => claim.status !== "verified").length;
   const verifiedCount = allClaims.filter(({ claim }) => claim.status === "verified").length;
+  const needsReviewCount = documents.reduce((sum, doc) => sum + (doc.claims ?? []).filter((c) => c.status === "needs_review").length, 0);
 
   return (
     <div style={{ maxWidth: 960, margin: "0 auto", padding: "40px 20px" }}>
-      <nav style={{ marginBottom: 24, fontSize: 13 }}><Link href="/admin/review">← Admin</Link></nav>
-      <h1>Claim 검증 관리</h1>
-      <p style={{ color: "#6b7280" }}>Promoted 문서의 claim별 승인 흐름을 관리합니다: verify, reject, unknown, value edit, source attach, 전체 verified 시 document promotion.</p>
-      <p style={{ color: "#374151", fontSize: 13 }}>
-        승격 전 반드시 <a href="/docs/operations/CLAIM_VERIFICATION_POLICY.md">verified 승격 기준 문서</a>를 확인하세요.
-        AI 생성 후보는 사람이 출처를 검토하기 전까지 verified로 올릴 수 없습니다.
-      </p>
+      <nav style={{ marginBottom: 24, fontSize: 13 }}><Link href="/admin/review">← Admin 운영 콘솔</Link></nav>
 
-      <section className="registry-panel">
-        <label style={{ fontWeight: 600 }}>Admin secret</label>
-        <input value={adminActor} onChange={(e) => setAdminActor(e.target.value)} placeholder="admin actor (email/name; hashed in audit log)" style={{ width: "100%", padding: 8, marginTop: 8 }} />
-        <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-          <input type="password" value={secret} onChange={(e) => setSecret(e.target.value)} placeholder="ADMIN_SECRET" style={{ flex: 1, padding: 8 }} />
-          <button onClick={load} disabled={!secret || loading}>{loading ? "불러오는 중..." : "불러오기"}</button>
+      <header className="registry-panel">
+        <p className="eyebrow">Admin · Claim 검증 큐</p>
+        <h1>Claim 검증 관리</h1>
+        <p style={{ color: "#6b7280" }}>
+          Promoted 문서의 claim별 승인 흐름을 관리합니다: verify, reject, unknown, value edit, source attach, 전체 verified 시 document promotion.
+        </p>
+        <button
+          type="button"
+          onClick={() => setShowPolicy((v) => !v)}
+          style={{ marginTop: 8, fontSize: 13, color: "#2563eb", background: "none", border: "none", cursor: "pointer", padding: 0, textDecoration: "underline" }}
+        >
+          {showPolicy ? "▲ 검증 기준 숨기기" : "▼ verified 승격 기준 보기"}
+        </button>
+
+        {showPolicy && (
+          <div style={{ marginTop: 12, padding: 16, background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 8, fontSize: 13 }}>
+            <strong style={{ display: "block", marginBottom: 8 }}>Claim Verified 승격 기준 (운영 정책)</strong>
+            <ol style={{ margin: 0, paddingLeft: 20, lineHeight: 1.8 }}>
+              {POLICY_ITEMS.map((item, i) => <li key={i}>{item}</li>)}
+            </ol>
+          </div>
+        )}
+
+        <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+          <input value={adminActor} onChange={(e) => setAdminActor(e.target.value)} placeholder="admin actor (email/name; hashed in audit log)" style={{ width: "100%", padding: 8 }} />
         </div>
-      </section>
+        <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+          <input
+            aria-label="Admin secret"
+            type="password"
+            value={secret}
+            onChange={(e) => setSecret(e.target.value)}
+            placeholder="ADMIN_SECRET"
+            style={{ flex: 1, padding: 10 }}
+            onKeyDown={(e) => e.key === "Enter" && load(1)}
+          />
+          <button onClick={() => { setPage(1); load(1); }} disabled={!secret || loading}>
+            {loading ? "불러오는 중..." : "불러오기"}
+          </button>
+        </div>
+      </header>
 
+      {/* Server-side filter section */}
       <section className="registry-panel">
         <h2>필터</h2>
         <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))" }}>
@@ -318,15 +378,70 @@ export default function VerifyClaimPage() {
           <label>limit<input type="number" min="1" max="200" value={filters.limit} onChange={(e) => setFilters({ ...filters, limit: e.target.value, offset: "0" })} /></label>
         </div>
         <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
-          <button onClick={load} disabled={!secret || loading}>{loading ? "적용 중..." : "필터 적용"}</button>
+          <button onClick={() => { setPage(1); load(1); }} disabled={!secret || loading}>{loading ? "적용 중..." : "필터 적용"}</button>
           <button type="button" onClick={() => setFilters({ status: "needs_review", country: "", lang: "", category: "", slug: "", sort: "high_risk", limit: "50", offset: "0" })}>초기화</button>
         </div>
       </section>
 
-      {message && <div style={{ padding: 12, marginBottom: 16, borderRadius: 8, background: message.ok ? "#f0fdf4" : "#fef2f2", color: message.ok ? "#166534" : "#991b1b" }}>{message.text}</div>}
+      {message && (
+        <div style={{ padding: 12, marginBottom: 16, borderRadius: 8, background: message.ok ? "#f0fdf4" : "#fef2f2", color: message.ok ? "#166534" : "#991b1b" }}>
+          {message.text}
+        </div>
+      )}
 
+      {/* Claim stats */}
+      <div className="stat-strip">
+        <div className="stat"><span className="stat-num">{allClaims.length}</span><span className="stat-label">전체 claim (현재 페이지)</span></div>
+        <div className="stat"><span className="stat-num" style={{ color: (claimStats.needs_review || reviewCount) > 0 ? "#b91c1c" : undefined }}>{claimStats.needs_review || reviewCount}</span><span className="stat-label">확인 필요</span></div>
+        <div className="stat"><span className="stat-num" style={{ color: "#166534" }}>{claimStats.verified || verifiedCount}</span><span className="stat-label">검증됨</span></div>
+        <div className="stat"><span className="stat-num">{pagination.total || meta.count}</span><span className="stat-label">전체 문서</span></div>
+      </div>
+
+      {/* Search + Filter bar */}
+      <form onSubmit={handleSearch} className="registry-panel" style={{ display: "flex", gap: 8, flexWrap: "wrap", alignItems: "flex-end" }}>
+        <div style={{ flex: "2 1 200px" }}>
+          <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4 }}>문서 검색</label>
+          <input
+            type="search"
+            placeholder="제목 또는 slug로 검색..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            style={{ width: "100%", padding: "8px 10px" }}
+          />
+        </div>
+        <div style={{ flex: "1 1 140px" }}>
+          <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4 }}>Claim 상태</label>
+          <select
+            value={claimStatusFilter}
+            onChange={(e) => setClaimStatusFilter(e.target.value)}
+            style={{ width: "100%", padding: "8px 10px" }}
+          >
+            <option value="all">전체</option>
+            <option value="needs_review">needs_review</option>
+            <option value="verified">verified</option>
+          </select>
+        </div>
+        <div style={{ flex: "1 1 140px" }}>
+          <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4 }}>문서 상태</label>
+          <select
+            value={docStatusFilter}
+            onChange={(e) => setDocStatusFilter(e.target.value)}
+            style={{ width: "100%", padding: "8px 10px" }}
+          >
+            <option value="all">전체</option>
+            <option value="published">published</option>
+            <option value="verified">verified</option>
+            <option value="needs_review">needs_review</option>
+          </select>
+        </div>
+        <button type="submit" disabled={!secret || loading} style={{ alignSelf: "flex-end", padding: "8px 16px" }}>
+          필터 적용
+        </button>
+      </form>
+
+      {/* Local (client-side) claim filter */}
       <section className="registry-panel">
-        <h2>검증 대기 claim 필터</h2>
+        <h2>검증 대기 claim 필터 (클라이언트)</h2>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 8 }}>
           <label>country<select value={localFilters.country} onChange={(e) => setLocalFilters({ ...localFilters, country: e.target.value })}><option value="all">all</option>{countries.map((v) => <option key={v} value={v}>{v}</option>)}</select></label>
           <label>domain<select value={localFilters.domain} onChange={(e) => setLocalFilters({ ...localFilters, domain: e.target.value })}><option value="all">all</option>{domains.map((v) => <option key={v} value={v}>{v}</option>)}</select></label>
@@ -343,69 +458,178 @@ export default function VerifyClaimPage() {
         </div>
       </section>
 
-      <div className="stat-strip">
-        <div className="stat"><span className="stat-num">{allClaims.length}</span><span className="stat-label">전체 claim</span></div>
-        <div className="stat"><span className="stat-num">{reviewCount}</span><span className="stat-label">확인 필요</span></div>
-        <div className="stat"><span className="stat-num">{verifiedCount}</span><span className="stat-label">검증됨</span></div>
-        <div className="stat"><span className="stat-num">{meta.count}</span><span className="stat-label">필터 결과</span></div>
-      </div>
-
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12, marginBottom: 16, fontSize: 13, color: "#4b5563" }}>
-        <span>{meta.count}개 중 {meta.count === 0 ? 0 : meta.offset + 1}-{Math.min(meta.offset + meta.limit, meta.count)} 표시 · limit {meta.limit}</span>
-        <div style={{ display: "flex", gap: 8 }}>
-          <button type="button" disabled={loading || meta.offset <= 0} onClick={() => setFilters({ ...filters, offset: String(Math.max(0, meta.offset - meta.limit)) })}>이전</button>
-          <button type="button" disabled={loading || !meta.has_more} onClick={() => setFilters({ ...filters, offset: String(meta.offset + meta.limit) })}>다음</button>
+      {/* Document list */}
+      {documents.length === 0 && !loading && (
+        <div className="registry-panel" style={{ color: "#6b7280", textAlign: "center" }}>
+          조건에 맞는 문서가 없습니다.
         </div>
-      </div>
+      )}
 
-      {documents.filter((doc) => visibleDocIds.has(doc.id)).map((doc) => (
-        <section className="registry-panel" key={doc.id} id={`doc-${doc.slug}`}>
-          <h2><Link href={`/${doc.lang??"en"}/wiki/${doc.slug}`}>{doc.title}</Link></h2>
-          <p className="meta-label">{doc.slug} · {doc.country ?? "?"} · {doc.lang ?? "?"} · {doc.category ?? "?"} · {doc.status} · {doc.confidence}</p>
-          {(doc.claims ?? []).map((claim) => (
-            <div className="claim-card" key={claim.id}>
-              <label style={{ float: "right", fontSize: 12 }}><input type="checkbox" checked={selectedClaimIds.includes(claim.id)} onChange={(e) => setSelectedClaimIds((ids) => e.target.checked ? [...ids, claim.id] : ids.filter((id) => id !== claim.id))} /> bulk 선택</label>
-              <p className="eyebrow">entity_id: {doc.entity_id ?? "-"} · document_id: {doc.id} · field_path: {claim.field_path}</p>
-              <p><strong>{claim.claim_value}</strong></p>
-              <p>{claim.claim_text}</p>
-              <p>
-                <span className="badge">status: {claim.status}</span> <span className="badge">confidence: {claim.confidence}</span>
-                <span className="badge">sources: {claim.claim_sources?.length ?? 0}</span>
-                <span className="badge">last_verified_at: {claim.last_verified_at ?? "확인 필요"}</span>
-                {isStale(claim) && <span className="badge">stale</span>}
-              </p>
-              <p className="meta-label">submitter: {claim.submitter ?? claim.contributor_hash ?? "-"} · AI: {[claim.ai_provider, claim.ai_model].filter(Boolean).join(" / ") || "-"}</p>
-              {(claim.source_candidates?.length ?? 0) > 0 && (
-                <div><strong>source 후보</strong><ul>{claim.source_candidates?.map((source, i) => <li key={`${source.url ?? source.title ?? i}`}>{source.source_type ?? "web"} · trust {trustScore(source.source_type, source.url, source.citation)} · {source.url ? <a href={source.url}>{source.title ?? source.url}</a> : (source.title ?? source.citation)}</li>)}</ul></div>
-              )}
-              {(claim.claim_sources?.length ?? 0) > 0 && <ul>{claim.claim_sources?.map((source) => <li key={source.id}>{source.source_type} · trust {trustScore(source.source_type, source.url, source.citation)} · <a href={source.url ?? "#"}>{source.title ?? source.url ?? source.citation ?? source.source_type}</a></li>)}</ul>}
-              {(claim.verification_events?.length ?? 0) > 0 && <p className="meta-label">latest reason: {claim.verification_events?.at(-1)?.note ?? "—"}</p>}
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                {claim.status !== "verified" && <button onClick={() => openVerify(claim)}>관리자 액션 열기</button>}
-                <button type="button" onClick={() => markClaim("needs_verification", claim)}>needs verification + reason</button>
-                <button type="button" onClick={() => markClaim("reject", claim)}>reject/dispute + reason</button>
+      {documents.filter((doc) => visibleDocIds.has(doc.id) || localFilters.country === "all" && localFilters.domain === "all" && localFilters.source === "all" && localFilters.confidence === "all" && localFilters.status === "all" && localFilters.stale === "all").map((doc) => {
+        if (!visibleDocIds.has(doc.id) && !(localFilters.country === "all" && localFilters.domain === "all" && localFilters.source === "all" && localFilters.confidence === "all" && localFilters.status === "all" && localFilters.stale === "all")) return null;
+        const unverifiedCount = (doc.claims ?? []).filter((c) => c.status === "needs_review").length;
+        return (
+          <section className="registry-panel" key={doc.id} id={`doc-${doc.slug}`}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 8 }}>
+              <div>
+                <h2 style={{ margin: 0 }}>
+                  <Link href={`/${doc.lang ?? "en"}/wiki/${doc.slug}`} target="_blank" rel="noopener noreferrer">
+                    {doc.title}
+                  </Link>
+                </h2>
+                <p className="meta-label" style={{ margin: "4px 0 0" }}>
+                  {doc.slug} · {doc.country ?? "?"} · {doc.lang ?? "?"} · {doc.category ?? "?"} · <span className="badge">{doc.status}</span> · <span className="badge">confidence: {doc.confidence}</span>
+                </p>
+                <p className="meta-label">entity_id: {doc.entity_id ?? "-"}</p>
               </div>
+              {unverifiedCount > 0 && (
+                <span className="badge badge-review" style={{ whiteSpace: "nowrap" }}>
+                  ⚠ 미검증 {unverifiedCount}개
+                </span>
+              )}
+              {unverifiedCount === 0 && (doc.claims ?? []).length > 0 && (
+                <span className="badge badge-verified">✓ 전체 검증 완료</span>
+              )}
             </div>
-          ))}
-        </section>
-      ))}
 
+            {(doc.claims ?? []).map((claim) => (
+              <div className="claim-card" key={claim.id} style={{ borderLeft: claim.status === "verified" ? "3px solid #86efac" : "3px solid #fca5a5" }}>
+                <label style={{ float: "right", fontSize: 12 }}><input type="checkbox" checked={selectedClaimIds.includes(claim.id)} onChange={(e) => setSelectedClaimIds((ids) => e.target.checked ? [...ids, claim.id] : ids.filter((id) => id !== claim.id))} /> bulk 선택</label>
+                <p className="eyebrow">entity_id: {doc.entity_id ?? "-"} · document_id: {doc.id} · field_path: {claim.field_path}</p>
+                <p><strong>{claim.claim_value}</strong></p>
+                <p style={{ color: "#6b7280", fontSize: 13 }}>{claim.claim_text}</p>
+                <p>
+                  <span className={`badge ${claim.status === "verified" ? "badge-verified" : "badge-review"}`}>{claim.status}</span>{" "}
+                  <span className="badge">confidence: {claim.confidence}</span>{" "}
+                  <span className="badge">sources: {claim.claim_sources?.length ?? 0}</span>
+                  {claim.last_verified_at && (
+                    <span className="badge badge-verified" style={{ marginLeft: 4 }}>
+                      ✓ {new Date(claim.last_verified_at).toLocaleDateString("ko-KR")}
+                    </span>
+                  )}
+                  {isStale(claim) && <span className="badge" style={{ marginLeft: 4 }}>stale</span>}
+                </p>
+                <p className="meta-label">submitter: {claim.submitter ?? claim.contributor_hash ?? "-"} · AI: {[claim.ai_provider, claim.ai_model].filter(Boolean).join(" / ") || "-"}</p>
+                {(claim.source_candidates?.length ?? 0) > 0 && (
+                  <div><strong>source 후보</strong><ul>{claim.source_candidates?.map((source, i) => <li key={`${source.url ?? source.title ?? i}`}>{source.source_type ?? "web"} · trust {trustScore(source.source_type, source.url, source.citation)} · {source.url ? <a href={source.url}>{source.title ?? source.url}</a> : (source.title ?? source.citation)}</li>)}</ul></div>
+                )}
+                {(claim.claim_sources?.length ?? 0) > 0 && (
+                  <ul style={{ margin: "4px 0", paddingLeft: 16, fontSize: 13 }}>
+                    {claim.claim_sources?.map((source) => (
+                      <li key={source.id}>
+                        {source.source_type} · trust {trustScore(source.source_type, source.url, source.citation)} ·{" "}
+                        <a href={source.url ?? "#"} target="_blank" rel="noopener noreferrer">
+                          {source.title ?? source.url ?? source.citation ?? source.source_type}
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {(claim.verification_events?.length ?? 0) > 0 && <p className="meta-label">latest reason: {claim.verification_events?.at(-1)?.note ?? "—"}</p>}
+                <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
+                  {claim.status !== "verified" && <button onClick={() => openVerify(claim)}>출처 추가 + verified 승격</button>}
+                  <button type="button" onClick={() => markClaim("needs_verification", claim)}>needs verification + reason</button>
+                  <button type="button" onClick={() => markClaim("reject", claim)}>reject/dispute + reason</button>
+                </div>
+              </div>
+            ))}
+          </section>
+        );
+      })}
+
+      {/* Pagination */}
+      {pagination.total_pages > 1 && (
+        <div style={{ display: "flex", justifyContent: "center", gap: 8, margin: "24px 0", flexWrap: "wrap" }}>
+          <button
+            onClick={() => { const p = Math.max(1, page - 1); setPage(p); load(p); }}
+            disabled={page <= 1 || loading}
+          >
+            ← 이전
+          </button>
+          {Array.from({ length: Math.min(7, pagination.total_pages) }, (_, i) => {
+            const p = Math.max(1, Math.min(pagination.total_pages - 6, page - 3)) + i;
+            return (
+              <button
+                key={p}
+                onClick={() => { setPage(p); load(p); }}
+                disabled={loading}
+                style={{ fontWeight: p === page ? 800 : 400, background: p === page ? "#2563eb" : undefined, color: p === page ? "#fff" : undefined }}
+              >
+                {p}
+              </button>
+            );
+          })}
+          <button
+            onClick={() => { const p = Math.min(pagination.total_pages, page + 1); setPage(p); load(p); }}
+            disabled={page >= pagination.total_pages || loading}
+          >
+            다음 →
+          </button>
+          <span style={{ alignSelf: "center", fontSize: 13, color: "#6b7280" }}>
+            {page} / {pagination.total_pages} 페이지 · 전체 {pagination.total}건
+          </span>
+        </div>
+      )}
+
+      {/* Verification form */}
       {selectedClaim && (
-        <section className="registry-panel" style={{ borderColor: "#2563eb" }}>
-          <h2>Claim 검증</h2>
-          <p className="meta-label">{selectedClaim.field_path}</p>
-          <label>검증된 값<input value={claimValue} onChange={(e) => setClaimValue(e.target.value)} placeholder="확인된 값" /></label>
-          <label>source_type<select value={sourceType} onChange={(e) => setSourceType(e.target.value)}>{SOURCE_TYPES.map((type) => <option key={type} value={type}>{type}</option>)}</select></label>
-          <label>출처 제목<input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="공식 페이지명" /></label>
-          <label>출처 URL
-            <div style={{ display: "flex", gap: 8 }}>
-              <input value={url} onChange={(e) => { setUrl(e.target.value); setSourceCheck(null); }} placeholder="https://..." style={{ flex: 1 }} />
-              <button type="button" onClick={checkSource} disabled={checking || !url.trim()}>{checking ? "확인 중..." : "출처 확인"}</button>
-              {url.trim() && <a href={url.trim()} target="_blank" rel="noopener noreferrer" style={{ alignSelf: "center" }}>새 탭에서 열기</a>}
-            </div>
+        <section id="verify-form" className="registry-panel" style={{ borderColor: "#2563eb", borderWidth: 2 }}>
+          <h2>Claim 검증 · {selectedClaim.field_path}</h2>
+          <div className="claim-card" style={{ marginBottom: 16, background: "#f0f9ff" }}>
+            <p className="eyebrow">현재 값</p>
+            <p><strong>{selectedClaim.claim_value}</strong></p>
+            <p style={{ fontSize: 13, color: "#6b7280" }}>{selectedClaim.claim_text}</p>
+          </div>
+
+          <label style={{ display: "block", marginBottom: 12 }}>
+            <span style={{ fontWeight: 600 }}>검증된 값 *</span>
+            <input
+              value={claimValue}
+              onChange={(e) => setClaimValue(e.target.value)}
+              placeholder="실제 확인된 값을 입력하세요"
+              style={{ display: "block", width: "100%", marginTop: 4, padding: 8 }}
+            />
           </label>
+
+          <label style={{ display: "block", marginBottom: 12 }}>
+            <span style={{ fontWeight: 600 }}>source_type</span>
+            <select
+              value={sourceType}
+              onChange={(e) => setSourceType(e.target.value)}
+              style={{ display: "block", width: "100%", marginTop: 4, padding: 8 }}
+            >
+              {SOURCE_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </label>
+
+          <label style={{ display: "block", marginBottom: 12 }}>
+            <span style={{ fontWeight: 600 }}>출처 제목</span>
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="공식 페이지명, 기사 제목 등"
+              style={{ display: "block", width: "100%", marginTop: 4, padding: 8 }}
+            />
+          </label>
+
+          <label style={{ display: "block", marginBottom: 4 }}>
+            <span style={{ fontWeight: 600 }}>출처 URL</span>
+          </label>
+          <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
+            <input
+              value={url}
+              onChange={(e) => { setUrl(e.target.value); setSourceCheck(null); }}
+              placeholder="https://..."
+              style={{ flex: 1, padding: 8 }}
+            />
+            <button type="button" onClick={checkSource} disabled={checking || !url.trim()}>
+              {checking ? "확인 중..." : "출처 확인"}
+            </button>
+            {url.trim() && <a href={url.trim()} target="_blank" rel="noopener noreferrer" style={{ alignSelf: "center" }}>새 탭에서 열기</a>}
+          </div>
+
           {sourceCheck && (
-            <div style={{ padding: 12, borderRadius: 8, fontSize: 13, background: sourceCheck.reachable ? "#f0fdf4" : "#fef2f2", border: `1px solid ${sourceCheck.reachable ? "#86efac" : "#fecaca"}` }}>
+            <div style={{ padding: 12, borderRadius: 8, fontSize: 13, marginBottom: 12, background: sourceCheck.reachable ? "#f0fdf4" : "#fef2f2", border: `1px solid ${sourceCheck.reachable ? "#86efac" : "#fecaca"}` }}>
               <p style={{ margin: "0 0 6px", fontWeight: 600 }}>
                 {sourceCheck.reachable ? `✓ 도달 가능 (HTTP ${sourceCheck.status})` : `✗ 도달 실패${sourceCheck.status ? ` (HTTP ${sourceCheck.status})` : ""}`}
                 {sourceCheck.error && <span style={{ color: "#b91c1c", fontWeight: 400 }}> — {sourceCheck.error}</span>}
@@ -430,19 +654,40 @@ export default function VerifyClaimPage() {
                 </p>
               )}
               {sourceCheck.snippet && <p style={{ margin: "4px 0 0", color: "#374151", fontStyle: "italic" }}>…{sourceCheck.snippet}…</p>}
-              <p style={{ margin: "6px 0 0", fontSize: 11, color: "#6b7280" }}>Source check/trust score는 보조 신호입니다 — 통과해도 verified가 아니며 반드시 admin approval 후 저장하세요.</p>
+              <p style={{ margin: "6px 0 0", fontSize: 11, color: "#6b7280" }}>Source check/trust score는 보조 신호입니다 — 통과해도 verified가 아니며 반드시 admin approval 후 저장하세요. 자동 매칭은 보조 수단입니다. 반드시 직접 확인 후 저장하세요.</p>
             </div>
           )}
-          <label>citation / 메모<textarea value={citation} onChange={(e) => setCitation(e.target.value)} placeholder="어떤 문구/근거를 확인했는지" /></label>
-          <label>confidence<select value={confidence} onChange={(e) => setConfidence(e.target.value)}><option value="high">high</option><option value="medium">medium</option></select></label>
+
+          <label style={{ display: "block", marginBottom: 12 }}>
+            <span style={{ fontWeight: 600 }}>citation / 메모</span>
+            <textarea
+              value={citation}
+              onChange={(e) => setCitation(e.target.value)}
+              placeholder="어떤 문구·수치를 확인했는지 기록 (예: '영업시간 09:00–18:00' 명시)"
+              style={{ display: "block", width: "100%", marginTop: 4, padding: 8, minHeight: 80 }}
+            />
+          </label>
+
+          <label style={{ display: "block", marginBottom: 16 }}>
+            <span style={{ fontWeight: 600 }}>confidence</span>
+            <select
+              value={confidence}
+              onChange={(e) => setConfidence(e.target.value)}
+              style={{ display: "block", marginTop: 4, padding: 8 }}
+            >
+              <option value="high">high — 공식/법령/공식 플랫폼</option>
+              <option value="medium">medium — 신뢰 가능한 3자 출처</option>
+            </select>
+          </label>
+
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button onClick={submitVerify}>1. verify claim</button>
+            <button onClick={submitVerify} disabled={!claimValue.trim()}>1. verify claim (저장 + verified 승격)</button>
             <button onClick={() => runClaimAction("reject")} type="button">2. reject claim</button>
             <button onClick={() => runClaimAction("mark_unknown")} type="button">3. mark as unknown</button>
             <button onClick={() => runClaimAction("edit_value")} type="button">4. edit claim value</button>
             <button onClick={() => runClaimAction("attach_source")} type="button">5. attach source</button>
             <button onClick={() => runClaimAction("promote_document")} type="button">6. promote document if all required claims are verified</button>
-            <button onClick={() => setSelectedClaim(null)} type="button">취소</button>
+            <button onClick={() => setSelectedClaim(null)} type="button" style={{ background: "none", border: "1px solid #d1d5db" }}>취소</button>
           </div>
         </section>
       )}
