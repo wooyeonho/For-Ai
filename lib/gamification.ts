@@ -357,3 +357,188 @@ export function calculateContributorBadges(
     };
   });
 }
+
+import { getAllRegistryBundles } from "./data";
+import { getCoverageMetrics, getQuestMetricHints } from "./goal-metrics";
+
+export type DailyMissionType =
+  | "submit_official_source"
+  | "report_ai_hallucination"
+  | "suggest_missing_fact"
+  | "fix_stale_claim"
+  | "contribute_country_quest"
+  | "contribute_category_quest";
+
+export type MissionCompletionBasis = "submission" | "approval" | "rejected";
+
+export type DailyMissionReward = {
+  submissionPoints: number;
+  approvalPoints: number;
+  rejectedPoints: 0;
+  rule: string;
+};
+
+export type DailyMission = {
+  id: string;
+  type: DailyMissionType;
+  title: string;
+  description: string;
+  targetLabel: string;
+  actionHref: string;
+  submissionCompletion: string;
+  approvalCompletion: string;
+  antiAbuseRule: string;
+  reward: DailyMissionReward;
+};
+
+export type DailyMissionPlan = {
+  date: string;
+  generatedAt: string;
+  missions: DailyMission[];
+  rewardPolicy: {
+    submission: string;
+    approval: string;
+    rejected: string;
+  };
+};
+
+const MISSION_REWARDS: Record<DailyMissionType, Omit<DailyMissionReward, "rejectedPoints" | "rule">> = {
+  submit_official_source: { submissionPoints: 8, approvalPoints: 32 },
+  report_ai_hallucination: { submissionPoints: 6, approvalPoints: 24 },
+  suggest_missing_fact: { submissionPoints: 5, approvalPoints: 20 },
+  fix_stale_claim: { submissionPoints: 10, approvalPoints: 40 },
+  contribute_country_quest: { submissionPoints: 7, approvalPoints: 28 },
+  contribute_category_quest: { submissionPoints: 7, approvalPoints: 28 },
+};
+
+function isoDate(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
+function stableIndex(seed: string, modulo: number): number {
+  let hash = 0;
+  for (const char of seed) hash = (hash * 31 + char.charCodeAt(0)) >>> 0;
+  return modulo ? hash % modulo : 0;
+}
+
+function rewardFor(type: DailyMissionType): DailyMissionReward {
+  const reward = MISSION_REWARDS[type];
+  return {
+    ...reward,
+    rejectedPoints: 0,
+    rule: "Submission points only acknowledge queue intake; approval points are larger and are awarded only after human/source-backed acceptance. Rejected or spam submissions receive 0 points.",
+  };
+}
+
+function actionSlug(): string {
+  const firstBundle = getAllRegistryBundles()[0];
+  return firstBundle?.document.slug ?? "myungdong-laluce-parking";
+}
+
+export function getDailyMissionPlan(now: Date = new Date()): DailyMissionPlan {
+  const date = isoDate(now);
+  const coverage = getCoverageMetrics(now);
+  const questHints = getQuestMetricHints();
+  const country = questHints.lowestCoverageCountry ?? coverage.documentsByCountry.at(-1)?.key ?? "global";
+  const category = questHints.lowestCoverageCategory ?? coverage.documentsByVertical.at(-1)?.key ?? "general";
+  const staleTarget = Math.max(1, Math.min(3, coverage.staleClaims || questHints.staleClaims || 1));
+  const slug = actionSlug();
+
+  const templates: DailyMission[] = [
+    {
+      id: `${date}-official-source`,
+      type: "submit_official_source",
+      title: "Submit an official source",
+      description: "Add a traceable primary or official URL that can support one existing needs-review claim.",
+      targetLabel: "1 official source URL",
+      actionHref: `/${"ko"}/wiki/${slug}#claims`,
+      submissionCompletion: "A source candidate is submitted with URL, title/context, and the claim it supports.",
+      approvalCompletion: "A reviewer accepts the source into claim_sources and records a verification event.",
+      antiAbuseRule: "Duplicate, unrelated, inaccessible, or non-official links are rejected and earn no reward.",
+      reward: rewardFor("submit_official_source"),
+    },
+    {
+      id: `${date}-ai-hallucination`,
+      type: "report_ai_hallucination",
+      title: "Report an AI hallucination",
+      description: "Capture one stale, vague, or wrong AI answer so reviewers can convert it into a claim-level correction queue item.",
+      targetLabel: "1 wrong AI answer report",
+      actionHref: `/hallucination/${slug}`,
+      submissionCompletion: "A report is submitted with AI service, prompt/answer evidence, and expected correction.",
+      approvalCompletion: "A reviewer accepts the report as actionable and links it to a document, entity, or claim.",
+      antiAbuseRule: "Fabricated AI outputs, missing evidence, harassment, or duplicate reports are rejected and earn no reward.",
+      reward: rewardFor("report_ai_hallucination"),
+    },
+    {
+      id: `${date}-missing-fact`,
+      type: "suggest_missing_fact",
+      title: "Suggest a missing fact",
+      description: "Propose one globally useful fact AI may cite incorrectly, while keeping it clearly unverified until review.",
+      targetLabel: "1 missing claim candidate",
+      actionHref: "/suggest-topic",
+      submissionCompletion: "A candidate fact is submitted with entity/topic, jurisdiction, and why the fact matters.",
+      approvalCompletion: "A reviewer accepts the candidate for the verification queue without marking it verified prematurely.",
+      antiAbuseRule: "Guesses, promotional copy, personal data, or unverifiable claims are rejected and earn no reward.",
+      reward: rewardFor("suggest_missing_fact"),
+    },
+    {
+      id: `${date}-stale-claim`,
+      type: "fix_stale_claim",
+      title: "Fix a stale claim",
+      description: "Find a claim that needs freshness review and submit current evidence rather than overwriting truth directly.",
+      targetLabel: `${staleTarget} stale claim review${staleTarget === 1 ? "" : "s"}`,
+      actionHref: `/${"ko"}/wiki/${slug}#claims`,
+      submissionCompletion: "A proposed update is submitted for a stale claim with source and observed date.",
+      approvalCompletion: "A reviewer updates the claim status/value/confidence and records verification_events.",
+      antiAbuseRule: "Unsupported value changes or stale sources are rejected and earn no reward.",
+      reward: rewardFor("fix_stale_claim"),
+    },
+    {
+      id: `${date}-country-${country}`,
+      type: "contribute_country_quest",
+      title: "Contribute to a country quest",
+      description: "Improve coverage for a low-coverage jurisdiction without inventing facts about it.",
+      targetLabel: country.toUpperCase(),
+      actionHref: "/suggest-topic",
+      submissionCompletion: "A source, hallucination report, or missing fact candidate is submitted for the target country.",
+      approvalCompletion: "A reviewer accepts the contribution into the target country queue or source-backed claim record.",
+      antiAbuseRule: "Country tags that do not match the entity/jurisdiction are rejected and earn no reward.",
+      reward: rewardFor("contribute_country_quest"),
+    },
+    {
+      id: `${date}-category-${category}`,
+      type: "contribute_category_quest",
+      title: "Contribute to a category quest",
+      description: "Expand one under-covered category with a verifiable source or claim candidate.",
+      targetLabel: category,
+      actionHref: "/suggest-topic",
+      submissionCompletion: "A contribution is submitted for the target category with enough context for review.",
+      approvalCompletion: "A reviewer accepts it into the category queue or source-backed claim record.",
+      antiAbuseRule: "Misclassified, promotional, or unverifiable category submissions are rejected and earn no reward.",
+      reward: rewardFor("contribute_category_quest"),
+    },
+  ];
+
+  const rotation = stableIndex(date, templates.length);
+  const missions = [...templates.slice(rotation), ...templates.slice(0, rotation)];
+
+  return {
+    date,
+    generatedAt: now.toISOString(),
+    missions,
+    rewardPolicy: {
+      submission: "Submission completion means the item entered a moderation/review queue only; it does not make a fact verified.",
+      approval: "Approval completion requires human/source-backed acceptance and always pays more than submission intake.",
+      rejected: "Rejected or spam submissions receive 0 points so missions never reward fake facts.",
+    },
+  };
+}
+
+export function getMissionRewardForStatus(
+  mission: DailyMission,
+  basis: MissionCompletionBasis,
+): number {
+  if (basis === "submission") return mission.reward.submissionPoints;
+  if (basis === "approval") return mission.reward.approvalPoints;
+  return mission.reward.rejectedPoints;
+}
