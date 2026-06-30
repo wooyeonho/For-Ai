@@ -164,7 +164,7 @@ export default function AdminReviewPage() {
   const load = useCallback(async () => {
     setLoading(true);
     setMessage(null);
-    const res = await fetch("/api/admin/review", { headers: { "x-admin-secret": adminSecret } });
+    const res = await fetch("/api/admin/review");
     const payload = await res.json();
     setLoading(false);
     if (res.ok) {

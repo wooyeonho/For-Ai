@@ -33,7 +33,7 @@ type AdminAuthContext = {
   adminUserId: string | null;
   adminUserHash: string;
   role: AdminRole;
-  authMethod: "supabase" | "admin_secret";
+  authMethod: "supabase" | "admin_session" | "admin_secret";
 };
 
 type AdminUserRow = {
@@ -135,7 +135,7 @@ function signSessionPayload(payload: string): string {
   return createHmac("sha256", ADMIN_SECRET).update(payload).digest("base64url");
 }
 
-function adminSessionValid(request: Request): boolean {
+export function adminSessionValid(request: Request): boolean {
   if (!ADMIN_SECRET) return false;
   const cookie = request.headers.get("cookie") ?? "";
   const token = cookie
@@ -152,13 +152,21 @@ function adminSessionValid(request: Request): boolean {
   return safeEqual(signature, expected);
 }
 
+function isBrowserOriginRequest(request: Request): boolean {
+  return Boolean(request.headers.get("origin") || request.headers.get("sec-fetch-site"));
+}
+
+function browserSentAdminSecret(request: Request): boolean {
+  return isBrowserOriginRequest(request) && Boolean(request.headers.get("x-admin-secret"));
+}
+
 function internalSecretValid(request: Request): boolean {
   if (!ADMIN_SECRET) return false;
   const auth = request.headers.get("x-admin-secret") ?? "";
   if (!safeEqual(auth, ADMIN_SECRET)) return false;
   // x-admin-secret is reserved for CLI/internal callers. Browser-originated
   // requests should use the httpOnly session cookie minted by /api/admin/login.
-  return !request.headers.get("origin") && !request.headers.get("sec-fetch-site");
+  return !isBrowserOriginRequest(request);
 }
 
 export function issueAdminSessionCookie(response: NextResponse): void {
@@ -230,9 +238,18 @@ async function supabaseAuthContext(request: Request): Promise<AdminAuthContext |
   };
 }
 
+function adminSessionContext(request: Request): AdminAuthContext | null {
+  if (!adminSessionValid(request)) return null;
+  return {
+    adminUserId: null,
+    adminUserHash: hashSafe(`admin_session:${ADMIN_SECRET}`),
+    role: "admin",
+    authMethod: "admin_session",
+  };
+}
+
 function fallbackSecretContext(request: Request): AdminAuthContext | null {
-  const auth = request.headers.get("x-admin-secret") ?? "";
-  if (!safeSecretEqual(ADMIN_SECRET, auth)) return null;
+  if (!internalSecretValid(request)) return null;
   return {
     adminUserId: null,
     adminUserHash: hashSafe(`admin_secret:${ADMIN_SECRET}`),
@@ -242,7 +259,8 @@ function fallbackSecretContext(request: Request): AdminAuthContext | null {
 }
 
 export async function authorized(request: Request): Promise<boolean> {
-  return (await supabaseAuthContext(request)) !== null || fallbackSecretContext(request) !== null;
+  if (browserSentAdminSecret(request)) return false;
+  return (await supabaseAuthContext(request)) !== null || adminSessionContext(request) !== null || fallbackSecretContext(request) !== null;
 }
 
 export function safeRequestMetadata(request: Request): AdminAuditMetadata {
@@ -299,7 +317,12 @@ export async function requireAdmin(request: Request, action: string): Promise<Ne
     return NextResponse.json({ error: "rate_limited" }, { status: 429 });
   }
 
-  const context = await supabaseAuthContext(request) ?? fallbackSecretContext(request);
+  if (browserSentAdminSecret(request)) {
+    console.info("[admin-audit]", JSON.stringify({ action, allowed: false, reason: "browser_admin_secret_forbidden", at: new Date().toISOString() }));
+    return NextResponse.json({ error: "browser_admin_secret_forbidden" }, { status: 403 });
+  }
+
+  const context = await supabaseAuthContext(request) ?? adminSessionContext(request) ?? fallbackSecretContext(request);
   if (!context) {
     console.info("[admin-audit]", JSON.stringify({ action, allowed: false, reason: "unauthorized", at: new Date().toISOString() }));
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });

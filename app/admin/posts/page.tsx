@@ -38,12 +38,11 @@ export default function AdminPostsPage() {
   const [creating, setCreating] = useState(false);
 
   const load = useCallback(async () => {
-    if (!adminSecret) { setLoading(false); return; }
     setLoading(true);
     const params = new URLSearchParams({ status: statusFilter });
     if (authorFilter !== "all") params.set("author_type", authorFilter);
     try {
-      const r = await fetch(`/api/admin/posts?${params.toString()}`, { headers: { "x-admin-secret": adminSecret } });
+      const r = await fetch(`/api/admin/posts?${params.toString()}`);
       const d = await r.json();
       setPosts(Array.isArray(d.posts) ? d.posts : []);
       if (!r.ok) flash(d.error ?? "조회 실패", false);
@@ -61,10 +60,9 @@ export default function AdminPostsPage() {
   }
 
   async function updateStatus(id: string, status: string) {
-    if (!adminSecret) { flash("admin secret을 입력하세요", false); return; }
     const r = await fetch("/api/admin/posts", {
       method: "PATCH",
-      headers: { "Content-Type": "application/json", "x-admin-secret": adminSecret, "x-admin-csrf": "1" },
+      headers: { "Content-Type": "application/json", "x-admin-csrf": "1" },
       body: JSON.stringify({ id, status }),
     });
     const d = await r.json();
@@ -74,12 +72,12 @@ export default function AdminPostsPage() {
 
   async function createPost(e: React.FormEvent) {
     e.preventDefault();
-    if (!adminSecret || !newContent.trim()) return;
+    if (!newContent.trim()) return;
     setCreating(true);
     try {
       const r = await fetch("/api/admin/posts", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "x-admin-secret": adminSecret, "x-admin-csrf": "1" },
+        headers: { "Content-Type": "application/json", "x-admin-csrf": "1" },
         body: JSON.stringify({
           content: newContent.trim(),
           author_type: newAuthorType,
