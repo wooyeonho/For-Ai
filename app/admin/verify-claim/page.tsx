@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { getRiskPolicy } from "@/lib/risk-policy";
 
 type SourceRow = { id: string; title?: string | null; url?: string | null; source_type?: string | null; citation?: string | null; observed_at?: string | null };
 type VerificationEventRow = { id: string; note?: string | null; created_at?: string | null; new_status?: string | null };
@@ -41,8 +42,8 @@ type ClaimListMeta = { count: number; limit: number; offset: number; has_more: b
 type Pagination = { page: number; limit: number; total: number; total_pages: number };
 type ClaimStats = { total: number; needs_review: number; verified: number };
 
-const SOURCE_TYPES = ["official", "law", "platform", "document", "web", "review", "user", "phone", "photo", "other", "unknown"];
-const SOURCE_TRUST: Record<string, number> = { official: 95, platform: 85, document: 80, web: 65, photo: 60, phone: 55, review: 40, user: 30, other: 25, unknown: 0 };
+const SOURCE_TYPES = ["official", "regulator", "law", "platform", "document", "web", "review", "user", "phone", "photo", "other", "unknown"];
+const SOURCE_TRUST: Record<string, number> = { official: 95, regulator: 95, law: 95, platform: 85, document: 80, web: 65, photo: 60, phone: 55, review: 40, user: 30, other: 25, unknown: 0 };
 function trustScore(sourceType?: string | null, url?: string | null, citation?: string | null) {
   const base = SOURCE_TRUST[sourceType ?? "unknown"] ?? 0;
   return Math.min(100, base + (url ? 3 : 0) + (citation ? 2 : 0));
@@ -86,6 +87,7 @@ export default function VerifyClaimPage() {
 
   // Verification form state
   const [selectedClaim, setSelectedClaim] = useState<ClaimRow | null>(null);
+  const [selectedDocument, setSelectedDocument] = useState<DocumentRow | null>(null);
   const [claimValue, setClaimValue] = useState("");
   const [sourceType, setSourceType] = useState("official");
   const [title, setTitle] = useState("");
@@ -112,6 +114,7 @@ export default function VerifyClaimPage() {
   } | null>(null);
   const [showPolicy, setShowPolicy] = useState(false);
   const [targetSlug, setTargetSlug] = useState<string | null>(null);
+  const [highRiskConfirmed, setHighRiskConfirmed] = useState(false);
 
   const buildQuery = useCallback((overridePage?: number) => {
     const params = new URLSearchParams();
@@ -171,8 +174,9 @@ export default function VerifyClaimPage() {
     setTargetSlug(null);
   }, [targetSlug, documents]);
 
-  function openVerify(claim: ClaimRow) {
+  function openVerify(claim: ClaimRow, doc?: DocumentRow) {
     setSelectedClaim(claim);
+    setSelectedDocument(doc ?? documents.find((documentRow) => (documentRow.claims ?? []).some((candidate) => candidate.id === claim.id)) ?? null);
     setClaimValue(claim.claim_value === "확인 필요" ? "" : claim.claim_value);
     setTitle("");
     setUrl("");
@@ -181,6 +185,7 @@ export default function VerifyClaimPage() {
     setConfidence("high");
     setSourceCheck(null);
     setMessage(null);
+    setHighRiskConfirmed(false);
     setTimeout(() => document.getElementById("verify-form")?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
   }
 
@@ -226,6 +231,7 @@ export default function VerifyClaimPage() {
         source_check_status: sourceCheck?.source_check_status ?? "unchecked",
         source_trust_score: sourceCheck?.source_trust_score ?? 0,
         source_check_notes: sourceCheck?.source_check_notes ?? [],
+        high_risk_confirmed: highRiskConfirmed,
       }),
     });
     const data = await res.json();
@@ -527,7 +533,7 @@ export default function VerifyClaimPage() {
                 )}
                 {(claim.verification_events?.length ?? 0) > 0 && <p className="meta-label">latest reason: {claim.verification_events?.at(-1)?.note ?? "—"}</p>}
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
-                  {claim.status !== "verified" && <button onClick={() => openVerify(claim)}>출처 추가 + verified 승격</button>}
+                  {claim.status !== "verified" && <button onClick={() => openVerify(claim, doc)}>출처 추가 + verified 승격</button>}
                   <button type="button" onClick={() => markClaim("needs_verification", claim)}>needs verification + reason</button>
                   <button type="button" onClick={() => markClaim("reject", claim)}>reject/dispute + reason</button>
                 </div>
@@ -668,6 +674,20 @@ export default function VerifyClaimPage() {
             />
           </label>
 
+          {getRiskPolicy(selectedDocument?.category).isHighRisk && (
+            <div style={{ padding: 12, marginBottom: 12, borderRadius: 8, background: "#fff7ed", border: "1px solid #fdba74" }}>
+              <p className="eyebrow" style={{ color: "#c2410c" }}>High-risk verification · {getRiskPolicy(selectedDocument?.category).category}</p>
+              <p style={{ margin: "4px 0 8px", fontSize: 13 }}>{getRiskPolicy(selectedDocument?.category).disclaimer}</p>
+              {getRiskPolicy(selectedDocument?.category).requiresOfficialOrRegulatorSource && (
+                <p style={{ margin: "0 0 8px", fontSize: 13 }}>이 카테고리는 verified 승격 전에 source_type이 <strong>official/regulator/law</strong>인 출처가 필요합니다.</p>
+              )}
+              <label style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 13, fontWeight: 600 }}>
+                <input type="checkbox" checked={highRiskConfirmed} onChange={(e) => setHighRiskConfirmed(e.target.checked)} />
+                <span>Second confirmation: 이 claim의 값과 출처를 high-risk 정책에 따라 재확인했습니다.</span>
+              </label>
+            </div>
+          )}
+
           <label style={{ display: "block", marginBottom: 16 }}>
             <span style={{ fontWeight: 600 }}>confidence</span>
             <select
@@ -681,12 +701,12 @@ export default function VerifyClaimPage() {
           </label>
 
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button onClick={submitVerify} disabled={!claimValue.trim()}>1. verify claim (저장 + verified 승격)</button>
+            <button onClick={submitVerify} disabled={!claimValue.trim() || (getRiskPolicy(selectedDocument?.category).isHighRisk && !highRiskConfirmed)}>1. verify claim (저장 + verified 승격)</button>
             <button onClick={() => runClaimAction("reject")} type="button">2. reject claim</button>
             <button onClick={() => runClaimAction("mark_unknown")} type="button">3. mark as unknown</button>
             <button onClick={() => runClaimAction("edit_value")} type="button">4. edit claim value</button>
             <button onClick={() => runClaimAction("attach_source")} type="button">5. attach source</button>
-            <button onClick={() => runClaimAction("promote_document")} type="button">6. promote document if all required claims are verified</button>
+            <button onClick={() => runClaimAction("promote_document")} type="button" disabled={getRiskPolicy(selectedDocument?.category).isHighRisk && !highRiskConfirmed}>6. promote document if all required claims are verified</button>
             <button onClick={() => setSelectedClaim(null)} type="button" style={{ background: "none", border: "1px solid #d1d5db" }}>취소</button>
           </div>
         </section>

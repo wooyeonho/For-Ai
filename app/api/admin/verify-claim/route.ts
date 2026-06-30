@@ -4,11 +4,15 @@ import { logAdminAuditEvent, requireAdmin, supabaseAdmin } from "@/lib/admin-api
 import { recordContributionEvent } from "@/lib/contributions";
 import { scoreSourceTrust } from "@/lib/source-trust";
 import { awardPoints, checkAndAwardBadges, POINT_VALUES } from "@/lib/gamification";
+import {
+  getRiskPolicy,
+  isHighRiskCategory,
+  isOfficialOrRegulatorSourceType,
+} from "@/lib/risk-policy";
 
 const DEFAULT_STATUS = "needs_review";
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 200;
-const HIGH_RISK_CATEGORIES = new Set(["finance", "banking", "insurance", "healthcare", "genomics", "dna", "government", "labor", "tax", "travel", "real_estate", "housing"]);
 const ADMIN_ACCEPTED_SOURCE_POINTS = 10;
 const VERIFIED_CLAIM_LINK_POINTS = 50;
 
@@ -58,14 +62,14 @@ function firstDocument(row: ClaimWithDocument) {
 }
 
 function riskRank(category?: string | null) {
-  return HIGH_RISK_CATEGORIES.has(String(category ?? "").toLowerCase()) ? 0 : 1;
+  return isHighRiskCategory(category) ? 0 : 1;
 }
 
 function claimDate(row: ClaimWithDocument) {
   return new Date(row.created_at ?? row.updated_at ?? 0).getTime();
 }
 
-type ClaimAction = "verify" | "reject" | "mark_unknown" | "edit_value" | "attach_source" | "promote_document";
+type ClaimAction = "verify" | "reject" | "mark_unknown" | "edit_value" | "attach_source" | "promote_document" | "bulk_verify" | "bulk_needs_verification" | "needs_verification";
 
 type SourceInput = {
   source_type?: string;
@@ -75,7 +79,7 @@ type SourceInput = {
   observed_at?: string;
 };
 
-const ALLOWED_SOURCES = new Set(["official", "platform", "review", "user", "phone", "photo", "document", "web", "other", "unknown"]);
+const ALLOWED_SOURCES = new Set(["official", "regulator", "law", "platform", "review", "user", "phone", "photo", "document", "web", "other", "unknown"]);
 const ALLOWED_CONFIDENCE = new Set(["low", "medium", "high"]);
 
 function clean(value: unknown): string | null {
@@ -163,10 +167,14 @@ async function writeVerificationEvent(
   if (error) throw new Error(`verification event insert failed: ${error.message}`);
 }
 
-async function maybePromoteDocument(sb: NonNullable<ReturnType<typeof supabaseAdmin>>, documentId: string, observedAt: string) {
-  const { data: siblingClaims, error } = await sb.from("claims").select("status").eq("document_id", documentId);
+async function maybePromoteDocument(sb: NonNullable<ReturnType<typeof supabaseAdmin>>, documentId: string, observedAt: string, category?: string | null) {
+  const { data: siblingClaims, error } = await sb.from("claims").select("status, claim_sources(source_type)").eq("document_id", documentId);
   if (error) throw new Error(`sibling claims query failed: ${error.message}`);
-  const allVerified = (siblingClaims ?? []).length > 0 && (siblingClaims ?? []).every((claim) => claim.status === "verified");
+  const riskPolicy = getRiskPolicy(category);
+  const everyClaimHasOfficialSource = !riskPolicy.requiresOfficialOrRegulatorSource || (siblingClaims ?? []).every((claim) =>
+    ((claim.claim_sources ?? []) as Array<{ source_type?: string | null }>).some((sourceRow) => isOfficialOrRegulatorSourceType(sourceRow.source_type)),
+  );
+  const allVerified = (siblingClaims ?? []).length > 0 && (siblingClaims ?? []).every((claim) => claim.status === "verified") && everyClaimHasOfficialSource;
   const now = new Date().toISOString();
   const { error: docError } = await sb.from("documents").update({
     status: allVerified ? "verified" : "published",
@@ -386,10 +394,35 @@ export async function POST(request: Request) {
 
   const { data: existingClaim, error: fetchError } = await sb
     .from("claims")
-    .select("id, document_id, entity_id, status, confidence, claim_value")
+    .select("id, document_id, entity_id, status, confidence, claim_value, claim_sources(source_type), documents(category, slug, title)")
     .eq("id", claimId)
     .single();
   if (fetchError || !existingClaim) return NextResponse.json({ error: "claim not found", detail: fetchError?.message }, { status: 404 });
+
+  const documentForClaim = Array.isArray(existingClaim.documents) ? existingClaim.documents[0] : existingClaim.documents;
+  const riskPolicy = getRiskPolicy(documentForClaim?.category);
+  const attachedOfficialSourceExists = ((existingClaim.claim_sources ?? []) as Array<{ source_type?: string | null }>).some((sourceRow) =>
+    isOfficialOrRegulatorSourceType(sourceRow.source_type),
+  );
+  const requestAttachesOfficialSource = shouldAttachSource && isOfficialOrRegulatorSourceType(sourceType);
+  const hasOfficialOrRegulatorSource = attachedOfficialSourceExists || requestAttachesOfficialSource;
+
+  if ((action === "verify" || action === "promote_document") && riskPolicy.isHighRisk && body.high_risk_confirmed !== true) {
+    return NextResponse.json({
+      error: "high-risk claim requires second confirmation",
+      high_risk: true,
+      category: riskPolicy.category,
+    }, { status: 400 });
+  }
+
+  if ((action === "verify" || action === "promote_document") && riskPolicy.requiresOfficialOrRegulatorSource && !hasOfficialOrRegulatorSource) {
+    return NextResponse.json({
+      error: "official/regulator source is required before verified status for this category",
+      high_risk: riskPolicy.isHighRisk,
+      category: riskPolicy.category,
+      required_source_types: riskPolicy.requiredSourceTypes,
+    }, { status: 400 });
+  }
 
   const now = new Date().toISOString();
   let sourceId: string | null = null;
@@ -493,13 +526,13 @@ export async function POST(request: Request) {
     }
 
     const documentAllVerified = action === "promote_document" || action === "verify"
-      ? await maybePromoteDocument(sb, existingClaim.document_id, observedAt)
+      ? await maybePromoteDocument(sb, existingClaim.document_id, observedAt, documentForClaim?.category)
       : false;
     if (action === "promote_document") {
       await writeVerificationEvent(sb, existingClaim, "reviewed", {
         status: existingClaim.status,
         confidence: existingClaim.confidence,
-        note: documentAllVerified ? "document promoted to verified" : "document promotion skipped: not all claims verified",
+        note: documentAllVerified ? "document promoted to verified" : "document promotion skipped: not all claims verified or required official/regulator sources are missing",
         contributor_hash: contributorHash,
       });
     }
@@ -517,6 +550,7 @@ export async function POST(request: Request) {
       previous_confidence: existingClaim.confidence,
       new_confidence: nextConfidence,
       document_all_verified: documentAllVerified,
+      high_risk_confirmed: Boolean(body.high_risk_confirmed),
     });
 
     if (contributorHash && action === "verify") {

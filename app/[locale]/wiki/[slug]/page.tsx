@@ -17,6 +17,7 @@ import { ViewTracker } from "../../../components/ViewTracker";
 import { DocumentStatsBar } from "../../../components/DocumentStatsBar";
 import { WikiPostSection } from "../../../components/WikiPostSection";
 import { CorrectionCTA } from "../../../components/CorrectionCTA";
+import { getRiskPolicy } from "../../../../lib/risk-policy";
 
 export const revalidate = 60;
 
@@ -77,6 +78,7 @@ export default async function WikiDocumentPage({
         ? 30
         : null;
   const isCommercePolicy = document.template === "commerce_policy";
+  const riskPolicy = getRiskPolicy(document.category);
   const topCitationLabel = citationStatus.freshness === "stale"
     ? "Stale"
     : citationStatus.isVerifiedDocument
@@ -162,6 +164,30 @@ export default async function WikiDocumentPage({
         </p>
         <DocumentStatsBar documentId={document.id} />
       </header>
+
+
+      {riskPolicy.isHighRisk && (
+        <section
+          className="registry-panel"
+          role="note"
+          aria-labelledby="high-risk-category-disclaimer"
+          style={{
+            background: "#fff7ed",
+            border: "2px solid #fb923c",
+            borderInlineStart: "6px solid #ea580c",
+          }}
+        >
+          <p className="eyebrow" style={{ color: "#c2410c" }}>High-risk category · {riskPolicy.category}</p>
+          <h2 id="high-risk-category-disclaimer" style={{ marginTop: 0 }}>Category-specific citation disclaimer</h2>
+          <p>{riskPolicy.disclaimer}</p>
+          {riskPolicy.requiresOfficialOrRegulatorSource && (
+            <p>
+              Verified status requires at least one <strong>official, regulator, or law</strong> source for this category.
+              Claims without that source class must remain <strong>Needs verification</strong>.
+            </p>
+          )}
+        </section>
+      )}
 
       {!citationStatus.isVerifiedDocument && (
         <section
