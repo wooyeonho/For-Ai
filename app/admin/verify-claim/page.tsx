@@ -7,7 +7,7 @@ import { isHighRiskCategory } from "@/lib/risk-policy";
 
 type SourceRow = { id: string; title?: string | null; url?: string | null; source_type?: string | null; source_authority?: string | null; citation?: string | null; observed_at?: string | null };
 type VerificationEventRow = { id: string; note?: string | null; created_at?: string | null; new_status?: string | null };
-type SourceCandidate = { title?: string; url?: string; source_type?: string; citation?: string };
+type SourceCandidate = { id?: string; title?: string; url?: string; source_type?: string; citation?: string; status?: string | null; created_at?: string | null; contributor_hash?: string | null };
 type ClaimRow = {
   id: string;
   field_path: string;
@@ -133,6 +133,9 @@ export default function VerifyClaimPage() {
   } | null>(null);
   const [showPolicy, setShowPolicy] = useState(false);
   const [targetSlug, setTargetSlug] = useState<string | null>(null);
+  const [targetClaimId, setTargetClaimId] = useState<string | null>(null);
+  const [acceptedSuggestions, setAcceptedSuggestions] = useState<SourceCandidate[]>([]);
+  const [loadingAcceptedSuggestions, setLoadingAcceptedSuggestions] = useState(false);
 
   const buildQuery = useCallback((overridePage?: number) => {
     const params = new URLSearchParams();
@@ -146,9 +149,10 @@ export default function VerifyClaimPage() {
     if (filters.lang.trim()) params.set("lang", filters.lang.trim());
     if (filters.category.trim()) params.set("category", filters.category.trim());
     if (filters.slug.trim()) params.set("slug", filters.slug.trim());
+    if (targetClaimId) params.set("claim_id", targetClaimId);
     if (filters.sort) params.set("sort", filters.sort);
     return params.toString();
-  }, [search, claimStatusFilter, docStatusFilter, page, filters]);
+  }, [search, claimStatusFilter, docStatusFilter, page, filters, targetClaimId]);
 
   const load = useCallback(async (overridePage?: number) => {
     if (!secret) return;
@@ -174,23 +178,33 @@ export default function VerifyClaimPage() {
   }, [secret, adminActor, buildQuery, filters.limit]);
 
   useEffect(() => {
-    const slug = new URLSearchParams(window.location.search).get("slug");
+    const params = new URLSearchParams(window.location.search);
+    const slug = params.get("slug");
+    const claimId = params.get("claim_id");
     if (slug) {
       setTargetSlug(slug);
       setFilters((current) => ({ ...current, slug, offset: "0" }));
     }
+    if (claimId) {
+      setTargetClaimId(claimId);
+      setClaimStatusFilter("all");
+      setFilters((current) => ({ ...current, status: "all", offset: "0" }));
+    }
   }, []);
 
   useEffect(() => {
-    if (!targetSlug || documents.length === 0) return;
-    const doc = documents.find((d) => d.slug === targetSlug);
+    if ((!targetSlug && !targetClaimId) || documents.length === 0) return;
+    const doc = targetClaimId
+      ? documents.find((d) => (d.claims ?? []).some((c) => c.id === targetClaimId))
+      : documents.find((d) => d.slug === targetSlug);
     if (!doc) return;
     const el = document.getElementById(`doc-${doc.slug}`);
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
     const firstUnverified = (doc.claims ?? []).find((c) => c.status !== "verified");
     if (firstUnverified) openVerify(firstUnverified, doc);
     setTargetSlug(null);
-  }, [targetSlug, documents]);
+    setTargetClaimId(null);
+  }, [targetSlug, targetClaimId, documents]);
 
   function openVerify(claim: ClaimRow, doc?: DocumentRow) {
     setSelectedClaim(claim);
@@ -206,8 +220,33 @@ export default function VerifyClaimPage() {
     setSourceAuthority("official");
     setConfidence("high");
     setSourceCheck(null);
+    setAcceptedSuggestions([]);
+    loadAcceptedSuggestions(claim.id);
     setMessage(null);
     setTimeout(() => document.getElementById("verify-form")?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
+  }
+
+  async function loadAcceptedSuggestions(claimId: string) {
+    if (!secret) return;
+    setLoadingAcceptedSuggestions(true);
+    try {
+      const params = new URLSearchParams({ status: "accepted", claim_id: claimId, limit: "25" });
+      const res = await fetch(`/api/admin/source-suggestions?${params.toString()}`, {
+        headers: { "x-admin-secret": secret, ...(adminActor.trim() ? { "x-admin-actor": adminActor.trim() } : {}) },
+      });
+      const data = await res.json();
+      setAcceptedSuggestions(res.ok && Array.isArray(data.suggestions) ? data.suggestions : []);
+    } finally {
+      setLoadingAcceptedSuggestions(false);
+    }
+  }
+
+  function applyAcceptedSuggestion(source: SourceCandidate) {
+    setTitle(source.title ?? "");
+    setUrl(source.url ?? "");
+    setCitation(source.citation ?? "");
+    setSourceType(source.source_type ?? "web");
+    setSourceCheck(null);
   }
 
   async function checkSource() {
@@ -669,6 +708,22 @@ export default function VerifyClaimPage() {
             <p><strong>{selectedClaim.claim_value}</strong></p>
             <p style={{ fontSize: 13, color: "#6b7280" }}>{selectedClaim.claim_text}</p>
           </div>
+
+          {loadingAcceptedSuggestions && <p className="meta-label">accepted source suggestions 불러오는 중...</p>}
+          {acceptedSuggestions.length > 0 && (
+            <div style={{ padding: 12, border: "1px solid #bfdbfe", borderRadius: 8, marginBottom: 12, background: "#eff6ff" }}>
+              <strong>Accepted source suggestions</strong>
+              <p className="meta-label">운영자가 accepted 처리한 출처입니다. 선택하면 아래 source 입력란에 채워지고, verify/attach source 저장 시 claim_sources로 사용할 수 있습니다.</p>
+              <ul style={{ margin: "8px 0 0", paddingLeft: 16 }}>
+                {acceptedSuggestions.map((source, i) => (
+                  <li key={source.id ?? `${source.url ?? source.title ?? i}`}>
+                    {source.source_type ?? "web"} · {source.url ? <a href={source.url} target="_blank" rel="noopener noreferrer">{source.title ?? source.url}</a> : (source.title ?? source.citation)}
+                    <button type="button" onClick={() => applyAcceptedSuggestion(source)} style={{ marginLeft: 8 }}>이 출처 사용</button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
           <label style={{ display: "block", marginBottom: 12 }}>
             <span style={{ fontWeight: 600 }}>검증된 값 *</span>

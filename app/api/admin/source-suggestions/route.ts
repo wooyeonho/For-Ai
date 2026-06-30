@@ -16,17 +16,22 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const status = searchParams.get('status') ?? 'pending';
   const limit = Math.min(parseInt(searchParams.get('limit') ?? '50'), 100);
+  const claimId = searchParams.get('claim_id')?.trim();
 
-  const { data, error } = await sb
+  let query = sb
     .from('source_suggestions')
     .select('*, claims(id, field_path, claim_text, document_id, entity_id)')
     .eq('status', status)
     .order('created_at', { ascending: true })
     .limit(limit);
 
+  if (claimId) query = query.eq('claim_id', claimId);
+
+  const { data, error } = await query;
+
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  await logAdminAuditEvent(sb, request, 'admin.source_suggestions.list', { status, count: data?.length ?? 0 });
+  await logAdminAuditEvent(sb, request, 'admin.source_suggestions.list', { status, claim_id: claimId ?? null, count: data?.length ?? 0 });
 
   return NextResponse.json({ suggestions: data ?? [] });
 }
@@ -95,7 +100,8 @@ export async function PATCH(request: Request) {
         contributor_hash: suggestion.contributor_hash,
         observed_at: new Date().toISOString(),
       });
-      if (!srcErr) claimSourceId = sourceId;
+      if (srcErr) return NextResponse.json({ error: 'claim_sources insert failed', detail: srcErr.message }, { status: 500 });
+      claimSourceId = sourceId;
     }
 
     await checkAndAwardBadges(sb, suggestion.contributor_hash);

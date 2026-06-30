@@ -238,6 +238,7 @@ export async function GET(request: Request) {
   const lang = params.get("lang")?.trim();
   const category = params.get("category")?.trim();
   const slug = params.get("slug")?.trim();
+  const claimId = params.get("claim_id")?.trim();
   const sort = params.get("sort")?.trim() || "high_risk";
   const limit = boundedInt(params.get("limit"), DEFAULT_LIMIT, MAX_LIMIT);
 
@@ -251,7 +252,7 @@ export async function GET(request: Request) {
   // Build query over documents (PR approach, with HEAD's rich filters applied)
   let docQuery = sb
     .from("documents")
-    .select("*, entities(*), claims(*, claim_sources(*), verification_events(*))", { count: "exact" });
+    .select(claimId ? "*, entities(*), claims!inner(*, claim_sources(*), verification_events(*))" : "*, entities(*), claims(*, claim_sources(*), verification_events(*))", { count: "exact" });
 
   // Apply status filter: prefer claim_status/doc_status (PR) when set, else use HEAD's status on claims
   if (docStatus !== "all") docQuery = docQuery.eq("status", docStatus);
@@ -260,6 +261,7 @@ export async function GET(request: Request) {
   if (lang) docQuery = docQuery.eq("lang", lang.toLowerCase());
   if (category) docQuery = docQuery.eq("category", category);
   if (slug) docQuery = docQuery.ilike("slug", `%${slug}%`);
+  if (claimId) docQuery = docQuery.eq("claims.id", claimId);
 
   docQuery = docQuery.order("updated_at", { ascending: false }).range(offset, offset + limit - 1);
 
@@ -327,6 +329,7 @@ export async function GET(request: Request) {
     lang: lang ?? null,
     category: category ?? null,
     slug: slug ?? null,
+    claim_id: claimId ?? null,
     sort,
   });
 
