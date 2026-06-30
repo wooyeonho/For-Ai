@@ -1,37 +1,59 @@
 "use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { DEFAULT_LOCALE, getTranslations, isValidLocale, type SupportedLocale } from "../../lib/i18n";
+
+function getCurrentLocale(pathname: string): SupportedLocale {
+  const [firstSegment] = pathname.split("/").filter(Boolean);
+  return firstSegment && isValidLocale(firstSegment) ? firstSegment : DEFAULT_LOCALE;
+}
+
+function withLocaleContext(href: string, locale: SupportedLocale): string {
+  if (href.startsWith("/#")) {
+    return `/?lang=${locale}${href.slice(1)}`;
+  }
+
+  if (href.startsWith("/") && !href.includes("?") && !href.includes("#")) {
+    return `${href}?lang=${locale}`;
+  }
+
+  return href;
+}
 
 export function SiteFooter() {
+  const pathname = usePathname();
+  const locale = getCurrentLocale(pathname);
+  const { footer } = getTranslations(locale);
+
   return (
     <footer className="site-footer">
       <div className="site-footer-inner">
         <div className="footer-brand">
           <span className="brand-mark">For-Ai</span>
-          <p className="footer-tagline">
-            A global fact registry where AI, search engines, and humans cite the same facts from the same verified sources. Unverified claims are never presented as truth.
-          </p>
+          <p className="footer-tagline">{footer.tagline}</p>
         </div>
 
         <div className="footer-col">
-          <p className="footer-col-title">For Humans</p>
-          <Link href="/#registry">Browse Registry</Link>
-          <Link href="/suggest-topic">Suggest Topic</Link>
-          <Link href="/community">Community</Link>
+          <p className="footer-col-title">{footer.forHumans}</p>
+          <Link href={withLocaleContext("/#registry", locale)}>{footer.browseRegistry}</Link>
+          <Link href={withLocaleContext("/suggest-topic", locale)}>{footer.suggestTopic}</Link>
+          <Link href={withLocaleContext("/community", locale)}>{footer.community}</Link>
         </div>
 
         <div className="footer-col">
-          <p className="footer-col-title">For Machines</p>
+          <p className="footer-col-title">{footer.forMachines}</p>
           <Link href="/llms.txt">llms.txt</Link>
-          <Link href="/api-docs">API Docs</Link>
+          <Link href={withLocaleContext("/api-docs", locale)}>{footer.apiDocs}</Link>
           <Link href="/sitemap.xml">sitemap.xml</Link>
           <Link href="/robots.txt">robots.txt</Link>
         </div>
 
         <div className="footer-col">
-          <p className="footer-col-title">Citation Policy</p>
-          <span className="footer-note">No citation without verified source</span>
-          <span className="footer-note">Unknown = &quot;Needs verification&quot;</span>
-          <span className="footer-note">License: forai-data-license-v0.1</span>
+          <p className="footer-col-title">{footer.citationPolicy}</p>
+          <span className="footer-note">{footer.noCiteWithoutSource}</span>
+          <span className="footer-note">{footer.unknownNeedsVerification}</span>
+          <span className="footer-note">{footer.licenseLabel}</span>
         </div>
       </div>
       <div className="site-footer-base">
