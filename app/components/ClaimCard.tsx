@@ -26,67 +26,72 @@ export function ClaimCard({ claim, locale }: { claim: ClaimWithSources; locale?:
   const citationStatus = getClaimCitationStatus(claim);
   const stale = citationStatus.isCitationReady ? isStale(claim.last_verified_at) : true;
   const statusTone = citationStatus.isCitationReady && !stale ? "is-citation-ready" : "needs-verification";
+  const readinessLabel = citationStatus.isCitationReady && !stale
+    ? "Citation-ready"
+    : stale && citationStatus.isCitationReady
+      ? "Stale"
+      : "Needs verification";
   const copyLabel = locale === "ko" ? "AI 인용 문장 복사" : "Copy AI-citable sentence";
 
   return (
     <div className={`claim-card claim-card--${statusTone}`}>
-      <div className="claim-card-topline">
-        <span className={citationStatus.isCitationReady && !stale ? "claim-readiness claim-readiness-ready" : "claim-readiness claim-readiness-review"}>
-          {citationStatus.isCitationReady && !stale ? "Citation-ready" : stale && citationStatus.isCitationReady ? "Stale" : "Needs verification"}
-        </span>
-        <span className="eyebrow claim-field-path">{claim.field_path}</span>
-      </div>
+      <section className="claim-reading-section" aria-labelledby={`claim-question-${claim.id}`}>
+        <p className="eyebrow">Question</p>
+        <h3 id={`claim-question-${claim.id}`} className="claim-text-primary">
+          {claim.claim_text || claim.field_path}
+        </h3>
+      </section>
 
-      {/* Human-readable sentence first */}
-      {claim.claim_text && (
-        <p className="claim-text-primary">{claim.claim_text}</p>
-      )}
+      <section className="claim-reading-section" aria-label="Claim answer">
+        <p className="eyebrow">Answer</p>
+        <p className="claim-value">{displayValue}</p>
+        {(claim.original_claim_id || isMachineTranslated) && (
+          <p className="meta-label">
+            {claim.original_claim_id && `${t.wiki.originalClaim}: ${claim.original_claim_id}`}
+            {claim.original_claim_id && isMachineTranslated ? " · " : ""}
+            {isMachineTranslated && t.wiki.machineTranslationWarning}
+          </p>
+        )}
+      </section>
 
-      {/* The actual value — bold */}
-      <p className="claim-value">{displayValue}</p>
+      <section className="claim-reading-section" aria-label="Claim sources">
+        <p className="eyebrow">Sources</p>
+        {claim.sources.length > 0 ? (
+          <div className="claim-sources">
+            {claim.sources.map((source) => (
+              <SourcePill key={source.id} source={source} />
+            ))}
+          </div>
+        ) : (
+          <p className="meta-label">No sources attached.</p>
+        )}
+      </section>
 
-      <div className="claim-card-header">
+      <section className="claim-reading-section" aria-label="Claim status">
+        <div className="claim-card-topline">
+          <p className="eyebrow">Status</p>
+          <span className={citationStatus.isCitationReady && !stale ? "claim-readiness claim-readiness-ready" : "claim-readiness claim-readiness-review"}>
+            {readinessLabel}
+          </span>
+        </div>
         <div className="claim-badges" aria-label="Claim verification signals">
           <ClaimStatusBadge status={claim.status} locale={locale} />
           <VerificationLevelBadge level={citationStatus.verificationLevel} />
-          {translationStatusLabel && <span className="badge">{translationStatusLabel}</span>}
           <ConfidenceBadge level={claim.confidence} locale={locale} />
           <span className="badge badge-source-count">{t.claims.sourceCount}: {claim.sources.length}</span>
-          <span className="badge">jurisdiction: {claim.jurisdiction ?? "global/unspecified"}</span>
           <span className={stale ? "badge badge-review" : "badge badge-verified"}>{stale ? "stale" : "fresh"}</span>
           {claim.source_of_claim === "business_submitted" && (
-            <span
-              className="badge badge-review"
-              title="This business-submitted claim is stored separately and is not citation-ready until independent human verification."
-            >
-              Business-submitted, pending verification
+            <span className="badge badge-review" title="Business-submitted claims require independent human verification before citation.">
+              Business-submitted
             </span>
           )}
           {claim.source_of_claim === "sponsored" && <span className="badge badge-review">Sponsored claim</span>}
         </div>
-      </div>
-
-      {(claim.original_claim_id || isMachineTranslated) && (
-        <p className="meta-label">
-          {claim.original_claim_id && `${t.wiki.originalClaim}: ${claim.original_claim_id}`}
-          {claim.original_claim_id && isMachineTranslated ? " · " : ""}
-          {isMachineTranslated && t.wiki.machineTranslationWarning}
-        </p>
-      )}
-
-      <VerificationMeta
-        status={claim.status}
-        confidence={claim.confidence}
-        jurisdiction={claim.jurisdiction}
-        stale={stale}
-        lastVerifiedAt={claim.last_verified_at}
-        sourceCount={claim.sources.length}
-        locale={locale}
-      />
+      </section>
 
       <div className="claim-citation-cta" aria-label="AI-citable sentence copy action">
         <span>{locale === "ko" ? "AI가 인용해도 되는 문장" : "AI-citable sentence"}</span>
-        <span className="meta-label">Verification level is UI-only; citation readiness follows citation_ready/can_cite.</span>
+        <span className="meta-label">Citation readiness follows citation_ready/can_cite.</span>
         <CopyCitationButton
           citationText={claimCitationText(claim)}
           labelCopy={copyLabel}
@@ -94,19 +99,28 @@ export function ClaimCard({ claim, locale }: { claim: ClaimWithSources; locale?:
         />
       </div>
 
-      {claim.sources.length > 0 && (
-        <div className="claim-sources">
-          {claim.sources.map((source) => (
-            <SourcePill key={source.id} source={source} />
-          ))}
+      <details className="technical-meta claim-technical-meta">
+        <summary>Technical metadata</summary>
+        <p className="eyebrow claim-field-path">{claim.field_path}</p>
+        <div className="claim-badges" aria-label="Additional claim metadata">
+          {translationStatusLabel && <span className="badge">{translationStatusLabel}</span>}
+          <span className="badge">jurisdiction: {claim.jurisdiction ?? "global/unspecified"}</span>
         </div>
-      )}
-
-      {claim.source_of_claim === "business_submitted" && claim.submitted_by_business_name && (
-        <p className="meta-label" style={{ marginTop: 8 }}>
-          Submitted by {claim.submitted_by_business_name}; pending independent verification and citation_ready=false.
-        </p>
-      )}
+        <VerificationMeta
+          status={claim.status}
+          confidence={claim.confidence}
+          jurisdiction={claim.jurisdiction}
+          stale={stale}
+          lastVerifiedAt={claim.last_verified_at}
+          sourceCount={claim.sources.length}
+          locale={locale}
+        />
+        {claim.source_of_claim === "business_submitted" && claim.submitted_by_business_name && (
+          <p className="meta-label" style={{ marginTop: 8 }}>
+            Submitted by {claim.submitted_by_business_name}; pending independent verification and citation_ready=false.
+          </p>
+        )}
+      </details>
     </div>
   );
 }

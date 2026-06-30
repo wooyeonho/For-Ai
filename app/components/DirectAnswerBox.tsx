@@ -33,13 +33,14 @@ export function DirectAnswerBox({
   const lang = (locale ?? DEFAULT_LOCALE) as SupportedLocale;
   const t = getTranslations(lang);
   const citationText = canCite && canonicalUrl && docTitle
-    ? `For-Ai Registry. "${docTitle}". Verified claim: ${displayAnswer}. Checked: ${lastVerifiedAt ?? "unknown"}. ${canonicalUrl}`
+    ? `For-Ai Registry. "${docTitle}". Verified claim: ${answer}. Checked: ${lastVerifiedAt ?? "unknown"}. ${canonicalUrl}`
     : null;
 
   return (
-    <section className="registry-panel direct-answer-box" aria-labelledby="direct-answer-question">
+    <section className="direct-answer-box" aria-labelledby="direct-answer-question">
       <p className="eyebrow">{t.claims.directAnswer}</p>
-      <h1 id="direct-answer-question" className="direct-answer-question">{question}</h1>
+      <p className="direct-answer-text">{answer}</p>
+      <h2 id="direct-answer-question" className="direct-answer-question">{question}</h2>
       {canCite === true && (
         <div className="can-cite-banner">
           <span>{t.claims.canCite}</span>
@@ -48,35 +49,37 @@ export function DirectAnswerBox({
               citationText={citationText}
               labelCopy={t.claims.copyCitation}
               labelCopied={t.claims.copied}
-              warningText="Citation copy includes verified claims only; needs verification or low confidence claims are excluded."
+              warningText="Copies verified claims only. Unverified claims are excluded."
               slug={slug}
             />
           )}
         </div>
       )}
-      <p className="direct-answer-text">{answer}</p>
-      <dl className="direct-answer-meta" aria-label="Direct answer trust signals">
-        <div>
-          <dt>Applied region</dt>
-          <dd>{region}</dd>
-        </div>
-        <div>
-          <dt>{t.claims.lastVerified}</dt>
-          <dd>{lastVerifiedAt ?? "Needs verification"}</dd>
-        </div>
-        <div>
-          <dt>{t.claims.confidence}</dt>
-          <dd><ConfidenceBadge level={confidence} locale={locale} /></dd>
-        </div>
-        <div>
-          <dt>{t.claims.sourceCount}</dt>
-          <dd>{sourceCount}</dd>
-        </div>
-        <div>
-          <dt>Can cite</dt>
-          <dd><span className={canCite ? "badge badge-verified" : "badge badge-review"}>{canCite ? "yes" : "no"}</span></dd>
-        </div>
-      </dl>
+      <details className="direct-answer-details">
+        <summary>Answer context</summary>
+        <dl className="direct-answer-meta" aria-label="Direct answer trust signals">
+          <div>
+            <dt>Applied region</dt>
+            <dd>{region}</dd>
+          </div>
+          <div>
+            <dt>{t.claims.lastVerified}</dt>
+            <dd>{lastVerifiedAt ?? "Needs verification"}</dd>
+          </div>
+          <div>
+            <dt>{t.claims.confidence}</dt>
+            <dd><ConfidenceBadge level={confidence} locale={locale} /></dd>
+          </div>
+          <div>
+            <dt>{t.claims.sourceCount}</dt>
+            <dd>{sourceCount}</dd>
+          </div>
+          <div>
+            <dt>Can cite</dt>
+            <dd><span className={canCite ? "badge badge-verified" : "badge badge-review"}>{canCite ? "yes" : "no"}</span></dd>
+          </div>
+        </dl>
+      </details>
     </section>
   );
 }

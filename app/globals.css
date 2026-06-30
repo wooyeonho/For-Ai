@@ -2849,3 +2849,103 @@ body {
   border-radius: inherit;
   background: var(--success);
 }
+
+/* Wiki document readability pass: title → answer → trust signals. */
+.wiki-document-hero {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.wiki-document-hero .direct-answer-box {
+  border: 1px solid var(--line);
+  border-inline-start: 4px solid var(--accent);
+  border-radius: 14px;
+  background: var(--soft);
+  padding: 14px 16px;
+}
+
+.wiki-document-hero .direct-answer-text {
+  font-size: clamp(1.25rem, 3vw, 1.65rem);
+  margin: 4px 0 8px;
+}
+
+.wiki-document-hero .direct-answer-question {
+  color: var(--muted);
+  font-size: 0.95rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.wiki-hero-status {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  margin: 0;
+}
+
+.wiki-hero-status > div {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--card);
+  padding: 12px;
+}
+
+.wiki-hero-status dt {
+  color: var(--muted);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.wiki-hero-status dd {
+  margin: 6px 0 0;
+  font-weight: 700;
+}
+
+.wiki-hero-status .document-citation-status {
+  box-shadow: none;
+  min-width: 0;
+  padding: 6px 10px;
+}
+
+.wiki-hero-status .document-citation-status strong {
+  font-size: 1rem;
+}
+
+.direct-answer-details summary,
+.policy-details summary,
+.claim-technical-meta summary {
+  cursor: pointer;
+  font-weight: 800;
+}
+
+.direct-answer-details {
+  margin-top: 10px;
+}
+
+.policy-details > summary {
+  color: var(--accent);
+  font-size: 1.05rem;
+}
+
+.claim-reading-section + .claim-reading-section {
+  border-top: 1px solid var(--line);
+  margin-top: 12px;
+  padding-top: 12px;
+}
+
+.claim-reading-section .eyebrow {
+  margin-bottom: 4px;
+}
+
+.claim-card .claim-sources {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.claim-technical-meta {
+  border-top: 1px solid var(--line);
+  margin-top: 12px;
+}

@@ -9,7 +9,7 @@ import type { SupportedLocale } from "../../../../lib/i18n";
 import { getEntityLabels } from "../../../../lib/i18n/entity-labels";
 import type { RegistryDocumentBundle } from "../../../../lib/types";
 import { getRegistryBundleFromSupabase } from "../../../../lib/supabase-documents";
-import { getCanonicalDirectAnswer, getDocumentCitationStatus } from "../../../../lib/citation-status";
+import { getDocumentCitationStatus } from "../../../../lib/citation-status";
 import { getRenderedDirectAnswer, normalizeCitationSurface } from "../../../../lib/render";
 import { DirectAnswerBox } from "../../../components/DirectAnswerBox";
 import { ClaimTable } from "../../../components/ClaimTable";
@@ -121,30 +121,40 @@ export default async function WikiDocumentPage({
         dangerouslySetInnerHTML={{ __html: JSON.stringify(normalizedCitation) }}
       />
 
-      {/* Direct answer first — question, answer, and trust signals */}
-      <DirectAnswerBox
-        question={directAnswer.question}
-        answer={directAnswer.answer}
-        region={directAnswer.region}
-        confidence={directAnswer.confidence}
-        lastVerifiedAt={directAnswer.last_verified_at}
-        sourceCount={directAnswer.source_count}
-        canCite={directAnswer.can_cite}
-        canonicalUrl={siteUrl(`/${locale}/wiki/${document.slug}`)}
-        docTitle={document.title}
-        locale={locale}
-      />
-
-      {/* Clean header: title + status only, no technical IDs */}
-      <header className="registry-panel">
+      {/* Fixed top reading order: title → one-line answer → status → last verified → source count. */}
+      <header className="registry-panel wiki-document-hero">
         <p className="eyebrow">
           {isPromoted ? t.wiki.aiGenerated : t.wiki.claimRegistry}
         </p>
         <h1>{document.title}</h1>
-        <div className={topCitationClass} aria-label="Document citation status">
-          <strong>{topCitationLabel}</strong>
-          <span>{citationStatus.verifiedClaims}/{citationStatus.totalClaims} citation-ready · freshness: {citationStatus.freshness}</span>
-        </div>
+        <DirectAnswerBox
+          question={directAnswer.question}
+          answer={directAnswer.answer}
+          region={directAnswer.region}
+          confidence={directAnswer.confidence}
+          lastVerifiedAt={directAnswer.last_verified_at}
+          sourceCount={directAnswer.source_count}
+          canCite={directAnswer.can_cite}
+          canonicalUrl={siteUrl(`/${locale}/wiki/${document.slug}`)}
+          docTitle={document.title}
+          locale={locale}
+          slug={document.slug}
+        />
+        <dl className="wiki-hero-status" aria-label="Document citation summary">
+          <div>
+            <dt>Citation status</dt>
+            <dd><span className={topCitationClass}><strong>{topCitationLabel}</strong></span></dd>
+          </div>
+          <div>
+            <dt>{t.claims.lastVerified}</dt>
+            <dd>{directAnswer.last_verified_at ?? "Needs verification"}</dd>
+          </div>
+          <div>
+            <dt>{t.claims.sourceCount}</dt>
+            <dd>{totalSources}</dd>
+          </div>
+        </dl>
+        <p className="meta-label">{citationStatus.verifiedClaims}/{citationStatus.totalClaims} citation-ready · freshness: {citationStatus.freshness}</p>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
           <span className={citationStatus.isVerifiedDocument ? "badge badge-verified" : "badge badge-review"}>
             {citationStatus.label}
@@ -176,27 +186,11 @@ export default async function WikiDocumentPage({
         >
           <p className="eyebrow" style={{ color: "#be123c" }}>DO NOT CITE · 확인 필요</p>
           <h2 id="unverified-document-warning" style={{ marginTop: 0 }}>Unverified document — not citation ready</h2>
-          <p>
-            This page is publicly readable for review, but it is not an AI-citable fact record.
-            Do not cite this document unless the citation status is <strong>citation ready</strong>.
-          </p>
+          <p><strong>Do not cite this page.</strong> It is not citation-ready.</p>
           <ul className="link-list">
             <li>Document status: <strong>{document.status}</strong></li>
             <li>Citation-ready claims: <strong>{citationStatus.verifiedClaims}/{citationStatus.totalClaims}</strong></li>
             <li>Required before citation: document status <strong>verified</strong> and every claim verified with source-backed evidence.</li>
-          </ul>
-        </section>
-      )}
-
-      {/* Commerce policy template guardrails */}
-      {isCommercePolicy && (
-        <section className="registry-panel" style={{ background: "#eff6ff", borderInlineStart: "3px solid #3b82f6" }}>
-          <p className="eyebrow">Commerce policy template</p>
-          <p>Country and jurisdiction are required because return, refund, cancellation, and shipping policies can differ by market.</p>
-          <ul className="link-list">
-            <li>country: <strong>{document.country || entity.country}</strong></li>
-            <li>jurisdiction: <strong>{claims.find((claim) => claim.jurisdiction)?.jurisdiction ?? entity.country}</strong></li>
-            {freshnessTtlDays && <li>freshness TTL: <strong>{freshnessTtlDays} days</strong></li>}
           </ul>
         </section>
       )}
@@ -213,18 +207,6 @@ export default async function WikiDocumentPage({
         <CorrectionCTA slug={document.slug} unverified />
       )}
 
-      {isGovernmentFeeTemplate && (
-        <section className="registry-panel" aria-labelledby="government-fee-template">
-          <p className="eyebrow">Government fee template</p>
-          <h2 id="government-fee-template">{t.wiki.governmentFeeDisclaimer}</h2>
-          <ul className="link-list" aria-label="Standard government fee claim field paths">
-            {standardGovernmentFeeFieldPaths.map((fieldPath) => (
-              <li key={fieldPath}><code>{fieldPath}</code></li>
-            ))}
-          </ul>
-        </section>
-      )}
-
       {/* Claims — uses ClaimCard internally */}
       {claims.length === 0 ? (
         <section className="registry-panel">
@@ -234,6 +216,31 @@ export default async function WikiDocumentPage({
         <ClaimTable claims={claims} locale={locale} />
       )}
 
+
+      {/* Longer policy context is below the claims and collapsed by default. */}
+      {isCommercePolicy && (
+        <details className="registry-panel policy-details" style={{ background: "#eff6ff", borderInlineStart: "3px solid #3b82f6" }}>
+          <summary>Commerce policy template</summary>
+          <p>Country and jurisdiction are required because return, refund, cancellation, and shipping policies can differ by market.</p>
+          <ul className="link-list">
+            <li>country: <strong>{document.country || entity.country}</strong></li>
+            <li>jurisdiction: <strong>{claims.find((claim) => claim.jurisdiction)?.jurisdiction ?? entity.country}</strong></li>
+            {freshnessTtlDays && <li>freshness TTL: <strong>{freshnessTtlDays} days</strong></li>}
+          </ul>
+        </details>
+      )}
+
+      {isGovernmentFeeTemplate && (
+        <details className="registry-panel policy-details" aria-labelledby="government-fee-template">
+          <summary id="government-fee-template">Government fee template</summary>
+          <p>{t.wiki.governmentFeeDisclaimer}</p>
+          <ul className="link-list" aria-label="Standard government fee claim field paths">
+            {standardGovernmentFeeFieldPaths.map((fieldPath) => (
+              <li key={fieldPath}><code>{fieldPath}</code></li>
+            ))}
+          </ul>
+        </details>
+      )}
 
       {directAnswer.related_questions.length > 0 && (
         <section className="registry-panel" aria-labelledby="related-questions">
@@ -247,8 +254,8 @@ export default async function WikiDocumentPage({
       )}
 
       {/* Citation guidance */}
-      <section className="registry-panel" aria-labelledby="citation-status">
-        <h2 id="citation-status">{t.wiki.citationStatus}</h2>
+      <details className="registry-panel policy-details" aria-labelledby="citation-status">
+        <summary id="citation-status">{t.wiki.citationStatus}</summary>
         <p>
           {t.wiki.citationDocument} <strong>{citationStatus.label}</strong>. {t.wiki.citationReadyClaims}{" "}
           {citationStatus.verifiedClaims}/{citationStatus.totalClaims}. Freshness: <strong>{citationStatus.freshness}</strong>
@@ -261,11 +268,11 @@ export default async function WikiDocumentPage({
           <li>{t.wiki.doNotCiteUnknown}</li>
           <li>{t.wiki.doNotCiteLow}</li>
         </ul>
-      </section>
+      </details>
 
       {/* Language policy */}
-      <section className="registry-panel" aria-labelledby="language-policy">
-        <h2 id="language-policy">{t.wiki.languagePolicy}</h2>
+      <details className="registry-panel policy-details" aria-labelledby="language-policy">
+        <summary id="language-policy">{t.wiki.languagePolicy}</summary>
         <ul className="link-list">
           <li>{t.wiki.canonicalSlugPolicy}</li>
           <li>{t.wiki.localizedTitlePolicy}</li>
@@ -273,7 +280,7 @@ export default async function WikiDocumentPage({
           <li>{t.wiki.translatedClaimPolicy}</li>
           <li>{t.wiki.machineTranslationWarning}</li>
         </ul>
-      </section>
+      </details>
 
       {/* Machine-readable links */}
       <nav className="registry-panel" aria-labelledby="machine-links">
