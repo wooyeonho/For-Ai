@@ -69,18 +69,63 @@ type ClaimAction = "verify" | "reject" | "mark_unknown" | "edit_value" | "attach
 
 type SourceInput = {
   source_type?: string;
+  source_authority?: string;
   title?: string;
   url?: string;
   citation?: string;
   observed_at?: string;
 };
 
-const ALLOWED_SOURCES = new Set(["official", "law", "platform", "review", "user", "phone", "photo", "document", "web", "other", "unknown"]);
+type ClaimSourceForGuardrail = {
+  source_type?: string | null;
+  source_authority?: string | null;
+  title?: string | null;
+  url?: string | null;
+  citation?: string | null;
+};
+
+const ALLOWED_SOURCES = new Set(["official", "law", "regulator", "platform", "review", "user", "phone", "photo", "document", "web", "other", "unknown"]);
 const ALLOWED_CONFIDENCE = new Set(["low", "medium", "high"]);
+const VERIFY_ALLOWED_CONFIDENCE = new Set(["medium", "high"]);
+const UNKNOWN_CLAIM_VALUES = new Set(["확인 필요", "Needs verification"]);
+const OFFICIAL_OR_REGULATOR_SOURCE_TYPES = new Set(["official", "regulator", "law"]);
+const OFFICIAL_OR_REGULATOR_SOURCE_AUTHORITIES = new Set(["primary", "official", "regulator", "legal"]);
 
 function clean(value: unknown): string | null {
   const text = typeof value === "string" ? value.trim() : "";
   return text.length > 0 ? text : null;
+}
+
+function sourceHasUrlOrCitation(source: ClaimSourceForGuardrail) {
+  return Boolean(clean(source.url) || clean(source.citation));
+}
+
+function sourceIsOfficialOrRegulator(source: ClaimSourceForGuardrail) {
+  const sourceType = String(source.source_type ?? "").toLowerCase();
+  const sourceAuthority = String(source.source_authority ?? "").toLowerCase();
+  return OFFICIAL_OR_REGULATOR_SOURCE_TYPES.has(sourceType) || OFFICIAL_OR_REGULATOR_SOURCE_AUTHORITIES.has(sourceAuthority);
+}
+
+function isHighRiskClaim(claim: { risk_tier?: string | null; documents?: { category?: string | null; risk_tier?: string | null } | { category?: string | null; risk_tier?: string | null }[] | null }) {
+  const document = Array.isArray(claim.documents) ? claim.documents[0] : claim.documents;
+  const category = String(document?.category ?? "").toLowerCase();
+  return claim.risk_tier === "high" || document?.risk_tier === "high" || HIGH_RISK_CATEGORIES.has(category);
+}
+
+function verifyGuardrailReasons(input: {
+  claimValue: string | null;
+  confidence: string;
+  sources: ClaimSourceForGuardrail[];
+  highRisk: boolean;
+}) {
+  const reasons: string[] = [];
+  if (!input.claimValue) reasons.push("claim value is empty; enter a factual value before verification");
+  if (input.claimValue && UNKNOWN_CLAIM_VALUES.has(input.claimValue)) reasons.push(`claim value is still '${input.claimValue}'; replace unknown placeholder before verification`);
+  if (!VERIFY_ALLOWED_CONFIDENCE.has(input.confidence)) reasons.push("confidence must be medium or high before verification");
+  if (input.sources.length === 0) reasons.push("at least one source is required before verification");
+  if (input.sources.length > 0 && !input.sources.some(sourceHasUrlOrCitation)) reasons.push("at least one source must include a URL or citation before verification");
+  if (input.highRisk && !input.sources.some(sourceIsOfficialOrRegulator)) reasons.push("high-risk claims require an official, law, or regulator source");
+  return reasons;
 }
 
 
@@ -318,7 +363,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "bulk verify is disabled; review each claim with a source manually" }, { status: 403 });
   }
 
-  if (action === ("bulk_needs_verification" as ClaimAction)) {
+  if (action === "bulk_needs_verification") {
     const reason = String(body.reason ?? "").trim();
     if (claimIds.length === 0) return NextResponse.json({ error: "claim_ids are required" }, { status: 400 });
     if (!reason) return NextResponse.json({ error: "reason is required for needs-verification actions" }, { status: 400 });
@@ -365,6 +410,7 @@ export async function POST(request: Request) {
   const sourceCandidateId = clean(body.source_candidate_id);
   const source = (body.source ?? body) as SourceInput;
   const sourceType = clean(source.source_type) ?? "official";
+  const sourceAuthority = clean(source.source_authority);
   const title = clean(source.title);
   const url = clean(source.url);
   const citation = clean(source.citation) ?? clean(body.citation);
@@ -382,24 +428,39 @@ export async function POST(request: Request) {
   if (!["verify", "reject", "mark_unknown", "edit_value", "attach_source", "promote_document"].includes(action)) return NextResponse.json({ error: "invalid action" }, { status: 400 });
   if (!ALLOWED_CONFIDENCE.has(confidence)) return NextResponse.json({ error: "invalid confidence" }, { status: 400 });
   if (shouldAttachSource && (!ALLOWED_SOURCES.has(sourceType) || (!title && !url && !citation))) return NextResponse.json({ error: "valid source_type and at least one source title, url, or citation are required" }, { status: 400 });
-  if (["verify", "edit_value"].includes(action) && (!claimValue || claimValue === "확인 필요")) return NextResponse.json({ error: "verified/edited claim_value is required" }, { status: 400 });
+  if (action === "edit_value" && (!claimValue || UNKNOWN_CLAIM_VALUES.has(claimValue))) return NextResponse.json({ error: "edited claim_value must be a factual value, not an unknown placeholder" }, { status: 400 });
 
   const { data: existingClaim, error: fetchError } = await sb
     .from("claims")
-    .select("id, document_id, entity_id, status, confidence, claim_value, claim_sources(id), documents(id, slug, lang, category)")
+    .select("id, document_id, entity_id, status, confidence, claim_value, risk_tier, claim_sources(id,source_type,source_authority,title,url,citation), documents(id,slug,lang,category,risk_tier)")
     .eq("id", claimId)
     .single();
   if (fetchError || !existingClaim) return NextResponse.json({ error: "claim not found", detail: fetchError?.message }, { status: 404 });
 
-  const existingSourceCount = Array.isArray(existingClaim.claim_sources) ? existingClaim.claim_sources.length : 0;
-  const documentRow = Array.isArray(existingClaim.documents) ? existingClaim.documents[0] : existingClaim.documents;
-  const category = String(documentRow?.category ?? "").toLowerCase();
-  const isHighRisk = HIGH_RISK_CATEGORIES.has(category);
-  if (action === "verify" && existingSourceCount === 0 && !shouldAttachSource) {
-    return NextResponse.json({ error: "at least one source is required before verified" }, { status: 400 });
-  }
-  if (action === "verify" && isHighRisk && body.high_risk_confirmed !== true) {
-    return NextResponse.json({ error: "high-risk category requires additional confirmation before verified" }, { status: 400 });
+  if (action === "verify") {
+    const existingSources = Array.isArray(existingClaim.claim_sources) ? existingClaim.claim_sources as ClaimSourceForGuardrail[] : [];
+    const incomingSource = shouldAttachSource
+      ? [{ source_type: sourceType, source_authority: sourceAuthority, title, url, citation }]
+      : [];
+    const guardrailReasons = verifyGuardrailReasons({
+      claimValue: claimValue ?? clean(existingClaim.claim_value),
+      confidence,
+      sources: [...existingSources, ...incomingSource],
+      highRisk: isHighRiskClaim(existingClaim),
+      highRiskConfirmed: body.high_risk_confirmed === true,
+    });
+    if (guardrailReasons.length > 0) {
+      await logAdminAuditEvent(sb, request, "admin.verify_claim.verify_guardrail_blocked", {
+        claim_id: claimId,
+        document_id: existingClaim.document_id,
+        entity_id: existingClaim.entity_id,
+        reasons: guardrailReasons,
+      });
+      return NextResponse.json({
+        error: "claim verification guardrail blocked this action",
+        reasons: guardrailReasons,
+      }, { status: 422 });
+    }
   }
 
   const now = new Date().toISOString();
@@ -411,6 +472,7 @@ export async function POST(request: Request) {
         id: sourceId,
         claim_id: claimId,
         source_type: sourceType,
+        source_authority: sourceAuthority ?? "unknown",
         title,
         url,
         citation,
@@ -453,7 +515,7 @@ export async function POST(request: Request) {
     let nextStatus = existingClaim.status;
     let nextConfidence = existingClaim.confidence;
     if (action === "verify") {
-      Object.assign(update, { claim_value: claimValue, confidence, status: "verified", last_verified_at: observedAt });
+      Object.assign(update, { claim_value: claimValue ?? clean(existingClaim.claim_value), confidence, status: "verified", last_verified_at: observedAt });
       nextStatus = "verified";
       nextConfidence = confidence;
     }
