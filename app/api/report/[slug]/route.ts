@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createServerClient, isSupabaseConfigured } from '../../../../lib/supabase-server';
 import { makeContributorHashForRequest } from '../../../../lib/contributor-hash';
-import { getDocumentBySlug } from '../../../../lib/data';
+import { resolveDocumentMetadataBySlug } from '../../../../lib/document-resolver';
 import { buildPublicTopicCandidate } from '../../../../lib/topic-candidates';
 import {
   REPORT_MESSAGE_MAX_LENGTH,
@@ -46,10 +46,10 @@ export async function POST(
     );
   }
 
-  // Resolve document + entity from slug (static seed data)
-  const doc = getDocumentBySlug(slug);
-  const documentId = doc?.id ?? null;
-  const entityId = doc?.entity_id ?? null;
+  // Resolve document + entity from static seed data, then Supabase fallback.
+  const resolvedDocument = await resolveDocumentMetadataBySlug(slug);
+  const documentId = resolvedDocument.documentId;
+  const entityId = resolvedDocument.entityId;
 
   // Generate contributor hash — never store raw IP
   let contributorHash: string;
@@ -172,15 +172,15 @@ export async function POST(
       if (!error) {
         const { error: topicCandidateError } = await supabase.from('topic_candidates').insert(buildPublicTopicCandidate({
           kind: 'correction_report',
-          title: `Correction report: ${doc?.title ?? slug}`,
+          title: `Correction report: ${resolvedDocument.title}`,
           slugSeed: `correction-${slug}`,
-          lang: doc?.lang ?? 'en',
-          category: doc?.category ?? 'correction_report',
+          lang: resolvedDocument.lang,
+          category: resolvedDocument.category,
           reason: message,
           aiContext: `Public correction report for document_id=${documentId ?? 'unknown'}, entity_id=${entityId ?? 'unknown'}, report_type=${body.report_type ?? 'correction'}, source_candidate_id=${sourceCandidateId ?? 'none'}`,
           sourceUrls: [publicSourceUrl || null],
           contributorHash,
-          claimQuestion: `Which claim on ${doc?.title ?? slug} needs correction?`,
+          claimQuestion: `Which claim on ${resolvedDocument.title} needs correction?`,
         }));
         if (topicCandidateError) console.warn('[report] topic_candidates insert skipped:', topicCandidateError.message);
       }
@@ -190,7 +190,7 @@ export async function POST(
         await recordContributionEvent(supabase, {
           contributor_hash: contributorHash,
           event_type: 'source_submitted',
-          country: doc?.country ?? null,
+          country: resolvedDocument.country,
           source_type: 'web',
           claim_id: body.claim_id?.trim() || null,
           document_id: documentId,
