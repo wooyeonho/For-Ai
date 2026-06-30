@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { AdminDbDetails, adminLabel } from "../admin-labels";
 
 type SourceRow = { id: string; title?: string | null; url?: string | null; source_type?: string | null; citation?: string | null; observed_at?: string | null };
 type VerificationEventRow = { id: string; note?: string | null; created_at?: string | null; new_status?: string | null };
@@ -11,7 +12,7 @@ type ClaimRow = {
   field_path: string;
   claim_text: string;
   claim_value: string;
-  confidence: string;
+  신뢰도: string;
   status: string;
   last_verified_at?: string | null;
   contributor_hash?: string | null;
@@ -29,7 +30,7 @@ type DocumentRow = {
   country?: string;
   category?: string;
   status: string;
-  confidence: string;
+  신뢰도: string;
   lang?: string;
   entity_id?: string;
   source_hints?: SourceCandidate[];
@@ -61,13 +62,13 @@ function trustScore(sourceType?: string | null, url?: string | null, citation?: 
 }
 
 const POLICY_ITEMS = [
-  "AI 생성 후보는 사람이 출처를 검토하기 전까지 verified로 올릴 수 없습니다.",
-  "claim_value가 '확인 필요'인 채로 verified 승격은 금지됩니다.",
+  "AI 생성 후보는 사람이 출처를 검토하기 전까지 검증 완료로 올릴 수 없습니다.",
+  "검증할 값이 '확인 필요'인 채로 검증 완료 처리는 금지됩니다.",
   "출처 URL은 반드시 공개 접근 가능한 주소여야 합니다.",
   "인용 근거(citation)에는 페이지 내 실제 문구 또는 수치를 명시해야 합니다.",
-  "confidence: high — 공식 기관/법령/공식 플랫폼 출처만 해당됩니다.",
-  "confidence: medium — 신뢰할 수 있는 3자 출처 (리뷰, 언론, 공신력 있는 웹페이지).",
-  "한 claim에 복수 출처를 추가하면 신뢰도가 높아집니다. 최소 1개 이상 필수.",
+  "신뢰도: high — 공식 기관/법령/공식 플랫폼 출처만 해당됩니다.",
+  "신뢰도: medium — 신뢰할 수 있는 3자 출처 (리뷰, 언론, 공신력 있는 웹페이지).",
+  "한 사실에 복수 출처를 추가하면 신뢰도가 높아집니다. 최소 1개 이상 필수.",
   "출처 자동 확인(출처 확인 버튼)은 보조 수단입니다. 직접 육안으로 확인 후 저장하세요.",
 ];
 
@@ -256,7 +257,7 @@ export default function VerifyClaimPage() {
         setCompletionLinks({ publicUrl: `/${doc.lang ?? "en"}/wiki/${doc.slug}`, apiUrl: `/api/documents/${doc.slug}` });
         setWizardStep(7);
       }
-      setMessage({ ok: true, text: data.document_all_verified ? "✓ 검증 저장 완료 — 문서 전체 verified 승격!" : `✓ 액션 저장 완료: ${action}` });
+      setMessage({ ok: true, text: data.document_all_verified ? "✓ 검증 저장 완료 — 문서 전체 검증 완료 처리!" : `✓ 액션 저장 완료: ${action}` });
       if (action !== "verify") setSelectedClaim(null);
       await load(page);
     } else {
@@ -350,22 +351,22 @@ export default function VerifyClaimPage() {
       <nav style={{ marginBottom: 24, fontSize: 13 }}><Link href="/admin/review">← Admin 운영 콘솔</Link></nav>
 
       <header className="registry-panel">
-        <p className="eyebrow">Admin · Claim 검증 큐</p>
-        <h1>Claim 검증 관리</h1>
+        <p className="eyebrow">Admin · 사실 검증 큐</p>
+        <h1>사실 검증 관리</h1>
         <p style={{ color: "#6b7280" }}>
-          Promoted 문서의 claim별 승인 흐름을 관리합니다: verify, reject, unknown, value edit, source attach, 전체 verified 시 document promotion.
+          공개 등록된 문서의 사실별 승인 흐름을 관리합니다: 검증 완료, 거절, 알 수 없음, 값 수정, 출처 추가, 전체 검증 완료 시 문서 승격을 처리합니다.
         </p>
         <button
           type="button"
           onClick={() => setShowPolicy((v) => !v)}
           style={{ marginTop: 8, fontSize: 13, color: "#2563eb", background: "none", border: "none", cursor: "pointer", padding: 0, textDecoration: "underline" }}
         >
-          {showPolicy ? "▲ 검증 기준 숨기기" : "▼ verified 승격 기준 보기"}
+          {showPolicy ? "▲ 검증 기준 숨기기" : "▼ 검증 완료 기준 보기"}
         </button>
 
         {showPolicy && (
           <div style={{ marginTop: 12, padding: 16, background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 8, fontSize: 13 }}>
-            <strong style={{ display: "block", marginBottom: 8 }}>Claim Verified 승격 기준 (운영 정책)</strong>
+            <strong style={{ display: "block", marginBottom: 8 }}>사실 검증 완료 기준 (운영 정책)</strong>
             <ol style={{ margin: 0, paddingLeft: 20, lineHeight: 1.8 }}>
               {POLICY_ITEMS.map((item, i) => <li key={i}>{item}</li>)}
             </ol>
@@ -395,12 +396,12 @@ export default function VerifyClaimPage() {
       <section className="registry-panel">
         <h2>필터</h2>
         <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))" }}>
-          <label>status
+          <label>상태
             <select value={filters.status} onChange={(e) => setFilters({ ...filters, status: e.target.value, offset: "0" })}>
-              <option value="needs_review">needs_review</option>
-              <option value="unknown">unknown</option>
-              <option value="disputed">disputed</option>
-              <option value="verified">verified</option>
+              <option value="needs_review">{adminLabel("needs_review")}</option>
+              <option value="unknown">알 수 없음</option>
+              <option value="disputed">이의/거절</option>
+              <option value="verified">{adminLabel("verified")}</option>
             </select>
           </label>
           <label>country<input value={filters.country} onChange={(e) => setFilters({ ...filters, country: e.target.value, offset: "0" })} placeholder="KR, US, global" /></label>
@@ -429,9 +430,9 @@ export default function VerifyClaimPage() {
 
       {/* Claim stats */}
       <div className="stat-strip">
-        <div className="stat"><span className="stat-num">{allClaims.length}</span><span className="stat-label">전체 claim (현재 페이지)</span></div>
+        <div className="stat"><span className="stat-num">{allClaims.length}</span><span className="stat-label">전체 사실 (현재 페이지)</span></div>
         <div className="stat"><span className="stat-num" style={{ color: (claimStats.needs_review || reviewCount) > 0 ? "#b91c1c" : undefined }}>{claimStats.needs_review || reviewCount}</span><span className="stat-label">확인 필요</span></div>
-        <div className="stat"><span className="stat-num" style={{ color: "#166534" }}>{claimStats.verified || verifiedCount}</span><span className="stat-label">검증됨</span></div>
+        <div className="stat"><span className="stat-num" style={{ color: "#166534" }}>{claimStats.verified || verifiedCount}</span><span className="stat-label">검증 완료</span></div>
         <div className="stat"><span className="stat-num">{pagination.total || meta.count}</span><span className="stat-label">전체 문서</span></div>
       </div>
 
@@ -448,15 +449,15 @@ export default function VerifyClaimPage() {
           />
         </div>
         <div style={{ flex: "1 1 140px" }}>
-          <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4 }}>Claim 상태</label>
+          <label style={{ display: "block", fontSize: 12, fontWeight: 600, marginBottom: 4 }}>사실 상태</label>
           <select
             value={claimStatusFilter}
             onChange={(e) => setClaimStatusFilter(e.target.value)}
             style={{ width: "100%", padding: "8px 10px" }}
           >
             <option value="all">전체</option>
-            <option value="needs_review">needs_review</option>
-            <option value="verified">verified</option>
+            <option value="needs_review">{adminLabel("needs_review")}</option>
+            <option value="verified">{adminLabel("verified")}</option>
           </select>
         </div>
         <div style={{ flex: "1 1 140px" }}>
@@ -468,8 +469,8 @@ export default function VerifyClaimPage() {
           >
             <option value="all">전체</option>
             <option value="published">published</option>
-            <option value="verified">verified</option>
-            <option value="needs_review">needs_review</option>
+            <option value="verified">{adminLabel("verified")}</option>
+            <option value="needs_review">{adminLabel("needs_review")}</option>
           </select>
         </div>
         <button type="submit" disabled={!secret || loading} style={{ alignSelf: "flex-end", padding: "8px 16px" }}>
@@ -479,20 +480,20 @@ export default function VerifyClaimPage() {
 
       {/* Local (client-side) claim filter */}
       <section className="registry-panel">
-        <h2>검증 대기 claim 필터 (클라이언트)</h2>
+        <h2>검증 대기 사실 필터 (클라이언트)</h2>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 8 }}>
           <label>country<select value={localFilters.country} onChange={(e) => setLocalFilters({ ...localFilters, country: e.target.value })}><option value="all">all</option>{countries.map((v) => <option key={v} value={v}>{v}</option>)}</select></label>
           <label>domain<select value={localFilters.domain} onChange={(e) => setLocalFilters({ ...localFilters, domain: e.target.value })}><option value="all">all</option>{domains.map((v) => <option key={v} value={v}>{v}</option>)}</select></label>
           <label>source<select value={localFilters.source} onChange={(e) => setLocalFilters({ ...localFilters, source: e.target.value })}><option value="all">all</option><option value="present">present</option><option value="missing">missing</option></select></label>
           <label>confidence<select value={localFilters.confidence} onChange={(e) => setLocalFilters({ ...localFilters, confidence: e.target.value })}><option value="all">all</option><option value="low">low</option><option value="medium">medium</option><option value="high">high</option></select></label>
-          <label>status<select value={localFilters.status} onChange={(e) => setLocalFilters({ ...localFilters, status: e.target.value })}><option value="all">all</option><option value="needs_review">needs_review</option><option value="verified">verified</option><option value="disputed">disputed/rejected</option><option value="unknown">unknown</option></select></label>
-          <label>stale<select value={localFilters.stale} onChange={(e) => setLocalFilters({ ...localFilters, stale: e.target.value })}><option value="all">all</option><option value="stale">stale</option><option value="fresh">not stale</option></select></label>
+          <label>상태<select value={localFilters.status} onChange={(e) => setLocalFilters({ ...localFilters, status: e.target.value })}><option value="all">전체</option><option value="needs_review">{adminLabel("needs_review")}</option><option value="verified">{adminLabel("verified")}</option><option value="disputed">이의/거절</option><option value="unknown">알 수 없음</option></select></label>
+          <label>{adminLabel("stale")}<select value={localFilters.stale} onChange={(e) => setLocalFilters({ ...localFilters, stale: e.target.value })}><option value="all">전체</option><option value="stale">{adminLabel("stale")}</option><option value="fresh">재검증 불필요</option></select></label>
         </div>
-        <p className="meta-label">표시 중: {filteredClaims.length} / {allClaims.length} claims · bulk verify는 비활성화되어 있고, bulk needs-verification만 허용됩니다.</p>
+        <p className="meta-label">표시 중: {filteredClaims.length} / {allClaims.length}개 사실 · 일괄 검증 완료는 비활성화되어 있고, 일괄 재검토 요청만 허용됩니다.</p>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
-          <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="bulk reason" style={{ flex: 1 }} />
-          <button type="button" onClick={bulkNeedsVerification} disabled={selectedClaimIds.length === 0}>선택 claim needs-verification 처리 ({selectedClaimIds.length})</button>
-          <button type="button" disabled title="위험 방지를 위해 초기 버전에서는 비활성화">bulk verify 비활성화</button>
+          <input value={reason} onChange={(e) => setReason(e.target.value)} placeholder="일괄 처리 사유" style={{ flex: 1 }} />
+          <button type="button" onClick={bulkNeedsVerification} disabled={selectedClaimIds.length === 0}>선택 사실 재검토 요청 ({selectedClaimIds.length})</button>
+          <button type="button" disabled title="위험 방지를 위해 초기 버전에서는 비활성화">일괄 검증 완료 비활성화</button>
         </div>
       </section>
 
@@ -516,9 +517,11 @@ export default function VerifyClaimPage() {
                   </Link>
                 </h2>
                 <p className="meta-label" style={{ margin: "4px 0 0" }}>
-                  {doc.slug} · {doc.country ?? "?"} · {doc.lang ?? "?"} · {doc.category ?? "?"} · <span className="badge">{doc.status}</span> · <span className="badge">confidence: {doc.confidence}</span>
+                  {doc.slug} · {doc.country ?? "?"} · {doc.lang ?? "?"} · {doc.category ?? "?"} · <span className="badge">{doc.status}</span> · <span className="badge">신뢰도: {doc.confidence}</span>
                 </p>
-                <p className="meta-label">entity_id: {doc.entity_id ?? "-"}</p>
+                <AdminDbDetails>
+                  <p className="meta-label">{adminLabel("entity_id")}: {doc.entity_id ?? "-"}</p>
+                </AdminDbDetails>
               </div>
               {unverifiedCount > 0 && (
                 <span className="badge badge-review" style={{ whiteSpace: "nowrap" }}>
@@ -533,23 +536,26 @@ export default function VerifyClaimPage() {
             {(doc.claims ?? []).map((claim) => (
               <div className="claim-card" key={claim.id} style={{ borderLeft: claim.status === "verified" ? "3px solid #86efac" : "3px solid #fca5a5" }}>
                 <label style={{ float: "right", fontSize: 12 }}><input type="checkbox" checked={selectedClaimIds.includes(claim.id)} onChange={(e) => setSelectedClaimIds((ids) => e.target.checked ? [...ids, claim.id] : ids.filter((id) => id !== claim.id))} /> bulk 선택</label>
-                <p className="eyebrow">entity_id: {doc.entity_id ?? "-"} · document_id: {doc.id} · field_path: {claim.field_path}</p>
-                <p><strong>{claim.claim_value}</strong></p>
+                <p className="eyebrow">{adminLabel("field_path")}: {claim.field_path}</p>
+                <p><strong>{adminLabel("claim_value")}: {claim.claim_value}</strong></p>
                 <p style={{ color: "#6b7280", fontSize: 13 }}>{claim.claim_text}</p>
                 <p>
-                  <span className={`badge ${claim.status === "verified" ? "badge-verified" : "badge-review"}`}>{claim.status}</span>{" "}
-                  <span className="badge">confidence: {claim.confidence}</span>{" "}
-                  <span className="badge">sources: {claim.claim_sources?.length ?? 0}</span>
+                  <span className={`badge ${claim.status === "verified" ? "badge-verified" : "badge-review"}`}>{adminLabel(claim.status)}</span>{" "}
+                  <span className="badge">신뢰도: {claim.confidence}</span>{" "}
+                  <span className="badge">출처: {claim.claim_sources?.length ?? 0}</span>
                   {claim.last_verified_at && (
                     <span className="badge badge-verified" style={{ marginLeft: 4 }}>
                       ✓ {new Date(claim.last_verified_at).toLocaleDateString("ko-KR")}
                     </span>
                   )}
-                  {isStale(claim) && <span className="badge" style={{ marginLeft: 4 }}>stale</span>}
+                  {isStale(claim) && <span className="badge" style={{ marginLeft: 4 }}>{adminLabel("stale")}</span>}
                 </p>
-                <p className="meta-label">submitter: {claim.submitter ?? claim.contributor_hash ?? "-"} · AI: {[claim.ai_provider, claim.ai_model].filter(Boolean).join(" / ") || "-"}</p>
+                <AdminDbDetails>
+                  <p className="meta-label">{adminLabel("entity_id")}: {doc.entity_id ?? "-"} · {adminLabel("document_id")}: {doc.id}</p>
+                  <p className="meta-label">submitter: {claim.submitter ?? claim.contributor_hash ?? "-"} · AI: {[claim.ai_provider, claim.ai_model].filter(Boolean).join(" / ") || "-"}</p>
+                </AdminDbDetails>
                 {(claim.source_candidates?.length ?? 0) > 0 && (
-                  <div><strong>source 후보</strong><ul>{claim.source_candidates?.map((source, i) => <li key={`${source.url ?? source.title ?? i}`}>{source.source_type ?? "web"} · trust {trustScore(source.source_type, source.url, source.citation)} · {source.url ? <a href={source.url}>{source.title ?? source.url}</a> : (source.title ?? source.citation)}</li>)}</ul></div>
+                  <div><strong>출처 후보</strong><ul>{claim.source_candidates?.map((source, i) => <li key={`${source.url ?? source.title ?? i}`}>{source.source_type ?? "web"} · trust {trustScore(source.source_type, source.url, source.citation)} · {source.url ? <a href={source.url}>{source.title ?? source.url}</a> : (source.title ?? source.citation)}</li>)}</ul></div>
                 )}
                 {(claim.claim_sources?.length ?? 0) > 0 && (
                   <ul style={{ margin: "4px 0", paddingLeft: 16, fontSize: 13 }}>
@@ -563,11 +569,11 @@ export default function VerifyClaimPage() {
                     ))}
                   </ul>
                 )}
-                {(claim.verification_events?.length ?? 0) > 0 && <p className="meta-label">latest reason: {claim.verification_events?.at(-1)?.note ?? "—"}</p>}
+                {(claim.verification_events?.length ?? 0) > 0 && <p className="meta-label">최근 사유: {claim.verification_events?.at(-1)?.note ?? "—"}</p>}
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
-                  {claim.status !== "verified" && <button onClick={() => openVerify(claim, doc)}>wizard로 검증하기</button>}
-                  <button type="button" onClick={() => markClaim("needs_verification", claim)}>needs verification + reason</button>
-                  <button type="button" onClick={() => markClaim("reject", claim)}>reject/dispute + reason</button>
+                  {claim.status !== "verified" && <button onClick={() => openVerify(claim, doc)}>출처 추가 + 검증 완료 처리</button>}
+                  <button type="button" onClick={() => markClaim("needs_verification", claim)}>재검토 요청 + 사유</button>
+                  <button type="button" onClick={() => markClaim("reject", claim)}>거절/이의 처리 + 사유</button>
                 </div>
               </div>
             ))}
@@ -612,7 +618,7 @@ export default function VerifyClaimPage() {
       {/* Verification form */}
       {selectedClaim && (
         <section id="verify-form" className="registry-panel" style={{ borderColor: "#2563eb", borderWidth: 2 }}>
-          <h2>Claim 검증 Wizard · {selectedClaim.field_path}</h2>
+          <h2>사실 검증 Wizard · {selectedClaim.field_path}</h2>
           <div style={{ display: "grid", gap: 8, gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", marginBottom: 16 }}>
             {WIZARD_STEPS.map((step, index) => (
               <button
@@ -636,7 +642,7 @@ export default function VerifyClaimPage() {
             <p style={{ margin: "6px 0 0", color: "#4b5563" }}>{STEP_HELP[wizardStep]}</p>
             {selectedDocument && (
               <p className="meta-label" style={{ margin: "8px 0 0" }}>
-                대상: {selectedDocument.title} · entity_id: {selectedDocument.entity_id ?? "-"} · document_id: {selectedDocument.id} · category: {selectedDocument.category ?? "?"}
+                대상: {selectedDocument.title} · category: {selectedDocument.category ?? "?"}
               </p>
             )}
             {!hasAnySource && wizardStep >= 2 && (
@@ -663,7 +669,7 @@ export default function VerifyClaimPage() {
           </label>
 
           <label style={{ display: "block", marginBottom: 12 }}>
-            <span style={{ fontWeight: 600 }}>source_type</span>
+            <span style={{ fontWeight: 600 }}>출처 종류</span>
             <select
               value={sourceType}
               onChange={(e) => setSourceType(e.target.value)}
@@ -725,7 +731,7 @@ export default function VerifyClaimPage() {
                 </p>
               )}
               {sourceCheck.snippet && <p style={{ margin: "4px 0 0", color: "#374151", fontStyle: "italic" }}>…{sourceCheck.snippet}…</p>}
-              <p style={{ margin: "6px 0 0", fontSize: 11, color: "#6b7280" }}>Source check/trust score는 보조 신호입니다 — 통과해도 verified가 아니며 반드시 admin approval 후 저장하세요. 자동 매칭은 보조 수단입니다. 반드시 직접 확인 후 저장하세요.</p>
+              <p style={{ margin: "6px 0 0", fontSize: 11, color: "#6b7280" }}>Source check/trust score는 보조 신호입니다 — 통과해도 검증 완료가 아니며 반드시 관리자 승인 후 저장하세요. 자동 매칭은 보조 수단입니다. 반드시 직접 확인 후 저장하세요.</p>
             </div>
           )}
 
@@ -772,12 +778,12 @@ export default function VerifyClaimPage() {
           </div>
 
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button onClick={submitVerify} disabled={!canVerifySelected}>verified 처리 (저장 + 공개 URL/API URL 생성)</button>
-            <button onClick={() => runClaimAction("reject")} type="button">2. reject claim</button>
-            <button onClick={() => runClaimAction("mark_unknown")} type="button">3. mark as unknown</button>
-            <button onClick={() => runClaimAction("edit_value")} type="button">4. edit claim value</button>
-            <button onClick={() => runClaimAction("attach_source")} type="button">5. attach source</button>
-            <button onClick={() => runClaimAction("promote_document")} type="button">6. promote document if all required claims are verified</button>
+            <button onClick={submitVerify} disabled={!canVerifySelected}>1. 사실 검증 완료로 저장</button>
+            <button onClick={() => runClaimAction("reject")} type="button">2. 사실 거절</button>
+            <button onClick={() => runClaimAction("mark_unknown")} type="button">3. 알 수 없음으로 표시</button>
+            <button onClick={() => runClaimAction("edit_value")} type="button">4. 검증할 값 수정</button>
+            <button onClick={() => runClaimAction("attach_source")} type="button">5. 출처만 추가</button>
+            <button onClick={() => runClaimAction("promote_document")} type="button">6. 모든 필수 사실 검증 완료 시 문서 승격</button>
             <button onClick={() => setSelectedClaim(null)} type="button" style={{ background: "none", border: "1px solid #d1d5db" }}>취소</button>
           </div>
         </section>

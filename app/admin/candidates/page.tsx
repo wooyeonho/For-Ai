@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { AdminSecretField, useAdminSecret } from "../AdminSecretProvider";
+import { AdminDbDetails, adminLabel } from "../admin-labels";
 interface Candidate {
   id:string;title:string;slug:string;category:string;subcategory?:string;
   risk_tier:string;why_people_ask_ai?:string;why_ai_gets_wrong?:string;
@@ -17,6 +18,7 @@ const CONSENSUS_STYLE:Record<string,{bg:string;color:string}> = {
   single:{bg:"#f3f4f6",color:"#6b7280"},
 };
 const SC:Record<string,string>={new:"background:#dbeafe;color:#1d4ed8",triaged:"background:#fef9c3;color:#a16207",generated:"background:#dcfce7;color:#15803d",rejected:"background:#fee2e2;color:#b91c1c",promoted:"background:#f3e8ff;color:#7e22ce"};
+const STATUS_LABELS:Record<string,string>={new:"신규",triaged:"분류 완료",generated:"사실 생성 완료",rejected:"거절",promoted:"공개 등록 완료"};
 export default function CandidatesPage(){
   const [items,setItems]=useState<Candidate[]>([]);
   const [loading,setLoading]=useState(true);
@@ -46,7 +48,7 @@ export default function CandidatesPage(){
     try{
       const r=await fetch("/api/admin/promote-candidate",{method:"POST",headers:{"Content-Type":"application/json","x-admin-csrf":"1"},body:JSON.stringify({candidateId:id})});
       const d=await r.json();
-      if(r.ok&&d.success){flash(`🚀 공개 등록 완료 → 이제 ${d.claims_created??0}개 claim을 검증하세요 (검증하기 버튼)`);setSelected(null);load();}
+      if(r.ok&&d.success){flash(`🚀 공개 등록 완료 → 이제 ${d.claims_created??0}개 사실을 검증하세요 (검증하기 버튼)`);setSelected(null);load();}
       else flash(`❌ ${d.error??"등록 실패"}`,false);
     }catch{flash("❌ 네트워크 오류",false);}finally{setPromoting(null);}
   }
@@ -55,7 +57,7 @@ export default function CandidatesPage(){
       <div style={{maxWidth:860,margin:"0 auto"}}>
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:24}}>
           <div><h1 style={{fontSize:22,fontWeight:700,margin:0}}>📋 후보 검토 큐</h1>
-            <p style={{color:"#6b7280",fontSize:13,margin:"4px 0 0"}}>public submit → triage → AI claim generation → 🚀 공개 등록</p></div>
+            <p style={{color:"#6b7280",fontSize:13,margin:"4px 0 0"}}>public submit → triage → AI 사실 생성 → 🚀 공개 등록</p></div>
           <div style={{display:"flex",gap:8,alignItems:"center"}}>
             <AdminSecretField adminSecret={adminSecret} setAdminSecret={setAdminSecret} resetAdminSecret={resetAdminSecret} label="관리자 인증키" placeholder="admin secret" inputStyle={{ border: "1px solid #d1d5db", borderRadius: 6, padding: "6px 10px", fontSize: 13, width: 160 }}/>
             <Link href="/admin/generate" style={{fontSize:13,color:"#2563eb"}}>→ AI 생성</Link>
@@ -69,7 +71,7 @@ export default function CandidatesPage(){
           <button onClick={load} style={{marginLeft:"auto",fontSize:12,color:"#9ca3af",background:"none",border:"none",cursor:"pointer"}}>↻</button>
         </div>
         <div style={{display:"flex",gap:8,marginBottom:16,flexWrap:"wrap",alignItems:"center"}}>
-          <span style={{fontSize:12,color:"#6b7280",fontWeight:600}}>source hint</span>
+          <span style={{fontSize:12,color:"#6b7280",fontWeight:600}}>출처 힌트</span>
           {[
             {key:"all",label:"전체"},
             {key:"with",label:"있음"},
@@ -85,11 +87,11 @@ export default function CandidatesPage(){
             <div style={{display:"flex",justifyContent:"space-between",gap:12}}>
               <div style={{flex:1,minWidth:0}}>
                 <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:6}}>
-                  <span style={{fontSize:11,padding:"2px 8px",borderRadius:12,fontWeight:600,...Object.fromEntries((SC[c.status]||"").split(";").filter(Boolean).map(s=>s.trim().split(":").map(x=>x.trim())).filter(a=>a.length===2))}}>{c.status}</span>
+                  <span style={{fontSize:11,padding:"2px 8px",borderRadius:12,fontWeight:600,...Object.fromEntries((SC[c.status]||"").split(";").filter(Boolean).map(s=>s.trim().split(":").map(x=>x.trim())).filter(a=>a.length===2))}}>{STATUS_LABELS[c.status] ?? adminLabel(c.status)}</span>
                   <span style={{fontSize:11,color:"#9ca3af"}}>{c.category}{c.subcategory?` / ${c.subcategory}`:""}</span>
                   {c.source_hints?.length>0
-                    ? <span style={{fontSize:11,padding:"2px 8px",borderRadius:12,fontWeight:600,background:"#ecfdf5",color:"#047857"}}>source hint 있음</span>
-                    : <span style={{fontSize:11,padding:"2px 8px",borderRadius:12,fontWeight:700,background:"#fef3c7",color:"#92400e"}}>⚠ source hint 없음</span>}
+                    ? <span style={{fontSize:11,padding:"2px 8px",borderRadius:12,fontWeight:600,background:"#ecfdf5",color:"#047857"}}>출처 힌트 있음</span>
+                    : <span style={{fontSize:11,padding:"2px 8px",borderRadius:12,fontWeight:700,background:"#fef3c7",color:"#92400e"}}>⚠ 출처 힌트 없음</span>}
                   {c.consensus_level&&(
                     <span style={{fontSize:11,padding:"2px 8px",borderRadius:12,fontWeight:600,...(CONSENSUS_STYLE[c.consensus_level]??{bg:"#f3f4f6",color:"#6b7280"}),background:(CONSENSUS_STYLE[c.consensus_level]?.bg??"#f3f4f6")}}>
                       {c.consensus_level}{c.consensus_score!=null?` ${Math.round(c.consensus_score*100)}%`:""}
@@ -110,15 +112,17 @@ export default function CandidatesPage(){
                 {c.source_hints?.length>0?<div style={{marginBottom:16}}>
                   <div style={{fontSize:12,fontWeight:600,color:"#6b7280",marginBottom:4}}>출처 힌트</div>
                   <div style={{display:"flex",flexWrap:"wrap",gap:8}}>{c.source_hints.map((h,i)=><a key={i} href={h.url} target="_blank" rel="noopener" style={{fontSize:12,color:"#2563eb"}} onClick={e=>e.stopPropagation()}>{h.title||h.url}</a>)}</div></div>
-                  :<div style={{marginBottom:16,padding:10,background:"#fffbeb",border:"1px solid #fde68a",borderRadius:8,fontSize:12,color:"#92400e",fontWeight:600}}>⚠ source_hints가 없습니다. 공식/platform/law/document 출처 힌트를 보강한 뒤 승인하세요.</div>}
+                  :<div style={{marginBottom:16,padding:10,background:"#fffbeb",border:"1px solid #fde68a",borderRadius:8,fontSize:12,color:"#92400e",fontWeight:600}}>⚠ 출처 힌트가 없습니다. 공식/platform/law/document 출처 힌트를 보강한 뒤 승인하세요.</div>}
                 <div style={{display:"flex",gap:8,flexWrap:"wrap",alignItems:"center"}}>
                   {c.status==="new"&&<button onClick={()=>act(c.id,"triaged")} style={{padding:"8px 16px",background:"#f59e0b",color:"#fff",border:"none",borderRadius:8,fontSize:13,fontWeight:600,cursor:"pointer"}}>triage</button>}
-                  {(c.status==="new"||c.status==="triaged")&&<button onClick={()=>act(c.id,"generated")} style={{padding:"8px 16px",background:"#16a34a",color:"#fff",border:"none",borderRadius:8,fontSize:13,fontWeight:600,cursor:"pointer"}}>🤖 AI claim 생성 완료</button>}
+                  {(c.status==="new"||c.status==="triaged")&&<button onClick={()=>act(c.id,"generated")} style={{padding:"8px 16px",background:"#16a34a",color:"#fff",border:"none",borderRadius:8,fontSize:13,fontWeight:600,cursor:"pointer"}}>🤖 AI 사실 생성 완료</button>}
                   {c.status==="generated"&&<button onClick={()=>promote(c.id)} disabled={promoting===c.id} style={{padding:"8px 20px",background:promoting===c.id?"#a855f7":"#7c3aed",color:"#fff",border:"none",borderRadius:8,fontSize:13,fontWeight:700,cursor:promoting===c.id?"not-allowed":"pointer"}}>{promoting===c.id?"등록 중...":"🚀 공개 등록"}</button>}
                   {c.status==="promoted"&&<Link href={`/admin/verify-claim?slug=${encodeURIComponent(c.slug)}`} style={{padding:"8px 16px",background:"#16a34a",color:"#fff",border:"none",borderRadius:8,fontSize:13,fontWeight:600,textDecoration:"none"}}>✅ 검증하기</Link>}
                   {c.status==="promoted"&&<a href={`/${c.lang??"en"}/wiki/${c.slug}`} target="_blank" rel="noopener" style={{padding:"8px 16px",background:"#f3f4f6",color:"#7e22ce",border:"1px solid #e9d5ff",borderRadius:8,fontSize:13,fontWeight:600,textDecoration:"none"}}>🔗 공개 페이지 보기</a>}
                   {c.status!=="rejected"&&c.status!=="promoted"&&<button onClick={()=>act(c.id,"rejected")} style={{padding:"8px 16px",background:"#dc2626",color:"#fff",border:"none",borderRadius:8,fontSize:13,fontWeight:600,cursor:"pointer"}}>❌ 거절</button>}
-                  <span style={{fontSize:11,color:"#9ca3af",marginLeft:"auto"}}>{c.generation_model} · {c.slug}</span>
+                  <AdminDbDetails>
+                    <span>{c.generation_model} · {c.slug}</span>
+                  </AdminDbDetails>
                 </div>
               </div>
             )}

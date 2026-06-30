@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { AdminSecretField, useAdminSecret } from "../AdminSecretProvider";
+import { AdminDbDetails, adminLabel } from "../admin-labels";
 
 export default function NewEntityPage() {
   const { adminSecret, setAdminSecret, resetAdminSecret } = useAdminSecret();
@@ -52,8 +53,11 @@ export default function NewEntityPage() {
     <article>
       <header className="registry-panel">
         <p className="eyebrow">For-Ai · Admin</p>
-        <h1>새 Entity 생성</h1>
-        <p>Supabase <code>entities</code> 테이블에 직접 저장합니다. Entity는 문서(Document)의 주체입니다.</p>
+        <h1>새 대상 생성</h1>
+        <p>문서의 주체가 되는 대상을 새로 생성합니다.</p>
+        <AdminDbDetails>
+          Supabase <code>entities</code> 테이블에 직접 저장합니다.
+        </AdminDbDetails>
       </header>
 
       {result && (
@@ -68,10 +72,10 @@ export default function NewEntityPage() {
           {result.success ? (
             <>
               <h2>생성 완료</h2>
-              <p>Entity ID: <code>{result.entity_id}</code></p>
+              <p>{adminLabel("entity_id")}: <code>{result.entity_id}</code></p>
               <p style={{ marginTop: 8 }}>
                 다음 단계: &nbsp;
-                <Link href="/admin/new-document" style={{ color: "#2563eb" }}>이 Entity에 Document 추가 →</Link>
+                <Link href="/admin/new-document" style={{ color: "#2563eb" }}>이 대상에 문서 추가 →</Link>
               </p>
             </>
           ) : (
@@ -84,9 +88,9 @@ export default function NewEntityPage() {
       )}
 
       <section className="registry-panel" aria-labelledby="entity-form-title">
-        <h2 id="entity-form-title">Entity 필드</h2>
+        <h2 id="entity-form-title">대상 필드</h2>
         <form onSubmit={handleSubmit} className="registry-form">
-          <label>Entity ID <span aria-label="필수">*</span>
+          <label>대상 ID <span aria-label="필수">*</span>
             <input
               type="text" value={id} onChange={e => setId(e.target.value)} required
               placeholder="kr-person-athlete-ryu-hyun-jin-001"
@@ -129,7 +133,10 @@ export default function NewEntityPage() {
             label="Admin Secret *"
             placeholder="관리자 비밀키"
           />
-          <button type="submit" disabled={loading}>{loading ? "생성 중..." : "Entity 생성"}</button>
+          <AdminDbDetails>
+            저장 payload 키: id, type, canonical_name, country, region, city
+          </AdminDbDetails>
+          <button type="submit" disabled={loading}>{loading ? "생성 중..." : "대상 생성"}</button>
         </form>
       </section>
 

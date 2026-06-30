@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
 import { ageInDays, isStale } from "../../../lib/citation-status";
 import { AdminSecretField, useAdminSecret } from "../AdminSecretProvider";
+import { AdminDbDetails, adminLabel } from "../admin-labels";
 
 type Counts = {
   pending_community_posts: number;
@@ -155,10 +156,10 @@ export default function AdminReviewPage() {
     { label: "글 관리", count: counts.pending_community_posts, hint: "community_posts.status = pending", href: "/admin/posts?status=pending", urgent: counts.pending_community_posts > 0 },
     { label: "신규 후보", count: counts.candidates_new, hint: "topic_candidates.status = new", href: "/admin/candidates?status=new", urgent: counts.candidates_new === 0 },
     { label: "AI claim 생성", count: counts.candidates_generated, hint: "topic_candidates.status = generated", href: "/admin/candidates", urgent: false },
-    { label: "needs_review claim", count: counts.claims_needs_review, hint: "claims.status = needs_review", href: "/admin/verify-claim", urgent: counts.claims_needs_review > 0 },
+    { label: "검토 필요 사실", count: counts.claims_needs_review, hint: "claims.status = needs_review", href: "/admin/verify-claim", urgent: counts.claims_needs_review > 0 },
     { label: "공개 등록", count: counts.documents_published, hint: "documents.status = published", href: "/admin/candidates", urgent: false },
-    { label: "claim source", count: counts.claim_sources, hint: "claim_sources rows", href: "/admin/verify-claim", urgent: false },
-    { label: "verified 문서", count: counts.documents_verified, hint: "documents.status = verified", href: "#verified-documents", urgent: false },
+    { label: "출처 연결", count: counts.claim_sources, hint: "claim_sources rows", href: "/admin/verify-claim", urgent: false },
+    { label: "검증 완료 문서", count: counts.documents_verified, hint: "documents.status = verified", href: "#verified-documents", urgent: false },
   ], [counts]);
 
   const load = useCallback(async () => {
@@ -184,9 +185,9 @@ export default function AdminReviewPage() {
         <p className="eyebrow">Unified admin operations</p>
         <h1>For-Ai 통합 운영 콘솔</h1>
         <p>
-          pending community posts, topic candidates, needs_review claims, promoted/verified documents,
+          pending community posts, topic candidates, 검토 필요 사실, 등록/검증 완료 문서,
           high-risk categories를 한 화면에서 확인하고 오늘 처리 순서대로 이동합니다.
-          후보 생성부터 verified 문서 공유까지 claim-level 운영 상태를 admin API count로 확인합니다.
+          후보 생성부터 검증 완료 문서 공유까지 사실 단위 운영 상태를 admin API count로 확인합니다.
         </p>
         <div style={{ display: "flex", gap: 8, marginTop: 16, flexWrap: "wrap" }}>
           <Link href="/admin/inbox" style={primaryButtonStyle}>통합 Inbox 열기</Link>
@@ -240,9 +241,9 @@ export default function AdminReviewPage() {
           {checklist.map((item) => (
             <Link key={item.label} href={item.href} style={{ textDecoration: "none", color: "inherit" }}>
               <div className="claim-card" style={{ height: "100%", borderLeft: item.urgent ? "3px solid #ef4444" : "3px solid #e5e7eb" }}>
-                <p className="eyebrow">{item.hint}</p>
                 <h3 style={{ margin: "4px 0" }}>{item.label}</h3>
                 <p style={{ fontSize: 32, fontWeight: 800, margin: 0, color: item.urgent ? "#991b1b" : undefined }}>{item.count}</p>
+                <AdminDbDetails>{item.hint}</AdminDbDetails>
               </div>
             </Link>
           ))}
@@ -260,23 +261,23 @@ export default function AdminReviewPage() {
             <span className="stat-num" style={{ color: counts.claims_needs_review > 0 ? "#991b1b" : "#166534" }}>
               {counts.claims_needs_review}
             </span>
-            <span className="stat-label">needs_review claim</span>
+            <span className="stat-label">검토 필요 사실</span>
           </div>
-          <div className="stat"><span className="stat-num">{counts.candidates_generated}</span><span className="stat-label">generated candidate</span></div>
+          <div className="stat"><span className="stat-num">{counts.candidates_generated}</span><span className="stat-label">생성 완료 후보</span></div>
           <div className="stat">
             <span className="stat-num" style={{ color: (counts.candidates_approved ?? 0) > 0 ? "#92400e" : "#166534" }}>
               {counts.candidates_approved ?? 0}
             </span>
-            <span className="stat-label">approved candidate</span>
+            <span className="stat-label">승인 후보</span>
           </div>
         </div>
 
-        {/* Priority 1: needs_review claims */}
+        {/* Priority 1: 검토 필요 사실 */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h3 style={{ margin: "0 0 12px" }}>1순위 · needs_review claim 검증</h3>
+          <h3 style={{ margin: "0 0 12px" }}>1순위 · 검토 필요 사실 검증</h3>
         </div>
         {(data?.priorities.needs_review_claims.length ?? 0) === 0 && (
-          <p style={{ color: "#6b7280" }}>✓ 대기 중인 needs_review claim이 없습니다.</p>
+          <p style={{ color: "#6b7280" }}>✓ 대기 중인 검토 필요 사실이 없습니다.</p>
         )}
         {data?.priorities.needs_review_claims.map((claim) => {
           const doc = Array.isArray(claim.documents) ? claim.documents[0] : claim.documents;
@@ -284,22 +285,24 @@ export default function AdminReviewPage() {
           return (
             <div className="claim-card" key={claim.id} style={{ borderLeft: "3px solid #fca5a5" }}>
               <p className="eyebrow">
-                {doc?.title ?? slug ?? claim.id} · <code style={{ fontSize: 11 }}>{claim.field_path}</code>
+                {doc?.title ?? slug ?? claim.id} · {adminLabel("field_path")}: <code style={{ fontSize: 11 }}>{claim.field_path}</code>
               </p>
-              <p className="meta-label">entity_id: {claim.entity_id ?? "-"} · document_id: {claim.document_id ?? "-"}</p>
               <p style={{ margin: "4px 0" }}><strong>{claim.claim_value}</strong></p>
               <p style={{ fontSize: 13, color: "#6b7280", margin: "0 0 8px" }}>{claim.claim_text}</p>
               <p style={{ margin: "0 0 8px" }}>
-                <span className="badge badge-review">{claim.status}</span>{" "}
+                <span className="badge badge-review">{adminLabel(claim.status)}</span>{" "}
                 <span className="badge">confidence: {claim.confidence}</span>{" "}
                 <span className="badge">last_verified_at: {claim.last_verified_at ?? "확인 필요"}</span>
               </p>
-              <p className="meta-label">contributor_hash: {claim.contributor_hash ?? "-"} · AI: {[claim.ai_provider, claim.ai_model].filter(Boolean).join(" / ") || "-"}</p>
-              {(claim.source_candidates?.length ?? 0) > 0 && <p className="meta-label">source 후보: {claim.source_candidates?.map((s: {title?: string; url?: string; source_type?: string}) => s.title ?? s.url ?? s.source_type).join(", ")}</p>}
-              {(claim.source_trust_scores?.length ?? 0) > 0 && <p className="meta-label">trust scores: {claim.source_trust_scores?.map((s: {id?: string; score?: number}) => `${s.id}:${s.score}`).join(", ")}</p>}
+              <AdminDbDetails>
+                <p className="meta-label">{adminLabel("entity_id")}: {claim.entity_id ?? "-"} · {adminLabel("document_id")}: {claim.document_id ?? "-"}</p>
+                <p className="meta-label">contributor_hash: {claim.contributor_hash ?? "-"} · AI: {[claim.ai_provider, claim.ai_model].filter(Boolean).join(" / ") || "-"}</p>
+                {(claim.source_candidates?.length ?? 0) > 0 && <p className="meta-label">source 후보: {claim.source_candidates?.map((s: {title?: string; url?: string; source_type?: string}) => s.title ?? s.url ?? s.source_type).join(", ")}</p>}
+                {(claim.source_trust_scores?.length ?? 0) > 0 && <p className="meta-label">trust scores: {claim.source_trust_scores?.map((s: {id?: string; score?: number}) => `${s.id}:${s.score}`).join(", ")}</p>}
+              </AdminDbDetails>
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                 <Link href={claim.verify_url ?? `/admin/verify-claim${slug ? `?slug=${slug}` : ""}`} style={primaryButtonStyle}>
-                  → 출처 추가 + verified 승격
+                  → 출처 추가 + 검증 완료 처리
                 </Link>
                 {claim.document_url && (
                   <a href={claim.document_url} target="_blank" rel="noopener noreferrer" style={secondaryButtonStyle}>
@@ -311,10 +314,10 @@ export default function AdminReviewPage() {
           );
         })}
 
-        {/* Priority 2: approved candidates */}
-        <h3 style={{ margin: "24px 0 12px" }}>2순위 · approved candidate 공개 등록</h3>
+        {/* Priority 2: 승인 후보s */}
+        <h3 style={{ margin: "24px 0 12px" }}>2순위 · 승인 후보 공개 등록</h3>
         {(data?.priorities.approved_candidates.length ?? 0) === 0 && (
-          <p style={{ color: "#6b7280" }}>✓ 공개 등록 대기 중인 approved candidate가 없습니다.</p>
+          <p style={{ color: "#6b7280" }}>✓ 공개 등록 대기 중인 승인 후보가 없습니다.</p>
         )}
         {data?.priorities.approved_candidates.map((candidate) => (
           <div className="claim-card" key={candidate.id} style={{ borderLeft: "3px solid #fde68a" }}>
@@ -336,7 +339,7 @@ export default function AdminReviewPage() {
         ))}
 
         <h3>Generated candidates · 공개 등록 대기</h3>
-        {(data?.priorities.generated_candidates.length ?? 0) === 0 && <p>공개 등록 대기 중인 generated candidate가 없습니다.</p>}
+        {(data?.priorities.generated_candidates.length ?? 0) === 0 && <p>공개 등록 대기 중인 생성 완료 후보가 없습니다.</p>}
         {data?.priorities.generated_candidates.map((candidate) => (
           <div className="claim-card" key={candidate.id}>
             <p className="eyebrow">{candidate.category} · risk: <span style={{ color: RISK_COLOR[candidate.risk_tier] ?? "#374151" }}>{candidate.risk_tier}</span></p>
@@ -364,7 +367,7 @@ export default function AdminReviewPage() {
         <h2 id="candidates-title">New / approved topic candidates</h2>
         <div className="stat-strip">
           <div className="stat"><span className="stat-num">{counts.candidates_new}</span><span className="stat-label">new candidates</span></div>
-          <div className="stat"><span className="stat-num">{counts.candidates_generated}</span><span className="stat-label">generated candidates</span></div>
+          <div className="stat"><span className="stat-num">{counts.candidates_generated}</span><span className="stat-label">생성 완료 후보s</span></div>
         </div>
         <h3>New candidates</h3>
         <p><Link href="/admin/candidates?status=new" style={primaryButtonStyle}>후보 검토</Link></p>
@@ -380,7 +383,7 @@ export default function AdminReviewPage() {
             <p className="eyebrow">{doc.category} · risk: <span style={{ color: RISK_COLOR[doc.risk_tier] ?? "#374151" }}>{doc.risk_tier}</span> · {doc.promoted_at ?? "promoted_at 없음"}</p>
             <p><strong>{doc.title}</strong></p>
             <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <Link href={doc.verify_url ?? `/admin/verify-claim?slug=${encodeURIComponent(doc.slug)}`} style={primaryButtonStyle}>claim 검증</Link>
+              <Link href={doc.verify_url ?? `/admin/verify-claim?slug=${encodeURIComponent(doc.slug)}`} style={primaryButtonStyle}>사실 검증</Link>
               {doc.public_url && <a href={doc.public_url} target="_blank" rel="noopener noreferrer" style={secondaryButtonStyle}>문서 보기</a>}
             </div>
           </div>
@@ -423,7 +426,7 @@ export default function AdminReviewPage() {
       {/* Verified documents + staleness alerts */}
       <section className="registry-panel" id="verified-documents" aria-labelledby="verified-title">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
-          <h2 id="verified-title" style={{ margin: 0 }}>Recently verified documents</h2>
+          <h2 id="verified-title" style={{ margin: 0 }}>최근 검증 완료 문서</h2>
           {staleDocCount > 0 && (
             <span className="badge badge-review">⏳ 재검증 필요 {staleDocCount}건</span>
           )}
@@ -433,7 +436,7 @@ export default function AdminReviewPage() {
             신선도가 만료된(180일 경과) 문서는 AI가 인용을 회피할 수 있습니다. 우선 재검증을 진행하세요.
           </p>
         )}
-        {(data?.verified_documents.length ?? 0) === 0 && <p>외부 공유 가능한 verified 문서가 없습니다.</p>}
+        {(data?.verified_documents.length ?? 0) === 0 && <p>외부 공유 가능한 검증 완료 문서가 없습니다.</p>}
         <ul className="link-list">
           {data?.verified_documents.map((doc) => {
             const stale = isStale(doc.last_verified_at);
@@ -482,7 +485,7 @@ export default function AdminReviewPage() {
           <div className="claim-card" key={doc.claim_id ?? doc.slug}>
             <p className="eyebrow">{doc.category} · {doc.field_path}</p>
             <p><strong>{doc.title ?? doc.slug}</strong></p>
-            {doc.slug && <Link href={`/admin/verify-claim?slug=${encodeURIComponent(doc.slug)}`} style={primaryButtonStyle}>claim 검증</Link>}
+            {doc.slug && <Link href={`/admin/verify-claim?slug=${encodeURIComponent(doc.slug)}`} style={primaryButtonStyle}>사실 검증</Link>}
           </div>
         ))}
       </section>
@@ -492,12 +495,12 @@ export default function AdminReviewPage() {
         <h2 id="admin-tools">Admin 도구 바로가기</h2>
         <div className="meta-grid">
           {[
-            { label: "Claim 검증 큐", href: "/admin/verify-claim", desc: "출처 추가 + verified 승격" },
-            { label: "후보 검토", href: "/admin/candidates", desc: "candidate approved 처리" },
+            { label: "사실 검증 큐", href: "/admin/verify-claim", desc: "출처 추가 + 검증 완료 처리" },
+            { label: "후보 검토", href: "/admin/candidates", desc: "후보 승인 처리" },
             { label: "후보 자동 생성", href: "/admin/generate", desc: "AI 제공자 consensus 생성" },
             { label: "커뮤니티 글 관리", href: "/admin/posts", desc: "pending 글 moderation" },
-            { label: "New Entity", href: "/admin/new-entity", desc: "entity stub 생성" },
-            { label: "New Document", href: "/admin/new-document", desc: "document stub 생성" },
+            { label: "새 대상", href: "/admin/new-entity", desc: "대상 초안 생성" },
+            { label: "새 문서", href: "/admin/new-document", desc: "문서 초안 생성" },
             { label: "Bulk Import", href: "/admin/import", desc: "JSON 일괄 등록" },
             { label: "공개 현황", href: "/goal", desc: "Mission Control 메트릭" },
           ].map((tool) => (
@@ -522,7 +525,7 @@ function CandidateCard({ candidate }: { candidate: Candidate }) {
       <p>{candidate.lang}/wiki/{candidate.slug}</p>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         <Link href="/admin/candidates?status=new" style={primaryButtonStyle}>후보 검토</Link>
-        <Link href={`/admin/verify-claim?slug=${encodeURIComponent(candidate.slug)}`} style={secondaryButtonStyle}>claim 검증</Link>
+        <Link href={`/admin/verify-claim?slug=${encodeURIComponent(candidate.slug)}`} style={secondaryButtonStyle}>사실 검증</Link>
       </div>
     </div>
   );
