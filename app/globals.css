@@ -43,6 +43,23 @@ a {
   text-underline-offset: 3px;
 }
 
+.claim-value,
+.claim-text-primary,
+.source-pill,
+.meta-item dd,
+pre,
+code,
+.registry-row-title {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+pre {
+  overflow-x: auto;
+  white-space: pre-wrap;
+}
+
 /* Layout */
 .page-shell {
   width: min(100%, 960px);
@@ -126,7 +143,6 @@ h2 {
   margin: 0;
   font-size: 0.9rem;
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
-  word-break: break-all;
 }
 
 /* Badges */
@@ -251,6 +267,9 @@ h2 {
 .source-pill {
   display: inline-flex;
   align-items: center;
+  flex-wrap: wrap;
+  min-width: 0;
+  white-space: normal;
   gap: 4px;
   padding: 3px 10px;
   background: var(--soft);
@@ -2034,7 +2053,9 @@ body {
   color: var(--muted);
   text-transform: none;
   letter-spacing: 0.02em;
-  white-space: nowrap;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 .badge-high, .badge-verified, .badge-pass {
   border-color: #c2dcc9;
@@ -2423,7 +2444,7 @@ body {
 
 .claim-readiness-ready { color: #166534; background: #dcfce7; border: 1px solid #86efac; }
 .claim-readiness-review { color: #92400e; background: #fef3c7; border: 1px solid #fbbf24; }
-.badge-source-count { white-space: nowrap; }
+.badge-source-count { white-space: normal; }
 
 .verification-meta {
   display: grid;
@@ -2463,7 +2484,7 @@ body {
 @media (max-width: 760px) {
   .document-citation-status { width: 100%; }
   .claim-badges { display: grid; grid-template-columns: 1fr; width: 100%; }
-  .claim-badges .badge { width: 100%; justify-content: flex-start; }
+  .claim-badges .badge { width: 100%; justify-content: flex-start; white-space: normal; }
   .verification-meta { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .claim-citation-cta { align-items: stretch; }
   .claim-citation-cta button { width: 100%; }
