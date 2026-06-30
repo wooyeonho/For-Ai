@@ -1,7 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { HALLUCINATION_FIELD_MAX_LENGTHS } from "@/lib/submission-limits";
+
+const SUPPORTED_LOCALES = new Set(["ko", "en", "ja", "zh", "es", "hi", "ar"]);
 
 export function HallucinationForm({
   documentId,
@@ -15,6 +18,13 @@ export function HallucinationForm({
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const queryLang = searchParams.get("lang");
+  const lang = queryLang && SUPPORTED_LOCALES.has(queryLang) ? queryLang : "en";
+  const fallbackReturnPath = `/${lang}/wiki/${slug}`;
+  const returnPath = searchParams.get("return") || fallbackReturnPath;
+  const safeReturnPath = returnPath.startsWith("/") && !returnPath.startsWith("//") ? returnPath : fallbackReturnPath;
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -39,6 +49,7 @@ export function HallucinationForm({
 
       if (response.ok) {
         setSubmitted(true);
+        router.push(safeReturnPath);
       } else {
         const data = await response.json().catch(() => ({}));
         setError("제출 실패: " + (data?.error ?? response.status));
@@ -54,7 +65,7 @@ export function HallucinationForm({
     return (
       <div className="submission-success">
         <p>AI 오답 신고가 접수되었습니다. 검토 후 반영됩니다.</p>
-        <a href={`/en/wiki/${slug}`} className="cta-link">
+        <a href={safeReturnPath} className="cta-link">
           문서로 돌아가기
         </a>
       </div>

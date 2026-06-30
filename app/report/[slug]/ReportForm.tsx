@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { REPORT_MESSAGE_MAX_LENGTH } from "@/lib/submission-limits";
 
 type ClaimOption = {
@@ -10,6 +11,8 @@ type ClaimOption = {
 };
 
 type ReportIntent = "correction" | "source" | "notify";
+
+const SUPPORTED_LOCALES = new Set(["ko", "en", "ja", "zh", "es", "hi", "ar"]);
 
 export function ReportForm({
   documentId,
@@ -28,6 +31,13 @@ export function ReportForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [pointsAwarded, setPointsAwarded] = useState<number | null>(null);
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const queryLang = searchParams.get("lang");
+  const lang = queryLang && SUPPORTED_LOCALES.has(queryLang) ? queryLang : "en";
+  const fallbackReturnPath = `/${lang}/wiki/${slug}`;
+  const returnPath = searchParams.get("return") || fallbackReturnPath;
+  const safeReturnPath = returnPath.startsWith("/") && !returnPath.startsWith("//") ? returnPath : fallbackReturnPath;
 
   const copy = useMemo(() => {
     if (intent === "source") {
@@ -91,6 +101,7 @@ export function ReportForm({
         setSubmitted(true);
         setPointsAwarded(typeof data?.points_awarded === "number" ? data.points_awarded : null);
         form.reset();
+        router.push(safeReturnPath);
       } else {
         setError("제출 실패: " + (data?.error ?? response.status));
       }
@@ -106,7 +117,7 @@ export function ReportForm({
       <div className="submission-success">
         <p>{copy.success}</p>
         {pointsAwarded !== null ? <p className="meta-label">points awarded: {pointsAwarded}</p> : null}
-        <a href={`/en/wiki/${slug}`} className="cta-link">
+        <a href={safeReturnPath} className="cta-link">
           문서로 돌아가기
         </a>
       </div>
