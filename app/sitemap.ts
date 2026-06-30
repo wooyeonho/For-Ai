@@ -5,6 +5,8 @@ import { getDocumentCitationStatus } from "../lib/citation-status";
 import { getAllEntityRefs } from "../lib/entity-profile";
 import { siteUrl, documentPageUrl, entityPageUrl } from "../lib/urls";
 import { normalizeCitationSurface } from "../lib/render";
+import { SUPPORTED_LOCALES } from "../lib/i18n";
+import { buildDocumentAlternateLanguages } from "../lib/seo";
 
 type DocumentSitemapEntry = {
   slug: string;
@@ -43,13 +45,24 @@ async function getSupabaseDocumentEntries(): Promise<DocumentSitemapEntry[]> {
 }
 
 function mergeDocumentEntries(entries: DocumentSitemapEntry[]): DocumentSitemapEntry[] {
-  const byPath = new Map<string, DocumentSitemapEntry>();
+  const bySlug = new Map<string, DocumentSitemapEntry>();
 
   for (const entry of entries) {
-    byPath.set(`${entry.lang}/${entry.slug}`, entry);
+    const existing = bySlug.get(entry.slug);
+    if (!existing) {
+      bySlug.set(entry.slug, entry);
+      continue;
+    }
+
+    bySlug.set(entry.slug, {
+      ...existing,
+      lastModified: existing.lastModified > entry.lastModified ? existing.lastModified : entry.lastModified,
+      canCite: existing.canCite || entry.canCite,
+      sourceCount: Math.max(existing.sourceCount, entry.sourceCount),
+    });
   }
 
-  return Array.from(byPath.values());
+  return Array.from(bySlug.values());
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
@@ -62,12 +75,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.warn("Failed to load Supabase document index for sitemap; falling back to static sitemap.", error);
   }
 
-  const documentPages = documentEntries.map((document) => ({
-    url: documentPageUrl(document.slug, document.lang),
-    lastModified: document.lastModified,
-    changeFrequency: "weekly" as const,
-    priority: document.canCite ? 0.9 : document.sourceCount > 0 ? 0.7 : 0.5,
-  }));
+  const documentPages = documentEntries.flatMap((document) =>
+    SUPPORTED_LOCALES.map((locale) => ({
+      url: documentPageUrl(document.slug, locale),
+      lastModified: document.lastModified,
+      changeFrequency: "weekly" as const,
+      priority: document.canCite ? 0.9 : document.sourceCount > 0 ? 0.7 : 0.5,
+      alternates: {
+        languages: buildDocumentAlternateLanguages(document.slug),
+      },
+    })),
+  );
 
   let entityPages: MetadataRoute.Sitemap = [];
   try {
