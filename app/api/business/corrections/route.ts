@@ -168,25 +168,33 @@ export async function PATCH(request: Request) {
 
   const body = await request.json();
   const correctionId = String(body.correction_id ?? "").trim();
+  const action = String(body.action ?? "").trim();
   const newStatus = String(body.status ?? "").trim();
   const reviewerNote = body.reviewer_note ? String(body.reviewer_note).trim() : null;
 
-  if (!correctionId || !["accepted", "rejected"].includes(newStatus)) {
+  if (!correctionId || (action !== "request_source" && !["accepted", "rejected"].includes(newStatus))) {
     return NextResponse.json(
-      { error: "correction_id and valid status (accepted/rejected) required" },
+      { error: "correction_id and valid status (accepted/rejected) or action=request_source required" },
       { status: 400 },
     );
   }
 
   const now = new Date().toISOString();
+  const update = action === "request_source"
+    ? {
+        status: "new",
+        reviewer_note: reviewerNote ?? "Additional source requested",
+        updated_at: now,
+      }
+    : {
+        status: newStatus,
+        reviewed_at: now,
+        reviewer_note: reviewerNote,
+        updated_at: now,
+      };
   const { data, error } = await sb
     .from("business_corrections")
-    .update({
-      status: newStatus,
-      reviewed_at: now,
-      reviewer_note: reviewerNote,
-      updated_at: now,
-    })
+    .update(update)
     .eq("id", correctionId)
     .select("*")
     .single();
@@ -195,7 +203,8 @@ export async function PATCH(request: Request) {
 
   await logAdminAuditEvent(sb, request, "admin.business_correction.review", {
     correction_id: correctionId,
-    new_status: newStatus,
+    new_status: String(update.status),
+    action: action || "status_update",
     entity_id: data.entity_id,
   });
 

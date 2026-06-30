@@ -121,6 +121,7 @@ create index business_corrections_status_idx on business_corrections(status);
 create index business_corrections_priority_idx on business_corrections(priority);
 
 comment on table business_corrections is 'Claim corrections submitted by verified business profiles. Priority and urgent corrections are reviewed faster but never bypass source verification. Accepted means accepted for human review/application, not verified.';
+comment on column business_corrections.reviewer_note is 'Admin review note. Admins may use this to request source evidence while keeping status=new so the correction remains in the business review queue.';
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- Business Claim Proposals
@@ -378,6 +379,8 @@ alter table business_submitted_claims enable row level security;
 
 comment on column claims.source_of_claim is 'Origin of a canonical claim. independent is default; sponsored/business values require visible labeling.';
 comment on table business_submitted_claims is 'Business-submitted facts waiting for human verification. They are displayed as pending and citation_ready=false; they never overwrite canonical verified claims directly.';
+comment on column business_submitted_claims.citation_ready is 'Always false by constraint. A business-submitted claim can become citation-ready only after independent verification promotes evidence into canonical claims and verification_events.';
+comment on column business_submitted_claims.reviewer_note is 'Admin review note. Admins may request additional source evidence without changing citation_ready=false.';
 
 -- Privacy/retention policy notes:
 -- - Public contributors are identified only by contributor_hash derived with a secret salt; raw IP addresses are never persisted.
