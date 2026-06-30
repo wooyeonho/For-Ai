@@ -10,8 +10,15 @@ interface ImportResult {
   success: boolean;
   imported?: number;
   claims_created?: number;
+  target?: "canonical" | "topic_candidates";
   error?: string;
   validation?: { line: number; missing: string[]; claims: number }[];
+}
+
+interface CatalogFile {
+  file: string;
+  count: number;
+  rows: Record<string, unknown>[];
 }
 
 export default function AdminImportPage() {
@@ -20,6 +27,10 @@ export default function AdminImportPage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ImportResult | null>(null);
   const [parseError, setParseError] = useState("");
+  const [target, setTarget] = useState<"topic_candidates" | "canonical">("topic_candidates");
+  const [catalogFiles, setCatalogFiles] = useState<CatalogFile[]>([]);
+  const [catalogError, setCatalogError] = useState("");
+  const [catalogLoading, setCatalogLoading] = useState(false);
 
   function parseJsonl(raw: string): { rows: Record<string, unknown>[]; error: string } {
     const lines = raw.split("\n").map(l => l.trim()).filter(Boolean);
@@ -32,6 +43,27 @@ export default function AdminImportPage() {
       }
     }
     return { rows, error: "" };
+  }
+
+  async function loadCatalog() {
+    setCatalogError("");
+    setCatalogLoading(true);
+    try {
+      const res = await fetch("/api/admin/import", { headers: { "x-admin-secret": adminSecret } });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { setCatalogError(data.error ?? String(res.status)); return; }
+      setCatalogFiles(Array.isArray(data.files) ? data.files : []);
+    } catch {
+      setCatalogError("카탈로그를 불러오지 못했습니다.");
+    } finally {
+      setCatalogLoading(false);
+    }
+  }
+
+  function appendCatalogRows(rows: Record<string, unknown>[]) {
+    const next = rows.map(row => JSON.stringify(row)).join("\n");
+    setJsonlText(current => current.trim() ? `${current.trim()}\n${next}` : next);
+    setTarget("topic_candidates");
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -52,11 +84,11 @@ export default function AdminImportPage() {
           "x-admin-secret": adminSecret,
           "x-admin-csrf": "1",
         },
-        body: JSON.stringify({ rows }),
+        body: JSON.stringify({ rows, target }),
       });
       const data = await res.json().catch(() => ({}));
       if (res.ok) {
-        setResult({ success: true, imported: data.imported, claims_created: data.claims_created, validation: data.validation });
+        setResult({ success: true, imported: data.imported, claims_created: data.claims_created, target: data.target, validation: data.validation });
         setJsonlText("");
       } else {
         setResult({ success: false, error: data.error ?? String(res.status) });
@@ -76,8 +108,8 @@ export default function AdminImportPage() {
         <p className="eyebrow">For-Ai · Admin</p>
         <h1>Canonical JSONL 일괄 가져오기</h1>
         <p>
-          JSONL(줄당 JSON 1개)을 검증한 뒤 <code>entities → documents → claims</code>에 저장합니다.
-          모든 claim은 <strong>확인 필요 / low / needs_review</strong>로 시작하며, country/jurisdiction 값을 유지합니다.
+          JSONL(줄당 JSON 1개)을 검증한 뒤 seed topic review queue(<code>topic_candidates</code>) 또는 <code>entities → documents → claims</code>에 저장합니다.
+          seed topic의 placeholder claim은 항상 <strong>Needs verification / low / needs_review</strong>로 시작하며, country/category/language/jurisdiction 값을 유지합니다.
         </p>
       </header>
 
@@ -93,7 +125,7 @@ export default function AdminImportPage() {
           {result.success ? (
             <>
               <h2>가져오기 완료</h2>
-              <p>{result.imported}개 문서와 {result.claims_created}개 placeholder claim이 생성되었습니다.</p>
+              <p>{result.imported}개 {result.target === "topic_candidates" ? "seed topic" : "문서"}와 {result.claims_created}개 placeholder claim이 생성되었습니다.</p>
               <p style={{ marginTop: 8 }}>
                 <Link href="/admin/verify-claim" style={{ color: "#2563eb" }}>claim 검증하러 가기 →</Link>
               </p>
@@ -109,7 +141,27 @@ export default function AdminImportPage() {
 
       <section className="registry-panel" aria-labelledby="import-form-title">
         <h2 id="import-form-title">JSONL 입력 {lineCount > 0 && <span style={{ fontWeight: 400, fontSize: 14 }}>({lineCount}개)</span>}</h2>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
+          <button type="button" onClick={loadCatalog} disabled={catalogLoading || !adminSecret}>{catalogLoading ? "불러오는 중..." : "seed catalog 불러오기"}</button>
+          {catalogError && <span style={{ color: "#b91c1c", fontSize: 13 }}>{catalogError}</span>}
+        </div>
+        {catalogFiles.length > 0 && (
+          <div style={{ display: "grid", gap: 8, marginBottom: 16 }}>
+            {catalogFiles.map(file => (
+              <button key={file.file} type="button" onClick={() => appendCatalogRows(file.rows)} style={{ textAlign: "left", background: "#f9fafb", color: "#111827" }}>
+                {file.file} · {file.count} topics 추가
+              </button>
+            ))}
+          </div>
+        )}
         <form onSubmit={handleSubmit} className="registry-form">
+          <label>
+            Import target
+            <select value={target} onChange={e => setTarget(e.target.value as "topic_candidates" | "canonical")}>
+              <option value="topic_candidates">Seed topic review queue (topic_candidates)</option>
+              <option value="canonical">Canonical documents/claims</option>
+            </select>
+          </label>
           <label>
             JSONL (줄당 JSON 1개) <span aria-label="필수">*</span>
             <textarea
@@ -132,14 +184,14 @@ export default function AdminImportPage() {
             placeholder="관리자 비밀키"
           />
           <button type="submit" disabled={loading || lineCount === 0}>
-            {loading ? "등록 중..." : `${lineCount}개 후보 등록`}
+            {loading ? "등록 중..." : `${lineCount}개 ${target === "topic_candidates" ? "seed topic" : "후보"} 등록`}
           </button>
         </form>
       </section>
 
       <section className="registry-panel" aria-labelledby="jsonl-format-guide">
         <h2 id="jsonl-format-guide">JSONL 형식</h2>
-        <p style={{ fontSize: 13, color: "#6b7280", lineHeight: 1.7 }}>필수 필드: <code>entity_id</code>, <code>type</code>, <code>title</code>, <code>slug</code>, <code>category</code>, <code>country</code></p>
+        <p style={{ fontSize: 13, color: "#6b7280", lineHeight: 1.7 }}>필수 필드: <code>entity_id</code>, <code>type</code>, <code>title</code>, <code>slug</code>, <code>category</code>, <code>country</code>. Seed catalog는 country/category/language별 source hints와 review metadata를 포함할 수 있습니다.</p>
         <pre style={{ fontSize: 12, background: "#f9fafb", padding: "10px 12px", borderRadius: 6, overflow: "auto" }}>{`{
   "entity_id": "kr-topic-example-001",
   "type": "administration.documents",
