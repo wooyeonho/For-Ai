@@ -1372,6 +1372,18 @@ textarea::placeholder {
   margin-bottom: 12px;
 }
 
+
+/* Collapsible policy/details blocks */
+details.policy-details summary {
+  cursor: pointer;
+  font-weight: 700;
+  color: var(--text);
+  user-select: none;
+}
+details.policy-details[open] summary {
+  margin-bottom: 10px;
+}
+
 /* Technical metadata collapsed block */
 details.technical-meta summary {
   cursor: pointer;
