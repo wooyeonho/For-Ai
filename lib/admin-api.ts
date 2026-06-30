@@ -321,6 +321,42 @@ export async function logAdminAuditEvent(
   }
 }
 
+
+function adminErrorMessage(error: unknown): string {
+  if (error instanceof Error) return error.message;
+  if (error && typeof error === "object" && "message" in error) {
+    const message = (error as { message?: unknown }).message;
+    if (typeof message === "string") return message;
+  }
+  if (typeof error === "string") return error;
+  return "unknown admin operation failure";
+}
+
+function adminErrorCode(error: unknown): string | null {
+  if (error && typeof error === "object" && "code" in error) {
+    const code = (error as { code?: unknown }).code;
+    if (typeof code === "string" || typeof code === "number") return String(code);
+  }
+  return null;
+}
+
+export function adminErrorResponse(
+  action: string,
+  error: unknown,
+  status: number,
+  targetId?: string | null
+): NextResponse {
+  console.error("[admin-api] operation failed", {
+    action,
+    target_id: targetId ?? null,
+    status,
+    message: adminErrorMessage(error),
+    code: adminErrorCode(error),
+  });
+
+  return NextResponse.json({ error: "operation_failed", action }, { status });
+}
+
 export async function requireAdmin(request: Request, action: string): Promise<NextResponse | null> {
   if (rateLimited(request)) {
     console.info("[admin-audit]", JSON.stringify({ action, allowed: false, reason: "rate_limited", at: new Date().toISOString() }));

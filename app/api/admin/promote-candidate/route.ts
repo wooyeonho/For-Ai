@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { logAdminAuditEvent, requireAdmin, supabaseAdmin } from "@/lib/admin-api";
+import { adminErrorResponse, logAdminAuditEvent, requireAdmin, supabaseAdmin } from "@/lib/admin-api";
 import { UNKNOWN_FACT_TEXT } from "@/lib/citation-status";
 
 function stableId(prefix: string, slug: string): string {
@@ -16,7 +16,7 @@ export async function POST(request: Request) {
   if (!candidateId) return NextResponse.json({ error: "candidateId 필요" }, { status: 400 });
 
   const sb = supabaseAdmin();
-  if (!sb) return NextResponse.json({ error: "SUPABASE_SERVICE_ROLE_KEY not configured" }, { status: 500 });
+  if (!sb) return adminErrorResponse("admin.candidates.promote.supabase_client", new Error("SUPABASE_SERVICE_ROLE_KEY not configured"), 500, candidateId);
 
   const { data: candidate, error: fetchErr } = await sb
     .from("topic_candidates")
@@ -24,7 +24,8 @@ export async function POST(request: Request) {
     .eq("id", candidateId)
     .single();
 
-  if (fetchErr || !candidate) return NextResponse.json({ error: "후보를 찾을 수 없습니다" }, { status: 404 });
+  if (fetchErr) return adminErrorResponse("admin.candidates.promote.fetch_candidate", fetchErr, 404, candidateId);
+  if (!candidate) return NextResponse.json({ error: "후보를 찾을 수 없습니다" }, { status: 404 });
   if (candidate.status === "promoted") return NextResponse.json({ error: "이미 등록된 후보입니다" }, { status: 409 });
   if (candidate.status !== "generated") {
     return NextResponse.json({ error: `AI claim generation이 완료된 후보만 등록 가능합니다 (현재: ${candidate.status})` }, { status: 400 });
@@ -39,21 +40,23 @@ export async function POST(request: Request) {
   const listingId = stableId("listing", `${slug}-${lang}`);
 
   // Check for duplicate document
-  const { data: existingDoc } = await sb
+  const { data: existingDoc, error: existingDocErr } = await sb
     .from("documents")
     .select("id, slug")
     .eq("slug", slug)
     .eq("lang", lang)
     .eq("country", country)
     .maybeSingle();
+  if (existingDocErr) return adminErrorResponse("admin.candidates.promote.check_document", existingDocErr, 500, documentId);
   if (existingDoc) return NextResponse.json({ error: `slug "${slug}" 이미 존재합니다` }, { status: 409 });
 
   // Check for duplicate entity
-  const { data: existingEntity } = await sb
+  const { data: existingEntity, error: existingEntityErr } = await sb
     .from("entities")
     .select("id")
     .eq("id", entityId)
     .maybeSingle();
+  if (existingEntityErr) return adminErrorResponse("admin.candidates.promote.check_entity", existingEntityErr, 500, entityId);
   if (existingEntity) return NextResponse.json({ error: `entity "${entityId}" 이미 존재합니다` }, { status: 409 });
 
   // ── Insert entity ────────────────────────────────────────────────────────
@@ -64,7 +67,7 @@ export async function POST(request: Request) {
     country,
   });
   if (entityErr) {
-    return NextResponse.json({ error: "entity 생성 실패", detail: entityErr.message }, { status: 500 });
+    return adminErrorResponse("admin.candidates.promote.entity_create", entityErr, 500, entityId);
   }
 
   // ── Insert document ──────────────────────────────────────────────────────
@@ -92,7 +95,7 @@ export async function POST(request: Request) {
   });
   if (docErr) {
     await sb.from("entities").delete().eq("id", entityId);
-    return NextResponse.json({ error: "document 생성 실패", detail: docErr.message }, { status: 500 });
+    return adminErrorResponse("admin.candidates.promote.document_create", docErr, 500, documentId);
   }
 
   // ── Insert claims ────────────────────────────────────────────────────────
@@ -137,7 +140,7 @@ export async function POST(request: Request) {
     if (claimsErr) {
       await sb.from("documents").delete().eq("id", documentId);
       await sb.from("entities").delete().eq("id", entityId);
-      return NextResponse.json({ error: "claims 생성 실패", detail: claimsErr.message }, { status: 500 });
+      return adminErrorResponse("admin.candidates.promote.claims_create", claimsErr, 500, documentId);
     }
   }
 
@@ -161,7 +164,7 @@ export async function POST(request: Request) {
     }
     await sb.from("documents").delete().eq("id", documentId);
     await sb.from("entities").delete().eq("id", entityId);
-    return NextResponse.json({ error: "listing 생성 실패", detail: listingErr.message }, { status: 500 });
+    return adminErrorResponse("admin.candidates.promote.listing_create", listingErr, 500, listingId);
   }
 
   // ── Mark candidate as promoted ───────────────────────────────────────────
@@ -171,7 +174,7 @@ export async function POST(request: Request) {
     .eq("id", candidateId);
   if (promoteErr) {
     // Non-critical: entity/doc/claims/listing were created. Log but don't roll back.
-    console.error("[promote-candidate] status update failed:", promoteErr.message);
+    adminErrorResponse("admin.candidates.promote.status_update", promoteErr, 500, candidateId);
   }
 
   await logAdminAuditEvent(sb, request, "admin.candidates.promote", {

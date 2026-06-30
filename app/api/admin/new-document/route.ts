@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { logAdminAuditEvent, requireAdmin, supabaseAdmin } from "@/lib/admin-api";
+import { adminErrorResponse, logAdminAuditEvent, requireAdmin, supabaseAdmin } from "@/lib/admin-api";
 
 function stableId(prefix: string, slug: string): string {
   return `${prefix}-${slug}`.replace(/[^a-zA-Z0-9_-]+/g, "-").slice(0, 120);
@@ -20,7 +20,7 @@ export async function POST(request: Request) {
   if (adminError) return adminError;
 
   const sb = supabaseAdmin();
-  if (!sb) return NextResponse.json({ error: "SUPABASE_SERVICE_ROLE_KEY not configured" }, { status: 500 });
+  if (!sb) return adminErrorResponse("admin.document.supabase_client", new Error("SUPABASE_SERVICE_ROLE_KEY not configured"), 500);
 
   let body: Record<string, unknown>;
   try {
@@ -57,10 +57,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "entity_id, slug, lang, country, title, category are required" }, { status: 400 });
   }
 
-  const { data: entity } = await sb.from("entities").select("id, country").eq("id", entity_id).maybeSingle();
+  const { data: entity, error: entityErr } = await sb.from("entities").select("id, country").eq("id", entity_id).maybeSingle();
+  if (entityErr) return adminErrorResponse("admin.document.check_entity", entityErr, 500, entity_id);
   if (!entity) return NextResponse.json({ error: `entity "${entity_id}" not found` }, { status: 404 });
 
-  const { data: existingDoc } = await sb.from("documents").select("id").eq("slug", slug).eq("lang", lang).eq("country", country).maybeSingle();
+  const { data: existingDoc, error: existingDocErr } = await sb.from("documents").select("id").eq("slug", slug).eq("lang", lang).eq("country", country).maybeSingle();
+  if (existingDocErr) return adminErrorResponse("admin.document.check_existing", existingDocErr, 500, slug);
   if (existingDoc) return NextResponse.json({ error: `document slug "${slug}" (${lang}) already exists` }, { status: 409 });
 
   const documentId = stableId("doc", `${slug}-${lang}`);
@@ -91,7 +93,7 @@ export async function POST(request: Request) {
       },
     },
   });
-  if (docErr) return NextResponse.json({ error: docErr.message }, { status: 500 });
+  if (docErr) return adminErrorResponse("admin.document.create", docErr, 500, documentId);
 
   let claimsCreated = 0;
   if (claims.length > 0) {
@@ -109,12 +111,12 @@ export async function POST(request: Request) {
     const { error: claimsErr } = await sb.from("claims").insert(claimRows);
     if (claimsErr) {
       await sb.from("documents").delete().eq("id", documentId);
-      return NextResponse.json({ error: claimsErr.message }, { status: 500 });
+      return adminErrorResponse("admin.document.claims_create", claimsErr, 500, documentId);
     }
     claimsCreated = claimRows.length;
   }
 
-  await sb.from("listings").insert({
+  const { error: listingErr } = await sb.from("listings").insert({
     id: listingId,
     entity_id,
     document_id: documentId,
@@ -125,6 +127,13 @@ export async function POST(request: Request) {
     status: "ai_draft",
     confidence: "low",
   });
+  if (listingErr) {
+    if (claimsCreated > 0) {
+      await sb.from("claims").delete().eq("document_id", documentId);
+    }
+    await sb.from("documents").delete().eq("id", documentId);
+    return adminErrorResponse("admin.document.listing_create", listingErr, 500, listingId);
+  }
 
   await logAdminAuditEvent(sb, request, "admin.document.create", {
     entity_id,

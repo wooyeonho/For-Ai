@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { logAdminAuditEvent, requireAdmin, supabaseAdmin } from "@/lib/admin-api";
+import { adminErrorResponse, logAdminAuditEvent, requireAdmin, supabaseAdmin } from "@/lib/admin-api";
 
 export async function GET(request: Request) {
   const adminError = await requireAdmin(request, "posts.list");
   if (adminError) return adminError;
 
   const sb = supabaseAdmin();
-  if (!sb) return NextResponse.json({ error: "SUPABASE_SERVICE_ROLE_KEY not configured" }, { status: 500 });
+  if (!sb) return adminErrorResponse("admin.posts.supabase_client", new Error("SUPABASE_SERVICE_ROLE_KEY not configured"), 500);
 
   const url = new URL(request.url);
   const status = url.searchParams.get("status") ?? "all";
@@ -25,7 +25,7 @@ export async function GET(request: Request) {
   }
 
   const { data, error } = await query;
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return adminErrorResponse("admin.posts.list", error, 500);
 
   return NextResponse.json({ posts: data ?? [], count: data?.length ?? 0 });
 }
@@ -35,7 +35,7 @@ export async function PATCH(request: Request) {
   if (adminError) return adminError;
 
   const sb = supabaseAdmin();
-  if (!sb) return NextResponse.json({ error: "SUPABASE_SERVICE_ROLE_KEY not configured" }, { status: 500 });
+  if (!sb) return adminErrorResponse("admin.posts.supabase_client", new Error("SUPABASE_SERVICE_ROLE_KEY not configured"), 500);
 
   let body: Record<string, unknown>;
   try {
@@ -121,7 +121,7 @@ export async function PATCH(request: Request) {
   }
 
   const { error } = await sb.from("community_posts").update(updates).eq("id", id);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return adminErrorResponse("admin.posts.update", error, 500, id);
 
   await logAdminAuditEvent(sb, request, "admin.posts.update", { post_id: id, ...updates });
 
@@ -133,7 +133,7 @@ export async function POST(request: Request) {
   if (adminError) return adminError;
 
   const sb = supabaseAdmin();
-  if (!sb) return NextResponse.json({ error: "SUPABASE_SERVICE_ROLE_KEY not configured" }, { status: 500 });
+  if (!sb) return adminErrorResponse("admin.posts.supabase_client", new Error("SUPABASE_SERVICE_ROLE_KEY not configured"), 500);
 
   let body: Record<string, unknown>;
   try {
@@ -159,7 +159,7 @@ export async function POST(request: Request) {
     status: "published",
   }).select("id, created_at").single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return adminErrorResponse("admin.posts.create", error, 500);
 
   await logAdminAuditEvent(sb, request, "admin.posts.create", { post_id: data.id, author_type: authorType });
 

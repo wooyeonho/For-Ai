@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { AdminSecretField, useAdminSecret } from "../AdminSecretProvider";
+import { formatAdminError } from "../admin-error";
 
 interface Post {
   id: string;
@@ -54,7 +55,7 @@ export default function AdminPostsPage() {
       const r = await fetch(`/api/admin/posts?${params.toString()}`);
       const d = await r.json();
       setPosts(Array.isArray(d.posts) ? d.posts : []);
-      if (!r.ok) flash(d.error ?? "조회 실패", false);
+      if (!r.ok) flash(formatAdminError(d, "조회 실패"), false);
     } catch {
       flash("네트워크 오류", false);
     }
@@ -88,7 +89,7 @@ export default function AdminPostsPage() {
     });
     const d = await r.json();
     if (r.ok) { flash(`상태 변경: ${status}`); load(); }
-    else flash(d.error ?? "실패", false);
+    else flash(formatAdminError(d, "실패"), false);
   }
 
   async function createPost(e: React.FormEvent) {
@@ -111,7 +112,7 @@ export default function AdminPostsPage() {
         setNewContent("");
         setShowCreate(false);
         load();
-      } else flash(d.error ?? "등록 실패", false);
+      } else flash(formatAdminError(d, "등록 실패"), false);
     } catch {
       flash("네트워크 오류", false);
     }

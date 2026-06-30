@@ -12,7 +12,7 @@ export async function GET(request: Request) {
   const adminError = await requireAdmin(request, "candidates.read");
   if (adminError) return adminError;
   const sb = supabaseAdmin();
-  if (!sb) return NextResponse.json({ error: "SUPABASE_SERVICE_ROLE_KEY not configured" }, { status: 500 });
+  if (!sb) return adminErrorResponse("admin.candidates.supabase_client", new Error("SUPABASE_SERVICE_ROLE_KEY not configured"), 500);
 
   const { searchParams } = new URL(request.url);
   const status = searchParams.get("status") ?? "new";
@@ -22,7 +22,7 @@ export async function GET(request: Request) {
   if (sourceHints === "with") query = query.not("source_hints", "eq", "[]").not("source_hints", "is", null);
   if (sourceHints === "without") query = query.or("source_hints.eq.[],source_hints.is.null");
   const { data, error } = await query;
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return adminErrorResponse("admin.candidates.list", error, 500);
   await logAdminAuditEvent(sb, request, "admin.candidates.list", {
     status,
     result_count: data?.length ?? 0,
@@ -46,7 +46,7 @@ export async function POST(request: Request) {
   const adminError = await requireAdmin(request, "candidates.bulk_import");
   if (adminError) return adminError;
   const sb = supabaseAdmin();
-  if (!sb) return NextResponse.json({ error: "SUPABASE_SERVICE_ROLE_KEY not configured" }, { status: 500 });
+  if (!sb) return adminErrorResponse("admin.candidates.supabase_client", new Error("SUPABASE_SERVICE_ROLE_KEY not configured"), 500);
 
   let body: Record<string, unknown>;
   try {
@@ -89,7 +89,7 @@ export async function POST(request: Request) {
   })));
 
   const { error, data } = await sb.from("topic_candidates").insert(insertRows).select("id, slug");
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return adminErrorResponse("admin.candidates.bulk_import", error, 500);
 
   await logAdminAuditEvent(sb, request, "admin.candidates.bulk_import", {
     imported_count: data?.length ?? 0,
@@ -101,7 +101,7 @@ export async function PATCH(request: Request) {
   const adminError = await requireAdmin(request, "candidates.update");
   if (adminError) return adminError;
   const sb = supabaseAdmin();
-  if (!sb) return NextResponse.json({ error: "SUPABASE_SERVICE_ROLE_KEY not configured" }, { status: 500 });
+  if (!sb) return adminErrorResponse("admin.candidates.supabase_client", new Error("SUPABASE_SERVICE_ROLE_KEY not configured"), 500);
 
   const body = await request.json();
   const id = String(body.id ?? "").trim();
@@ -116,7 +116,7 @@ export async function PATCH(request: Request) {
     .select("*")
     .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return adminErrorResponse("admin.candidates.update_status", error, 500, id);
   await logAdminAuditEvent(sb, request, "admin.candidates.update_status", {
     candidate_id: id,
     status,

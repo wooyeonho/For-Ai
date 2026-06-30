@@ -40,7 +40,7 @@ export default function NewEntityPage() {
         setResult({ success: true, entity_id: data.entity_id });
         setId(""); setType(""); setCanonicalName(""); setRegion(""); setCity("");
       } else {
-        setResult({ success: false, error: data.error ?? String(res.status) });
+        setResult({ success: false, error: formatAdminError(data, String(res.status)) });
       }
     } catch {
       setResult({ success: false, error: "네트워크 오류. 잠시 후 다시 시도해 주세요." });
