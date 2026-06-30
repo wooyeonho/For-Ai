@@ -237,6 +237,7 @@ export async function GET(request: Request) {
     const totalApiCiteCalls = stats.reduce((sum, r) => sum + Number(r.api_cite_count ?? 0), 0);
     const totalCitationCopyClicks = stats.reduce((sum, r) => sum + Number(r.citation_copy_count ?? 0), 0);
     const totalReportSubmissions = stats.reduce((sum, r) => sum + Number(r.report_submission_count ?? 0), 0);
+    const aiCitationDocuments = stats.filter((r) => Number(r.ai_citation_count ?? 0) > 0).length;
     const topStats = stats
       .filter((r) =>
         Number(r.view_count ?? 0) +
@@ -309,6 +310,8 @@ export async function GET(request: Request) {
       source_check_failures: sourceCheckFailures,
       business_verification_requests: sumOptional(pendingBusinessProfiles, pendingBusinessCorrections),
       api_abuse_warnings: apiAbuseWarnings,
+      ai_citation_documents: aiCitationDocuments,
+      total_ai_citations: totalCitations,
     });
 
     return NextResponse.json({
@@ -379,6 +382,9 @@ export async function GET(request: Request) {
           source_check_failures: sourceCheckFailures,
           business_verification_requests: sumOptional(pendingBusinessProfiles, pendingBusinessCorrections),
           api_abuse_warnings: apiAbuseWarnings,
+          high_risk_items: (highRiskCandidates?.length ?? 0) + highRiskDocuments.length,
+          ai_citation_documents: aiCitationDocuments,
+          total_ai_citations: totalCitations,
         },
         recent_admin_actions: recentAdminActions,
       },
