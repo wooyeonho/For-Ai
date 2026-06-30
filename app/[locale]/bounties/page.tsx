@@ -29,6 +29,7 @@ export default async function BountiesPage({ params }: { params: Promise<{ local
   const t = getTranslations(locale as SupportedLocale);
   const openCount = SAMPLE_CLAIM_BOUNTIES.filter((bounty) => bounty.status === "open").length;
   const sponsoredCount = SAMPLE_CLAIM_BOUNTIES.filter(isSponsoredBounty).length;
+  const t = getTranslations(locale);
 
   return (
     <article>

@@ -122,13 +122,13 @@ export default async function LeaderboardPage({ params }: { params: Promise<Lead
         <p className="eyebrow">{t.leaderboard.eyebrow}</p>
         <h1>{t.leaderboard.title}</h1>
         <p style={{ maxWidth: 780 }}>
-          This leaderboard rewards accepted, source-backed, claim-level work. It intentionally excludes raw submission count so spam, repeated URLs, and noisy public intake cannot outrank verified contributions.
+          {t.leaderboard.description}
         </p>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
-          <span className="badge badge-verified">accepted sources × {WEIGHTS.accepted_sources}</span>
-          <span className="badge badge-verified">verified claims × {WEIGHTS.verified_claims}</span>
-          <span className="badge badge-warning">stale fixes × {WEIGHTS.stale_fixes}</span>
-          <span className="badge">country coverage × {WEIGHTS.country_coverage}</span>
+          <span className="badge badge-verified">{t.leaderboard.acceptedSources} × {WEIGHTS.accepted_sources}</span>
+          <span className="badge badge-verified">{t.leaderboard.verifiedClaims} × {WEIGHTS.verified_claims}</span>
+          <span className="badge badge-warning">{t.leaderboard.staleFixes} × {WEIGHTS.stale_fixes}</span>
+          <span className="badge">{t.leaderboard.countryCoverage} × {WEIGHTS.country_coverage}</span>
         </div>
       </header>
 
@@ -137,10 +137,10 @@ export default async function LeaderboardPage({ params }: { params: Promise<Lead
         <h2 id="leaderboard-ranking">{t.leaderboard.currentRanking}</h2>
         {!hasLiveData ? (
           <p className="stat-note">
-            Live contributor rows require the server-side Supabase service role. The public page still renders the scoring policy statically without exposing edits, reports, hallucination_reports, or raw contributor hashes.
+            {t.leaderboard.liveDataRequired}
           </p>
         ) : leaderboard.length === 0 ? (
-          <p className="stat-note">No accepted contributor activity is eligible for ranking yet.</p>
+          <p className="stat-note">{t.leaderboard.noEligibleActivity}</p>
         ) : (
           <ol className="registry-index">
             {leaderboard.map((entry, index) => (
@@ -148,16 +148,16 @@ export default async function LeaderboardPage({ params }: { params: Promise<Lead
                 <div className="registry-row-main">
                   <strong className="registry-row-title">#{index + 1} {displayContributor(entry.contributorHash)}</strong>
                   <span className="registry-row-entity">
-                    {entry.countries.length} countries · {entry.categories.length} categories · abuse-adjusted score {entry.score}
+                    {entry.countries.length} {t.leaderboard.countries} · {entry.categories.length} {t.leaderboard.categories} · {t.leaderboard.abuseAdjustedScore} {entry.score}
                   </span>
                   <span className="meta-label">
-                    accepted sources {entry.acceptedSources}, verified claims {entry.verifiedClaims}, stale fixes {entry.staleFixes}, accepted hallucination reports {entry.acceptedHallucinations}
+                    {t.leaderboard.acceptedSources} {entry.acceptedSources}, {t.leaderboard.verifiedClaims} {entry.verifiedClaims}, {t.leaderboard.staleFixes} {entry.staleFixes}, {t.leaderboard.acceptedHallucinationReports} {entry.acceptedHallucinations}
                   </span>
                 </div>
                 <div className="registry-row-meta">
-                  <span className="badge badge-verified">{entry.score} pts</span>
-                  {entry.rejectedOrSpam > 0 ? <span className="badge badge-warning">moderation penalties {entry.rejectedOrSpam}</span> : null}
-                  {entry.duplicateUrlOverflow > 0 ? <span className="badge badge-warning">duplicate URL cap {entry.duplicateUrlOverflow}</span> : null}
+                  <span className="badge badge-verified">{entry.score} {t.leaderboard.points}</span>
+                  {entry.rejectedOrSpam > 0 ? <span className="badge badge-warning">{t.leaderboard.moderationPenalties} {entry.rejectedOrSpam}</span> : null}
+                  {entry.duplicateUrlOverflow > 0 ? <span className="badge badge-warning">{t.leaderboard.duplicateUrlCap} {entry.duplicateUrlOverflow}</span> : null}
                 </div>
               </li>
             ))}
@@ -198,7 +198,7 @@ export default async function LeaderboardPage({ params }: { params: Promise<Lead
           <li>Claim verified from contribution: 20 points after admin verification approval.</li>
           <li>Hallucination report accepted: 10 points after admin acceptance.</li>
         </ul>
-        <p><Link href={`/${locale}/quests`}>View country quests and badge progress</Link></p>
+        <p><Link href={`/${locale}/quests`}>{t.leaderboard.viewQuests}</Link></p>
       </section>
 
       <nav className="registry-panel" aria-labelledby="leaderboard-actions">

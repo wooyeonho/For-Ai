@@ -60,6 +60,7 @@ export default async function WikiDocumentPage({
 
   const { entity, document, claims } = bundle;
   const t = getTranslations(locale as SupportedLocale);
+  const tw = (key: string, fallback: string) => (t.wiki as Record<string, string>)[key] ?? fallback;
   const el = getEntityLabels(locale as SupportedLocale);
   const docData = document.data as Record<string, unknown>;
   const directAnswer = getRenderedDirectAnswer(bundle);
@@ -84,12 +85,12 @@ export default async function WikiDocumentPage({
   const isCommercePolicy = document.template === "commerce_policy";
   const riskDisclaimer = getBundleRiskDisclaimer(bundle);
   const topCitationLabel = citationStatus.freshness === "stale"
-    ? "Stale"
+    ? tw("stale", "Stale")
     : citationStatus.isVerifiedDocument
-      ? "Citation-ready"
+      ? tw("citationReady", "Citation-ready")
       : citationStatus.verifiedClaims > 0
-        ? "Mixed"
-        : "Needs verification";
+        ? tw("mixed", "Mixed")
+        : tw("needsVerification", "Needs verification");
   const topCitationClass = topCitationLabel === "Citation-ready"
     ? "document-citation-status document-citation-status--ready"
     : topCitationLabel === "Stale"
@@ -181,9 +182,9 @@ export default async function WikiDocumentPage({
           {isPromoted ? t.wiki.aiGenerated : t.wiki.claimRegistry}
         </p>
         <h1>{document.title}</h1>
-        <div className={topCitationClass} aria-label="Document citation status">
+        <div className={topCitationClass} aria-label={tw("documentCitationStatus", "Document citation status")}>
           <strong>{topCitationLabel}</strong>
-          <span>{citationStatus.verifiedClaims}/{citationStatus.totalClaims} citation-ready · freshness: {citationStatus.freshness}</span>
+          <span>{citationStatus.verifiedClaims}/{citationStatus.totalClaims} {tw("citationReadyLower", "citation-ready")} · {tw("freshness", "freshness")}: {citationStatus.freshness}</span>
         </div>
         <dl className="direct-answer-meta" aria-label="Top citation metadata">
           <div><dt>{t.claims.lastVerified}</dt><dd>{citationStatus.oldestVerifiedAt ?? directAnswer.last_verified_at ?? "Needs verification"}</dd></div>
@@ -234,9 +235,9 @@ export default async function WikiDocumentPage({
           <h2 id="unverified-document-warning" style={{ marginTop: 0 }}>Not citation-ready</h2>
           <p>Do not cite this page as fact. It is readable for review only.</p>
           <ul className="link-list">
-            <li>Document status: <strong>{document.status}</strong></li>
-            <li>Citation-ready claims: <strong>{citationStatus.verifiedClaims}/{citationStatus.totalClaims}</strong></li>
-            <li>Required before citation: document status <strong>verified</strong> and every claim verified with source-backed evidence.</li>
+            <li>{tw("documentStatus", "Document status")}: <strong>{document.status}</strong></li>
+            <li>{tw("citationReadyClaimsPlain", "Citation-ready claims")}: <strong>{citationStatus.verifiedClaims}/{citationStatus.totalClaims}</strong></li>
+            <li>{tw("requiredBeforeCitation", "Required before citation: document status")} <strong>verified</strong> {tw("everyClaimVerified", "and every claim verified with source-backed evidence.")}</li>
           </ul>
         </section>
       )}
@@ -274,7 +275,7 @@ export default async function WikiDocumentPage({
           <ul className="link-list">
             <li>country: <strong>{document.country || entity.country}</strong></li>
             <li>jurisdiction: <strong>{claims.find((claim) => claim.jurisdiction)?.jurisdiction ?? entity.country}</strong></li>
-            {freshnessTtlDays && <li>freshness TTL: <strong>{freshnessTtlDays} days</strong></li>}
+            {freshnessTtlDays && <li>{tw("freshnessTtl", "freshness TTL")}: <strong>{freshnessTtlDays} days</strong></li>}
           </ul>
         </details>
       )}
@@ -293,9 +294,9 @@ export default async function WikiDocumentPage({
 
       {isGovernmentFeeTemplate && (
         <section className="registry-panel" aria-labelledby="government-fee-template">
-          <p className="eyebrow">Government fee template</p>
+          <p className="eyebrow">{tw("governmentFeeTemplate", "Government fee template")}</p>
           <h2 id="government-fee-template">{t.wiki.governmentFeeDisclaimer}</h2>
-          <ul className="link-list" aria-label="Standard government fee claim field paths">
+          <ul className="link-list" aria-label={tw("standardGovernmentFeeFieldPaths", "Standard government fee claim field paths")}>
             {standardGovernmentFeeFieldPaths.map((fieldPath) => (
               <li key={fieldPath}><code>{fieldPath}</code></li>
             ))}
@@ -334,7 +335,7 @@ export default async function WikiDocumentPage({
 
       {directAnswer.related_questions.length > 0 && (
         <section className="registry-panel" aria-labelledby="related-questions">
-          <h2 id="related-questions">Related questions</h2>
+          <h2 id="related-questions">{tw("relatedQuestions", "Related questions")}</h2>
           <ul className="link-list">
             {directAnswer.related_questions.map((question) => (
               <li key={question}>{question}</li>
@@ -348,10 +349,10 @@ export default async function WikiDocumentPage({
         <summary>{t.wiki.citationStatus}</summary>
         <p>
           {t.wiki.citationDocument} <strong>{citationStatus.label}</strong>. {t.wiki.citationReadyClaims}{" "}
-          {citationStatus.verifiedClaims}/{citationStatus.totalClaims}. Freshness: <strong>{citationStatus.freshness}</strong>
+          {citationStatus.verifiedClaims}/{citationStatus.totalClaims}. {tw("freshnessCapital", "Freshness")}: <strong>{citationStatus.freshness}</strong>
           {" "}(TTL {citationStatus.freshnessWindowDays} days; {citationStatus.freshnessPolicy.reason}).
           {citationStatus.isVerifiedDocument && citationStatus.freshness === "stale" && (
-            <strong> Needs recheck: oldest last verified date is {citationStatus.oldestVerifiedAt ?? "unknown"}.</strong>
+            <strong> {tw("needsRecheck", "Needs recheck: oldest last verified date is")} {citationStatus.oldestVerifiedAt ?? tw("unknown", "unknown")}.</strong>
           )}
         </p>
         <ul className="link-list">
