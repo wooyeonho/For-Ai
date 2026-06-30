@@ -20,7 +20,11 @@ export function getLocalePath(pathname: string, locale: string): string {
     return `/${locale}/wiki/${identifier}`;
   }
 
-  // Non-locale pages (homepage, api-docs, community, etc.) stay as-is
+  if (segments.length === 0) {
+    return `/${locale}`;
+  }
+
+  // Non-locale pages (api-docs, community, etc.) stay as-is
   return pathname;
 }
 

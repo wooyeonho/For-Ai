@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
 import { getAllRegistryBundles, isVerifiedDocumentBundle, partitionRegistryBundles } from "../lib/data";
+import type { SupportedLocale } from "../lib/i18n";
 import type { RegistryDocumentBundle } from "../lib/types";
 import HomeSearch from "./components/HomeSearch";
 
@@ -240,7 +241,7 @@ async function getPopularDocs(): Promise<PopularDoc[]> {
 
 export const revalidate = 60;
 
-export default async function HomePage() {
+export async function HomePageContent({ locale = "en" }: { locale?: SupportedLocale } = {}) {
   const bundles = getAllRegistryBundles();
   const [docs, popularDocs] = await Promise.all([getAllDocs(), getPopularDocs()]);
 
@@ -261,6 +262,7 @@ export default async function HomePage() {
   const { verified: verifiedDocuments } = partitionRegistryBundles(sorted);
   const groupedDocuments = groupedRegistryBundles(sorted);
   const primaryVerticalDocuments = verifiedDocuments.filter((bundle) => verticalForBundle(bundle)?.key === "public-civic");
+  const registryHref = (slug: string) => `/${locale}/wiki/${slug}`;
 
   return (
     <div className="home">
@@ -444,7 +446,7 @@ export default async function HomePage() {
             return (
               <li key={b.document.slug} className="registry-row">
                 <div className="registry-row-main">
-                  <Link href={`/en/wiki/${b.document.slug}`} className="registry-row-title">
+                  <Link href={registryHref(b.document.slug)} className="registry-row-title">
                     {b.document.title}
                   </Link>
                   <span className="registry-row-entity">{b.entity.canonical_name}</span>
@@ -467,7 +469,7 @@ export default async function HomePage() {
             {popularDocs.map((d, i) => (
               <li key={d.document_id} className="registry-row">
                 <div className="registry-row-main">
-                  <Link href={`/en/wiki/${d.slug}`} className="registry-row-title">
+                  <Link href={registryHref(d.slug ?? "")} className="registry-row-title">
                     {i + 1}. {d.title}
                   </Link>
                 </div>
@@ -486,7 +488,7 @@ export default async function HomePage() {
               return (
                 <li key={b.document.slug} className="registry-row">
                   <div className="registry-row-main">
-                    <Link href={`/en/wiki/${b.document.slug}`} className="registry-row-title">
+                    <Link href={registryHref(b.document.slug)} className="registry-row-title">
                       {b.document.title}
                     </Link>
                     <span className="registry-row-entity">Citation stats are not available yet</span>
@@ -506,7 +508,7 @@ export default async function HomePage() {
 
       {/* Search */}
       <section className="section">
-        <HomeSearch docs={docs} />
+        <HomeSearch docs={docs} locale={locale} />
       </section>
 
       <section className="section" aria-labelledby="ai-wrong-questions">
@@ -546,7 +548,7 @@ export default async function HomePage() {
                   return (
                     <li key={b.document.slug} className="registry-row">
                       <div className="registry-row-main">
-                        <Link href={`/en/wiki/${b.document.slug}`} className="registry-row-title">
+                        <Link href={registryHref(b.document.slug)} className="registry-row-title">
                           {b.document.title}
                         </Link>
                         <span className="registry-row-entity">{b.entity.canonical_name}</span>
@@ -565,4 +567,9 @@ export default async function HomePage() {
       </section>
     </div>
   );
+}
+
+
+export default async function HomePage() {
+  return <HomePageContent locale="en" />;
 }
