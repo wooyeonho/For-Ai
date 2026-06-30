@@ -33,6 +33,7 @@ type RecentAdminAction = {
 };
 
 type ReviewPayload = {
+  recommendations?: unknown[];
   counts?: {
     claims_needs_review?: number;
     candidates_new?: number;
@@ -142,7 +143,7 @@ export default function AdminDashboardPage() {
       detail: "운영자가 최근 처리한 작업을 확인합니다.",
       tone: "#111827",
     },
-  ], [dashboardCounts, data?.dashboard?.recent_admin_actions?.length, fallbackCounts]);
+  ], [dashboardCounts, data?.dashboard?.recent_admin_actions?.length, data?.recommendations?.length, fallbackCounts]);
 
   const load = useCallback(async () => {
     setLoading(true);
