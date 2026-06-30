@@ -313,7 +313,7 @@ export default async function WikiDocumentPage({
       </nav>
 
       {/* Community posts */}
-      <WikiPostSection documentId={document.id} />
+      <WikiPostSection documentId={document.id} claims={claims.map((claim) => ({ id: claim.id, label: claim.field_path }))} />
 
       {/* Technical metadata — collapsed by default */}
       <details className="technical-meta registry-panel">

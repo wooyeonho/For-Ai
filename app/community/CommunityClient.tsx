@@ -5,6 +5,7 @@ import Link from "next/link";
 interface Post {
   id: string;
   document_id: string | null;
+  claim_id?: string | null;
   author_type: "user" | "ai" | "admin";
   author_name: string;
   content: string;
@@ -17,6 +18,12 @@ interface Post {
 const AUTHOR_ICON: Record<string, string> = { user: "👤", ai: "✦", admin: "🛡️" };
 const AUTHOR_LABEL: Record<string, string> = { user: "사용자", ai: "AI", admin: "관리자" };
 const POST_REVIEW_MESSAGE = "글이 검토 대기열에 등록되었습니다. 관리자 승인 전에는 공개 목록에 표시되지 않습니다. 승인 후 게시됩니다.";
+const STATUS_HELP: Record<string, string> = {
+  pending: "검토 대기: 제출은 접수되었지만 아직 공개되지 않았습니다.",
+  published: "게시됨: 공개 목록과 관련 wiki page에 표시됩니다.",
+  hidden: "숨김: 운영 정책에 따라 공개되지 않습니다.",
+  spam: "스팸: 스팸으로 판단되어 공개되지 않습니다.",
+};
 
 export default function CommunityClient({ documents }: { documents: { id: string; title: string; slug: string }[] }) {
   const [posts, setPosts] = useState<Post[]>([]);
@@ -28,6 +35,7 @@ export default function CommunityClient({ documents }: { documents: { id: string
   const [authorName, setAuthorName] = useState("");
   const [content, setContent] = useState("");
   const [documentId, setDocumentId] = useState("");
+  const [claimId, setClaimId] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
 
@@ -65,6 +73,7 @@ export default function CommunityClient({ documents }: { documents: { id: string
           author_name: authorName.trim() || undefined,
           content: content.trim(),
           document_id: documentId || null,
+          claim_id: claimId.trim() || null,
         }),
       });
       const d = await r.json();
@@ -73,18 +82,21 @@ export default function CommunityClient({ documents }: { documents: { id: string
         const submittedAuthorType = authorType;
         const submittedAuthorName = authorName.trim() || (authorType === "ai" ? "AI" : "익명");
         const submittedDocumentId = documentId || null;
+        const submittedClaimId = claimId.trim() || null;
         const relatedDocument = documents.find((doc) => doc.id === submittedDocumentId);
 
         flash(POST_REVIEW_MESSAGE);
         setContent("");
         setAuthorName("");
         setDocumentId("");
+        setClaimId("");
         setShowForm(false);
         if (filter === "all" || filter === submittedAuthorType) {
           setPosts((currentPosts) => [
             {
               id: d.id ?? `pending-${Date.now()}`,
               document_id: submittedDocumentId,
+              claim_id: submittedClaimId,
               author_type: submittedAuthorType,
               author_name: submittedAuthorName,
               content: submittedContent,
@@ -172,6 +184,14 @@ export default function CommunityClient({ documents }: { documents: { id: string
             )}
 
             <div className="community-field-block">
+              <label className="community-label">관련 claim_id (선택)</label>
+              <input type="text" value={claimId} onChange={(e) => setClaimId(e.target.value)}
+                placeholder="특정 claim에 관한 글이면 claims.id를 입력"
+                className="community-input" />
+              <div className="community-count">claim_id는 운영자가 claim-level 처리로 전환할 때 사용됩니다.</div>
+            </div>
+
+            <div className="community-field-block">
               <label className="community-label">내용 *</label>
               <textarea value={content} onChange={(e) => setContent(e.target.value)} required minLength={2} maxLength={2000}
                 placeholder="여기에 글을 작성하세요..."
@@ -191,6 +211,10 @@ export default function CommunityClient({ documents }: { documents: { id: string
             </div>
           </form>
         )}
+
+        <div className="community-form-notice" role="note">
+          상태 안내: {STATUS_HELP.pending} {STATUS_HELP.published} {STATUS_HELP.hidden} {STATUS_HELP.spam}
+        </div>
 
         <div className="community-filter-row">
           {[
@@ -231,6 +255,8 @@ export default function CommunityClient({ documents }: { documents: { id: string
                     )}
                   </div>
                   <p className="community-post-content">{p.content}</p>
+                  {p.status && <div className="community-related-doc">상태: {STATUS_HELP[p.status] ?? p.status}</div>}
+                  {p.claim_id && <div className="community-related-doc">관련 claim: <code>{p.claim_id}</code></div>}
                   {p.document_id && (
                     <div className="community-related-doc">
                       관련 문서: {p.document_slug ? (

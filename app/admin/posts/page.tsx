@@ -6,6 +6,7 @@ import { AdminSecretField, useAdminSecret } from "../AdminSecretProvider";
 interface Post {
   id: string;
   document_id: string | null;
+  claim_id: string | null;
   author_type: string;
   author_name: string;
   content: string;
@@ -15,6 +16,14 @@ interface Post {
 }
 
 const AUTHOR_ICON: Record<string, string> = { user: "👤", ai: "✦", admin: "🛡️" };
+const STATUS_HELP: Record<string, { operator: string; user: string }> = {
+  pending: { operator: "운영자가 공개·전환·숨김을 결정해야 하는 검토 대기 상태입니다.", user: "제출은 접수되었지만 아직 공개되지 않았습니다." },
+  published: { operator: "공개 목록과 연결된 wiki page에 표시되는 상태입니다.", user: "다른 사용자가 볼 수 있는 공개 글입니다." },
+  hidden: { operator: "보존은 하지만 공개 목록에서는 숨긴 상태입니다.", user: "운영 정책에 따라 공개되지 않습니다." },
+  spam: { operator: "스팸 또는 악성 제출로 분류되어 운영 처리에서 제외합니다.", user: "스팸으로 판단되어 공개되지 않습니다." },
+  deleted: { operator: "삭제 처리된 운영 기록입니다.", user: "삭제되어 공개되지 않습니다." },
+};
+
 const STATUS_STYLE: Record<string, { bg: string; color: string }> = {
   pending: { bg: "#dbeafe", color: "#1d4ed8" },
   published: { bg: "#dcfce7", color: "#15803d" },
@@ -57,6 +66,18 @@ export default function AdminPostsPage() {
   function flash(text: string, ok = true) {
     setMsg({ text, ok });
     setTimeout(() => setMsg(null), 4000);
+  }
+
+  async function convertPost(id: string, action: "topic_candidate" | "source_suggestion" | "report") {
+    if (!adminSecret) { flash("admin secret을 입력하세요", false); return; }
+    const r = await fetch("/api/admin/posts", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json", "x-admin-secret": adminSecret, "x-admin-csrf": "1" },
+      body: JSON.stringify({ id, action }),
+    });
+    const d = await r.json();
+    if (r.ok) flash(`전환 완료: ${action}`);
+    else flash(d.error ?? "전환 실패", false);
   }
 
   async function updateStatus(id: string, status: string) {
@@ -138,6 +159,15 @@ export default function AdminPostsPage() {
           ))}
         </div>
 
+        <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 10, padding: 12, marginBottom: 16, fontSize: 12, color: "#4b5563" }}>
+          <strong>상태 안내</strong>
+          <ul style={{ margin: "8px 0 0", paddingLeft: 18 }}>
+            {["pending", "published", "hidden", "spam"].map((status) => (
+              <li key={status}><strong>{status}</strong>: 운영자 — {STATUS_HELP[status].operator} 사용자 — {STATUS_HELP[status].user}</li>
+            ))}
+          </ul>
+        </div>
+
         <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap", alignItems: "center" }}>
           <span style={{ fontSize: 12, color: "#6b7280", fontWeight: 600 }}>작성자</span>
           {[
@@ -200,15 +230,21 @@ export default function AdminPostsPage() {
                       <span style={{ fontSize: 13, fontWeight: 600 }}>{AUTHOR_ICON[p.author_type] ?? "•"} {p.author_name}</span>
                       <span style={{ fontSize: 11, padding: "1px 8px", borderRadius: 12, fontWeight: 600, background: st.bg, color: st.color }}>{p.status}</span>
                       <span style={{ fontSize: 11, color: "#9ca3af" }}>{p.author_type}</span>
+                      {p.document_id && <span style={{ fontSize: 10, color: "#6b7280" }}>doc:{p.document_id}</span>}
+                      {p.claim_id && <span style={{ fontSize: 10, color: "#6b7280" }}>claim:{p.claim_id}</span>}
                       {p.contributor_hash && <span style={{ fontSize: 10, color: "#d1d5db" }}>#{p.contributor_hash.slice(0, 8)}</span>}
                     </div>
                     <p style={{ fontSize: 14, lineHeight: 1.6, margin: 0, whiteSpace: "pre-wrap" }}>{p.content}</p>
+                    <p style={{ fontSize: 11, color: "#6b7280", margin: "8px 0 0" }}>{STATUS_HELP[p.status]?.operator}</p>
                   </div>
                   <div style={{ fontSize: 11, color: "#9ca3af", whiteSpace: "nowrap" }}>
                     {new Date(p.created_at).toLocaleString("ko-KR")}
                   </div>
                 </div>
                 <div style={{ marginTop: 12, display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  <button onClick={() => convertPost(p.id, "topic_candidate")} style={{ padding: "5px 12px", background: "#4f46e5", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, cursor: "pointer" }}>토픽 후보로 전환</button>
+                  <button onClick={() => convertPost(p.id, "source_suggestion")} style={{ padding: "5px 12px", background: "#0891b2", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, cursor: "pointer" }}>출처 제안으로 전환</button>
+                  <button onClick={() => convertPost(p.id, "report")} disabled={!p.document_id} title={!p.document_id ? "문서 연결이 필요합니다" : undefined} style={{ padding: "5px 12px", background: p.document_id ? "#9333ea" : "#c4b5fd", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, cursor: p.document_id ? "pointer" : "not-allowed" }}>신고로 전환</button>
                   {p.status !== "published" && (
                     <button onClick={() => updateStatus(p.id, "published")} className="btn btn-primary">
                       공개

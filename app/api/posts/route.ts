@@ -24,6 +24,7 @@ export async function GET(request: Request) {
 
   const url = new URL(request.url);
   const documentId = url.searchParams.get("document_id");
+  const claimId = url.searchParams.get("claim_id");
   const authorType = url.searchParams.get("author_type");
   const limit = Math.min(parseInt(url.searchParams.get("limit") ?? "50"), 200);
   const offset = parseInt(url.searchParams.get("offset") ?? "0");
@@ -36,6 +37,7 @@ export async function GET(request: Request) {
     .range(offset, offset + limit - 1);
 
   if (documentId) query = query.eq("document_id", documentId);
+  if (claimId) query = query.eq("claim_id", claimId);
   if (authorType && ["user", "ai", "admin"].includes(authorType)) {
     query = query.eq("author_type", authorType);
   }
@@ -78,6 +80,20 @@ export async function POST(request: Request) {
 
   const authorName = String(body.author_name ?? (authorType === "ai" ? "AI" : "익명")).trim().slice(0, 50);
   const documentId = body.document_id ? String(body.document_id).trim() : null;
+  const claimId = body.claim_id ? String(body.claim_id).trim() : null;
+
+  if (claimId) {
+    const { data: claim, error: claimError } = await sb
+      .from("claims")
+      .select("id, document_id")
+      .eq("id", claimId)
+      .maybeSingle();
+    if (claimError) return NextResponse.json({ error: claimError.message }, { status: 500 });
+    if (!claim) return NextResponse.json({ error: "claim_id not found" }, { status: 400 });
+    if (documentId && claim.document_id !== documentId) {
+      return NextResponse.json({ error: "claim_id does not belong to document_id" }, { status: 400 });
+    }
+  }
 
   let contributorHash: string;
   try {
@@ -92,6 +108,7 @@ export async function POST(request: Request) {
   // service-role /api/admin/posts route publish directly.
   const { data, error } = await sb.from("community_posts").insert({
     document_id: documentId,
+    claim_id: claimId,
     author_type: authorType,
     author_name: authorName,
     content,

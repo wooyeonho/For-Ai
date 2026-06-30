@@ -56,6 +56,70 @@ export async function PATCH(request: Request) {
     updates.content = String(body.content).trim();
   }
 
+  if (body.action) {
+    const action = String(body.action);
+    if (!["topic_candidate", "source_suggestion", "report"].includes(action)) {
+      return NextResponse.json({ error: "invalid action" }, { status: 400 });
+    }
+
+    const { data: post, error: postError } = await sb
+      .from("community_posts")
+      .select("id, document_id, claim_id, content, contributor_hash")
+      .eq("id", id)
+      .single();
+    if (postError || !post) return NextResponse.json({ error: "post not found" }, { status: 404 });
+
+    const { data: document } = post.document_id
+      ? await sb.from("documents").select("id, entity_id, title, slug, lang, country, category").eq("id", post.document_id).maybeSingle()
+      : { data: null };
+
+    if (action === "topic_candidate") {
+      const title = document?.title ? `${document.title} community follow-up` : `Community post ${post.id.slice(0, 8)}`;
+      const slugBase = (document?.slug ?? `community-post-${post.id}`).toLowerCase().replace(/[^a-z0-9-]+/g, "-").replace(/^-|-$/g, "");
+      const { error: conversionError } = await sb.from("topic_candidates").insert({
+        source: "user_suggested",
+        lang: document?.lang ?? "ko",
+        country: document?.country ?? "global",
+        title,
+        slug: `${slugBase}-community-${Date.now()}`,
+        category: document?.category ?? "community_intake",
+        why_people_ask_ai: post.content,
+        source_hints: [{ type: "community_post", post_id: post.id, document_id: post.document_id, claim_id: post.claim_id }],
+        contributor_hash: post.contributor_hash,
+      });
+      if (conversionError) return NextResponse.json({ error: conversionError.message }, { status: 500 });
+    }
+
+    if (action === "source_suggestion") {
+      const { error: conversionError } = await sb.from("source_candidates").insert({
+        document_id: post.document_id,
+        entity_id: document?.entity_id ?? null,
+        claim_id: post.claim_id,
+        title: `Community post ${post.id.slice(0, 8)}`,
+        citation: post.content,
+        message: "Converted from community post by admin.",
+        contributor_hash: post.contributor_hash,
+      });
+      if (conversionError) return NextResponse.json({ error: conversionError.message }, { status: 500 });
+    }
+
+    if (action === "report") {
+      if (!post.document_id && !document?.entity_id) {
+        return NextResponse.json({ error: "report conversion requires a linked document" }, { status: 400 });
+      }
+      const { error: conversionError } = await sb.from("reports").insert({
+        document_id: post.document_id,
+        entity_id: document?.entity_id ?? null,
+        report_type: "community_post",
+        message: post.claim_id ? `[claim_id: ${post.claim_id}]\n${post.content}` : post.content,
+        contributor_hash: post.contributor_hash,
+      });
+      if (conversionError) return NextResponse.json({ error: conversionError.message }, { status: 500 });
+    }
+
+    await logAdminAuditEvent(sb, request, "admin.posts.convert", { post_id: id, action });
+  }
+
   const { error } = await sb.from("community_posts").update(updates).eq("id", id);
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
@@ -88,6 +152,7 @@ export async function POST(request: Request) {
 
   const { data, error } = await sb.from("community_posts").insert({
     document_id: body.document_id ? String(body.document_id).trim() : null,
+    claim_id: body.claim_id ? String(body.claim_id).trim() : null,
     author_type: authorType,
     author_name: String(body.author_name ?? "관리자").trim().slice(0, 50),
     content,
