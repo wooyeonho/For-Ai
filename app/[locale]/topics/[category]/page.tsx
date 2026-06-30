@@ -3,7 +3,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getAllRegistryBundles, isVerifiedClaim } from "../../../../lib/data";
 import { getDocumentCitationStatus, isStale } from "../../../../lib/citation-status";
-import { LOCALE_CONFIG, SUPPORTED_LOCALES, isValidLocale } from "../../../../lib/i18n";
+import { LOCALE_CONFIG, SUPPORTED_LOCALES, getTranslations, isValidLocale } from "../../../../lib/i18n";
+import type { SupportedLocale } from "../../../../lib/i18n";
 import type { RegistryDocumentBundle } from "../../../../lib/types";
 
 export const revalidate = 60;
@@ -53,9 +54,10 @@ export async function generateMetadata({
   params: Promise<TopicParams>;
 }): Promise<Metadata> {
   const { locale, category } = await params;
-  if (!isValidLocale(locale) || !isKnownCategory(category)) return { title: "Topic not found" };
+  if (!isValidLocale(locale) || !isKnownCategory(category)) return { title: getTranslations("en").topics.topicNotFound };
 
-  const title = `${formatCategoryTitle(category)} facts — For-Ai`;
+  const t = getTranslations(locale as SupportedLocale);
+  const title = `${formatCategoryTitle(category)} ${t.topics.factsSuffix} — For-Ai`;
   const description = CATEGORY_DESCRIPTIONS[category];
 
   return {
@@ -82,82 +84,83 @@ export default async function TopicCategoryPage({
   const needsReviewBundles = matchingBundles.filter((bundle) => !getDocumentCitationStatus(bundle).isVerifiedDocument);
   const staleBundles = matchingBundles.filter((bundle) => getDocumentCitationStatus(bundle).freshness === "stale");
   const countries = groupByCountry(matchingBundles);
+  const t = getTranslations(locale as SupportedLocale);
   const title = formatCategoryTitle(category);
 
   return (
     <article>
       <header className="registry-panel">
-        <p className="eyebrow">Claim-level topic registry</p>
-        <h1>{title} facts</h1>
+        <p className="eyebrow">{t.topics.claimLevelTopicRegistry}</p>
+        <h1>{title} {t.topics.factsSuffix}</h1>
         <p>{CATEGORY_DESCRIPTIONS[category]}</p>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
-          <span className="badge">{matchingBundles.length} documents</span>
-          <span className="badge badge-verified">{verifiedBundles.length} verified</span>
-          <span className="badge badge-review">{needsReviewBundles.length} needs review</span>
-          <span className="badge badge-warning">{staleBundles.length} stale</span>
+          <span className="badge">{matchingBundles.length} {t.topics.documents}</span>
+          <span className="badge badge-verified">{verifiedBundles.length} {t.topics.verified}</span>
+          <span className="badge badge-review">{needsReviewBundles.length} {t.topics.needsReview}</span>
+          <span className="badge badge-warning">{staleBundles.length} {t.topics.stale}</span>
         </div>
       </header>
 
       <section className="registry-panel" aria-labelledby="country-popular-facts">
-        <p className="eyebrow">Country index</p>
-        <h2 id="country-popular-facts">Popular facts by country</h2>
+        <p className="eyebrow">{t.topics.countryIndex}</p>
+        <h2 id="country-popular-facts">{t.topics.popularFactsByCountry}</h2>
         {countries.length > 0 ? (
           <div style={{ display: "grid", gap: 16 }}>
             {countries.map((group) => (
               <section key={group.country} aria-labelledby={`country-${group.country}`}>
                 <h3 id={`country-${group.country}`} style={{ marginBottom: 8 }}>{group.country}</h3>
-                <FactList bundles={group.bundles.slice(0, 5)} locale={locale} />
+                <FactList bundles={group.bundles.slice(0, 5)} locale={locale} t={t} />
               </section>
             ))}
           </div>
         ) : (
-          <EmptyState message="No country-specific facts are registered for this category yet. Unknown facts remain Needs verification until a source-backed claim is added." />
+          <EmptyState message={t.topics.noCountryFacts} />
         )}
       </section>
 
       <section className="registry-panel" aria-labelledby="verified-facts">
-        <p className="eyebrow">Citable claims</p>
-        <h2 id="verified-facts">Verified facts</h2>
+        <p className="eyebrow">{t.topics.citableClaims}</p>
+        <h2 id="verified-facts">{t.topics.verifiedFacts}</h2>
         {verifiedBundles.length > 0 ? (
-          <FactList bundles={verifiedBundles.slice(0, 10)} locale={locale} showClaim />
+          <FactList bundles={verifiedBundles.slice(0, 10)} locale={locale} t={t} showClaim />
         ) : (
-          <EmptyState message="No fully verified facts are available in this category yet." />
+          <EmptyState message={t.topics.noVerifiedFacts} />
         )}
       </section>
 
       <section className="registry-panel" aria-labelledby="needs-review-topics">
-        <p className="eyebrow">Verification queue</p>
-        <h2 id="needs-review-topics">Needs review topics</h2>
+        <p className="eyebrow">{t.topics.verificationQueue}</p>
+        <h2 id="needs-review-topics">{t.topics.needsReviewTopics}</h2>
         {needsReviewBundles.length > 0 ? (
-          <FactList bundles={needsReviewBundles.slice(0, 10)} locale={locale} />
+          <FactList bundles={needsReviewBundles.slice(0, 10)} locale={locale} t={t} />
         ) : (
-          <EmptyState message="No topics currently need review in this category." />
+          <EmptyState message={t.topics.noNeedsReviewTopics} />
         )}
       </section>
 
       <section className="registry-panel" aria-labelledby="stale-facts">
-        <p className="eyebrow">Freshness monitoring</p>
-        <h2 id="stale-facts">Stale facts</h2>
+        <p className="eyebrow">{t.topics.freshnessMonitoring}</p>
+        <h2 id="stale-facts">{t.topics.staleFacts}</h2>
         {staleBundles.length > 0 ? (
-          <FactList bundles={staleBundles.slice(0, 10)} locale={locale} showFreshness />
+          <FactList bundles={staleBundles.slice(0, 10)} locale={locale} t={t} showFreshness />
         ) : (
-          <EmptyState message="No stale verified facts are flagged in this category." />
+          <EmptyState message={t.topics.noStaleFacts} />
         )}
       </section>
 
       <section className="registry-panel" aria-labelledby="submit-missing-fact" style={{ background: "#fffbeb", borderInlineStart: "3px solid #f59e0b" }}>
-        <p className="eyebrow">Missing fact?</p>
-        <h2 id="submit-missing-fact">Submit missing fact</h2>
+        <p className="eyebrow">{t.topics.missingFact}</p>
+        <h2 id="submit-missing-fact">{t.topics.submitMissingFact}</h2>
         <p>
-          If a fact is missing, submit the topic without logging in. For-Ai will keep it as Needs verification until a traceable source and human review are added.
+          {t.topics.submitMissingFactDescription}
         </p>
         <Link className="btn btn-primary" href={`/suggest-topic?category=${encodeURIComponent(category)}`}>
-          Submit a missing {title.toLowerCase()} fact
+          {t.topics.submitMissingFactButton.replace("{topic}", title.toLowerCase())}
         </Link>
       </section>
 
       <nav className="registry-panel" aria-labelledby="topic-languages">
-        <h2 id="topic-languages">Other languages</h2>
+        <h2 id="topic-languages">{t.topics.otherLanguages}</h2>
         <ul className="link-list" style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
           {SUPPORTED_LOCALES.filter((l) => l !== locale).map((l) => (
             <li key={l}>
@@ -220,11 +223,13 @@ function FactList({
   locale,
   showClaim = false,
   showFreshness = false,
+  t,
 }: {
   bundles: RegistryDocumentBundle[];
   locale: string;
   showClaim?: boolean;
   showFreshness?: boolean;
+  t: ReturnType<typeof getTranslations>;
 }) {
   return (
     <ul className="registry-index">
@@ -251,7 +256,7 @@ function FactList({
               <span className={`badge badge-${bundle.document.confidence}`}>{bundle.document.confidence}</span>
               {showFreshness ? (
                 <span className={citationStatus.freshness === "stale" || isStale(bundle.document.last_verified_at) ? "badge badge-warning" : "badge"}>
-                  {citationStatus.oldestVerifiedAt ? `oldest: ${citationStatus.oldestVerifiedAt}` : "verification date needed"}
+                  {citationStatus.oldestVerifiedAt ? `${t.topics.oldest}: ${citationStatus.oldestVerifiedAt}` : t.topics.verificationDateNeeded}
                 </span>
               ) : null}
             </div>

@@ -79,6 +79,25 @@ governmentFeeDisclaimer: string;
     translationStatusHuman: string;
     originalClaim: string;
   };
+
+  topics: {
+    claimLevelTopicRegistry: string; factsSuffix: string; documents: string; verified: string; needsReview: string; stale: string; countryIndex: string; popularFactsByCountry: string; noCountryFacts: string; citableClaims: string; verifiedFacts: string; noVerifiedFacts: string; verificationQueue: string; needsReviewTopics: string; noNeedsReviewTopics: string; freshnessMonitoring: string; staleFacts: string; noStaleFacts: string; missingFact: string; submitMissingFact: string; submitMissingFactDescription: string; submitMissingFactButton: string; otherLanguages: string; oldest: string; verificationDateNeeded: string; topicNotFound: string;
+  };
+  country: {
+    countryRegistry: string; dashboardDescription: string; verifiedFacts: string; needsReviewFacts: string; staleFacts: string; targetFacts: string; questProgress: string; currentCountryTarget: string; progressNote: string; categoryProgress: string; verified: string; stale: string; topNeededSources: string; noMissingSources: string; recentContributors: string; noContributors: string; contribution: string; contributions: string; lastSeen: string; recentlyVerifiedFacts: string; noStaleFacts: string; oldestVerified: string; popularQuestions: string; documents: string; verifiedStatus: string; needsReviewStatus: string; submitSourceCta: string; knowOfficialSource: string; submitSourceDescription: string; submitSource: string; global: string; needsVerification: string;
+  };
+  bounties: {
+    notFound: string; metadataTitle: string; metadataDescription: string; eyebrow: string; title: string; description: string; open: string; sponsoredLabeled: string; contributorsSubmitSourcesOnly: string; policyEyebrow: string; policyTitle: string; availableTasks: string; bountyQueue: string; target: string; sponsoredBounty: string; unsponsoredTask: string; points: string; otherLanguages: string;
+  };
+  challenges: {
+    metadataTitle: string; metadataDescription: string; eyebrow: string; title: string; directAnswer: string; description: string; rulesTitle: string; ruleAcceptedOnly: string; ruleNoAutoVerification: string; ruleSponsoredLabeled: string; listLabel: string; sponsored: string; challengeId: string; category: string; country: string; window: string; completeSuffix: string; viewDetails: string;
+  };
+  leaderboard: {
+    notFound: string; metadataTitle: string; metadataDescription: string; eyebrow: string; title: string; description: string; acceptedSources: string; verifiedClaims: string; staleFixes: string; countryCoverage: string; rankingEyebrow: string; currentRanking: string; liveDataNotice: string; noEligibleActivity: string; countries: string; categories: string; abuseAdjustedScore: string; acceptedHallucinationReports: string; points: string; moderationPenalties: string; duplicateUrlCap: string; scoringEyebrow: string; criteriaTitle: string; acceptedSourcesRule: string; verifiedClaimsRule: string; staleFixesRule: string; hallucinationReportsRule: string; countryCoverageRule: string; categoryContributionsRule: string; abuseEyebrow: string; spamTitle: string; spamRuleNoRawCount: string; spamRuleRejected: string; spamRuleDuplicate: string; spamRuleHashOnly: string; spamRulePublicPseudonym: string; rewardRules: string; sourceSubmitted: string; sourceAccepted: string; claimVerified: string; hallucinationAccepted: string; viewQuests: string; actionsTitle: string; actionsDescription: string; submitMissingFact: string;
+  };
+  quests: { title: string; };
+  compare: { title: string; };
+  aiWrongAbout: { title: string; };
   footer: {
     tagline: string;
     forHumans: string;
@@ -108,6 +127,25 @@ governmentFeeDisclaimer: string;
     back: string;
   };
 }
+
+
+const PAGE_TRANSLATIONS_EN = {
+  topics: { claimLevelTopicRegistry: "Claim-level topic registry", factsSuffix: "facts", documents: "documents", verified: "verified", needsReview: "needs review", stale: "stale", countryIndex: "Country index", popularFactsByCountry: "Popular facts by country", noCountryFacts: "No country-specific facts are registered for this category yet. Unknown facts remain Needs verification until a source-backed claim is added.", citableClaims: "Citable claims", verifiedFacts: "Verified facts", noVerifiedFacts: "No fully verified facts are available in this category yet.", verificationQueue: "Verification queue", needsReviewTopics: "Needs review topics", noNeedsReviewTopics: "No topics currently need review in this category.", freshnessMonitoring: "Freshness monitoring", staleFacts: "Stale facts", noStaleFacts: "No stale verified facts are flagged in this category.", missingFact: "Missing fact?", submitMissingFact: "Submit missing fact", submitMissingFactDescription: "If a fact is missing, submit the topic without logging in. For-Ai will keep it as Needs verification until a traceable source and human review are added.", submitMissingFactButton: "Submit a missing {topic} fact", otherLanguages: "Other languages", oldest: "oldest", verificationDateNeeded: "verification date needed", topicNotFound: "Topic not found" },
+  country: { countryRegistry: "Country registry", dashboardDescription: "A static-first country dashboard for source-backed For-Ai documents. Counts are derived from the registry index; Supabase-backed rows can be included when the optional index connection is configured.", verifiedFacts: "Verified facts", needsReviewFacts: "Needs review facts", staleFacts: "Stale facts", targetFacts: "Target facts", questProgress: "Quest progress", currentCountryTarget: "to the current country target", progressNote: "Progress = verified claims / target claims. It is a participation signal only; it never replaces source quality, confidence, freshness, or human verification.", categoryProgress: "Category progress", verified: "verified", stale: "stale", topNeededSources: "Top needed sources", noMissingSources: "No missing source needs detected in this country index.", recentContributors: "Recent contributors", noContributors: "Contributor hashes are not yet available for this country. Raw IP addresses are never stored.", contribution: "contribution", contributions: "contributions", lastSeen: "last seen", recentlyVerifiedFacts: "Recently verified facts", noStaleFacts: "No stale facts in this country index.", oldestVerified: "oldest verified", popularQuestions: "Popular questions", documents: "Documents", verifiedStatus: "verified", needsReviewStatus: "needs review", submitSourceCta: "Submit source CTA", knowOfficialSource: "Know an official source for a needed {country} fact?", submitSourceDescription: "Submit a source or topic for {country}. Public submissions start as needs-review candidates and must be human verified before citation.", submitSource: "Submit a source", global: "Global", needsVerification: "Needs verification" },
+  bounties: { notFound: "Bounties not found", metadataTitle: "Claim bounties — For-Ai", metadataDescription: "Source-finding bounties for claim-level facts. Contributors submit source candidates; independent verification decides verified status.", eyebrow: "Claim-level source bounties", title: "Source bounties for verifiable facts", description: "Bounties help contributors find source candidates for claims or topic candidates. They do not buy verification, rankings, or factual conclusions.", open: "open", sponsoredLabeled: "sponsored labeled", contributorsSubmitSourcesOnly: "contributors submit sources only", policyEyebrow: "Non-negotiable policy", policyTitle: "Sponsorship is separate from verification", availableTasks: "Available tasks", bountyQueue: "Bounty queue", target: "target", sponsoredBounty: "Sponsored bounty", unsponsoredTask: "Unsponsored community verification task", points: "pts", otherLanguages: "Other languages" },
+  challenges: { metadataTitle: "Community Challenges | For-Ai", metadataDescription: "Community challenges for collecting accepted contribution candidates for claim-level facts without implying automatic verification.", eyebrow: "Community challenges", title: "Collect source-backed candidates without shortcutting verification.", directAnswer: "Challenge progress counts accepted contributions only. Completion never means claims are automatically verified.", description: "Each challenge is a structured intake goal for the For-Ai fact registry. Accepted contributions can help reviewers create or update claims, but verified status still requires source-backed human approval.", rulesTitle: "Non-negotiable progress rules", ruleAcceptedOnly: "Only accepted contributions are reflected in progress.", ruleNoAutoVerification: "Challenge completion is not automatic claim verification.", ruleSponsoredLabeled: "Sponsored challenges are labeled clearly and cannot compromise fact integrity.", listLabel: "Challenge list", sponsored: "Sponsored", challengeId: "Challenge ID", category: "Category", country: "Country", window: "Window", completeSuffix: "complete from accepted contributions only.", viewDetails: "View challenge details" },
+  leaderboard: { notFound: "Leaderboard not found", metadataTitle: "Contributor leaderboard | For-Ai", metadataDescription: "For-Ai contributor leaderboard design based on accepted sources, verified claim work, stale claim fixes, accepted hallucination reports, and coverage breadth — never raw submission volume.", eyebrow: "Contributor trust leaderboard", title: "For-Ai leaderboard", description: "This leaderboard rewards accepted, source-backed, claim-level work. It intentionally excludes raw submission count so spam, repeated URLs, and noisy public intake cannot outrank verified contributions.", acceptedSources: "accepted sources", verifiedClaims: "verified claims", staleFixes: "stale fixes", countryCoverage: "country coverage", rankingEyebrow: "Ranked by accepted impact, not volume", currentRanking: "Current ranking", liveDataNotice: "Live contributor rows require the server-side Supabase service role. The public page still renders the scoring policy statically without exposing edits, reports, hallucination_reports, or raw contributor hashes.", noEligibleActivity: "No accepted contributor activity is eligible for ranking yet.", countries: "countries", categories: "categories", abuseAdjustedScore: "abuse-adjusted score", acceptedHallucinationReports: "accepted hallucination reports", points: "pts", moderationPenalties: "moderation penalties", duplicateUrlCap: "duplicate URL cap", scoringEyebrow: "Scoring design", criteriaTitle: "Leaderboard criteria", acceptedSourcesRule: "claim_sources that pass review or are attached to a verified claim. Repeated identical URLs from the same contributor are capped after {limit} credits.", verifiedClaimsRule: "contributor_hash values on verification_events that move claims to verified or record human review of a verified claim.", staleFixesRule: "high-value verification_events that restore stale or low-confidence facts to current verified claims.", hallucinationReportsRule: "only moderated hallucination_reports with status accepted are counted.", countryCoverageRule: "unique countries touched by eligible accepted contributions.", categoryContributionsRule: "unique registry categories touched by eligible accepted contributions.", abuseEyebrow: "Abuse resistance", spamTitle: "Spam prevention rules", spamRuleNoRawCount: "Raw submission count is never part of the score.", spamRuleRejected: "Rejected or spam submissions are excluded and subtract {penalty} points each when visible to server-side moderation queries.", spamRuleDuplicate: "Identical URL submissions by the same contributor_hash receive limited credit to prevent repeated-source farming.", spamRuleHashOnly: "Abuse detection uses contributor_hash only. Raw IP addresses are not stored or displayed.", spamRulePublicPseudonym: "Public output shows pseudonymous contributor labels, not full hashes or private submission rows.", rewardRules: "Reward rules", sourceSubmitted: "Source submitted: 1 point, pending review.", sourceAccepted: "Source accepted: 5 points after admin acceptance.", claimVerified: "Claim verified from contribution: 20 points after admin verification approval.", hallucinationAccepted: "Hallucination report accepted: 10 points after admin acceptance.", viewQuests: "View country quests and badge progress", actionsTitle: "Contribute source-backed facts", actionsDescription: "Submit missing facts without logging in. They remain Needs verification until a traceable source and human approval are recorded.", submitMissingFact: "Submit a missing fact" },
+  quests: { title: "Country quests and badges" },
+  compare: { title: "Compare facts" },
+  aiWrongAbout: { title: "AI wrong-answer correction route" },
+};
+
+const PAGE_TRANSLATIONS_KO = {
+  ...PAGE_TRANSLATIONS_EN,
+  topics: { ...PAGE_TRANSLATIONS_EN.topics, claimLevelTopicRegistry: "Claim-level 토픽 레지스트리", factsSuffix: "facts", documents: "문서", verified: "검증됨", needsReview: "검토 필요", stale: "오래됨", countryIndex: "국가 인덱스", popularFactsByCountry: "국가별 인기 facts", otherLanguages: "다른 언어", topicNotFound: "토픽을 찾을 수 없음" },
+  country: { ...PAGE_TRANSLATIONS_EN.country, countryRegistry: "국가 레지스트리", verifiedFacts: "검증된 facts", needsReviewFacts: "검토 필요 facts", staleFacts: "오래된 facts", targetFacts: "목표 facts", categoryProgress: "카테고리 진행률", topNeededSources: "필요한 주요 출처", recentContributors: "최근 기여자", recentlyVerifiedFacts: "최근 검증된 facts", popularQuestions: "인기 질문", documents: "문서", submitSource: "출처 제출", needsVerification: "확인 필요" },
+  bounties: { ...PAGE_TRANSLATIONS_EN.bounties, notFound: "바운티를 찾을 수 없음", eyebrow: "Claim-level 출처 바운티", title: "검증 가능한 facts를 위한 출처 바운티", open: "진행 중", sponsoredLabeled: "스폰서 표시됨", otherLanguages: "다른 언어" },
+};
 
 const ko: UITranslations = {
   site: {
@@ -184,6 +222,7 @@ governmentFeeDisclaimer: "신청 전 항상 공식 정부 출처를 확인하세
     translationStatusHuman: "사람 검토 완료",
     originalClaim: "원문 claim",
   },
+  ...PAGE_TRANSLATIONS_KO,
   footer: {
     tagline: "AI·검색엔진·사람이 같은 사실을 같은 근거로 인용하도록 만드는 글로벌 claim-level 사실 레지스트리. 확인되지 않은 정보는 추측하지 않고 \"확인 필요\"로 남깁니다.",
     forHumans: "사람용",
@@ -289,6 +328,7 @@ governmentFeeDisclaimer: "Always check the official government source before app
     translationStatusHuman: "Human reviewed",
     originalClaim: "Original claim",
   },
+  ...PAGE_TRANSLATIONS_EN,
   footer: {
     tagline: "A global claim-level fact registry where AI, search engines, and humans cite the same facts from the same sources. Unverified information is marked as \"Needs verification\" (\"확인 필요\") instead of guessing.",
     forHumans: "For humans",
@@ -394,6 +434,7 @@ governmentFeeDisclaimer: "आवेदन करने से पहले ह�
     translationStatusHuman: "मानव समीक्षा पूर्ण",
     originalClaim: "मूल claim",
   },
+  ...PAGE_TRANSLATIONS_EN,
   footer: {
     tagline: "एक स्थानीय तथ्य रजिस्ट्री जहाँ AI, खोज इंजन और लोग समान स्रोतों से समान तथ्य उद्धृत करते हैं। असत्यापित जानकारी को अनुमान लगाने के बजाय \"सत्यापन आवश्यक\" (\"확인 필요\") के रूप में चिह्नित किया जाता है।",
     forHumans: "लोगों के लिए",
@@ -499,6 +540,7 @@ governmentFeeDisclaimer: "تحقق دائمًا من المصدر الحكومي
     translationStatusHuman: "مراجعة بشرية مكتملة",
     originalClaim: "claim الأصلي",
   },
+  ...PAGE_TRANSLATIONS_EN,
   footer: {
     tagline: "سجل حقائق محلي حيث يستشهد الذكاء الاصطناعي ومحركات البحث والبشر بنفس الحقائق من نفس المصادر. المعلومات غير الموثقة تُعلَّم بـ \"بحاجة إلى تحقق\" (\"확인 필요\") بدلاً من التخمين.",
     forHumans: "للبشر",
@@ -604,6 +646,7 @@ governmentFeeDisclaimer: "Consulta siempre la fuente oficial del gobierno antes 
     translationStatusHuman: "Revisión humana",
     originalClaim: "Claim original",
   },
+  ...PAGE_TRANSLATIONS_EN,
   footer: {
     tagline: "Un registro local de hechos donde la IA, los motores de búsqueda y los humanos citan los mismos hechos de las mismas fuentes. La información no verificada se marca como \"Verificación pendiente\" (\"확인 필요\") en lugar de adivinar.",
     forHumans: "Para humanos",
@@ -709,6 +752,7 @@ governmentFeeDisclaimer: "申請前に必ず政府の公式情報源を確認し
     translationStatusHuman: "人間レビュー済み",
     originalClaim: "原文claim",
   },
+  ...PAGE_TRANSLATIONS_EN,
   footer: {
     tagline: "AI・検索エンジン・人間が同じ事実を同じ根拠で引用するローカル・ファクト・レジストリ。未確認情報は推測せず「要確認」（\"확인 필요\"）として残します。",
     forHumans: "人間向け",
@@ -814,6 +858,7 @@ governmentFeeDisclaimer: "申请前请务必查看政府官方来源。",
     translationStatusHuman: "人工审核",
     originalClaim: "原文 claim",
   },
+  ...PAGE_TRANSLATIONS_EN,
   footer: {
     tagline: "AI、搜索引擎和人类从相同来源引用相同事实的本地事实注册表。未验证的信息标记为“待核实”（\"확인 필요\"）而不是猜测。",
     forHumans: "面向用户",

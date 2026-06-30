@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { getAllRegistryBundles } from "../../../../lib/data";
 import { getClaimCitationStatus, getDocumentCitationStatus } from "../../../../lib/citation-status";
 import { getRegistryIndex, type RegistryIndexItem } from "../../../../lib/registry-index";
-import { SUPPORTED_LOCALES, isValidLocale } from "../../../../lib/i18n";
+import { SUPPORTED_LOCALES, getTranslations, isValidLocale } from "../../../../lib/i18n";
 import type { SupportedLocale } from "../../../../lib/i18n";
 
 export const revalidate = 60;
@@ -37,15 +37,6 @@ type RecentContributor = {
   lastSeenAt: string | null;
 };
 
-const UNKNOWN_LABELS: Record<SupportedLocale, string> = {
-  ko: "확인 필요",
-  en: "Needs verification",
-  hi: "सत्यापन आवश्यक",
-  ar: "يحتاج إلى تحقق",
-  es: "Necesita verificación",
-  ja: "確認が必要",
-  zh: "需要验证",
-};
 
 function normalizeCountry(country: string): string {
   return decodeURIComponent(country).trim().toUpperCase();
@@ -218,28 +209,28 @@ export default async function CountryRegistryPage({
   const staleFacts = items.filter((item) => item.freshness === "stale").slice(0, 8);
   const popularQuestions = popularQuestionsFor(items);
   const submitTopicHref = `/suggest-topic?country=${encodeURIComponent(normalizedCountry)}&lang=${encodeURIComponent(locale)}`;
-  const unknownLabel = UNKNOWN_LABELS[supportedLocale];
+  const t = getTranslations(supportedLocale);
+  const unknownLabel = t.country.needsVerification;
 
   return (
     <article>
       <header className="registry-panel">
-        <p className="eyebrow">Country registry</p>
+        <p className="eyebrow">{t.country.countryRegistry}</p>
         <h1>{name}</h1>
         <p style={{ maxWidth: 760 }}>
-          A static-first country dashboard for source-backed For-Ai documents. Counts are derived from the registry index;
-          Supabase-backed rows can be included when the optional index connection is configured.
+          {t.country.dashboardDescription}
         </p>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
-          <span className="badge badge-verified">Verified facts: {questStats.verifiedClaims}</span>
-          <span className="badge badge-review">Needs review facts: {questStats.needsReviewClaims}</span>
-          <span className="badge">Stale facts: {questStats.staleClaims}</span>
-          <span className="badge">Target facts: {questStats.targetClaims}</span>
+          <span className="badge badge-verified">{t.country.verifiedFacts}: {questStats.verifiedClaims}</span>
+          <span className="badge badge-review">{t.country.needsReviewFacts}: {questStats.needsReviewClaims}</span>
+          <span className="badge">{t.country.staleFacts}: {questStats.staleClaims}</span>
+          <span className="badge">{t.country.targetFacts}: {questStats.targetClaims}</span>
         </div>
       </header>
 
       <section className="registry-panel" aria-labelledby="country-progress">
-        <p className="eyebrow">Quest progress</p>
-        <h2 id="country-progress">{overallProgress}% to the current country target</h2>
+        <p className="eyebrow">{t.country.questProgress}</p>
+        <h2 id="country-progress">{overallProgress}% {t.country.currentCountryTarget}</h2>
         <p className="meta-label">Progress = verified claims / target claims. It is a participation signal only; it never replaces source quality, confidence, freshness, or human verification.</p>
         <div aria-label={`Overall progress ${overallProgress}%`} style={{ background: "#e5e7eb", borderRadius: 999, height: 12, overflow: "hidden", marginTop: 12 }}>
           <div style={{ width: `${overallProgress}%`, background: "#2563eb", height: "100%" }} />
@@ -247,7 +238,7 @@ export default async function CountryRegistryPage({
       </section>
 
       <section className="registry-panel" aria-labelledby="country-categories">
-        <h2 id="country-categories">Category progress</h2>
+        <h2 id="country-categories">{t.country.categoryProgress}</h2>
         {questStats.categoryProgress.length === 0 ? (
           <p>{unknownLabel}</p>
         ) : (
@@ -266,7 +257,7 @@ export default async function CountryRegistryPage({
       </section>
 
       <section className="registry-panel" aria-labelledby="needed-sources">
-        <h2 id="needed-sources">Top needed sources</h2>
+        <h2 id="needed-sources">{t.country.topNeededSources}</h2>
         {questStats.neededSources.length === 0 ? (
           <p>No missing source needs detected in this country index.</p>
         ) : (
@@ -279,7 +270,7 @@ export default async function CountryRegistryPage({
       </section>
 
       <section className="registry-panel" aria-labelledby="recent-contributors">
-        <h2 id="recent-contributors">Recent contributors</h2>
+        <h2 id="recent-contributors">{t.country.recentContributors}</h2>
         {questStats.contributors.length === 0 ? (
           <p>Contributor hashes are not yet available for this country. Raw IP addresses are never stored.</p>
         ) : (
@@ -295,7 +286,7 @@ export default async function CountryRegistryPage({
       </section>
 
       <section className="registry-panel" aria-labelledby="recent-facts">
-        <h2 id="recent-facts">Recently verified facts</h2>
+        <h2 id="recent-facts">{t.country.recentlyVerifiedFacts}</h2>
         {recentFacts.length === 0 ? (
           <p>{unknownLabel}</p>
         ) : (
@@ -327,7 +318,7 @@ export default async function CountryRegistryPage({
       </section>
 
       <section className="registry-panel" aria-labelledby="popular-questions">
-        <h2 id="popular-questions">Popular questions</h2>
+        <h2 id="popular-questions">{t.country.popularQuestions}</h2>
         {popularQuestions.length === 0 ? (
           <p>{unknownLabel}</p>
         ) : (
@@ -340,7 +331,7 @@ export default async function CountryRegistryPage({
       </section>
 
       <section className="registry-panel" aria-labelledby="country-documents">
-        <h2 id="country-documents">Documents</h2>
+        <h2 id="country-documents">{t.country.documents}</h2>
         {items.length === 0 ? (
           <p>{unknownLabel}</p>
         ) : (
@@ -361,7 +352,7 @@ export default async function CountryRegistryPage({
         <p className="eyebrow">Submit source CTA</p>
         <h2>Know an official source for a needed {name} fact?</h2>
         <p>Submit a source or topic for {name}. Public submissions start as needs-review candidates and must be human verified before citation.</p>
-        <Link className="button" href={submitTopicHref}>Submit a source</Link>
+        <Link className="button" href={submitTopicHref}>{t.country.submitSource}</Link>
       </section>
     </article>
   );

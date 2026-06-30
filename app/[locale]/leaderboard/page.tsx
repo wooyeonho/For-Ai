@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { SUPPORTED_LOCALES, isValidLocale } from "../../../lib/i18n";
+import { SUPPORTED_LOCALES, getTranslations, isValidLocale } from "../../../lib/i18n";
+import type { SupportedLocale } from "../../../lib/i18n";
 import { createServiceRoleClient, isServiceRoleConfigured } from "../../../lib/supabase-server";
 
 export const revalidate = 300;
@@ -95,12 +96,12 @@ export function generateStaticParams() {
 
 export async function generateMetadata({ params }: { params: Promise<LeaderboardParams> }): Promise<Metadata> {
   const { locale } = await params;
-  if (!isValidLocale(locale)) return { title: "Leaderboard not found" };
+  if (!isValidLocale(locale)) return { title: getTranslations("en").leaderboard.notFound };
+  const t = getTranslations(locale as SupportedLocale);
 
   return {
-    title: "Contributor leaderboard | For-Ai",
-    description:
-      "For-Ai contributor leaderboard design based on accepted sources, verified claim work, stale claim fixes, accepted hallucination reports, and coverage breadth — never raw submission volume.",
+    title: t.leaderboard.metadataTitle,
+    description: t.leaderboard.metadataDescription,
     alternates: {
       languages: Object.fromEntries(SUPPORTED_LOCALES.map((l) => [l, `/${l}/leaderboard`])),
     },
@@ -111,14 +112,15 @@ export default async function LeaderboardPage({ params }: { params: Promise<Lead
   const { locale } = await params;
   if (!isValidLocale(locale)) notFound();
 
+  const t = getTranslations(locale as SupportedLocale);
   const leaderboard = await getLeaderboard();
   const hasLiveData = isServiceRoleConfigured();
 
   return (
     <article>
       <header className="registry-panel">
-        <p className="eyebrow">Contributor trust leaderboard</p>
-        <h1>For-Ai leaderboard</h1>
+        <p className="eyebrow">{t.leaderboard.eyebrow}</p>
+        <h1>{t.leaderboard.title}</h1>
         <p style={{ maxWidth: 780 }}>
           This leaderboard rewards accepted, source-backed, claim-level work. It intentionally excludes raw submission count so spam, repeated URLs, and noisy public intake cannot outrank verified contributions.
         </p>
@@ -131,8 +133,8 @@ export default async function LeaderboardPage({ params }: { params: Promise<Lead
       </header>
 
       <section className="registry-panel" aria-labelledby="leaderboard-ranking">
-        <p className="eyebrow">Ranked by accepted impact, not volume</p>
-        <h2 id="leaderboard-ranking">Current ranking</h2>
+        <p className="eyebrow">{t.leaderboard.rankingEyebrow}</p>
+        <h2 id="leaderboard-ranking">{t.leaderboard.currentRanking}</h2>
         {!hasLiveData ? (
           <p className="stat-note">
             Live contributor rows require the server-side Supabase service role. The public page still renders the scoring policy statically without exposing edits, reports, hallucination_reports, or raw contributor hashes.
@@ -164,8 +166,8 @@ export default async function LeaderboardPage({ params }: { params: Promise<Lead
       </section>
 
       <section className="registry-panel" aria-labelledby="leaderboard-rules">
-        <p className="eyebrow">Scoring design</p>
-        <h2 id="leaderboard-rules">Leaderboard criteria</h2>
+        <p className="eyebrow">{t.leaderboard.scoringEyebrow}</p>
+        <h2 id="leaderboard-rules">{t.leaderboard.criteriaTitle}</h2>
         <ul className="link-list">
           <li><strong>Accepted sources:</strong> claim_sources that pass review or are attached to a verified claim. Repeated identical URLs from the same contributor are capped after {DUPLICATE_URL_FREE_LIMIT} credits.</li>
           <li><strong>Verified claim contributions:</strong> contributor_hash values on verification_events that move claims to verified or record human review of a verified claim.</li>
@@ -177,8 +179,8 @@ export default async function LeaderboardPage({ params }: { params: Promise<Lead
       </section>
 
       <section className="registry-panel" aria-labelledby="spam-controls" style={{ background: "#fffbeb", borderInlineStart: "3px solid #f59e0b" }}>
-        <p className="eyebrow">Abuse resistance</p>
-        <h2 id="spam-controls">Spam prevention rules</h2>
+        <p className="eyebrow">{t.leaderboard.abuseEyebrow}</p>
+        <h2 id="spam-controls">{t.leaderboard.spamTitle}</h2>
         <ul className="link-list">
           <li>Raw submission count is never part of the score.</li>
           <li>Rejected or spam submissions are excluded and subtract {REJECTED_OR_SPAM_PENALTY} points each when visible to server-side moderation queries.</li>
@@ -189,7 +191,7 @@ export default async function LeaderboardPage({ params }: { params: Promise<Lead
       </section>
 
       <section className="registry-panel" aria-labelledby="reward-rules">
-        <h2 id="reward-rules">Reward rules</h2>
+        <h2 id="reward-rules">{t.leaderboard.rewardRules}</h2>
         <ul>
           <li>Source submitted: 1 point, pending review.</li>
           <li>Source accepted: 5 points after admin acceptance.</li>
@@ -200,9 +202,9 @@ export default async function LeaderboardPage({ params }: { params: Promise<Lead
       </section>
 
       <nav className="registry-panel" aria-labelledby="leaderboard-actions">
-        <h2 id="leaderboard-actions">Contribute source-backed facts</h2>
+        <h2 id="leaderboard-actions">{t.leaderboard.actionsTitle}</h2>
         <p>Submit missing facts without logging in. They remain Needs verification until a traceable source and human approval are recorded.</p>
-        <Link className="btn btn-primary" href={`/suggest-topic?lang=${encodeURIComponent(locale)}`}>Submit a missing fact</Link>
+        <Link className="btn btn-primary" href={`/suggest-topic?lang=${encodeURIComponent(locale)}`}>{t.leaderboard.submitMissingFact}</Link>
       </nav>
     </article>
   );
