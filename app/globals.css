@@ -43,6 +43,20 @@ a {
   text-underline-offset: 3px;
 }
 
+.claim-value,
+.claim-text-primary,
+.source-pill,
+.meta-item dd,
+pre,
+code {
+  overflow-wrap: anywhere;
+}
+
+pre {
+  overflow-x: auto;
+  white-space: pre-wrap;
+}
+
 /* Layout */
 .page-shell {
   width: min(100%, 960px);
@@ -1270,6 +1284,20 @@ textarea::placeholder {
 }
 
 @media (max-width: 560px) {
+  .registry-row {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .registry-row-main,
+  .registry-row-meta {
+    width: 100%;
+  }
+
+  .registry-row-meta {
+    justify-content: flex-start;
+  }
+
   .registry-row-meta .badge:nth-child(2) {
     display: none;
   }
