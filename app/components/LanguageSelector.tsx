@@ -8,7 +8,15 @@ const DOCUMENT_ACTION_ROUTES = new Set(["report", "hallucination", "diagnostics"
 export function getLocalePath(pathname: string, locale: string): string {
   const segments = pathname.split("/").filter(Boolean);
 
+  if (segments.length === 0) {
+    return `/${locale}`;
+  }
+
   if (segments[0] && isValidLocale(segments[0])) {
+    if (segments.length === 1) {
+      return `/${locale}`;
+    }
+
     const [, route, identifier] = segments;
     if ((route === "wiki" || route === "entity") && identifier) {
       return "/" + [locale, ...segments.slice(1)].join("/");

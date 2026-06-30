@@ -1,7 +1,14 @@
 "use client";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { DEFAULT_LOCALE, isValidLocale } from "../../lib/i18n";
 
 export function SiteFooter() {
+  const pathname = usePathname();
+  const firstSegment = pathname.split("/").filter(Boolean)[0];
+  const locale = firstSegment && isValidLocale(firstSegment) ? firstSegment : DEFAULT_LOCALE;
+  const localeHome = `/${locale}`;
+
   return (
     <footer className="site-footer">
       <div className="site-footer-inner">
@@ -14,7 +21,7 @@ export function SiteFooter() {
 
         <div className="footer-col">
           <p className="footer-col-title">For Humans</p>
-          <Link href="/#registry">Browse Registry</Link>
+          <Link href={`${localeHome}#registry`}>Browse Registry</Link>
           <Link href="/suggest-topic">Suggest Topic</Link>
           <Link href="/community">Community</Link>
         </div>
