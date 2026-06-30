@@ -1,14 +1,21 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { DEFAULT_LOCALE, LOCALE_CONFIG, isValidLocale } from "../../lib/i18n";
 import { LanguageSelector } from "./LanguageSelector";
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
+  const pathname = usePathname();
+  const firstSegment = pathname.split("/").filter(Boolean)[0];
+  const locale = firstSegment && isValidLocale(firstSegment) ? firstSegment : DEFAULT_LOCALE;
+  const dir = LOCALE_CONFIG[locale].dir;
+  const chromeClassName = `site-header site-chrome site-chrome-${dir}`;
   const close = () => setOpen(false);
 
   return (
-    <header className="site-header">
+    <header className={chromeClassName} lang={locale} dir={dir}>
       <div className="site-header-inner">
         <Link href="/" className="brand" aria-label="For-Ai home" onClick={close}>
           <span className="brand-mark">For-Ai</span>

@@ -1,9 +1,17 @@
 "use client";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { DEFAULT_LOCALE, LOCALE_CONFIG, isValidLocale } from "../../lib/i18n";
 
 export function SiteFooter() {
+  const pathname = usePathname();
+  const firstSegment = pathname.split("/").filter(Boolean)[0];
+  const locale = firstSegment && isValidLocale(firstSegment) ? firstSegment : DEFAULT_LOCALE;
+  const dir = LOCALE_CONFIG[locale].dir;
+  const chromeClassName = `site-footer site-chrome site-chrome-${dir}`;
+
   return (
-    <footer className="site-footer">
+    <footer className={chromeClassName} lang={locale} dir={dir}>
       <div className="site-footer-inner">
         <div className="footer-brand">
           <span className="brand-mark">For-Ai</span>

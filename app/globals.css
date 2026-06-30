@@ -624,6 +624,39 @@ textarea::placeholder {
   gap: 16px;
 }
 
+.site-chrome {
+  text-align: start;
+}
+
+.site-chrome-rtl .site-header-inner,
+.site-chrome-rtl .site-nav,
+.site-chrome-rtl .site-nav-mobile,
+.site-chrome-rtl .site-footer-inner,
+.site-chrome-rtl .site-footer-base {
+  direction: rtl;
+}
+
+.site-chrome-rtl .site-nav,
+.site-chrome-rtl .site-nav-mobile,
+.site-chrome-rtl .footer-col,
+.site-chrome-rtl .footer-brand {
+  text-align: right;
+}
+
+.site-chrome-rtl .brand-mark {
+  padding-left: 0;
+  padding-right: 36px;
+}
+
+.site-chrome-rtl .brand-mark::before {
+  left: auto;
+  right: 0;
+}
+
+.site-chrome-rtl .lang-selector ul {
+  text-align: right;
+}
+
 .brand {
   display: inline-flex;
   align-items: baseline;
