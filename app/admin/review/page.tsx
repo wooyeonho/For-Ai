@@ -152,7 +152,7 @@ export default function AdminReviewPage() {
   const counts = data?.counts ?? EMPTY_COUNTS;
 
   const checklist = useMemo(() => [
-    { label: "글 관리", count: counts.pending_community_posts, hint: "community_posts.status = pending", href: "/admin/posts?status=pending", urgent: counts.pending_community_posts > 0 },
+    { label: "통합 Inbox", count: counts.pending_community_posts, hint: "posts/sources/reports/topics", href: "/admin/inbox", urgent: counts.pending_community_posts > 0 },
     { label: "신규 후보", count: counts.candidates_new, hint: "topic_candidates.status = new", href: "/admin/candidates?status=new", urgent: counts.candidates_new === 0 },
     { label: "AI claim 생성", count: counts.candidates_generated, hint: "topic_candidates.status = generated", href: "/admin/candidates", urgent: false },
     { label: "needs_review claim", count: counts.claims_needs_review, hint: "claims.status = needs_review", href: "/admin/verify-claim", urgent: counts.claims_needs_review > 0 },
@@ -252,7 +252,7 @@ export default function AdminReviewPage() {
       <section className="registry-panel" aria-labelledby="today-title">
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
           <h2 id="today-title" style={{ margin: 0 }}>오늘 해야 할 일</h2>
-          <Link href="/admin/verify-claim?claim_status=needs_review" style={{ fontSize: 13 }}>검증 큐 전체 보기 →</Link>
+          <div style={{ display: "flex", gap: 12 }}><Link href="/admin/inbox" style={{ fontSize: 13 }}>통합 inbox 보기 →</Link><Link href="/admin/verify-claim?claim_status=needs_review" style={{ fontSize: 13 }}>검증 큐 전체 보기 →</Link></div>
         </div>
         <div className="stat-strip" style={{ marginBottom: 24 }}>
           <div className="stat">

@@ -283,7 +283,7 @@ export async function GET(request: Request) {
       : null;
 
     const priorityOrdering = [
-      { rank: 1, key: "pending_community_posts", label: "Pending community posts", count: pendingCommunityPosts, href: "/admin/posts?status=pending", reason: "공개 제출물은 스팸/오류 노출을 막기 위해 먼저 승인 또는 숨김 처리합니다." },
+      { rank: 1, key: "pending_community_posts", label: "Pending community posts", count: pendingCommunityPosts, href: "/admin/inbox", reason: "공개 제출물은 통합 inbox에서 스팸/오류 노출을 막기 위해 먼저 승인 또는 숨김 처리합니다." },
       { rank: 2, key: "high_risk", label: "High-risk finance/healthcare/legal/realtime", count: (highRiskCandidates?.length ?? 0) + highRiskDocuments.length, href: "/admin/candidates?status=new", reason: "금융·의료·법률·실시간성 항목은 잘못 인용될 때 피해가 커서 우선 검토합니다." },
       { rank: 3, key: "needs_review_claims", label: "Needs_review claims", count: claimsNeedsReview, href: verifyClaimLink(firstPriorityDoc?.slug), reason: "claim source를 추가하고 verified로 승격해야 AI 인용 가능성이 생깁니다." },
       { rank: 4, key: "generated_candidates", label: "Generated topic candidates", count: candidatesGenerated, href: "/admin/candidates?status=generated", reason: "AI claim generation이 끝난 generated candidate를 공개 등록합니다." },
