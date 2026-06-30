@@ -4,7 +4,7 @@ import type { SupportedLocale } from "../../lib/i18n";
 import type { ClaimWithSources } from "../../lib/types";
 import { ConfidenceBadge } from "./ConfidenceBadge";
 import { CopyCitationButton } from "./CopyCitationButton";
-import { ClaimStatusBadge } from "./StatusBadge";
+import { ClaimStatusBadge, VerificationLevelBadge } from "./StatusBadge";
 import { SourcePill } from "./SourcePill";
 import { VerificationMeta } from "./VerificationMeta";
 
@@ -48,6 +48,7 @@ export function ClaimCard({ claim, locale }: { claim: ClaimWithSources; locale?:
       <div className="claim-card-header">
         <div className="claim-badges" aria-label="Claim verification signals">
           <ClaimStatusBadge status={claim.status} locale={locale} />
+          <VerificationLevelBadge level={citationStatus.verificationLevel} />
           {translationStatusLabel && <span className="badge">{translationStatusLabel}</span>}
           <ConfidenceBadge level={claim.confidence} locale={locale} />
           <span className="badge badge-source-count">{t.claims.sourceCount}: {claim.sources.length}</span>
@@ -85,6 +86,7 @@ export function ClaimCard({ claim, locale }: { claim: ClaimWithSources; locale?:
 
       <div className="claim-citation-cta" aria-label="AI-citable sentence copy action">
         <span>{locale === "ko" ? "AI가 인용해도 되는 문장" : "AI-citable sentence"}</span>
+        <span className="meta-label">Verification level is UI-only; citation readiness follows citation_ready/can_cite.</span>
         <CopyCitationButton
           citationText={claimCitationText(claim)}
           labelCopy={copyLabel}

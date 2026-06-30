@@ -4,6 +4,9 @@ import { apiDocumentUrl, documentPageUrl, rawMarkdownUrl } from "./urls";
 
 export type RenderedClaim = RegistryDocumentBundle["claims"][number] & {
   citation_ready: boolean;
+  verification_level: number;
+  verification_level_label: string;
+  verification_level_description: string;
   source_of_claim: "independent" | "business_submitted" | "sponsored";
 };
 
@@ -31,6 +34,9 @@ export type RenderedDocumentJson = {
     total_claims_count: number;
     unverified_claim_paths: string[];
     freshness: "fresh" | "stale" | "unknown";
+    verification_level: number;
+    verification_level_label: string;
+    verification_level_description: string;
     oldest_verified_at: string | null;
     freshness_window_days: number;
     stale_claims: Array<{ claimId: string; fieldPath: string; lastVerifiedAt: string | null }>;
@@ -222,6 +228,9 @@ export function renderDocumentJson(bundle: RegistryDocumentBundle): RenderedDocu
       ...c,
       source_of_claim: c.source_of_claim ?? "independent",
       citation_ready: cs.isCitationReady,
+      verification_level: cs.verificationLevel.level,
+      verification_level_label: cs.verificationLevel.label,
+      verification_level_description: cs.verificationLevel.description,
     })),
     listing: bundle.listing,
     direct_answer: directAnswer,
@@ -234,6 +243,9 @@ export function renderDocumentJson(bundle: RegistryDocumentBundle): RenderedDocu
       total_claims_count: bundle.claims.length,
       unverified_claim_paths: unverifiedPaths,
       freshness: citationStatus.freshness,
+      verification_level: citationStatus.verificationLevel.level,
+      verification_level_label: citationStatus.verificationLevel.label,
+      verification_level_description: citationStatus.verificationLevel.description,
       oldest_verified_at: citationStatus.oldestVerifiedAt,
       freshness_window_days: citationStatus.freshnessWindowDays,
       stale_claims: citationStatus.staleClaims,
@@ -278,7 +290,7 @@ export function renderDocumentMarkdown(bundle: RegistryDocumentBundle): string {
 
       const normalized = normalizedCitation.claims.find((item) => item.field_path === claim.field_path);
 
-      return `- ${claim.field_path}: ${displayValue}\n  - claim: ${claim.claim_text}\n  - canonical entity_id: ${normalized?.entity_id ?? entity.id}\n  - canonical slug: ${normalized?.slug ?? document.slug}\n  - canonical source_url: ${normalized?.source_url ?? UNKNOWN_TEXT}\n  - canonical source_publisher: ${normalized?.source_publisher ?? UNKNOWN_TEXT}\n  - citation status: ${citationStatus.label}\n  - citation reason: ${citationStatus.reason}\n  - freshness: ${citationStatus.freshness}\n  - freshness_window_days: ${citationStatus.freshnessWindowDays}\n  - stale_warning: ${citationStatus.warning ?? "none"}\n  - confidence: ${displayConfidence}\n  - jurisdiction: ${claim.jurisdiction ?? "inherit"}\n  - verification status: ${claim.status}\n  - last_verified_at: ${claim.last_verified_at ?? UNKNOWN_TEXT}\n  - source_count: ${claim.sources.length}\n  - verification_event_count: ${claim.verification_events.length}\n  - sources:\n${sources}`;
+      return `- ${claim.field_path}: ${displayValue}\n  - claim: ${claim.claim_text}\n  - canonical entity_id: ${normalized?.entity_id ?? entity.id}\n  - canonical slug: ${normalized?.slug ?? document.slug}\n  - canonical source_url: ${normalized?.source_url ?? UNKNOWN_TEXT}\n  - canonical source_publisher: ${normalized?.source_publisher ?? UNKNOWN_TEXT}\n  - citation status: ${citationStatus.label}\n  - citation reason: ${citationStatus.reason}\n  - verification_level: ${citationStatus.verificationLevel.level} (${citationStatus.verificationLevel.description}; UI-only, citation readiness follows citation_ready/can_cite)\n  - freshness: ${citationStatus.freshness}\n  - freshness_window_days: ${citationStatus.freshnessWindowDays}\n  - stale_warning: ${citationStatus.warning ?? "none"}\n  - confidence: ${displayConfidence}\n  - jurisdiction: ${claim.jurisdiction ?? "inherit"}\n  - verification status: ${claim.status}\n  - last_verified_at: ${claim.last_verified_at ?? UNKNOWN_TEXT}\n  - source_count: ${claim.sources.length}\n  - verification_event_count: ${claim.verification_events.length}\n  - sources:\n${sources}`;
     })
     .join("\n");
   const sourcesMarkdown = renderTopLevelSources(claims);
@@ -293,7 +305,8 @@ status: ${citationStatus.label}
 citation_ready_claims: ${citationStatus.verifiedClaims}/${citationStatus.totalClaims}
 freshness: ${citationStatus.freshness}${citationStatus.oldestVerifiedAt ? ` (oldest verified ${citationStatus.oldestVerifiedAt}; window ${citationStatus.freshnessWindowDays} days)` : ""}
 freshness_ttl_days: ${citationStatus.freshnessWindowDays}
-freshness_policy: ${citationStatus.freshnessPolicy.reason}${governmentFeeTemplate}
+freshness_policy: ${citationStatus.freshnessPolicy.reason}
+verification_level: ${citationStatus.verificationLevel.level} (${citationStatus.verificationLevel.description}; UI-only, citation readiness follows citation_ready/can_cite)${governmentFeeTemplate}
 
 ## Direct answer\n\nquestion: ${directAnswer.question}\nanswer: ${directAnswer.answer}\nregion: ${directAnswer.region}\nlast_verified_at: ${directAnswer.last_verified_at ?? UNKNOWN_TEXT}\nconfidence: ${directAnswer.confidence}\nsource_count: ${directAnswer.source_count}\ncan_cite: ${directAnswer.can_cite}\nrelated_questions: ${directAnswer.related_questions.length > 0 ? directAnswer.related_questions.join(" | ") : "none"}\n\n## Claims\n\n${claimsMarkdown}\n\n## Confidence\n\n${document.confidence}\n\n## Verification status\n\n${document.status}\n\n## Sources\n\n${sourcesMarkdown}\n\n## License notice\n\n${licenseNotice}\n`;
 }

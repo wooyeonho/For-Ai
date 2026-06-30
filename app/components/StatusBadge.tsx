@@ -1,6 +1,7 @@
 import { DEFAULT_LOCALE } from "@/lib/i18n";
 import { getTranslations } from "../../lib/i18n";
 import type { SupportedLocale } from "../../lib/i18n";
+import type { VerificationLevelInfo } from "../../lib/citation-status";
 import type { ClaimStatus, DocumentStatus } from "../../lib/types";
 
 function statusClass(status: string): string {
@@ -30,4 +31,14 @@ export function DocumentStatusBadge({ status, locale }: { status: DocumentStatus
     archived:     t.claims.statusArchived,
   };
   return <span className={statusClass(status)} title={`verification status: ${status}`}>{labels[status]}</span>;
+}
+
+
+export function VerificationLevelBadge({ level }: { level: VerificationLevelInfo }) {
+  const tone = level.level >= 3 ? "badge badge-verified" : level.level >= 1 ? "badge badge-review" : "badge";
+  return (
+    <span className={tone} title={`${level.label}: ${level.description}. UI explanation only; citation readiness still follows citation_ready/can_cite policy.`}>
+      {level.label}: {level.description}
+    </span>
+  );
 }
