@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { timingSafeEqual } from "crypto";
 
-import { issueAdminSessionCookie, logAdminAuditEvent, supabaseAdmin } from "@/lib/admin-api";
+import { issueAdminSessionCookie, logAdminAuditEvent, supabaseAdmin } from "../../../../lib/admin-api";
 
 const ADMIN_SECRET = process.env.ADMIN_SECRET ?? "";
 

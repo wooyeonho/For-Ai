@@ -258,6 +258,16 @@ function fallbackSecretContext(request: Request): AdminAuthContext | null {
   };
 }
 
+function fallbackSessionContext(request: Request): AdminAuthContext | null {
+  if (!adminSessionValid(request)) return null;
+  return {
+    adminUserId: null,
+    adminUserHash: hashSafe(`admin_session:${ADMIN_SECRET}`),
+    role: "admin",
+    authMethod: "admin_session",
+  };
+}
+
 export async function authorized(request: Request): Promise<boolean> {
   if (browserSentAdminSecret(request)) return false;
   return (await supabaseAuthContext(request)) !== null || adminSessionContext(request) !== null || fallbackSecretContext(request) !== null;

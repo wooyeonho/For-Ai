@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "commonjs",
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "noEmit": false,
+    "outDir": "../.tmp/admin-auth-test",
+    "strict": true,
+    "lib": ["dom", "es2020"],
+    "types": ["node"]
+  },
+  "files": [
+    "types/server-only.d.ts",
+    "../lib/supabase-server.ts",
+    "../lib/admin-api.ts",
+    "../app/api/admin/login/route.ts",
+    "admin-auth.test.ts"
+  ]
+}
