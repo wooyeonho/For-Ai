@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getAllRegistryBundles, isVerifiedClaim } from "../../../../lib/data";
 import { getDocumentCitationStatus, isStale } from "../../../../lib/citation-status";
-import { LOCALE_CONFIG, SUPPORTED_LOCALES, isValidLocale } from "../../../../lib/i18n";
+import { LOCALE_CONFIG, SUPPORTED_LOCALES, isValidLocale, localizedHref, nonLocaleFormHref } from "../../../../lib/i18n";
 import type { RegistryDocumentBundle } from "../../../../lib/types";
 
 export const revalidate = 60;
@@ -151,7 +151,7 @@ export default async function TopicCategoryPage({
         <p>
           If a fact is missing, submit the topic without logging in. For-Ai will keep it as Needs verification until a traceable source and human review are added.
         </p>
-        <Link className="btn btn-primary" href={`/suggest-topic?category=${encodeURIComponent(category)}`}>
+        <Link className="btn btn-primary" href={nonLocaleFormHref(locale, "/suggest-topic", { category }, localizedHref(locale, `/topics/${category}`))}>
           Submit a missing {title.toLowerCase()} fact
         </Link>
       </section>
@@ -161,7 +161,7 @@ export default async function TopicCategoryPage({
         <ul className="link-list" style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
           {SUPPORTED_LOCALES.filter((l) => l !== locale).map((l) => (
             <li key={l}>
-              <Link href={`/${l}/topics/${category}`}>
+              <Link href={localizedHref(l, `/topics/${category}`)}>
                 {LOCALE_CONFIG[l].flag} {LOCALE_CONFIG[l].nativeName}
               </Link>
             </li>
@@ -234,7 +234,7 @@ function FactList({
         return (
           <li key={bundle.document.slug} className="registry-row">
             <div className="registry-row-main">
-              <Link href={`/${locale}/wiki/${bundle.document.slug}`} className="registry-row-title">
+              <Link href={localizedHref(locale, `/wiki/${bundle.document.slug}`)} className="registry-row-title">
                 {bundle.document.title}
               </Link>
               <span className="registry-row-entity">

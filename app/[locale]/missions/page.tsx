@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { getDailyMissionPlan, getMissionRewardForStatus } from "@/lib/gamification";
+import { localizedHref, nonLocaleFormHref } from "@/lib/i18n";
 
 export const dynamic = "force-static";
 
@@ -17,6 +18,13 @@ export default async function MissionsPage({
 }) {
   const { locale } = await params;
   const plan = getDailyMissionPlan();
+  const missionHref = (href: string) => {
+    if (href.startsWith("/suggest-topic") || href.startsWith("/hallucination/") || href.startsWith("/report/")) {
+      const [path, search = ""] = href.split("?", 2);
+      return nonLocaleFormHref(locale, path, new URLSearchParams(search), localizedHref(locale, "/missions"));
+    }
+    return href.startsWith("/") ? localizedHref(locale, href.replace(/^\/[a-z]{2}(?=\/)/, "")) : href;
+  };
 
   return (
     <article className="goal-dashboard" aria-labelledby="missions-title">
@@ -88,7 +96,7 @@ export default async function MissionsPage({
                   <dd>{mission.antiAbuseRule}</dd>
                 </div>
               </dl>
-              <Link className="cta-link cta-correction" href={mission.actionHref.startsWith("/") ? mission.actionHref.replace("/ko/", `/${locale}/`) : mission.actionHref}>
+              <Link className="cta-link cta-correction" href={missionHref(mission.actionHref)}>
                 Start mission
               </Link>
             </article>

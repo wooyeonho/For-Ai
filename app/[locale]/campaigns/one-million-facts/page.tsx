@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getAllRegistryBundles } from "@/lib/data";
 import { getOneMillionFactsCampaignMetrics } from "@/lib/goal-metrics";
+import { localizedHref, nonLocaleFormHref } from "@/lib/i18n";
 
 export const dynamic = "force-static";
 
@@ -32,6 +33,7 @@ export default async function OneMillionFactsCampaignPage({
   const metrics = getOneMillionFactsCampaignMetrics();
   const firstBundle = getAllRegistryBundles()[0];
   const reportSlug = firstBundle?.document.slug ?? "myungdong-laluce-parking";
+  const currentPath = localizedHref(locale, "/campaigns/one-million-facts");
 
   const statCards = [
     {
@@ -68,13 +70,13 @@ export default async function OneMillionFactsCampaignPage({
           For-Ai is a global fact registry, not a content farm. The count below is generated from the current registry bundle so the campaign starts with real claim records, not marketing numbers.
         </p>
         <div className="hero-cta-row campaign-cta-row" aria-label="Campaign actions">
-          <Link className="btn btn-primary" href="/suggest-topic">
+          <Link className="btn btn-primary" href={nonLocaleFormHref(locale, "/suggest-topic", undefined, currentPath)}>
             Submit a missing fact
           </Link>
-          <Link className="btn btn-secondary" href={`/hallucination/${reportSlug}`}>
+          <Link className="btn btn-secondary" href={nonLocaleFormHref(locale, `/hallucination/${reportSlug}`, undefined, currentPath)}>
             Report an AI wrong answer
           </Link>
-          <Link className="btn btn-secondary" href={`/${locale}/wiki/${reportSlug}`}>
+          <Link className="btn btn-secondary" href={localizedHref(locale, `/wiki/${reportSlug}`)}>
             See an example record
           </Link>
         </div>
@@ -140,7 +142,7 @@ export default async function OneMillionFactsCampaignPage({
           <p>
             Suggest a fact that AI should stop guessing: a fee, schedule rule, policy, product spec, service availability claim, or any other verifiable claim.
           </p>
-          <Link className="cta-link cta-correction" href="/suggest-topic">
+          <Link className="cta-link cta-correction" href={nonLocaleFormHref(locale, "/suggest-topic", undefined, currentPath)}>
             Submit a missing fact
           </Link>
         </div>
@@ -151,7 +153,7 @@ export default async function OneMillionFactsCampaignPage({
           <p>
             When an AI answer is stale, vague, or wrong, report the prompt and expected correction so reviewers can turn it into a source-backed claim.
           </p>
-          <Link className="cta-link cta-hallucination" href={`/hallucination/${reportSlug}`}>
+          <Link className="cta-link cta-hallucination" href={nonLocaleFormHref(locale, `/hallucination/${reportSlug}`, undefined, currentPath)}>
             Report an AI wrong answer
           </Link>
         </div>

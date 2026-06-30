@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { getAllRegistryBundles } from "../../../../lib/data";
 import { getClaimCitationStatus, getDocumentCitationStatus } from "../../../../lib/citation-status";
 import { getRegistryIndex, type RegistryIndexItem } from "../../../../lib/registry-index";
-import { SUPPORTED_LOCALES, isValidLocale } from "../../../../lib/i18n";
+import { SUPPORTED_LOCALES, isValidLocale, localizedHref, nonLocaleFormHref } from "../../../../lib/i18n";
 import type { SupportedLocale } from "../../../../lib/i18n";
 
 export const revalidate = 60;
@@ -217,7 +217,7 @@ export default async function CountryRegistryPage({
   const recentFacts = collectCountryClaims(normalizedCountry).slice(0, 8);
   const staleFacts = items.filter((item) => item.freshness === "stale").slice(0, 8);
   const popularQuestions = popularQuestionsFor(items);
-  const submitTopicHref = `/suggest-topic?country=${encodeURIComponent(normalizedCountry)}&lang=${encodeURIComponent(locale)}`;
+  const submitTopicHref = nonLocaleFormHref(locale, "/suggest-topic", { country: normalizedCountry }, localizedHref(locale, `/country/${country}`));
   const unknownLabel = UNKNOWN_LABELS[supportedLocale];
 
   return (
@@ -302,7 +302,7 @@ export default async function CountryRegistryPage({
           <ul className="link-list">
             {recentFacts.map((fact) => (
               <li key={fact.id}>
-                <Link href={`/${locale}/wiki/${fact.documentSlug}`}>{fact.documentTitle}</Link>: {fact.value}
+                <Link href={localizedHref(locale, `/wiki/${fact.documentSlug}`)}>{fact.documentTitle}</Link>: {fact.value}
                 <span className="meta-label"> · {dateLabel(fact.lastVerifiedAt)} · {fact.category}</span>
               </li>
             ))}
@@ -318,7 +318,7 @@ export default async function CountryRegistryPage({
           <ul className="link-list">
             {staleFacts.map((item) => (
               <li key={item.slug}>
-                <Link href={`/${locale}/wiki/${item.slug}`}>{item.title}</Link>
+                <Link href={localizedHref(locale, `/wiki/${item.slug}`)}>{item.title}</Link>
                 <span className="meta-label"> · oldest verified: {dateLabel(item.oldest_verified_at)} · {item.type}</span>
               </li>
             ))}
@@ -347,7 +347,7 @@ export default async function CountryRegistryPage({
           <ul className="link-list">
             {items.map((item) => (
               <li key={`${item.source}-${item.slug}`}>
-                <Link href={`/${locale}/wiki/${item.slug}`}>{item.title}</Link>{" "}
+                <Link href={localizedHref(locale, `/wiki/${item.slug}`)}>{item.title}</Link>{" "}
                 <span className={item.can_cite ? "badge badge-verified" : "badge badge-review"}>
                   {item.can_cite ? "verified" : "needs review"}
                 </span>

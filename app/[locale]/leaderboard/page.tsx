@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { SUPPORTED_LOCALES, isValidLocale } from "../../../lib/i18n";
+import { SUPPORTED_LOCALES, isValidLocale, localizedHref, nonLocaleFormHref } from "../../../lib/i18n";
 import { createServiceRoleClient, isServiceRoleConfigured } from "../../../lib/supabase-server";
 
 export const revalidate = 300;
@@ -196,13 +196,13 @@ export default async function LeaderboardPage({ params }: { params: Promise<Lead
           <li>Claim verified from contribution: 20 points after admin verification approval.</li>
           <li>Hallucination report accepted: 10 points after admin acceptance.</li>
         </ul>
-        <p><Link href={`/${locale}/quests`}>View country quests and badge progress</Link></p>
+        <p><Link href={localizedHref(locale, "/quests")}>View country quests and badge progress</Link></p>
       </section>
 
       <nav className="registry-panel" aria-labelledby="leaderboard-actions">
         <h2 id="leaderboard-actions">Contribute source-backed facts</h2>
         <p>Submit missing facts without logging in. They remain Needs verification until a traceable source and human approval are recorded.</p>
-        <Link className="btn btn-primary" href={`/suggest-topic?lang=${encodeURIComponent(locale)}`}>Submit a missing fact</Link>
+        <Link className="btn btn-primary" href={nonLocaleFormHref(locale, "/suggest-topic", undefined, localizedHref(locale, "/leaderboard"))}>Submit a missing fact</Link>
       </nav>
     </article>
   );

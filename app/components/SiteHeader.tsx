@@ -1,25 +1,31 @@
 "use client";
 import { useState } from "react";
 import Link from "next/link";
+import { useParams } from "next/navigation";
+import { isValidLocale, localizedHref, nonLocaleFormHref } from "@/lib/i18n";
 import { LanguageSelector } from "./LanguageSelector";
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
+  const params = useParams<{ locale?: string }>();
+  const locale = typeof params.locale === "string" && isValidLocale(params.locale) ? params.locale : undefined;
   const close = () => setOpen(false);
+  const routeHref = (path: string) => locale ? localizedHref(locale, path) : path;
+  const suggestHref = locale ? nonLocaleFormHref(locale, "/suggest-topic", undefined, localizedHref(locale, "/")) : "/suggest-topic";
 
   return (
     <header className="site-header">
       <div className="site-header-inner">
-        <Link href="/" className="brand" aria-label="For-Ai home" onClick={close}>
+        <Link href={routeHref("/")} className="brand" aria-label="For-Ai home" onClick={close}>
           <span className="brand-mark">For-Ai</span>
           <span className="brand-sub">Global Fact Registry</span>
         </Link>
         <nav className="site-nav" aria-label="Main menu">
-          <Link href="/#registry">Registry</Link>
+          <Link href={routeHref("/#registry")}>Registry</Link>
           <Link href="/api-docs">API</Link>
           <Link href="/community">Community</Link>
           <Link href="/contribute">Contribute</Link>
-          <Link href="/suggest-topic">Suggest</Link>
+          <Link href={suggestHref}>Suggest</Link>
           <LanguageSelector />
         </nav>
         <button
@@ -36,11 +42,11 @@ export function SiteHeader() {
       </div>
       {open && (
         <nav className="site-nav-mobile" aria-label="Mobile menu">
-          <Link href="/#registry" onClick={close}>Registry</Link>
+          <Link href={routeHref("/#registry")} onClick={close}>Registry</Link>
           <Link href="/api-docs" onClick={close}>API</Link>
           <Link href="/community" onClick={close}>Community</Link>
           <Link href="/contribute" onClick={close}>Contribute</Link>
-          <Link href="/suggest-topic" onClick={close}>Suggest Topic</Link>
+          <Link href={suggestHref} onClick={close}>Suggest Topic</Link>
           <div className="site-nav-mobile-lang"><LanguageSelector /></div>
         </nav>
       )}

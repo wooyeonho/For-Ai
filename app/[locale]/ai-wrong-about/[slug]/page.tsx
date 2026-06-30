@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getAllRegistryBundles, getRegistryBundleBySlug, isVerifiedClaim } from "../../../../lib/data";
 import { getRegistryBundleFromSupabase } from "../../../../lib/supabase-documents";
-import { SUPPORTED_LOCALES, isValidLocale } from "../../../../lib/i18n";
+import { SUPPORTED_LOCALES, isValidLocale, localizedHref, nonLocaleFormHref } from "../../../../lib/i18n";
 import { siteUrl } from "../../../../lib/urls";
 import type { ClaimWithSources, RegistryDocumentBundle } from "../../../../lib/types";
 
@@ -68,7 +68,7 @@ export default async function AiWrongAboutPage({
   const primaryClaim = verifiedClaims[0] ?? null;
   const primarySource = primaryClaim?.sources[0] ?? null;
   const canonicalUrl = siteUrl(`/${locale}/ai-wrong-about/${bundle.document.slug}`);
-  const reportUrl = `/hallucination/${bundle.document.slug}`;
+  const reportUrl = nonLocaleFormHref(locale, `/hallucination/${bundle.document.slug}`, undefined, localizedHref(locale, `/ai-wrong-about/${bundle.document.slug}`));
   const correctionPrompt = correctionPromptFor(bundle, primaryClaim);
 
   const jsonLd = {
@@ -171,7 +171,7 @@ export default async function AiWrongAboutPage({
           <li>Reviewers link the report to a specific verified claim using <code>claim_id</code>.</li>
           <li>The page is public only after moderation changes <code>status</code> to <code>accepted</code>; new/reviewing/rejected/spam reports are not publicly readable.</li>
         </ol>
-        <p><Link href={`/${locale}/wiki/${bundle.document.slug}`}>Open source document</Link></p>
+        <p><Link href={localizedHref(locale, `/wiki/${bundle.document.slug}`)}>Open source document</Link></p>
       </nav>
     </article>
   );

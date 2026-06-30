@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useState } from "react";
-import { getTranslations } from "../../lib/i18n";
+import { getTranslations, localizedHref, nonLocaleFormHref } from "../../lib/i18n";
 import type { SupportedLocale } from "../../lib/i18n";
 
 interface DocItem {
@@ -41,7 +41,7 @@ export default function HomeSearch({ docs, locale = "ko" }: { docs: DocItem[]; l
             <p className="home-search-muted">
               &quot;{query}&quot; — {t.home.noResults}.{" "}
               <Link
-                href={`/suggest-topic?q=${encodeURIComponent(query)}`}
+                href={nonLocaleFormHref(locale, "/suggest-topic", { q: query }, localizedHref(locale, "/"))}
                 className="home-search-link"
               >
                 {t.home.suggestFirst}
@@ -56,7 +56,7 @@ export default function HomeSearch({ docs, locale = "ko" }: { docs: DocItem[]; l
           ) : (
             <p className="home-search-muted">
               {t.home.noDocs}{" "}
-              <Link href="/suggest-topic" className="home-search-link">
+              <Link href={nonLocaleFormHref(locale, "/suggest-topic", undefined, localizedHref(locale, "/"))} className="home-search-link">
                 {t.home.suggestFirst}
               </Link>
             </p>
@@ -71,7 +71,7 @@ export default function HomeSearch({ docs, locale = "ko" }: { docs: DocItem[]; l
           <ul className="document-list">
             {filtered.map((d) => (
               <li key={d.slug}>
-                <Link href={`/${locale}/wiki/${d.slug}`}>{d.title}</Link>
+                <Link href={localizedHref(locale, `/wiki/${d.slug}`)}>{d.title}</Link>
                 {d.category && <span className="meta-label"> — {d.category}</span>}
                 {d.source === "supabase" && (
                   <span className="home-source-badge">

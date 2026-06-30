@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { getRegistryBundleBySlug, getAllRegistryBundles } from "../../../../lib/data";
 import { buildDocumentMetadata, buildDocumentJsonLd } from "../../../../lib/seo";
 import { siteUrl } from "../../../../lib/urls";
-import { SUPPORTED_LOCALES, LOCALE_CONFIG, isValidLocale, getTranslations } from "../../../../lib/i18n";
+import { SUPPORTED_LOCALES, LOCALE_CONFIG, isValidLocale, getTranslations, localizedHref, nonLocaleFormHref } from "../../../../lib/i18n";
 import type { SupportedLocale } from "../../../../lib/i18n";
 import { getEntityLabels } from "../../../../lib/i18n/entity-labels";
 import type { RegistryDocumentBundle } from "../../../../lib/types";
@@ -65,6 +65,7 @@ export default async function WikiDocumentPage({
   const whyPeopleAsk = (docData?.why_people_ask_ai as string) ?? null;
   const apiUrl = `/api/documents/${document.slug}`;
   const rawUrl = `/raw/${document.slug}.md`;
+  const currentPath = localizedHref(locale, `/wiki/${document.slug}`);
   const isPromoted = !getRegistryBundleBySlug(slug);
   const jsonLd = buildDocumentJsonLd(bundle);
   const citationStatus = getDocumentCitationStatus(bundle);
@@ -158,7 +159,7 @@ export default async function WikiDocumentPage({
           )}
         </div>
         <p style={{ marginTop: 8 }}>
-          <Link href={`/${locale}/entity/${encodeURIComponent(entity.id)}`}>{el.allFacts} →</Link>
+          <Link href={localizedHref(locale, `/entity/${encodeURIComponent(entity.id)}`)}>{el.allFacts} →</Link>
         </p>
         <DocumentStatsBar documentId={document.id} />
       </header>
@@ -210,7 +211,7 @@ export default async function WikiDocumentPage({
       )}
 
       {!citationStatus.isVerifiedDocument && (
-        <CorrectionCTA slug={document.slug} unverified />
+        <CorrectionCTA slug={document.slug} locale={locale} returnPath={currentPath} unverified />
       )}
 
       {isGovernmentFeeTemplate && (
@@ -281,9 +282,9 @@ export default async function WikiDocumentPage({
         <ul className="link-list">
           <li><Link href={apiUrl}>JSON API ({apiUrl})</Link></li>
           <li><Link href={rawUrl}>Raw Markdown ({rawUrl})</Link></li>
-          <li><Link href={`/report/${document.slug}`}>{t.wiki.correctionReport}</Link></li>
-          <li><Link href={`/hallucination/${document.slug}`}>{t.wiki.hallucinationReport}</Link></li>
-          <li><Link href={`/diagnostics/${document.slug}`}>{t.wiki.diagnostics}</Link></li>
+          <li><Link href={nonLocaleFormHref(locale, `/report/${document.slug}`, undefined, currentPath)}>{t.wiki.correctionReport}</Link></li>
+          <li><Link href={nonLocaleFormHref(locale, `/hallucination/${document.slug}`, undefined, currentPath)}>{t.wiki.hallucinationReport}</Link></li>
+          <li><Link href={`/diagnostics/${document.slug}?lang=${encodeURIComponent(locale)}&return=${encodeURIComponent(currentPath)}`}>{t.wiki.diagnostics}</Link></li>
         </ul>
       </nav>
 
@@ -307,7 +308,7 @@ export default async function WikiDocumentPage({
         <ul className="link-list" style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
           {SUPPORTED_LOCALES.filter((l) => l !== locale).map((l) => (
             <li key={l}>
-              <Link href={`/${l}/wiki/${slug}`}>
+              <Link href={localizedHref(l, `/wiki/${slug}`)}>
                 {LOCALE_CONFIG[l].flag} {LOCALE_CONFIG[l].nativeName}
               </Link>
             </li>

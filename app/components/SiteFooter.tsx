@@ -1,7 +1,14 @@
 "use client";
 import Link from "next/link";
+import { useParams } from "next/navigation";
+import { isValidLocale, localizedHref, nonLocaleFormHref } from "@/lib/i18n";
 
 export function SiteFooter() {
+  const params = useParams<{ locale?: string }>();
+  const locale = typeof params.locale === "string" && isValidLocale(params.locale) ? params.locale : undefined;
+  const routeHref = (path: string) => locale ? localizedHref(locale, path) : path;
+  const suggestHref = locale ? nonLocaleFormHref(locale, "/suggest-topic", undefined, localizedHref(locale, "/")) : "/suggest-topic";
+
   return (
     <footer className="site-footer">
       <div className="site-footer-inner">
@@ -14,8 +21,8 @@ export function SiteFooter() {
 
         <div className="footer-col">
           <p className="footer-col-title">For Humans</p>
-          <Link href="/#registry">Browse Registry</Link>
-          <Link href="/suggest-topic">Suggest Topic</Link>
+          <Link href={routeHref("/#registry")}>Browse Registry</Link>
+          <Link href={suggestHref}>Suggest Topic</Link>
           <Link href="/community">Community</Link>
         </div>
 

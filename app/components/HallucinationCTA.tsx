@@ -1,8 +1,9 @@
 import Link from "next/link";
+import { nonLocaleFormHref } from "@/lib/i18n";
 
-export function HallucinationCTA({ slug }: { slug: string }) {
+export function HallucinationCTA({ slug, locale = "ko", returnPath }: { slug: string; locale?: string; returnPath?: string }) {
   return (
-    <Link href={`/hallucination/${slug}`} className="cta-link cta-hallucination">
+    <Link href={nonLocaleFormHref(locale, `/hallucination/${slug}`, undefined, returnPath)} className="cta-link cta-hallucination">
       AI 오답 신고
     </Link>
   );
