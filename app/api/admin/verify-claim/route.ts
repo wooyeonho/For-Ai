@@ -65,7 +65,7 @@ function claimDate(row: ClaimWithDocument) {
   return new Date(row.created_at ?? row.updated_at ?? 0).getTime();
 }
 
-type ClaimAction = "verify" | "reject" | "mark_unknown" | "edit_value" | "attach_source" | "promote_document";
+type ClaimAction = "verify" | "reject" | "mark_unknown" | "edit_value" | "attach_source" | "promote_document" | "bulk_verify" | "bulk_needs_verification" | "needs_verification";
 
 type SourceInput = {
   source_type?: string;
@@ -379,17 +379,25 @@ export async function POST(request: Request) {
   });
 
   if (!claimId) return NextResponse.json({ error: "claim_id is required" }, { status: 400 });
-  if (!["verify", "reject", "mark_unknown", "edit_value", "attach_source", "promote_document"].includes(action)) return NextResponse.json({ error: "invalid action" }, { status: 400 });
+  if (!["verify", "reject", "mark_unknown", "edit_value", "attach_source", "promote_document", "needs_verification"].includes(action)) return NextResponse.json({ error: "invalid action" }, { status: 400 });
   if (!ALLOWED_CONFIDENCE.has(confidence)) return NextResponse.json({ error: "invalid confidence" }, { status: 400 });
   if (shouldAttachSource && (!ALLOWED_SOURCES.has(sourceType) || (!title && !url && !citation))) return NextResponse.json({ error: "valid source_type and at least one source title, url, or citation are required" }, { status: 400 });
+  if (action === "verify" && confidence === "low") return NextResponse.json({ error: "low confidence claims cannot be verified" }, { status: 400 });
   if (["verify", "edit_value"].includes(action) && (!claimValue || claimValue === "확인 필요")) return NextResponse.json({ error: "verified/edited claim_value is required" }, { status: 400 });
 
   const { data: existingClaim, error: fetchError } = await sb
     .from("claims")
-    .select("id, document_id, entity_id, status, confidence, claim_value")
+    .select("id, document_id, entity_id, status, confidence, claim_value, documents(id, slug, lang, category)")
     .eq("id", claimId)
     .single();
   if (fetchError || !existingClaim) return NextResponse.json({ error: "claim not found", detail: fetchError?.message }, { status: 404 });
+
+  const existingDocument = Array.isArray((existingClaim as { documents?: unknown }).documents) ? (existingClaim as { documents?: Array<{ slug?: string; lang?: string; category?: string }> }).documents?.[0] : (existingClaim as { documents?: { slug?: string; lang?: string; category?: string } }).documents;
+  const isHighRisk = HIGH_RISK_CATEGORIES.has(String(existingDocument?.category ?? "").toLowerCase());
+  const hasExistingSource = await sb.from("claim_sources").select("id", { count: "exact", head: true }).eq("claim_id", claimId);
+  if (hasExistingSource.error) return NextResponse.json({ error: "claim source lookup failed", detail: hasExistingSource.error.message }, { status: 500 });
+  if (action === "verify" && !shouldAttachSource && Number(hasExistingSource.count ?? 0) === 0) return NextResponse.json({ error: "a source is required before a claim can be verified" }, { status: 400 });
+  if (action === "verify" && isHighRisk && body.high_risk_confirmed !== true) return NextResponse.json({ error: "high-risk category requires additional confirmation before verification" }, { status: 400 });
 
   const now = new Date().toISOString();
   let sourceId: string | null = null;
@@ -446,9 +454,9 @@ export async function POST(request: Request) {
       nextStatus = "verified";
       nextConfidence = confidence;
     }
-    if (action === "reject") {
-      Object.assign(update, { status: "disputed", confidence: "low" });
-      nextStatus = "disputed";
+    if (action === "reject" || action === "needs_verification") {
+      Object.assign(update, { status: action === "reject" ? "disputed" : "needs_review", confidence: "low", last_verified_at: null });
+      nextStatus = action === "reject" ? "disputed" : "needs_review";
       nextConfidence = "low";
     }
     if (action === "mark_unknown") {
@@ -527,7 +535,8 @@ export async function POST(request: Request) {
       await checkAndAwardBadges(sb, contributorHash);
     }
 
-    return NextResponse.json({ claim: updatedClaim, source_id: sourceId, source_trust_score: sourceId ? sourceTrust.source_trust_score : null, document_all_verified: documentAllVerified });
+    const publicWikiPath = existingDocument?.slug ? `/${existingDocument.lang ?? "en"}/wiki/${existingDocument.slug}` : null;
+    return NextResponse.json({ claim: updatedClaim, source_id: sourceId, source_trust_score: sourceId ? sourceTrust.source_trust_score : null, document_all_verified: documentAllVerified, public_wiki_path: publicWikiPath });
   } catch (error) {
     if (sourceId) await sb.from("claim_sources").delete().eq("id", sourceId);
     const message = error instanceof Error ? error.message : "claim action failed";

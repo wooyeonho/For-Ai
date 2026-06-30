@@ -42,6 +42,7 @@ type Pagination = { page: number; limit: number; total: number; total_pages: num
 type ClaimStats = { total: number; needs_review: number; verified: number };
 
 const SOURCE_TYPES = ["official", "law", "platform", "document", "web", "review", "user", "phone", "photo", "other", "unknown"];
+const HIGH_RISK_CATEGORIES = new Set(["finance", "banking", "insurance", "healthcare", "genomics", "dna", "government", "labor", "tax", "travel", "real_estate", "housing"]);
 const SOURCE_TRUST: Record<string, number> = { official: 95, platform: 85, document: 80, web: 65, photo: 60, phone: 55, review: 40, user: 30, other: 25, unknown: 0 };
 function trustScore(sourceType?: string | null, url?: string | null, citation?: string | null) {
   const base = SOURCE_TRUST[sourceType ?? "unknown"] ?? 0;
@@ -86,6 +87,9 @@ export default function VerifyClaimPage() {
 
   // Verification form state
   const [selectedClaim, setSelectedClaim] = useState<ClaimRow | null>(null);
+  const [selectedDocument, setSelectedDocument] = useState<DocumentRow | null>(null);
+  const [wizardStep, setWizardStep] = useState(1);
+  const [highRiskConfirmed, setHighRiskConfirmed] = useState(false);
   const [claimValue, setClaimValue] = useState("");
   const [sourceType, setSourceType] = useState("official");
   const [title, setTitle] = useState("");
@@ -167,12 +171,13 @@ export default function VerifyClaimPage() {
     const el = document.getElementById(`doc-${doc.slug}`);
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
     const firstUnverified = (doc.claims ?? []).find((c) => c.status !== "verified");
-    if (firstUnverified) openVerify(firstUnverified);
+    if (firstUnverified) openVerify(firstUnverified, doc);
     setTargetSlug(null);
   }, [targetSlug, documents]);
 
-  function openVerify(claim: ClaimRow) {
+  function openVerify(claim: ClaimRow, doc?: DocumentRow) {
     setSelectedClaim(claim);
+    setSelectedDocument(doc ?? documents.find((document) => (document.claims ?? []).some((item) => item.id === claim.id)) ?? null);
     setClaimValue(claim.claim_value === "확인 필요" ? "" : claim.claim_value);
     setTitle("");
     setUrl("");
@@ -180,6 +185,8 @@ export default function VerifyClaimPage() {
     setSourceType("official");
     setConfidence("high");
     setSourceCheck(null);
+    setWizardStep(1);
+    setHighRiskConfirmed(false);
     setMessage(null);
     setTimeout(() => document.getElementById("verify-form")?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
   }
@@ -211,6 +218,11 @@ export default function VerifyClaimPage() {
 
   async function runClaimAction(action: "verify" | "reject" | "mark_unknown" | "edit_value" | "attach_source" | "promote_document") {
     if (!selectedClaim) return;
+    const hasSource = Boolean(title.trim() || url.trim() || citation.trim() || (selectedClaim.claim_sources?.length ?? 0) > 0);
+    const highRisk = HIGH_RISK_CATEGORIES.has(String(selectedDocument?.category ?? "").toLowerCase());
+    if (action === "verify" && !hasSource) { setMessage({ ok: false, text: "출처가 없으면 verified 처리할 수 없습니다. 출처 제목, URL 또는 citation을 추가하세요." }); return; }
+    if (action === "verify" && confidence === "low") { setMessage({ ok: false, text: "confidence가 low이면 verified 처리할 수 없습니다. 확인 필요로 유지하거나 medium/high로 근거를 보강하세요." }); return; }
+    if (action === "verify" && highRisk && !highRiskConfirmed) { setMessage({ ok: false, text: "high-risk category는 추가 확인 체크를 완료해야 verified 처리할 수 있습니다." }); return; }
     const res = await fetch("/api/admin/verify-claim", {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-admin-secret": secret, "x-admin-csrf": "1", ...(adminActor.trim() ? { "x-admin-actor": adminActor.trim() } : {}) },
@@ -226,11 +238,13 @@ export default function VerifyClaimPage() {
         source_check_status: sourceCheck?.source_check_status ?? "unchecked",
         source_trust_score: sourceCheck?.source_trust_score ?? 0,
         source_check_notes: sourceCheck?.source_check_notes ?? [],
+        high_risk_confirmed: highRiskConfirmed,
       }),
     });
     const data = await res.json();
     if (res.ok) {
-      setMessage({ ok: true, text: data.document_all_verified ? "✓ 검증 저장 완료 — 문서 전체 verified 승격!" : `✓ 액션 저장 완료: ${action}` });
+      const publicLink = data.public_wiki_path ? ` · public wiki: ${data.public_wiki_path}` : "";
+      setMessage({ ok: true, text: data.document_all_verified ? `✓ 검증 저장 완료 — 문서 전체 verified 승격!${publicLink}` : `✓ 액션 저장 완료: ${action}${publicLink}` });
       setSelectedClaim(null);
       await load(page);
     } else {
@@ -305,7 +319,6 @@ export default function VerifyClaimPage() {
   const visibleDocIds = new Set(filteredClaims.map(({ doc }) => doc.id));
   const reviewCount = allClaims.filter(({ claim }) => claim.status !== "verified").length;
   const verifiedCount = allClaims.filter(({ claim }) => claim.status === "verified").length;
-  const needsReviewCount = documents.reduce((sum, doc) => sum + (doc.claims ?? []).filter((c) => c.status === "needs_review").length, 0);
 
   return (
     <div style={{ maxWidth: 960, margin: "0 auto", padding: "40px 20px" }}>
@@ -527,7 +540,7 @@ export default function VerifyClaimPage() {
                 )}
                 {(claim.verification_events?.length ?? 0) > 0 && <p className="meta-label">latest reason: {claim.verification_events?.at(-1)?.note ?? "—"}</p>}
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
-                  {claim.status !== "verified" && <button onClick={() => openVerify(claim)}>출처 추가 + verified 승격</button>}
+                  {claim.status !== "verified" && <button onClick={() => openVerify(claim, doc)}>출처 추가 + wizard 검증</button>}
                   <button type="button" onClick={() => markClaim("needs_verification", claim)}>needs verification + reason</button>
                   <button type="button" onClick={() => markClaim("reject", claim)}>reject/dispute + reason</button>
                 </div>
@@ -579,6 +592,28 @@ export default function VerifyClaimPage() {
             <p className="eyebrow">현재 값</p>
             <p><strong>{selectedClaim.claim_value}</strong></p>
             <p style={{ fontSize: 13, color: "#6b7280" }}>{selectedClaim.claim_text}</p>
+            {selectedDocument && <p className="meta-label">문서: {selectedDocument.title} · category: {selectedDocument.category ?? "?"} · 완료 후 <Link href={`/${selectedDocument.lang ?? "en"}/wiki/${selectedDocument.slug}`} target="_blank">public wiki 열기</Link></p>}
+          </div>
+
+          <div style={{ marginBottom: 16, padding: 12, border: "1px solid #bfdbfe", borderRadius: 8, background: "#eff6ff" }}>
+            <strong>Wizard mode — 비개발자 운영자 검증 단계</strong>
+            <ol style={{ margin: "8px 0 0", paddingLeft: 20, lineHeight: 1.8 }}>
+              <li style={{ fontWeight: wizardStep === 1 ? 800 : 400 }}>Claim 값이 출처와 일치하는지 확인합니다.</li>
+              <li style={{ fontWeight: wizardStep === 2 ? 800 : 400 }}>출처 제목/URL/citation 중 하나 이상을 기록합니다. 출처가 없으면 다음 단계로 이동할 수 없습니다.</li>
+              <li style={{ fontWeight: wizardStep === 3 ? 800 : 400 }}>confidence를 선택합니다. low는 verified 처리 불가입니다.</li>
+              {HIGH_RISK_CATEGORIES.has(String(selectedDocument?.category ?? "").toLowerCase()) && <li style={{ fontWeight: wizardStep === 4 ? 800 : 400 }}>High-risk 추가 확인: 공식/법령/규정 등 1차 근거를 다시 확인합니다.</li>}
+              <li>완료 후 public wiki link를 안내합니다.</li>
+            </ol>
+            <div style={{ display: "flex", gap: 8, marginTop: 10 }}>
+              <button type="button" onClick={() => setWizardStep(Math.max(1, wizardStep - 1))} disabled={wizardStep === 1}>이전 단계</button>
+              <button type="button" onClick={() => {
+                const hasSource = Boolean(title.trim() || url.trim() || citation.trim() || (selectedClaim.claim_sources?.length ?? 0) > 0);
+                if (wizardStep >= 2 && !hasSource) { setMessage({ ok: false, text: "2단계 차단: 출처가 없으면 다음 단계로 갈 수 없습니다." }); return; }
+                if (wizardStep >= 3 && confidence === "low") { setMessage({ ok: false, text: "3단계 차단: confidence low는 verified 불가입니다." }); return; }
+                setWizardStep(wizardStep + 1);
+              }}>다음 단계</button>
+              <span className="badge">현재 {wizardStep}단계</span>
+            </div>
           </div>
 
           <label style={{ display: "block", marginBottom: 12 }}>
@@ -677,17 +712,25 @@ export default function VerifyClaimPage() {
             >
               <option value="high">high — 공식/법령/공식 플랫폼</option>
               <option value="medium">medium — 신뢰 가능한 3자 출처</option>
+              <option value="low">low — 확인 필요 (verified 불가)</option>
             </select>
           </label>
 
+          {HIGH_RISK_CATEGORIES.has(String(selectedDocument?.category ?? "").toLowerCase()) && (
+            <label style={{ display: "block", marginBottom: 16, padding: 12, border: "1px solid #f59e0b", borderRadius: 8, background: "#fffbeb" }}>
+              <input type="checkbox" checked={highRiskConfirmed} onChange={(e) => setHighRiskConfirmed(e.target.checked)} />{" "}
+              High-risk 추가 확인 완료: 공식/법령/규정/기관 자료 등 1차 근거를 직접 열어 claim 값과 citation을 재확인했습니다.
+            </label>
+          )}
+
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button onClick={submitVerify} disabled={!claimValue.trim()}>1. verify claim (저장 + verified 승격)</button>
+            <button onClick={submitVerify} disabled={!claimValue.trim() || confidence === "low"}>1. wizard 완료: verify claim (저장 + verified 승격)</button>
             <button onClick={() => runClaimAction("reject")} type="button">2. reject claim</button>
             <button onClick={() => runClaimAction("mark_unknown")} type="button">3. mark as unknown</button>
             <button onClick={() => runClaimAction("edit_value")} type="button">4. edit claim value</button>
             <button onClick={() => runClaimAction("attach_source")} type="button">5. attach source</button>
             <button onClick={() => runClaimAction("promote_document")} type="button">6. promote document if all required claims are verified</button>
-            <button onClick={() => setSelectedClaim(null)} type="button" style={{ background: "none", border: "1px solid #d1d5db" }}>취소</button>
+            <button onClick={() => { setSelectedClaim(null); setSelectedDocument(null); }} type="button" style={{ background: "none", border: "1px solid #d1d5db" }}>취소</button>
           </div>
         </section>
       )}
