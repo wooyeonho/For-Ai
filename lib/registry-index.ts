@@ -16,6 +16,7 @@ export type RegistryIndexItem = {
   entity_id: string;
   entity_name: string;
   type: string;
+  category: string;
   country: string;
   lang: string;
   verification: "verified" | "candidate";
@@ -27,6 +28,9 @@ export type RegistryIndexItem = {
   freshness_policy_reason: string;
   verified_claims: number;
   total_claims: number;
+  needs_review_claims: number;
+  stale_claims: number;
+  missing_source_count: number;
   last_verified_at: string | null;
   oldest_verified_at: string | null;
   updated_at: string | null;
@@ -118,12 +122,14 @@ function staticIndexItems(): RegistryIndexItem[] {
   return getAllRegistryBundles().map((bundle) => {
     const status = getDocumentCitationStatus(bundle);
     const { entity, document } = bundle;
+    const missingSourceCount = bundle.claims.filter((claim) => claim.sources.length === 0).length;
     return {
       slug: document.slug,
       title: document.title,
       entity_id: entity.id,
       entity_name: entity.canonical_name,
       type: entity.type,
+      category: document.category || entity.type,
       country: entity.country,
       lang: document.lang,
       verification: status.isVerifiedDocument ? "verified" : "candidate",
@@ -131,10 +137,13 @@ function staticIndexItems(): RegistryIndexItem[] {
       doc_status: document.status,
       can_cite: status.isVerifiedDocument,
       freshness: status.freshness,
-      freshness_ttl_days: status.freshnessTtlDays,
+      freshness_ttl_days: status.freshnessWindowDays,
       freshness_policy_reason: status.freshnessPolicy.reason,
       verified_claims: status.verifiedClaims,
       total_claims: status.totalClaims,
+      needs_review_claims: Math.max(0, status.totalClaims - status.verifiedClaims),
+      stale_claims: status.staleClaims.length,
+      missing_source_count: missingSourceCount,
       last_verified_at: document.last_verified_at,
       oldest_verified_at: status.oldestVerifiedAt,
       updated_at: document.updated_at,
@@ -174,6 +183,7 @@ export async function getSupabaseIndexItems(staticSlugs: Set<string>): Promise<R
           entity_id: row.entities?.id ?? "",
           entity_name: row.entities?.canonical_name ?? "",
           type: row.entities?.type ?? "",
+          category: row.entities?.type ?? "uncategorized",
           country: row.entities?.country ?? "",
           lang: row.lang ?? DEFAULT_LOCALE,
           verification: verified ? "verified" : "candidate",
@@ -185,6 +195,9 @@ export async function getSupabaseIndexItems(staticSlugs: Set<string>): Promise<R
           freshness_policy_reason: "default freshness policy",
           verified_claims: verifiedClaimCount(row.claims),
           total_claims: totalClaims,
+          needs_review_claims: Math.max(0, totalClaims - verifiedClaimCount(row.claims)),
+          stale_claims: verified && isStale(row.last_verified_at ?? null) ? verifiedClaimCount(row.claims) : 0,
+          missing_source_count: (row.claims ?? []).filter((claim) => !Array.isArray(claim.claim_sources) || claim.claim_sources.length === 0).length,
           last_verified_at: row.last_verified_at ?? null,
           oldest_verified_at: null,
           updated_at: row.updated_at ?? null,
@@ -224,4 +237,84 @@ export async function getRegistryIndex(filters: RegistryIndexFilters = {}): Prom
     const bt = b.updated_at ? Date.parse(b.updated_at) : 0;
     return bt - at;
   });
+}
+
+export type CoverageRow = {
+  country: string;
+  category: string;
+  total_documents: number;
+  verified_claims: number;
+  needs_review: number;
+  stale_claims: number;
+  missing_source_count: number;
+};
+
+export type CoverageRecommendation = CoverageRow & {
+  priority_score: number;
+  reason: string;
+};
+
+export type CoverageSummary = {
+  rows: CoverageRow[];
+  recommendations: CoverageRecommendation[];
+  totals: Omit<CoverageRow, "country" | "category">;
+};
+
+function coveragePriority(row: CoverageRow): number {
+  return row.needs_review * 3 + row.missing_source_count * 4 + row.stale_claims * 2 + Math.max(0, 3 - row.total_documents);
+}
+
+function recommendationReason(row: CoverageRow): string {
+  const reasons: string[] = [];
+  if (row.missing_source_count > 0) reasons.push(`${row.missing_source_count} missing source(s)`);
+  if (row.needs_review > 0) reasons.push(`${row.needs_review} claim(s) need review`);
+  if (row.stale_claims > 0) reasons.push(`${row.stale_claims} stale claim(s)`);
+  if (row.total_documents < 3) reasons.push("thin country/category coverage");
+  return reasons.join(" · ") || "maintain verified coverage";
+}
+
+export async function getCoverageSummary(): Promise<CoverageSummary> {
+  const items = await getRegistryIndex({});
+  const rowsByKey = new Map<string, CoverageRow>();
+
+  for (const item of items) {
+    const country = item.country || "global";
+    const category = item.category || item.type || "uncategorized";
+    const key = `${country}::${category}`;
+    const row = rowsByKey.get(key) ?? {
+      country,
+      category,
+      total_documents: 0,
+      verified_claims: 0,
+      needs_review: 0,
+      stale_claims: 0,
+      missing_source_count: 0,
+    };
+    row.total_documents += 1;
+    row.verified_claims += item.verified_claims;
+    row.needs_review += item.needs_review_claims;
+    row.stale_claims += item.stale_claims;
+    row.missing_source_count += item.missing_source_count;
+    rowsByKey.set(key, row);
+  }
+
+  const rows = [...rowsByKey.values()].sort((a, b) => a.country.localeCompare(b.country) || a.category.localeCompare(b.category));
+  const totals = rows.reduce(
+    (acc, row) => ({
+      total_documents: acc.total_documents + row.total_documents,
+      verified_claims: acc.verified_claims + row.verified_claims,
+      needs_review: acc.needs_review + row.needs_review,
+      stale_claims: acc.stale_claims + row.stale_claims,
+      missing_source_count: acc.missing_source_count + row.missing_source_count,
+    }),
+    { total_documents: 0, verified_claims: 0, needs_review: 0, stale_claims: 0, missing_source_count: 0 },
+  );
+
+  const recommendations = rows
+    .map((row) => ({ ...row, priority_score: coveragePriority(row), reason: recommendationReason(row) }))
+    .filter((row) => row.priority_score > 0)
+    .sort((a, b) => b.priority_score - a.priority_score || a.country.localeCompare(b.country) || a.category.localeCompare(b.category))
+    .slice(0, 8);
+
+  return { rows, recommendations, totals };
 }
