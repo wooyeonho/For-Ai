@@ -89,7 +89,7 @@ export default async function TopicCategoryPage({
       <header className="registry-panel">
         <p className="eyebrow">Claim-level topic registry</p>
         <h1>{title} facts</h1>
-        <p>{CATEGORY_DESCRIPTIONS[category]}</p>
+        <p><strong>Summary:</strong> {CATEGORY_DESCRIPTIONS[category]}</p>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
           <span className="badge">{matchingBundles.length} documents</span>
           <span className="badge badge-verified">{verifiedBundles.length} verified</span>
@@ -111,7 +111,11 @@ export default async function TopicCategoryPage({
             ))}
           </div>
         ) : (
-          <EmptyState message="No country-specific facts are registered for this category yet. Unknown facts remain Needs verification until a source-backed claim is added." />
+          <EmptyState
+            status="No country-specific facts are registered for this category yet."
+            reason="This topic has not received source-backed claims grouped by country."
+            action="Submit a missing fact with a traceable source; it will remain Needs verification until human review."
+          />
         )}
       </section>
 
@@ -121,7 +125,11 @@ export default async function TopicCategoryPage({
         {verifiedBundles.length > 0 ? (
           <FactList bundles={verifiedBundles.slice(0, 10)} locale={locale} showClaim />
         ) : (
-          <EmptyState message="No fully verified facts are available in this category yet." />
+          <EmptyState
+            status="No fully verified facts are available in this category yet."
+            reason="Claims in this topic still need accepted sources and human approval before citation."
+            action="Add an official source or review candidate claims in the needs-review queue."
+          />
         )}
       </section>
 
@@ -131,7 +139,11 @@ export default async function TopicCategoryPage({
         {needsReviewBundles.length > 0 ? (
           <FactList bundles={needsReviewBundles.slice(0, 10)} locale={locale} />
         ) : (
-          <EmptyState message="No topics currently need review in this category." />
+          <EmptyState
+            status="No topics currently need review in this category."
+            reason="There are no unverified documents matched to this topic right now."
+            action="Submit a missing topic if an important fact is absent."
+          />
         )}
       </section>
 
@@ -141,19 +153,27 @@ export default async function TopicCategoryPage({
         {staleBundles.length > 0 ? (
           <FactList bundles={staleBundles.slice(0, 10)} locale={locale} showFreshness />
         ) : (
-          <EmptyState message="No stale verified facts are flagged in this category." />
+          <EmptyState
+            status="No stale verified facts are flagged in this category."
+            reason="Current verified claims are still within their freshness policy or no verified claims exist yet."
+            action="Check back later or submit fresher source evidence when a fact changes."
+          />
         )}
       </section>
 
       <section className="registry-panel" aria-labelledby="submit-missing-fact" style={{ background: "#fffbeb", borderInlineStart: "3px solid #f59e0b" }}>
         <p className="eyebrow">Missing fact?</p>
         <h2 id="submit-missing-fact">Submit missing fact</h2>
-        <p>
-          If a fact is missing, submit the topic without logging in. For-Ai will keep it as Needs verification until a traceable source and human review are added.
-        </p>
-        <Link className="btn btn-primary" href={`/suggest-topic?category=${encodeURIComponent(category)}`}>
-          Submit a missing {title.toLowerCase()} fact
-        </Link>
+        <ul className="link-list">
+          <li>Public submissions do not require login.</li>
+          <li>New facts stay Needs verification until a traceable source is attached.</li>
+          <li>Human review is required before the fact can become citation-ready.</li>
+        </ul>
+        <div style={{ marginTop: 16 }}>
+          <Link className="btn btn-primary" href={`/suggest-topic?category=${encodeURIComponent(category)}`}>
+            Submit a missing {title.toLowerCase()} fact
+          </Link>
+        </div>
       </section>
 
       <nav className="registry-panel" aria-labelledby="topic-languages">
@@ -262,6 +282,12 @@ function FactList({
   );
 }
 
-function EmptyState({ message }: { message: string }) {
-  return <p className="stat-note">{message}</p>;
+function EmptyState({ status, reason, action }: { status: string; reason: string; action: string }) {
+  return (
+    <div className="stat-note" role="status">
+      <p><strong>Current status:</strong> {status}</p>
+      <p><strong>Why it is empty:</strong> {reason}</p>
+      <p><strong>Next action:</strong> {action}</p>
+    </div>
+  );
 }

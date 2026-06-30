@@ -226,9 +226,16 @@ export default async function CountryRegistryPage({
         <p className="eyebrow">Country registry</p>
         <h1>{name}</h1>
         <p style={{ maxWidth: 760 }}>
-          A static-first country dashboard for source-backed For-Ai documents. Counts are derived from the registry index;
-          Supabase-backed rows can be included when the optional index connection is configured.
+          <strong>Summary:</strong> A static-first country dashboard for source-backed For-Ai documents, review queues, stale facts, and contribution opportunities.
         </p>
+        <details style={{ marginTop: 12 }}>
+          <summary>How these counts are built</summary>
+          <ul className="link-list">
+            <li>Counts are derived from the registry index.</li>
+            <li>Supabase-backed rows can be included when the optional index connection is configured.</li>
+            <li>Progress is a participation signal only and never replaces source quality or human verification.</li>
+          </ul>
+        </details>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
           <span className="badge badge-verified">Verified facts: {questStats.verifiedClaims}</span>
           <span className="badge badge-review">Needs review facts: {questStats.needsReviewClaims}</span>
@@ -249,7 +256,7 @@ export default async function CountryRegistryPage({
       <section className="registry-panel" aria-labelledby="country-categories">
         <h2 id="country-categories">Category progress</h2>
         {questStats.categoryProgress.length === 0 ? (
-          <p>{unknownLabel}</p>
+          <EmptyState status={unknownLabel} reason="No category-level claim totals are available for this country yet." action="Submit a source-backed topic for this country to start category progress." />
         ) : (
           <ul className="link-list">
             {questStats.categoryProgress.map((category) => {
@@ -268,7 +275,7 @@ export default async function CountryRegistryPage({
       <section className="registry-panel" aria-labelledby="needed-sources">
         <h2 id="needed-sources">Top needed sources</h2>
         {questStats.neededSources.length === 0 ? (
-          <p>No missing source needs detected in this country index.</p>
+          <EmptyState status="No missing source needs are detected in this country index." reason="Current indexed claims either have sources or there are no indexed claims to inspect." action="Submit a source if you know an official reference that should be tracked." />
         ) : (
           <ul className="link-list">
             {questStats.neededSources.map((source) => (
@@ -281,7 +288,7 @@ export default async function CountryRegistryPage({
       <section className="registry-panel" aria-labelledby="recent-contributors">
         <h2 id="recent-contributors">Recent contributors</h2>
         {questStats.contributors.length === 0 ? (
-          <p>Contributor hashes are not yet available for this country. Raw IP addresses are never stored.</p>
+          <EmptyState status="Contributor hashes are not yet available for this country." reason="No accepted source or verification events with contributor_hash values have been recorded here." action="Contribute a source-backed fact; For-Ai stores contributor_hash only, never raw IP addresses." />
         ) : (
           <ul className="link-list">
             {questStats.contributors.map((contributor) => (
@@ -297,7 +304,7 @@ export default async function CountryRegistryPage({
       <section className="registry-panel" aria-labelledby="recent-facts">
         <h2 id="recent-facts">Recently verified facts</h2>
         {recentFacts.length === 0 ? (
-          <p>{unknownLabel}</p>
+          <EmptyState status={unknownLabel} reason="No recently verified claims are available for this country yet." action="Add a traceable source so reviewers can verify the first citation-ready facts." />
         ) : (
           <ul className="link-list">
             {recentFacts.map((fact) => (
@@ -313,7 +320,7 @@ export default async function CountryRegistryPage({
       <section className="registry-panel" aria-labelledby="stale-facts">
         <h2 id="stale-facts">Stale facts</h2>
         {staleFacts.length === 0 ? (
-          <p>No stale facts in this country index.</p>
+          <EmptyState status="No stale facts are flagged in this country index." reason="Verified claims are within freshness policy or no verified claims have been indexed." action="Submit updated source evidence when an official fact changes." />
         ) : (
           <ul className="link-list">
             {staleFacts.map((item) => (
@@ -329,7 +336,7 @@ export default async function CountryRegistryPage({
       <section className="registry-panel" aria-labelledby="popular-questions">
         <h2 id="popular-questions">Popular questions</h2>
         {popularQuestions.length === 0 ? (
-          <p>{unknownLabel}</p>
+          <EmptyState status={unknownLabel} reason="No popular-question titles are available from the country index." action="Submit missing topics that answer common AI/search questions for this country." />
         ) : (
           <ul className="link-list">
             {popularQuestions.map((question) => (
@@ -342,7 +349,7 @@ export default async function CountryRegistryPage({
       <section className="registry-panel" aria-labelledby="country-documents">
         <h2 id="country-documents">Documents</h2>
         {items.length === 0 ? (
-          <p>{unknownLabel}</p>
+          <EmptyState status={unknownLabel} reason="No documents are currently indexed for this country." action="Submit the first source-backed topic for this country." />
         ) : (
           <ul className="link-list">
             {items.map((item) => (
@@ -360,9 +367,25 @@ export default async function CountryRegistryPage({
       <section className="registry-panel" style={{ background: "#f8fafc", borderInlineStart: "3px solid #2563eb" }}>
         <p className="eyebrow">Submit source CTA</p>
         <h2>Know an official source for a needed {name} fact?</h2>
-        <p>Submit a source or topic for {name}. Public submissions start as needs-review candidates and must be human verified before citation.</p>
-        <Link className="button" href={submitTopicHref}>Submit a source</Link>
+        <ul className="link-list">
+          <li>Submit a source or topic for {name}.</li>
+          <li>Public submissions start as needs-review candidates.</li>
+          <li>Human verification is required before citation.</li>
+        </ul>
+        <div style={{ marginTop: 16 }}>
+          <Link className="button" href={submitTopicHref}>Submit a source</Link>
+        </div>
       </section>
     </article>
+  );
+}
+
+function EmptyState({ status, reason, action }: { status: string; reason: string; action: string }) {
+  return (
+    <div className="stat-note" role="status">
+      <p><strong>Current status:</strong> {status}</p>
+      <p><strong>Why it is empty:</strong> {reason}</p>
+      <p><strong>Next action:</strong> {action}</p>
+    </div>
   );
 }

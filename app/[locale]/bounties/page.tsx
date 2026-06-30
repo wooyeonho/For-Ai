@@ -33,7 +33,7 @@ export default async function BountiesPage({ params }: { params: Promise<{ local
         <p className="eyebrow">Claim-level source bounties</p>
         <h1>Source bounties for verifiable facts</h1>
         <p>
-          Bounties help contributors find source candidates for claims or topic candidates. They do not buy verification, rankings, or factual conclusions.
+          <strong>Summary:</strong> Bounties help contributors find source candidates without buying verification, rankings, or factual conclusions.
         </p>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
           <span className="badge badge-verified">{openCount} open</span>
@@ -45,39 +45,50 @@ export default async function BountiesPage({ params }: { params: Promise<{ local
       <section className="registry-panel" aria-labelledby="bounty-policy">
         <p className="eyebrow">Non-negotiable policy</p>
         <h2 id="bounty-policy">Sponsorship is separate from verification</h2>
-        <ul className="link-list">
-          <li>{CLAIM_BOUNTY_POLICY.sponsorVerificationIndependence}</li>
-          <li>{CLAIM_BOUNTY_POLICY.sponsoredDisclosure}</li>
-          <li>{CLAIM_BOUNTY_POLICY.contributorLimit}</li>
-        </ul>
+        <details open>
+          <summary>Bounty integrity rules</summary>
+          <ul className="link-list">
+            <li>{CLAIM_BOUNTY_POLICY.sponsorVerificationIndependence}</li>
+            <li>{CLAIM_BOUNTY_POLICY.sponsoredDisclosure}</li>
+            <li>{CLAIM_BOUNTY_POLICY.contributorLimit}</li>
+          </ul>
+        </details>
       </section>
 
       <section className="registry-panel" aria-labelledby="available-bounties">
         <p className="eyebrow">Available tasks</p>
         <h2 id="available-bounties">Bounty queue</h2>
-        <ul className="registry-index">
-          {SAMPLE_CLAIM_BOUNTIES.map((bounty) => (
-            <li key={bounty.bounty_id} className="registry-row">
-              <div className="registry-row-main">
-                <Link className="registry-row-title" href={`/${locale}/bounties/${bounty.bounty_id}`}>
-                  {bounty.title}
-                </Link>
-                <span className="registry-row-entity">
-                  {bounty.country} · {bounty.category} · target: {bounty.claim_id ? "claim_id" : "topic_candidate_id"}
-                </span>
-                {isSponsoredBounty(bounty) ? (
-                  <span className="meta-label">Sponsored bounty: {bounty.sponsor_label} ({bounty.sponsor_type})</span>
-                ) : (
-                  <span className="meta-label">Unsponsored community verification task</span>
-                )}
-              </div>
-              <div className="registry-row-meta">
-                <span className={bounty.status === "open" ? "badge badge-verified" : "badge badge-review"}>{bounty.status}</span>
-                <span className="badge">{bounty.reward_points} pts</span>
-              </div>
-            </li>
-          ))}
-        </ul>
+        {SAMPLE_CLAIM_BOUNTIES.length === 0 ? (
+          <EmptyState
+            status="No bounty tasks are available right now."
+            reason="No claim-level source-finding bounties have been published for this locale."
+            action="Submit a missing fact or check back when new source needs are posted."
+          />
+        ) : (
+          <ul className="registry-index">
+            {SAMPLE_CLAIM_BOUNTIES.map((bounty) => (
+              <li key={bounty.bounty_id} className="registry-row">
+                <div className="registry-row-main">
+                  <Link className="registry-row-title" href={`/${locale}/bounties/${bounty.bounty_id}`}>
+                    {bounty.title}
+                  </Link>
+                  <span className="registry-row-entity">
+                    {bounty.country} · {bounty.category} · target: {bounty.claim_id ? "claim_id" : "topic_candidate_id"}
+                  </span>
+                  {isSponsoredBounty(bounty) ? (
+                    <span className="meta-label">Sponsored bounty: {bounty.sponsor_label} ({bounty.sponsor_type})</span>
+                  ) : (
+                    <span className="meta-label">Unsponsored community verification task</span>
+                  )}
+                </div>
+                <div className="registry-row-meta">
+                  <span className={bounty.status === "open" ? "badge badge-verified" : "badge badge-review"}>{bounty.status}</span>
+                  <span className="badge">{bounty.reward_points} pts</span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
 
       <nav className="registry-panel" aria-labelledby="bounty-languages">
@@ -89,5 +100,15 @@ export default async function BountiesPage({ params }: { params: Promise<{ local
         </ul>
       </nav>
     </article>
+  );
+}
+
+function EmptyState({ status, reason, action }: { status: string; reason: string; action: string }) {
+  return (
+    <div className="stat-note" role="status">
+      <p><strong>Current status:</strong> {status}</p>
+      <p><strong>Why it is empty:</strong> {reason}</p>
+      <p><strong>Next action:</strong> {action}</p>
+    </div>
   );
 }

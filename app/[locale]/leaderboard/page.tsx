@@ -120,8 +120,16 @@ export default async function LeaderboardPage({ params }: { params: Promise<Lead
         <p className="eyebrow">Contributor trust leaderboard</p>
         <h1>For-Ai leaderboard</h1>
         <p style={{ maxWidth: 780 }}>
-          This leaderboard rewards accepted, source-backed, claim-level work. It intentionally excludes raw submission count so spam, repeated URLs, and noisy public intake cannot outrank verified contributions.
+          <strong>Summary:</strong> This leaderboard ranks accepted, source-backed, claim-level work instead of raw submission volume.
         </p>
+        <details style={{ marginTop: 12 }}>
+          <summary>Why raw volume is excluded</summary>
+          <ul className="link-list">
+            <li>Spam, repeated URLs, and noisy public intake cannot outrank verified contributions.</li>
+            <li>Rejected or spam submissions are excluded and can create moderation penalties.</li>
+            <li>Public output shows pseudonymous contributor labels, not full hashes or private rows.</li>
+          </ul>
+        </details>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
           <span className="badge badge-verified">accepted sources × {WEIGHTS.accepted_sources}</span>
           <span className="badge badge-verified">verified claims × {WEIGHTS.verified_claims}</span>
@@ -134,11 +142,17 @@ export default async function LeaderboardPage({ params }: { params: Promise<Lead
         <p className="eyebrow">Ranked by accepted impact, not volume</p>
         <h2 id="leaderboard-ranking">Current ranking</h2>
         {!hasLiveData ? (
-          <p className="stat-note">
-            Live contributor rows require the server-side Supabase service role. The public page still renders the scoring policy statically without exposing edits, reports, hallucination_reports, or raw contributor hashes.
-          </p>
+          <EmptyState
+            status="Live contributor rows are not connected on this deployment."
+            reason="Ranking rows require the server-side Supabase service role, which is not configured for this static render."
+            action="Use the scoring policy below as public documentation, or configure the service role server-side to show eligible rows."
+          />
         ) : leaderboard.length === 0 ? (
-          <p className="stat-note">No accepted contributor activity is eligible for ranking yet.</p>
+          <EmptyState
+            status="No accepted contributor activity is eligible for ranking yet."
+            reason="No accepted sources, verified claim events, stale fixes, or accepted hallucination reports were returned."
+            action="Submit source-backed facts or accepted hallucination reports to enter the ranking after review."
+          />
         ) : (
           <ol className="registry-index">
             {leaderboard.map((entry, index) => (
@@ -201,8 +215,14 @@ export default async function LeaderboardPage({ params }: { params: Promise<Lead
 
       <nav className="registry-panel" aria-labelledby="leaderboard-actions">
         <h2 id="leaderboard-actions">Contribute source-backed facts</h2>
-        <p>Submit missing facts without logging in. They remain Needs verification until a traceable source and human approval are recorded.</p>
-        <Link className="btn btn-primary" href={`/suggest-topic?lang=${encodeURIComponent(locale)}`}>Submit a missing fact</Link>
+        <ul className="link-list">
+          <li>Submit missing facts without logging in.</li>
+          <li>They remain Needs verification until a traceable source is attached.</li>
+          <li>Human approval is required before citation-ready status.</li>
+        </ul>
+        <div style={{ marginTop: 16 }}>
+          <Link className="btn btn-primary" href={`/suggest-topic?lang=${encodeURIComponent(locale)}`}>Submit a missing fact</Link>
+        </div>
       </nav>
     </article>
   );
@@ -367,4 +387,14 @@ function addCoverage(contributor: MutableContributorScore, document: { country?:
   const category = document?.category?.trim();
   if (country) contributor.countries.add(country.toUpperCase());
   if (category) contributor.categories.add(category);
+}
+
+function EmptyState({ status, reason, action }: { status: string; reason: string; action: string }) {
+  return (
+    <div className="stat-note" role="status">
+      <p><strong>Current status:</strong> {status}</p>
+      <p><strong>Why it is empty:</strong> {reason}</p>
+      <p><strong>Next action:</strong> {action}</p>
+    </div>
+  );
 }
