@@ -48,6 +48,22 @@ function trustScore(sourceType?: string | null, url?: string | null, citation?: 
   return Math.min(100, base + (url ? 3 : 0) + (citation ? 2 : 0));
 }
 
+
+const STATUS_LABELS: Record<string, string> = {
+  needs_review: "검토 필요",
+  verified: "검증 완료",
+  unknown: "확인 불가",
+  disputed: "분쟁/반려",
+  rejected: "거절됨",
+  published: "공개됨",
+};
+const CONFIDENCE_LABELS: Record<string, string> = { low: "낮음", medium: "보통", high: "높음" };
+function statusLabel(value?: string | null) { return value ? (STATUS_LABELS[value] ?? value) : "-"; }
+function confidenceLabel(value?: string | null) { return value ? (CONFIDENCE_LABELS[value] ?? value) : "-"; }
+function OperatorTerm({ label, value }: { label: string; value?: string | number | null }) {
+  return <span>{label}: <code>{value ?? "-"}</code></span>;
+}
+
 const POLICY_ITEMS = [
   "AI 생성 후보는 사람이 출처를 검토하기 전까지 verified로 올릴 수 없습니다.",
   "claim_value가 '확인 필요'인 채로 verified 승격은 금지됩니다.",
@@ -357,12 +373,12 @@ export default function VerifyClaimPage() {
       <section className="registry-panel">
         <h2>필터</h2>
         <div style={{ display: "grid", gap: 12, gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))" }}>
-          <label>status
+          <label>검증 상태 <small>(status)</small>
             <select value={filters.status} onChange={(e) => setFilters({ ...filters, status: e.target.value, offset: "0" })}>
-              <option value="needs_review">needs_review</option>
-              <option value="unknown">unknown</option>
-              <option value="disputed">disputed</option>
-              <option value="verified">verified</option>
+              <option value="needs_review">검토 필요 (needs_review)</option>
+              <option value="unknown">확인 불가 (unknown)</option>
+              <option value="disputed">분쟁/반려 (disputed)</option>
+              <option value="verified">검증 완료 (verified)</option>
             </select>
           </label>
           <label>country<input value={filters.country} onChange={(e) => setFilters({ ...filters, country: e.target.value, offset: "0" })} placeholder="KR, US, global" /></label>
@@ -417,8 +433,8 @@ export default function VerifyClaimPage() {
             style={{ width: "100%", padding: "8px 10px" }}
           >
             <option value="all">전체</option>
-            <option value="needs_review">needs_review</option>
-            <option value="verified">verified</option>
+            <option value="needs_review">검토 필요 (needs_review)</option>
+            <option value="verified">검증 완료 (verified)</option>
           </select>
         </div>
         <div style={{ flex: "1 1 140px" }}>
@@ -429,9 +445,9 @@ export default function VerifyClaimPage() {
             style={{ width: "100%", padding: "8px 10px" }}
           >
             <option value="all">전체</option>
-            <option value="published">published</option>
-            <option value="verified">verified</option>
-            <option value="needs_review">needs_review</option>
+            <option value="published">공개됨 (published)</option>
+            <option value="verified">검증 완료 (verified)</option>
+            <option value="needs_review">검토 필요 (needs_review)</option>
           </select>
         </div>
         <button type="submit" disabled={!secret || loading} style={{ alignSelf: "flex-end", padding: "8px 16px" }}>
@@ -443,12 +459,12 @@ export default function VerifyClaimPage() {
       <section className="registry-panel">
         <h2>검증 대기 claim 필터 (클라이언트)</h2>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 8 }}>
-          <label>country<select value={localFilters.country} onChange={(e) => setLocalFilters({ ...localFilters, country: e.target.value })}><option value="all">all</option>{countries.map((v) => <option key={v} value={v}>{v}</option>)}</select></label>
-          <label>domain<select value={localFilters.domain} onChange={(e) => setLocalFilters({ ...localFilters, domain: e.target.value })}><option value="all">all</option>{domains.map((v) => <option key={v} value={v}>{v}</option>)}</select></label>
-          <label>source<select value={localFilters.source} onChange={(e) => setLocalFilters({ ...localFilters, source: e.target.value })}><option value="all">all</option><option value="present">present</option><option value="missing">missing</option></select></label>
-          <label>confidence<select value={localFilters.confidence} onChange={(e) => setLocalFilters({ ...localFilters, confidence: e.target.value })}><option value="all">all</option><option value="low">low</option><option value="medium">medium</option><option value="high">high</option></select></label>
-          <label>status<select value={localFilters.status} onChange={(e) => setLocalFilters({ ...localFilters, status: e.target.value })}><option value="all">all</option><option value="needs_review">needs_review</option><option value="verified">verified</option><option value="disputed">disputed/rejected</option><option value="unknown">unknown</option></select></label>
-          <label>stale<select value={localFilters.stale} onChange={(e) => setLocalFilters({ ...localFilters, stale: e.target.value })}><option value="all">all</option><option value="stale">stale</option><option value="fresh">not stale</option></select></label>
+          <label>국가 <small>(country)</small><select value={localFilters.country} onChange={(e) => setLocalFilters({ ...localFilters, country: e.target.value })}><option value="all">all</option>{countries.map((v) => <option key={v} value={v}>{v}</option>)}</select></label>
+          <label>도메인 <small>(domain)</small><select value={localFilters.domain} onChange={(e) => setLocalFilters({ ...localFilters, domain: e.target.value })}><option value="all">all</option>{domains.map((v) => <option key={v} value={v}>{v}</option>)}</select></label>
+          <label>출처 <small>(source)</small><select value={localFilters.source} onChange={(e) => setLocalFilters({ ...localFilters, source: e.target.value })}><option value="all">all</option><option value="present">present</option><option value="missing">missing</option></select></label>
+          <label>신뢰도 <small>(confidence)</small><select value={localFilters.confidence} onChange={(e) => setLocalFilters({ ...localFilters, confidence: e.target.value })}><option value="all">전체</option><option value="low">낮음 (low)</option><option value="medium">보통 (medium)</option><option value="high">높음 (high)</option></select></label>
+          <label>검증 상태 <small>(status)</small><select value={localFilters.status} onChange={(e) => setLocalFilters({ ...localFilters, status: e.target.value })}><option value="all">all</option><option value="needs_review">검토 필요 (needs_review)</option><option value="verified">검증 완료 (verified)</option><option value="disputed">분쟁/반려 (disputed/rejected)</option><option value="unknown">확인 불가 (unknown)</option></select></label>
+          <label>재검증 필요 <small>(stale)</small><select value={localFilters.stale} onChange={(e) => setLocalFilters({ ...localFilters, stale: e.target.value })}><option value="all">all</option><option value="stale">stale</option><option value="fresh">not stale</option></select></label>
         </div>
         <p className="meta-label">표시 중: {filteredClaims.length} / {allClaims.length} claims · bulk verify는 비활성화되어 있고, bulk needs-verification만 허용됩니다.</p>
         <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
@@ -478,9 +494,9 @@ export default function VerifyClaimPage() {
                   </Link>
                 </h2>
                 <p className="meta-label" style={{ margin: "4px 0 0" }}>
-                  {doc.slug} · {doc.country ?? "?"} · {doc.lang ?? "?"} · {doc.category ?? "?"} · <span className="badge">{doc.status}</span> · <span className="badge">confidence: {doc.confidence}</span>
+                  {doc.slug} · {doc.country ?? "?"} · {doc.lang ?? "?"} · {doc.category ?? "?"} · <span className="badge">문서 상태: {statusLabel(doc.status)} ({doc.status})</span> · <span className="badge">신뢰도: {confidenceLabel(doc.confidence)} ({doc.confidence})</span>
                 </p>
-                <p className="meta-label">entity_id: {doc.entity_id ?? "-"}</p>
+                <details className="meta-label"><summary>고급 정보</summary><p><OperatorTerm label="대상 ID (entity_id)" value={doc.entity_id} /></p></details>
               </div>
               {unverifiedCount > 0 && (
                 <span className="badge badge-review" style={{ whiteSpace: "nowrap" }}>
@@ -495,12 +511,13 @@ export default function VerifyClaimPage() {
             {(doc.claims ?? []).map((claim) => (
               <div className="claim-card" key={claim.id} style={{ borderLeft: claim.status === "verified" ? "3px solid #86efac" : "3px solid #fca5a5" }}>
                 <label style={{ float: "right", fontSize: 12 }}><input type="checkbox" checked={selectedClaimIds.includes(claim.id)} onChange={(e) => setSelectedClaimIds((ids) => e.target.checked ? [...ids, claim.id] : ids.filter((id) => id !== claim.id))} /> bulk 선택</label>
-                <p className="eyebrow">entity_id: {doc.entity_id ?? "-"} · document_id: {doc.id} · field_path: {claim.field_path}</p>
-                <p><strong>{claim.claim_value}</strong></p>
+                <p className="eyebrow">사실 항목: <code>{claim.field_path}</code></p>
+                <p><strong>검증할 값: {claim.claim_value}</strong></p>
+                <details className="meta-label"><summary>고급 정보</summary><p><OperatorTerm label="대상 ID (entity_id)" value={doc.entity_id} /> · <OperatorTerm label="문서 ID (document_id)" value={doc.id} /> · <OperatorTerm label="사실 항목 (field_path)" value={claim.field_path} /></p></details>
                 <p style={{ color: "#6b7280", fontSize: 13 }}>{claim.claim_text}</p>
                 <p>
-                  <span className={`badge ${claim.status === "verified" ? "badge-verified" : "badge-review"}`}>{claim.status}</span>{" "}
-                  <span className="badge">confidence: {claim.confidence}</span>{" "}
+                  <span className={`badge ${claim.status === "verified" ? "badge-verified" : "badge-review"}`}>검증 상태: {statusLabel(claim.status)} ({claim.status})</span>{" "}
+                  <span className="badge">신뢰도: {confidenceLabel(claim.confidence)} ({claim.confidence})</span>{" "}
                   <span className="badge">sources: {claim.claim_sources?.length ?? 0}</span>
                   {claim.last_verified_at && (
                     <span className="badge badge-verified" style={{ marginLeft: 4 }}>
@@ -574,9 +591,9 @@ export default function VerifyClaimPage() {
       {/* Verification form */}
       {selectedClaim && (
         <section id="verify-form" className="registry-panel" style={{ borderColor: "#2563eb", borderWidth: 2 }}>
-          <h2>Claim 검증 · {selectedClaim.field_path}</h2>
+          <h2>Claim 검증 · 사실 항목: {selectedClaim.field_path}</h2>
           <div className="claim-card" style={{ marginBottom: 16, background: "#f0f9ff" }}>
-            <p className="eyebrow">현재 값</p>
+            <p className="eyebrow">현재 검증할 값 (claim_value)</p>
             <p><strong>{selectedClaim.claim_value}</strong></p>
             <p style={{ fontSize: 13, color: "#6b7280" }}>{selectedClaim.claim_text}</p>
           </div>
@@ -669,14 +686,14 @@ export default function VerifyClaimPage() {
           </label>
 
           <label style={{ display: "block", marginBottom: 16 }}>
-            <span style={{ fontWeight: 600 }}>confidence</span>
+            <span style={{ fontWeight: 600 }}>신뢰도 (confidence)</span>
             <select
               value={confidence}
               onChange={(e) => setConfidence(e.target.value)}
               style={{ display: "block", marginTop: 4, padding: 8 }}
             >
-              <option value="high">high — 공식/법령/공식 플랫폼</option>
-              <option value="medium">medium — 신뢰 가능한 3자 출처</option>
+              <option value="high">높음 (high) — 공식/법령/공식 플랫폼</option>
+              <option value="medium">보통 (medium) — 신뢰 가능한 3자 출처</option>
             </select>
           </label>
 

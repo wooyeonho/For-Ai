@@ -54,7 +54,7 @@ export default function NewEntityPage() {
       <header className="registry-panel">
         <p className="eyebrow">For-Ai · Admin</p>
         <h1>새 Entity 생성</h1>
-        <p>Supabase <code>entities</code> 테이블에 직접 저장합니다. Entity는 문서(Document)의 주체입니다.</p>
+        <p>Supabase <code>entities</code> 테이블에 직접 저장합니다. 대상(Entity)은 문서(Document)의 주체입니다.</p>
       </header>
 
       {result && (
@@ -69,7 +69,7 @@ export default function NewEntityPage() {
           {result.success ? (
             <>
               <h2>생성 완료</h2>
-              <p>Entity ID: <code>{result.entity_id}</code></p>
+              <p>대상 ID (entity_id): <code>{result.entity_id}</code></p>
               <p style={{ marginTop: 8 }}>
                 다음 단계: &nbsp;
                 <Link href="/admin/new-document" style={{ color: "#2563eb" }}>이 Entity에 Document 추가 →</Link>
@@ -85,39 +85,39 @@ export default function NewEntityPage() {
       )}
 
       <section className="registry-panel" aria-labelledby="entity-form-title">
-        <h2 id="entity-form-title">Entity 필드</h2>
+        <h2 id="entity-form-title">대상 입력</h2>
         <form onSubmit={handleSubmit} className="registry-form">
-          <label>Entity ID <span aria-label="필수">*</span>
+          <label>대상 ID <small>(entity_id)</small> <span aria-label="필수">*</span>
             <input
               type="text" value={id} onChange={e => setId(e.target.value)} required
               placeholder="kr-person-athlete-ryu-hyun-jin-001"
             />
           </label>
-          <label>Type <span aria-label="필수">*</span>
+          <label>대상 유형 <small>(type)</small> <span aria-label="필수">*</span>
             <input
               type="text" value={type} onChange={e => setType(e.target.value)} required
               placeholder="person_athlete, weddinghall, concept, product_food, place_attraction …"
             />
           </label>
-          <label>Canonical Name <span aria-label="필수">*</span>
+          <label>대표 이름 <small>(canonical_name)</small> <span aria-label="필수">*</span>
             <input
               type="text" value={canonicalName} onChange={e => setCanonicalName(e.target.value)} required
               placeholder="류현진"
             />
           </label>
-          <label>Country <span aria-label="필수">*</span>
+          <label>국가 <small>(country)</small> <span aria-label="필수">*</span>
             <input
               type="text" value={country} onChange={e => setCountry(e.target.value)} required
               placeholder="ISO code — KR, US, JP, FR…"
             />
           </label>
-          <label>Region (선택)
+          <label>지역 <small>(region, 선택)</small>
             <input
               type="text" value={region} onChange={e => setRegion(e.target.value)}
               placeholder="서울특별시"
             />
           </label>
-          <label>City (선택)
+          <label>도시 <small>(city, 선택)</small>
             <input
               type="text" value={city} onChange={e => setCity(e.target.value)}
               placeholder="중구"
@@ -127,7 +127,7 @@ export default function NewEntityPage() {
             adminSecret={adminSecret}
             setAdminSecret={setAdminSecret}
             resetAdminSecret={resetAdminSecret}
-            label="Admin Secret *"
+            label="관리자 인증키 *"
             placeholder="관리자 비밀키"
           />
           <button type="submit" disabled={loading}>{loading ? "생성 중..." : "Entity 생성"}</button>
@@ -135,7 +135,8 @@ export default function NewEntityPage() {
       </section>
 
       <section className="registry-panel" aria-labelledby="entity-type-guide">
-        <h2 id="entity-type-guide">Type 참고값</h2>
+        <h2 id="entity-type-guide">대상 유형 참고값</h2>
+        <details><summary>고급 정보: 내부 type 값 보기</summary>
         <ul style={{ fontSize: 13, lineHeight: 1.8, color: "#6b7280" }}>
           <li><code>person_athlete</code> — 스포츠 선수</li>
           <li><code>person_entertainer</code> — 연예인/아티스트</li>
@@ -147,6 +148,7 @@ export default function NewEntityPage() {
           <li><code>place_country</code> — 국가정보</li>
           <li><code>concept</code> — 개념/정책</li>
         </ul>
+        </details>
       </section>
     </article>
   );
