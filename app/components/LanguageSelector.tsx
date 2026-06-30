@@ -1,39 +1,79 @@
 "use client";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { SUPPORTED_LOCALES, DEFAULT_LOCALE, LOCALE_CONFIG, isValidLocale } from "../../lib/i18n";
 
-const DOCUMENT_ACTION_ROUTES = new Set(["report", "hallucination", "diagnostics"]);
+const QUERY_LANGUAGE_ROUTES = new Set(["community", "suggest-topic", "report", "hallucination"]);
+const DOCUMENT_LANGUAGE_ROUTES = new Set(["report", "hallucination", "diagnostics"]);
 
-export function getLocalePath(pathname: string, locale: string): string {
+type SearchParamsInput = URLSearchParams | ReadonlyURLSearchParams | string | null | undefined;
+
+type ReadonlyURLSearchParams = {
+  toString(): string;
+};
+
+function getQueryString(searchParams?: SearchParamsInput): string {
+  if (!searchParams) return "";
+  return typeof searchParams === "string" ? searchParams.replace(/^\?/, "") : searchParams.toString();
+}
+
+function appendLangQuery(pathname: string, locale: string, searchParams?: SearchParamsInput): string {
+  const params = new URLSearchParams(getQueryString(searchParams));
+  params.set("lang", locale);
+  return `${pathname}?${params.toString()}`;
+}
+
+function getCurrentUrl(pathname: string, searchParams?: SearchParamsInput): string {
+  const queryString = getQueryString(searchParams);
+  return queryString ? `${pathname}?${queryString}` : pathname;
+}
+
+export function getLocalePath(pathname: string, locale: string, searchParams?: SearchParamsInput): string {
   const segments = pathname.split("/").filter(Boolean);
 
+  // Localized routes keep their route shape; only the leading locale changes.
   if (segments[0] && isValidLocale(segments[0])) {
-    const [, route, identifier] = segments;
-    if ((route === "wiki" || route === "entity") && identifier) {
-      return "/" + [locale, ...segments.slice(1)].join("/");
-    }
+    return "/" + [locale, ...segments.slice(1)].join("/");
+  }
+
+  // The root page should become an explicit locale route after selection.
+  if (segments.length === 0) {
+    return `/${locale}`;
   }
 
   const [route, identifier] = segments;
-  if (route && DOCUMENT_ACTION_ROUTES.has(route) && identifier) {
+
+  // Non-localized language-aware pages use a lang query parameter.
+  if (route && QUERY_LANGUAGE_ROUTES.has(route)) {
+    return appendLangQuery(pathname, locale, searchParams);
+  }
+
+  // Document action pages without query handling can fall back to the wiki page.
+  if (route && DOCUMENT_LANGUAGE_ROUTES.has(route) && identifier) {
     return `/${locale}/wiki/${identifier}`;
   }
 
-  // Non-locale pages (homepage, api-docs, community, etc.) stay as-is
-  return pathname;
+  // Other non-locale pages stay as-is.
+  return getCurrentUrl(pathname, searchParams);
 }
 
 export function LanguageSelector() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const currentUrl = getCurrentUrl(pathname, searchParams);
 
-  // Extract current locale from path
+  // Extract current locale from path first, then from lang query for non-localized pages.
   const segments = pathname.split("/").filter(Boolean);
-  const currentLocale = segments[0] && isValidLocale(segments[0]) ? segments[0] : DEFAULT_LOCALE;
+  const queryLocale = searchParams.get("lang");
+  const currentLocale =
+    segments[0] && isValidLocale(segments[0])
+      ? segments[0]
+      : queryLocale && isValidLocale(queryLocale)
+        ? queryLocale
+        : DEFAULT_LOCALE;
 
-  // Build path for other locales
   function getPathForLocale(locale: string): string {
-    return getLocalePath(pathname, locale);
+    return getLocalePath(pathname, locale, searchParams);
   }
 
   return (
@@ -66,26 +106,48 @@ export function LanguageSelector() {
             boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
             listStyle: "none",
             zIndex: 100,
-            minWidth: 140,
+            minWidth: 160,
           }}
         >
-          {SUPPORTED_LOCALES.map((locale) => (
-            <li key={locale}>
-              <Link
-                href={getPathForLocale(locale)}
-                style={{
-                  display: "block",
-                  padding: "6px 14px",
-                  fontSize: 13,
-                  color: locale === currentLocale ? "#2563eb" : "#374151",
-                  fontWeight: locale === currentLocale ? 600 : 400,
-                  textDecoration: "none",
-                }}
-              >
-                {LOCALE_CONFIG[locale].flag} {LOCALE_CONFIG[locale].nativeName}
-              </Link>
-            </li>
-          ))}
+          {SUPPORTED_LOCALES.map((locale) => {
+            const href = getPathForLocale(locale);
+            const isActive = locale === currentLocale;
+            const isSameUrl = href === currentUrl;
+            const itemStyle = {
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 8,
+              width: "100%",
+              padding: "6px 14px",
+              fontSize: 13,
+              color: isActive ? "#2563eb" : "#374151",
+              fontWeight: isActive ? 600 : 400,
+              textDecoration: "none",
+              background: isActive ? "#eff6ff" : "transparent",
+              border: 0,
+              cursor: isSameUrl ? "not-allowed" : "pointer",
+              opacity: isSameUrl ? 0.72 : 1,
+              textAlign: "start" as const,
+            };
+            const label = `${LOCALE_CONFIG[locale].flag} ${LOCALE_CONFIG[locale].nativeName}`;
+
+            return (
+              <li key={locale}>
+                {isSameUrl ? (
+                  <button type="button" disabled aria-current={isActive ? "true" : undefined} style={itemStyle}>
+                    <span>{label}</span>
+                    {isActive ? <span aria-hidden="true">✓</span> : null}
+                  </button>
+                ) : (
+                  <Link href={href} aria-current={isActive ? "true" : undefined} style={itemStyle}>
+                    <span>{label}</span>
+                    {isActive ? <span aria-hidden="true">✓</span> : null}
+                  </Link>
+                )}
+              </li>
+            );
+          })}
         </ul>
       </details>
     </div>
