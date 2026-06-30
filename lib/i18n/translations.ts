@@ -14,6 +14,9 @@ export interface UITranslations {
     registry: string;
     developers: string;
     aiIntegration: string;
+    api: string;
+    community: string;
+    contribute: string;
     suggestTopic: string;
     admin: string;
   };
@@ -157,6 +160,9 @@ const ko: UITranslations = {
     registry: "레지스트리",
     developers: "개발자",
     aiIntegration: "AI 연동",
+    api: "API",
+    community: "커뮤니티",
+    contribute: "기여",
     suggestTopic: "토픽 제안",
     admin: "관리자",
   },
@@ -263,6 +269,9 @@ const en: UITranslations = {
     registry: "Registry",
     developers: "Developers",
     aiIntegration: "AI Integration",
+    api: "API",
+    community: "Community",
+    contribute: "Contribute",
     suggestTopic: "Suggest Topic",
     admin: "Admin",
   },
@@ -369,6 +378,9 @@ const hi: UITranslations = {
     registry: "रजिस्ट्री",
     developers: "डेवलपर्स",
     aiIntegration: "AI एकीकरण",
+    api: "API",
+    community: "समुदाय",
+    contribute: "योगदान दें",
     suggestTopic: "विषय सुझाएँ",
     admin: "प्रशासक",
   },
@@ -475,6 +487,9 @@ const ar: UITranslations = {
     registry: "السجل",
     developers: "المطورون",
     aiIntegration: "تكامل AI",
+    api: "API",
+    community: "المجتمع",
+    contribute: "المساهمة",
     suggestTopic: "اقتراح موضوع",
     admin: "المسؤول",
   },
@@ -581,6 +596,9 @@ const es: UITranslations = {
     registry: "Registro",
     developers: "Desarrolladores",
     aiIntegration: "Integración AI",
+    api: "API",
+    community: "Comunidad",
+    contribute: "Contribuir",
     suggestTopic: "Sugerir tema",
     admin: "Administrador",
   },
@@ -687,6 +705,9 @@ const ja: UITranslations = {
     registry: "レジストリ",
     developers: "開発者",
     aiIntegration: "AI連携",
+    api: "API",
+    community: "コミュニティ",
+    contribute: "貢献",
     suggestTopic: "トピック提案",
     admin: "管理者",
   },
@@ -793,6 +814,9 @@ const zh: UITranslations = {
     registry: "注册表",
     developers: "开发者",
     aiIntegration: "AI集成",
+    api: "API",
+    community: "社区",
+    contribute: "贡献",
     suggestTopic: "建议主题",
     admin: "管理员",
   },
