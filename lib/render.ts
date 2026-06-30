@@ -1,4 +1,4 @@
-import { getClaimCitationStatus, getDocumentCitationStatus, UNKNOWN_FACT_TEXT } from "./citation-status";
+import { getCitationSafetyBlock, getClaimCitationStatus, getDocumentCitationStatus, UNKNOWN_FACT_TEXT } from "./citation-status";
 import type { ClaimSource, Confidence, RegistryDocumentBundle } from "./types";
 import { SUPPORTED_LOCALES } from "./i18n";
 import { apiDocumentUrl, documentPageUrl, rawMarkdownUrl } from "./urls";
@@ -41,6 +41,7 @@ export type RenderedDocumentJson = {
   claims: RenderedClaim[];
   listing: RegistryDocumentBundle["listing"];
   direct_answer: RenderedDirectAnswer;
+  citation_safety: ReturnType<typeof getCitationSafetyBlock>;
   citation_guidance: {
     can_cite: boolean;
     do_not_cite_reason: string | null;
@@ -260,6 +261,7 @@ export function renderDocumentJson(bundle: RegistryDocumentBundle): RenderedDocu
   const normalizedCitation = normalizeCitationSurface(bundle);
   const citationPolicyBlock = getCitationPolicyBlock(bundle);
   const citationStatus = getDocumentCitationStatus(bundle);
+  const citationSafety = getCitationSafetyBlock(bundle, document.lang);
   const directAnswer = getRenderedDirectAnswer(bundle);
   const claimStatuses = bundle.claims.map((c) => ({ c, cs: getClaimCitationStatus(c) }));
   const verifiedCount = claimStatuses.filter((x) => x.cs.isCitationReady).length;
@@ -279,6 +281,7 @@ export function renderDocumentJson(bundle: RegistryDocumentBundle): RenderedDocu
     })),
     listing: bundle.listing,
     direct_answer: directAnswer,
+    citation_safety: citationSafety,
     citation_guidance: {
       can_cite: citationStatus.isVerifiedDocument,
       do_not_cite_reason: citationStatus.isVerifiedDocument

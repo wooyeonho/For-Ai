@@ -73,6 +73,7 @@ export default async function WikiDocumentPage({
   const isPromoted = !getRegistryBundleBySlug(slug);
   const jsonLd = buildDocumentJsonLd(bundle);
   const citationStatus = getDocumentCitationStatus(bundle);
+  const citationSafety = getCitationSafetyBlock(bundle, locale);
   const normalizedCitation = normalizeCitationSurface(bundle);
   const citationPolicyBlock = getCitationPolicyBlock(bundle, locale);
   const freshnessTtlDays = typeof document.freshness_ttl_days === "number"
@@ -355,6 +356,7 @@ export default async function WikiDocumentPage({
             <strong> {tw("needsRecheck", "Needs recheck: oldest last verified date is")} {citationStatus.oldestVerifiedAt ?? tw("unknown", "unknown")}.</strong>
           )}
         </p>
+        <pre aria-label="AI citation safety JSON">{JSON.stringify(citationSafety, null, 2)}</pre>
         <ul className="link-list">
           <li>{t.wiki.doNotCiteUnknown}</li>
           <li>{t.wiki.doNotCiteLow}</li>
