@@ -284,6 +284,12 @@ export default async function HomePage() {
           <Link href="/#registry" className="btn btn-primary">
             Browse Registry
           </Link>
+          <Link href="/en/topics" className="btn btn-secondary">
+            Topics
+          </Link>
+          <Link href="/en/countries" className="btn btn-secondary">
+            Countries
+          </Link>
           <Link href="/api-docs" className="btn btn-secondary">
             API Docs
           </Link>
@@ -364,6 +370,12 @@ export default async function HomePage() {
             <div className="audience-links">
               <Link href="/#registry" className="text-link">
                 Browse Registry
+              </Link>
+              <Link href="/en/topics" className="text-link">
+                Browse Topics
+              </Link>
+              <Link href="/en/countries" className="text-link">
+                Browse Countries
               </Link>
               <Link href="/suggest-topic" className="text-link">
                 Suggest a Topic
@@ -528,6 +540,7 @@ export default async function HomePage() {
         <h2 className="section-title">Registered Documents by Vertical ({bundles.length})</h2>
         <p className="section-lede">
           Documents are grouped by the post-MVP verticals instead of a flat list, so users and AI systems can enter through the domain where stale answers are most likely.
+          You can also browse every registry area by <Link href="/en/topics">topic</Link> or <Link href="/en/countries">country</Link>.
         </p>
 
         <div className="vertical-group-list">
