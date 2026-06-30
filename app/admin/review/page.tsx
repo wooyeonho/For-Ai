@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
 import { ageInDays, isStale } from "../../../lib/citation-status";
+import { recommendForCandidate, recommendForClaim, recommendForCommunityPost } from "../../../lib/admin-recommendations";
 import { AdminSecretField, useAdminSecret } from "../AdminSecretProvider";
 
 type Counts = {
+  candidates_approved?: number;
   pending_community_posts: number;
   candidates_new: number;
   candidates_generated: number;
@@ -294,6 +296,7 @@ export default function AdminReviewPage() {
                 <span className="badge">last_verified_at: {claim.last_verified_at ?? "확인 필요"}</span>
               </p>
               <p className="meta-label">contributor_hash: {claim.contributor_hash ?? "-"} · AI: {[claim.ai_provider, claim.ai_model].filter(Boolean).join(" / ") || "-"}</p>
+              <RecommendationList recommendations={recommendForClaim(claim, claim.verify_url ?? `/admin/verify-claim${slug ? `?slug=${slug}` : ""}`)} />
               {(claim.source_candidates?.length ?? 0) > 0 && <p className="meta-label">source 후보: {claim.source_candidates?.map((s: {title?: string; url?: string; source_type?: string}) => s.title ?? s.url ?? s.source_type).join(", ")}</p>}
               {(claim.source_trust_scores?.length ?? 0) > 0 && <p className="meta-label">trust scores: {claim.source_trust_scores?.map((s: {id?: string; score?: number}) => `${s.id}:${s.score}`).join(", ")}</p>}
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -355,6 +358,7 @@ export default function AdminReviewPage() {
           <div className="claim-card" key={post.id}>
             <p className="eyebrow">{post.author_type} · {post.author_name ?? "anonymous"} · {post.created_at ?? "created_at 없음"}</p>
             <p>{post.content}</p>
+            <RecommendationList recommendations={recommendForCommunityPost(post)} />
           </div>
         ))}
       </section>
@@ -513,12 +517,28 @@ export default function AdminReviewPage() {
   );
 }
 
+function RecommendationList({ recommendations }: { recommendations: { action: string; label: string; reason: string; priority: string; href?: string }[] }) {
+  if (recommendations.length === 0) return null;
+  return (
+    <div style={{ margin: "8px 0", padding: 10, borderRadius: 8, background: "#f8fafc", border: "1px solid #e2e8f0" }}>
+      <p className="eyebrow" style={{ marginBottom: 6 }}>Recommended next action</p>
+      {recommendations.map((recommendation, index) => (
+        <p key={`${recommendation.action}-${index}`} style={{ margin: "4px 0", fontSize: 13 }}>
+          <strong>{recommendation.label}</strong> · {recommendation.reason}
+        </p>
+      ))}
+    </div>
+  );
+}
+
 function CandidateCard({ candidate }: { candidate: Candidate }) {
+  const recommendations = recommendForCandidate(candidate);
   return (
     <div className="claim-card">
       <p className="eyebrow">{candidate.category} · risk: <span style={{ color: RISK_COLOR[candidate.risk_tier] ?? "#374151" }}>{candidate.risk_tier}</span> · {candidate.status}</p>
       <p><strong>{candidate.title}</strong></p>
       <p>{candidate.lang}/wiki/{candidate.slug}</p>
+      <RecommendationList recommendations={recommendations} />
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
         <Link href="/admin/candidates?status=new" style={primaryButtonStyle}>후보 검토</Link>
         <Link href={`/admin/verify-claim?slug=${encodeURIComponent(candidate.slug)}`} style={secondaryButtonStyle}>claim 검증</Link>
