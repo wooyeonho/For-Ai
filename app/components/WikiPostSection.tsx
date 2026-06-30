@@ -8,18 +8,20 @@ interface Post {
   content: string;
   created_at: string;
   status?: string;
+  claim_id?: string | null;
 }
 
 const AUTHOR_ICON: Record<string, string> = { user: "👤", ai: "✦", admin: "🛡️" };
 const POST_REVIEW_MESSAGE = "글이 검토 대기열에 등록되었습니다. 관리자 승인 후 공개 목록에 표시됩니다.";
 
-export function WikiPostSection({ documentId }: { documentId: string }) {
+export function WikiPostSection({ documentId, claims = [] }: { documentId: string; claims?: { id: string; label: string }[] }) {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
   const [authorType, setAuthorType] = useState<"user" | "ai">("user");
   const [authorName, setAuthorName] = useState("");
   const [content, setContent] = useState("");
+  const [claimId, setClaimId] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [msgOk, setMsgOk] = useState(false);
@@ -46,6 +48,7 @@ export function WikiPostSection({ documentId }: { documentId: string }) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           document_id: documentId,
+          claim_id: claimId || null,
           author_type: authorType,
           author_name: authorName.trim() || undefined,
           content: content.trim(),
@@ -56,9 +59,11 @@ export function WikiPostSection({ documentId }: { documentId: string }) {
         const submittedContent = content.trim();
         const submittedAuthorType = authorType;
         const submittedAuthorName = authorName.trim() || (authorType === "ai" ? "AI" : "익명");
+        const submittedClaimId = claimId || null;
 
         setContent("");
         setAuthorName("");
+        setClaimId("");
         setShowForm(false);
         setMsgOk(true);
         setMsg(POST_REVIEW_MESSAGE);
@@ -68,6 +73,7 @@ export function WikiPostSection({ documentId }: { documentId: string }) {
             author_type: submittedAuthorType,
             author_name: submittedAuthorName,
             content: submittedContent,
+            claim_id: submittedClaimId,
             created_at: d.created_at ?? new Date().toISOString(),
             status: d.status ?? "pending",
           },
@@ -105,6 +111,13 @@ export function WikiPostSection({ documentId }: { documentId: string }) {
             <input type="text" value={authorName} onChange={(e) => setAuthorName(e.target.value)}
               placeholder="이름 (선택)" style={{ flex: 1, padding: "4px 8px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 12 }} />
           </div>
+          {claims.length > 0 && (
+            <select value={claimId} onChange={(e) => setClaimId(e.target.value)}
+              style={{ width: "100%", padding: "6px 8px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 12, marginBottom: 8 }}>
+              <option value="">문서 전체에 관한 글</option>
+              {claims.map((claim) => <option key={claim.id} value={claim.id}>{claim.label} · {claim.id}</option>)}
+            </select>
+          )}
           <textarea value={content} onChange={(e) => setContent(e.target.value)} required
             placeholder="의견이나 정보를 남겨주세요..."
             style={{ width: "100%", minHeight: 60, padding: 8, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 13, resize: "vertical", marginBottom: 8 }} />
@@ -145,6 +158,7 @@ export function WikiPostSection({ documentId }: { documentId: string }) {
                   {new Date(p.created_at).toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                 </span>
               </div>
+              {p.claim_id && <p style={{ fontSize: 11, color: "#6b7280", margin: "0 0 4px" }}>관련 claim: <code>{p.claim_id}</code></p>}
               <p style={{ fontSize: 13, lineHeight: 1.6, margin: 0, whiteSpace: "pre-wrap" }}>{p.content}</p>
             </div>
           ))}
