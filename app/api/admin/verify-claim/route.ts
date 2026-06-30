@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { logAdminAuditEvent, requireAdmin, supabaseAdmin } from "@/lib/admin-api";
 import { recordContributionEvent } from "@/lib/contributions";
+import { assertVerifyClaimReady, UNKNOWN_FACT_TEXT, UNKNOWN_FACT_TEXT_EN } from "@/lib/citation-status";
 import { scoreSourceTrust } from "@/lib/source-trust";
 import { awardPoints, checkAndAwardBadges, POINT_VALUES } from "@/lib/gamification";
 
@@ -65,7 +66,7 @@ function claimDate(row: ClaimWithDocument) {
   return new Date(row.created_at ?? row.updated_at ?? 0).getTime();
 }
 
-type ClaimAction = "verify" | "reject" | "mark_unknown" | "edit_value" | "attach_source" | "promote_document";
+type ClaimAction = "verify" | "reject" | "mark_unknown" | "edit_value" | "attach_source" | "promote_document" | "bulk_verify" | "bulk_needs_verification";
 
 type SourceInput = {
   source_type?: string;
@@ -75,7 +76,7 @@ type SourceInput = {
   observed_at?: string;
 };
 
-const ALLOWED_SOURCES = new Set(["official", "platform", "review", "user", "phone", "photo", "document", "web", "other", "unknown"]);
+const ALLOWED_SOURCES = new Set(["official", "law", "regulator", "platform", "review", "user", "phone", "photo", "document", "web", "other", "unknown"]);
 const ALLOWED_CONFIDENCE = new Set(["low", "medium", "high"]);
 
 function clean(value: unknown): string | null {
@@ -382,7 +383,7 @@ export async function POST(request: Request) {
   if (!["verify", "reject", "mark_unknown", "edit_value", "attach_source", "promote_document"].includes(action)) return NextResponse.json({ error: "invalid action" }, { status: 400 });
   if (!ALLOWED_CONFIDENCE.has(confidence)) return NextResponse.json({ error: "invalid confidence" }, { status: 400 });
   if (shouldAttachSource && (!ALLOWED_SOURCES.has(sourceType) || (!title && !url && !citation))) return NextResponse.json({ error: "valid source_type and at least one source title, url, or citation are required" }, { status: 400 });
-  if (["verify", "edit_value"].includes(action) && (!claimValue || claimValue === "확인 필요")) return NextResponse.json({ error: "verified/edited claim_value is required" }, { status: 400 });
+  if (["verify", "edit_value"].includes(action) && (!claimValue || claimValue === UNKNOWN_FACT_TEXT || claimValue === UNKNOWN_FACT_TEXT_EN)) return NextResponse.json({ error: "verified/edited claim_value is required and cannot be the unknown placeholder" }, { status: 400 });
 
   const { data: existingClaim, error: fetchError } = await sb
     .from("claims")
@@ -390,6 +391,36 @@ export async function POST(request: Request) {
     .eq("id", claimId)
     .single();
   if (fetchError || !existingClaim) return NextResponse.json({ error: "claim not found", detail: fetchError?.message }, { status: 404 });
+
+  if (action === "verify") {
+    const { data: verificationClaim, error: verificationFetchError } = await sb
+      .from("claims")
+      .select("id, claim_value, confidence, claim_sources(source_type, source_authority, url, citation), documents(category)")
+      .eq("id", claimId)
+      .single();
+    if (verificationFetchError || !verificationClaim) {
+      return NextResponse.json({ error: "claim verification readiness lookup failed", detail: verificationFetchError?.message ?? "claim not found" }, { status: 500 });
+    }
+
+    const verificationDocument = Array.isArray(verificationClaim.documents) ? verificationClaim.documents[0] : verificationClaim.documents;
+    const existingSources = Array.isArray(verificationClaim.claim_sources) ? verificationClaim.claim_sources : [];
+    const pendingSources = shouldAttachSource
+      ? [...existingSources, { source_type: sourceType, source_authority: null, url, citation }]
+      : existingSources;
+    const readiness = assertVerifyClaimReady({
+      claim_value: claimValue ?? verificationClaim.claim_value,
+      confidence,
+      sources: pendingSources,
+      category: verificationDocument?.category ?? null,
+    });
+    if (!readiness.ok) {
+      return NextResponse.json({
+        error: "claim cannot be marked verified",
+        detail: "Verified claims require a real value, medium/high confidence, traceable sources, and stricter source authority for high-risk categories.",
+        violations: readiness.violations,
+      }, { status: 400 });
+    }
+  }
 
   const now = new Date().toISOString();
   let sourceId: string | null = null;

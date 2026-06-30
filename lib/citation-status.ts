@@ -1,6 +1,7 @@
 import type { ClaimWithSources, RegistryDocumentBundle, UpdateFrequency as RegistryUpdateFrequency } from "./types";
 
 export const UNKNOWN_FACT_TEXT = "확인 필요";
+export const UNKNOWN_FACT_TEXT_EN = "Needs verification";
 
 // Facts decay. A verified claim that hasn't been re-checked in this window is
 // flagged "stale" so AI consumers and admins can prioritise re-verification.
@@ -45,7 +46,7 @@ export const FRESHNESS_WINDOWS_DAYS: Record<FreshnessDomain, number> = {
   default: FRESHNESS_TTL_DAYS,
 };
 
-export type FreshnessPolicyUpdateFrequency = UpdateFrequency | "unknown";
+export type FreshnessPolicyUpdateFrequency = RegistryUpdateFrequency;
 
 export type FreshnessPolicy = {
   ttlDays: number;
@@ -83,6 +84,9 @@ export type FreshnessLabel = "fresh" | "stale" | "unknown";
 export type VerifiedClaimInput = Pick<ClaimWithSources, "claim_value" | "confidence" | "status" | "last_verified_at" | "sources" | "verification_events">;
 
 const VERIFIED_CONFIDENCE = new Set(["medium", "high"]);
+const HIGH_RISK_CATEGORIES_FOR_VERIFICATION = new Set(["finance", "banking", "insurance", "healthcare", "genomics", "dna", "government", "labor", "tax", "travel", "real_estate", "housing"]);
+const OFFICIAL_OR_REGULATOR_SOURCE_TYPES = new Set(["official", "regulator"]);
+const OFFICIAL_OR_REGULATOR_AUTHORITIES = new Set(["official", "regulator"]);
 
 export function ageInDays(iso: string | null | undefined, now: Date = new Date()): number | null {
   if (!iso) return null;
@@ -173,7 +177,8 @@ export function getVerificationLevelInfo(level: VerificationLevel): Verification
 }
 
 function hasClaimValue(claim: Pick<ClaimWithSources, "claim_value">): boolean {
-  return Boolean(claim.claim_value?.trim()) && claim.claim_value !== UNKNOWN_FACT_TEXT;
+  const value = claim.claim_value?.trim() ?? "";
+  return Boolean(value) && value !== UNKNOWN_FACT_TEXT && value !== UNKNOWN_FACT_TEXT_EN;
 }
 
 function hasSourceCandidateSignal(claim: ClaimWithSources): boolean {
@@ -205,6 +210,50 @@ export function getClaimVerificationLevel(
   return getVerificationLevelInfo(0);
 }
 
+
+export type ClaimSourceReadinessInput = {
+  source_type?: string | null;
+  source_authority?: string | null;
+  url?: string | null;
+  citation?: string | null;
+};
+
+export type VerifyClaimReadinessInput = {
+  claim_value?: string | null;
+  confidence?: string | null;
+  sources: ClaimSourceReadinessInput[];
+  category?: string | null;
+};
+
+export function isHighRiskVerificationCategory(category: string | null | undefined): boolean {
+  return HIGH_RISK_CATEGORIES_FOR_VERIFICATION.has(String(category ?? "").toLowerCase());
+}
+
+export function getVerifyClaimReadinessViolations(claim: VerifyClaimReadinessInput): string[] {
+  const violations: string[] = [];
+  const claimValue = claim.claim_value?.trim() ?? "";
+  const sources = claim.sources ?? [];
+  const hasTraceableSource = sources.some((source) => Boolean(source.url?.trim()) || Boolean(source.citation?.trim()));
+  const hasOfficialOrRegulatorSource = sources.some((source) =>
+    OFFICIAL_OR_REGULATOR_SOURCE_TYPES.has(String(source.source_type ?? "").toLowerCase()) ||
+    OFFICIAL_OR_REGULATOR_AUTHORITIES.has(String(source.source_authority ?? "").toLowerCase()),
+  );
+
+  if (!claimValue) violations.push("claim value is empty; enter the factual value before verifying");
+  if (claimValue === UNKNOWN_FACT_TEXT || claimValue === UNKNOWN_FACT_TEXT_EN) violations.push("claim value is still the unknown placeholder (확인 필요 / Needs verification)");
+  if (!VERIFIED_CONFIDENCE.has(String(claim.confidence ?? ""))) violations.push("confidence must be medium or high before a claim can be verified");
+  if (sources.length < 1) violations.push("at least one claim source must be attached before verification");
+  if (sources.length > 0 && !hasTraceableSource) violations.push("at least one attached source must include a URL or citation");
+  if (isHighRiskVerificationCategory(claim.category) && !hasOfficialOrRegulatorSource) violations.push("high-risk categories require an official or regulator source before verification");
+
+  return violations;
+}
+
+export function assertVerifyClaimReady(claim: VerifyClaimReadinessInput): { ok: true } | { ok: false; violations: string[] } {
+  const violations = getVerifyClaimReadinessViolations(claim);
+  return violations.length === 0 ? { ok: true } : { ok: false, violations };
+}
+
 export function getVerifiedClaimViolations(claim: VerifiedClaimInput): string[] {
   const violations: string[] = [];
   const claimValue = claim.claim_value?.trim() ?? "";
@@ -213,7 +262,7 @@ export function getVerifiedClaimViolations(claim: VerifiedClaimInput): string[] 
   );
 
   if (!claimValue) violations.push("claim_value is required");
-  if (claimValue === UNKNOWN_FACT_TEXT) violations.push("claim_value must not be the unknown placeholder");
+  if (claimValue === UNKNOWN_FACT_TEXT || claimValue === UNKNOWN_FACT_TEXT_EN) violations.push("claim_value must not be the unknown placeholder");
   if (!VERIFIED_CONFIDENCE.has(claim.confidence)) violations.push("confidence must be medium or high");
   if (claim.sources.length < 1) violations.push("at least one source is required");
   if (!claim.last_verified_at) violations.push("last_verified_at is required");
