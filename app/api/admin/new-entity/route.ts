@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
-import { logAdminAuditEvent, requireAdmin, supabaseAdmin } from "@/lib/admin-api";
+import { adminErrorResponse, logAdminAuditEvent, requireAdmin, supabaseAdmin } from "@/lib/admin-api";
 
 export async function POST(request: Request) {
   const adminError = await requireAdmin(request, "entity.create");
   if (adminError) return adminError;
 
   const sb = supabaseAdmin();
-  if (!sb) return NextResponse.json({ error: "SUPABASE_SERVICE_ROLE_KEY not configured" }, { status: 500 });
+  if (!sb) return adminErrorResponse("admin.entity.supabase_client", new Error("SUPABASE_SERVICE_ROLE_KEY not configured"), 500);
 
   let body: Record<string, unknown>;
   try {
@@ -26,11 +26,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "id, type, canonical_name, country are required" }, { status: 400 });
   }
 
-  const { data: existing } = await sb.from("entities").select("id").eq("id", id).maybeSingle();
+  const { data: existing, error: existingError } = await sb.from("entities").select("id").eq("id", id).maybeSingle();
+  if (existingError) return adminErrorResponse("admin.entity.check_existing", existingError, 500, id);
   if (existing) return NextResponse.json({ error: `entity "${id}" already exists` }, { status: 409 });
 
   const { error } = await sb.from("entities").insert({ id, type, canonical_name, country, region, city });
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  if (error) return adminErrorResponse("admin.entity.create", error, 500, id);
 
   await logAdminAuditEvent(sb, request, "admin.entity.create", { entity_id: id });
   return NextResponse.json({ success: true, entity_id: id });

@@ -187,7 +187,7 @@ export default function NewDocumentPage() {
         });
         setSlug(""); setTitle(""); setCategory(""); replaceClaimRows(DEFAULT_CLAIM_ROWS);
       } else {
-        setResult({ success: false, error: data.error ?? String(res.status) });
+        setResult({ success: false, error: formatAdminError(data, String(res.status)) });
       }
     } catch {
       setResult({ success: false, error: "네트워크 오류. 잠시 후 다시 시도해 주세요." });
