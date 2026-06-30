@@ -12,18 +12,25 @@ export function ClaimTable({ claims, locale }: { claims: ClaimWithSources[]; loc
     return status.isCitationReady && !isStale(claim.last_verified_at);
   }).length;
   const staleClaims = claims.filter((claim) => getClaimCitationStatus(claim).isCitationReady && isStale(claim.last_verified_at)).length;
-  const documentCitationLabel = staleClaims > 0
-    ? "Stale"
+  const documentCitationStatusKey = staleClaims > 0
+    ? "stale"
     : readyClaims === claims.length && claims.length > 0
-      ? "Citation-ready"
+      ? "ready"
       : readyClaims > 0
-        ? "Mixed"
-        : "Needs verification";
-  const documentCitationClass = documentCitationLabel === "Citation-ready"
+        ? "mixed"
+        : "needsVerification";
+  const documentCitationLabel = documentCitationStatusKey === "ready"
+    ? t.wiki.citationReady
+    : documentCitationStatusKey === "stale"
+      ? t.wiki.citationStale
+      : documentCitationStatusKey === "mixed"
+        ? t.wiki.citationMixed
+        : t.wiki.needsVerification;
+  const documentCitationClass = documentCitationStatusKey === "ready"
     ? "document-citation-status document-citation-status--ready"
-    : documentCitationLabel === "Stale"
+    : documentCitationStatusKey === "stale"
       ? "document-citation-status document-citation-status--stale"
-      : documentCitationLabel === "Mixed"
+      : documentCitationStatusKey === "mixed"
         ? "document-citation-status document-citation-status--mixed"
         : "document-citation-status document-citation-status--review";
   return (
@@ -34,7 +41,7 @@ export function ClaimTable({ claims, locale }: { claims: ClaimWithSources[]; loc
         </h2>
         <div className={documentCitationClass} aria-label="Document citation status">
           <strong>{documentCitationLabel}</strong>
-          <span>{readyClaims}/{claims.length} citation-ready · {staleClaims} stale</span>
+          <span>{readyClaims}/{claims.length} {t.wiki.citationReady} · {staleClaims} {t.wiki.stale}</span>
         </div>
       </div>
       <div className="claim-list">

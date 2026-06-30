@@ -25,14 +25,24 @@ export function ClaimCard({ claim, locale }: { claim: ClaimWithSources; locale?:
       : null;
   const citationStatus = getClaimCitationStatus(claim);
   const stale = citationStatus.isCitationReady ? isStale(claim.last_verified_at) : true;
-  const statusTone = citationStatus.isCitationReady && !stale ? "is-citation-ready" : "needs-verification";
+  const readinessStatusKey = citationStatus.isCitationReady && !stale
+    ? "ready"
+    : stale && citationStatus.isCitationReady
+      ? "stale"
+      : "needsVerification";
+  const statusTone = readinessStatusKey === "ready" ? "is-citation-ready" : "needs-verification";
+  const readinessLabel = readinessStatusKey === "ready"
+    ? t.wiki.citationReady
+    : readinessStatusKey === "stale"
+      ? t.wiki.citationStale
+      : t.wiki.needsVerification;
   const copyLabel = locale === "ko" ? "AI 인용 문장 복사" : "Copy AI-citable sentence";
 
   return (
     <div className={`claim-card claim-card--${statusTone}`}>
       <div className="claim-card-topline">
-        <span className={citationStatus.isCitationReady && !stale ? "claim-readiness claim-readiness-ready" : "claim-readiness claim-readiness-review"}>
-          {citationStatus.isCitationReady && !stale ? "Citation-ready" : stale && citationStatus.isCitationReady ? "Stale" : "Needs verification"}
+        <span className={readinessStatusKey === "ready" ? "claim-readiness claim-readiness-ready" : "claim-readiness claim-readiness-review"}>
+          {readinessLabel}
         </span>
         <span className="eyebrow claim-field-path">{claim.field_path}</span>
       </div>
@@ -52,8 +62,8 @@ export function ClaimCard({ claim, locale }: { claim: ClaimWithSources; locale?:
           {translationStatusLabel && <span className="badge">{translationStatusLabel}</span>}
           <ConfidenceBadge level={claim.confidence} locale={locale} />
           <span className="badge badge-source-count">{t.claims.sourceCount}: {claim.sources.length}</span>
-          <span className="badge">jurisdiction: {claim.jurisdiction ?? "global/unspecified"}</span>
-          <span className={stale ? "badge badge-review" : "badge badge-verified"}>{stale ? "stale" : "fresh"}</span>
+          <span className="badge">{t.wiki.jurisdiction}: {claim.jurisdiction ?? "global/unspecified"}</span>
+          <span className={stale ? "badge badge-review" : "badge badge-verified"}>{stale ? t.wiki.stale : t.wiki.fresh}</span>
           {claim.source_of_claim === "business_submitted" && (
             <span
               className="badge badge-review"

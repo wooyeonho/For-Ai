@@ -77,18 +77,25 @@ export default async function WikiDocumentPage({
         ? 30
         : null;
   const isCommercePolicy = document.template === "commerce_policy";
-  const topCitationLabel = citationStatus.freshness === "stale"
-    ? "Stale"
+  const topCitationStatusKey = citationStatus.freshness === "stale"
+    ? "stale"
     : citationStatus.isVerifiedDocument
-      ? "Citation-ready"
+      ? "ready"
       : citationStatus.verifiedClaims > 0
-        ? "Mixed"
-        : "Needs verification";
-  const topCitationClass = topCitationLabel === "Citation-ready"
+        ? "mixed"
+        : "needsVerification";
+  const topCitationLabel = topCitationStatusKey === "ready"
+    ? t.wiki.citationReady
+    : topCitationStatusKey === "stale"
+      ? t.wiki.citationStale
+      : topCitationStatusKey === "mixed"
+        ? t.wiki.citationMixed
+        : t.wiki.needsVerification;
+  const topCitationClass = topCitationStatusKey === "ready"
     ? "document-citation-status document-citation-status--ready"
-    : topCitationLabel === "Stale"
+    : topCitationStatusKey === "stale"
       ? "document-citation-status document-citation-status--stale"
-      : topCitationLabel === "Mixed"
+      : topCitationStatusKey === "mixed"
         ? "document-citation-status document-citation-status--mixed"
         : "document-citation-status document-citation-status--review";
   const totalSources = claims.reduce((n, c) => n + c.sources.length, 0);
@@ -143,7 +150,7 @@ export default async function WikiDocumentPage({
         <h1>{document.title}</h1>
         <div className={topCitationClass} aria-label="Document citation status">
           <strong>{topCitationLabel}</strong>
-          <span>{citationStatus.verifiedClaims}/{citationStatus.totalClaims} citation-ready · freshness: {citationStatus.freshness}</span>
+          <span>{citationStatus.verifiedClaims}/{citationStatus.totalClaims} {t.wiki.citationReady} · {citationStatus.freshness === "stale" ? t.wiki.stale : t.wiki.fresh}</span>
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
           <span className={citationStatus.isVerifiedDocument ? "badge badge-verified" : "badge badge-review"}>
@@ -153,7 +160,7 @@ export default async function WikiDocumentPage({
           {document.category && <span className="badge">{document.category}</span>}
           {citationStatus.isVerifiedDocument && citationStatus.freshness === "stale" && (
             <span className="badge badge-review" title={`Oldest verified claim: ${citationStatus.oldestVerifiedAt ?? "unknown"}; TTL: ${citationStatus.freshnessWindowDays} days`}>
-              ⏳ stale
+              ⏳ {t.wiki.stale}
             </span>
           )}
         </div>
@@ -182,7 +189,7 @@ export default async function WikiDocumentPage({
           </p>
           <ul className="link-list">
             <li>Document status: <strong>{document.status}</strong></li>
-            <li>Citation-ready claims: <strong>{citationStatus.verifiedClaims}/{citationStatus.totalClaims}</strong></li>
+            <li>{t.wiki.citationReadyClaims} <strong>{citationStatus.verifiedClaims}/{citationStatus.totalClaims}</strong></li>
             <li>Required before citation: document status <strong>verified</strong> and every claim verified with source-backed evidence.</li>
           </ul>
         </section>
@@ -195,7 +202,7 @@ export default async function WikiDocumentPage({
           <p>Country and jurisdiction are required because return, refund, cancellation, and shipping policies can differ by market.</p>
           <ul className="link-list">
             <li>country: <strong>{document.country || entity.country}</strong></li>
-            <li>jurisdiction: <strong>{claims.find((claim) => claim.jurisdiction)?.jurisdiction ?? entity.country}</strong></li>
+            <li>{t.wiki.jurisdiction}: <strong>{claims.find((claim) => claim.jurisdiction)?.jurisdiction ?? entity.country}</strong></li>
             {freshnessTtlDays && <li>freshness TTL: <strong>{freshnessTtlDays} days</strong></li>}
           </ul>
         </section>
@@ -251,7 +258,7 @@ export default async function WikiDocumentPage({
         <h2 id="citation-status">{t.wiki.citationStatus}</h2>
         <p>
           {t.wiki.citationDocument} <strong>{citationStatus.label}</strong>. {t.wiki.citationReadyClaims}{" "}
-          {citationStatus.verifiedClaims}/{citationStatus.totalClaims}. Freshness: <strong>{citationStatus.freshness}</strong>
+          {citationStatus.verifiedClaims}/{citationStatus.totalClaims}. {citationStatus.freshness === "stale" ? t.wiki.stale : t.wiki.fresh}: <strong>{citationStatus.freshness === "stale" ? t.wiki.stale : t.wiki.fresh}</strong>
           {" "}(TTL {citationStatus.freshnessWindowDays} days; {citationStatus.freshnessPolicy.reason}).
           {citationStatus.isVerifiedDocument && citationStatus.freshness === "stale" && (
             <strong> Needs recheck: oldest last verified date is {citationStatus.oldestVerifiedAt ?? "unknown"}.</strong>

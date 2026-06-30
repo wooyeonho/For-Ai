@@ -33,7 +33,7 @@ export function DirectAnswerBox({
   const lang = (locale ?? DEFAULT_LOCALE) as SupportedLocale;
   const t = getTranslations(lang);
   const citationText = canCite && canonicalUrl && docTitle
-    ? `For-Ai Registry. "${docTitle}". Verified claim: ${displayAnswer}. Checked: ${lastVerifiedAt ?? "unknown"}. ${canonicalUrl}`
+    ? `For-Ai Registry. "${docTitle}". Verified claim: ${answer}. Checked: ${lastVerifiedAt ?? "unknown"}. ${canonicalUrl}`
     : null;
 
   return (
@@ -42,7 +42,7 @@ export function DirectAnswerBox({
       <h1 id="direct-answer-question" className="direct-answer-question">{question}</h1>
       {canCite === true && (
         <div className="can-cite-banner">
-          <span>{t.claims.canCite}</span>
+          <span>{t.wiki.canCite}</span>
           {citationText && (
             <CopyCitationButton
               citationText={citationText}
@@ -57,12 +57,12 @@ export function DirectAnswerBox({
       <p className="direct-answer-text">{answer}</p>
       <dl className="direct-answer-meta" aria-label="Direct answer trust signals">
         <div>
-          <dt>Applied region</dt>
+          <dt>{t.wiki.appliedRegion}</dt>
           <dd>{region}</dd>
         </div>
         <div>
           <dt>{t.claims.lastVerified}</dt>
-          <dd>{lastVerifiedAt ?? "Needs verification"}</dd>
+          <dd>{lastVerifiedAt ?? t.wiki.needsVerification}</dd>
         </div>
         <div>
           <dt>{t.claims.confidence}</dt>
@@ -73,8 +73,8 @@ export function DirectAnswerBox({
           <dd>{sourceCount}</dd>
         </div>
         <div>
-          <dt>Can cite</dt>
-          <dd><span className={canCite ? "badge badge-verified" : "badge badge-review"}>{canCite ? "yes" : "no"}</span></dd>
+          <dt>{t.wiki.canCite}</dt>
+          <dd><span className={canCite ? "badge badge-verified" : "badge badge-review"}>{canCite ? t.wiki.canCite : t.wiki.needsVerification}</span></dd>
         </div>
       </dl>
     </section>
