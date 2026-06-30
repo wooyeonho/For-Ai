@@ -779,27 +779,50 @@ create table contributors (
   constraint contributors_hash_required check (length(contributor_hash) > 0)
 );
 
+-- contribution_events: reward ledger for anonymous public contributions.
+-- Rewards are derived only from these events. Verified claim/document status still
+-- changes only through admin-approved verification flows.
+create type contribution_event_type as enum (
+  'source_submitted',
+  'source_accepted',
+  'claim_verified_from_contribution',
+  'hallucination_report_accepted'
+);
+
 create table contribution_events (
   id uuid primary key default gen_random_uuid(),
   contributor_hash text not null references contributors(contributor_hash) on delete cascade,
-  event_type text not null check (event_type in ('visit','submission','accepted_contribution','verified_source')),
+  event_type contribution_event_type not null,
+  points integer not null default 0 check (points >= 0),
+  country text,
+  source_type source_type,
+  claim_id text references claims(id) on delete set null,
+  document_id text references documents(id) on delete set null,
+  hallucination_report_id uuid references hallucination_reports(id) on delete set null,
   submission_status submission_status,
   related_table text,
   related_id text,
-  created_at timestamptz not null default now()
+  created_at timestamptz not null default now(),
+  constraint contribution_events_contributor_hash_required check (length(contributor_hash) > 0)
 );
 
 comment on table contributors is 'Privacy-preserving contributor profile keyed by contributor_hash only; never store raw IP addresses.';
-comment on table contribution_events is 'Append-only source events for visit, submission, accepted contribution, and verified source streak calculation.';
+comment on table contribution_events is 'Anonymous reward event ledger. Never store raw IP addresses. All reward points are calculated from contribution events, not direct verified status changes.';
+comment on column contribution_events.contributor_hash is 'Salted contributor identifier only; raw IP addresses are forbidden.';
 comment on column contribution_events.submission_status is 'Rejected/spam submissions may be recorded for audit context but must be ignored by streak calculation.';
 
 create index contribution_events_contributor_type_created_idx on contribution_events (contributor_hash, event_type, created_at desc);
+create index contribution_events_contributor_created_idx on contribution_events(contributor_hash, created_at desc);
 create index contribution_events_type_created_idx on contribution_events (event_type, created_at desc);
+create index contribution_events_country_idx on contribution_events(country);
 
 alter table contributors enable row level security;
 alter table contribution_events enable row level security;
 
--- No public policies: contribution streak data is updated by service-role routes/jobs only.
+-- Public reads are safe because contributor_hash is already pseudonymous and no
+-- private submission text is exposed. Writes require server/admin routes.
+create policy contribution_events_public_select on contribution_events for select to anon using (true);
+-- No public INSERT policy: contribution streak data is updated by service-role routes/jobs only.
 
 -- community_challenges: structured intake goals for accepted contribution candidates.
 -- Challenge completion is not verification; verified facts still require claim_sources

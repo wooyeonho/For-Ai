@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { logAdminAuditEvent, requireAdmin, supabaseAdmin } from "@/lib/admin-api";
+import { recordContributionEvent } from "@/lib/contributions";
 import { scoreSourceTrust } from "@/lib/source-trust";
 import { awardPoints, checkAndAwardBadges, POINT_VALUES } from "@/lib/gamification";
 
@@ -76,28 +77,12 @@ type SourceInput = {
 
 const ALLOWED_SOURCES = new Set(["official", "platform", "review", "user", "phone", "photo", "document", "web", "other", "unknown"]);
 const ALLOWED_CONFIDENCE = new Set(["low", "medium", "high"]);
-const SOURCE_TRUST: Record<string, number> = {
-  official: 95,
-  platform: 85,
-  document: 80,
-  web: 65,
-  photo: 60,
-  phone: 55,
-  review: 40,
-  user: 30,
-  other: 25,
-  unknown: 0,
-};
 
 function clean(value: unknown): string | null {
   const text = typeof value === "string" ? value.trim() : "";
   return text.length > 0 ? text : null;
 }
 
-function sourceTrustScore(sourceType: string, hasUrl: boolean, hasCitation: boolean): number {
-  const base = SOURCE_TRUST[sourceType] ?? SOURCE_TRUST.unknown;
-  return Math.min(100, base + (hasUrl ? 3 : 0) + (hasCitation ? 2 : 0));
-}
 
 function providerFromModel(model: unknown): string | null {
   const text = typeof model === "string" ? model.trim() : "";
@@ -441,6 +426,16 @@ export async function POST(request: Request) {
         points: ADMIN_ACCEPTED_SOURCE_POINTS,
         reason: "Admin accepted source candidate for claim review",
       });
+      if (contributorHash) {
+        await recordContributionEvent(sb, {
+          contributor_hash: contributorHash,
+          event_type: "source_accepted",
+          country: clean(body.country),
+          source_type: sourceType,
+          claim_id: claimId,
+          document_id: existingClaim.document_id,
+        });
+      }
     }
 
     const update: Record<string, string | null> = { updated_at: now };
@@ -483,6 +478,16 @@ export async function POST(request: Request) {
           event_type: "source_linked_verified_claim",
           points: VERIFIED_CLAIM_LINK_POINTS,
           reason: "Accepted source was linked to a verified claim",
+        });
+      }
+      if (action === "verify" && contributorHash) {
+        await recordContributionEvent(sb, {
+          contributor_hash: contributorHash,
+          event_type: "claim_verified_from_contribution",
+          country: clean(body.country),
+          source_type: shouldAttachSource ? sourceType : null,
+          claim_id: claimId,
+          document_id: existingClaim.document_id,
         });
       }
     }

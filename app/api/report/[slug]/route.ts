@@ -11,6 +11,7 @@ import {
 } from '../../../../lib/submission-limits';
 import { recordDocumentAnalyticsEvent } from '@/lib/analytics';
 import { normalizeSourceUrl, pointEventForSubmission } from '@/lib/source-contributions';
+import { recordContributionEvent } from '@/lib/contributions';
 
 export async function POST(
   request: Request,
@@ -176,6 +177,18 @@ export async function POST(
           claimQuestion: `Which claim on ${doc?.title ?? slug} needs correction?`,
         }));
         if (topicCandidateError) console.warn('[report] topic_candidates insert skipped:', topicCandidateError.message);
+      }
+
+
+      if (!error && typeof body.source_url === 'string' && body.source_url.trim()) {
+        await recordContributionEvent(supabase, {
+          contributor_hash: contributorHash,
+          event_type: 'source_submitted',
+          country: doc?.country ?? null,
+          source_type: 'web',
+          claim_id: body.claim_id?.trim() || null,
+          document_id: documentId,
+        });
       }
 
       if (error) {

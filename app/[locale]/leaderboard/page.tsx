@@ -188,6 +188,17 @@ export default async function LeaderboardPage({ params }: { params: Promise<Lead
         </ul>
       </section>
 
+      <section className="registry-panel" aria-labelledby="reward-rules">
+        <h2 id="reward-rules">Reward rules</h2>
+        <ul>
+          <li>Source submitted: 1 point, pending review.</li>
+          <li>Source accepted: 5 points after admin acceptance.</li>
+          <li>Claim verified from contribution: 20 points after admin verification approval.</li>
+          <li>Hallucination report accepted: 10 points after admin acceptance.</li>
+        </ul>
+        <p><Link href={`/${locale}/quests`}>View country quests and badge progress</Link></p>
+      </section>
+
       <nav className="registry-panel" aria-labelledby="leaderboard-actions">
         <h2 id="leaderboard-actions">Contribute source-backed facts</h2>
         <p>Submit missing facts without logging in. They remain Needs verification until a traceable source and human approval are recorded.</p>
