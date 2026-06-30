@@ -29,6 +29,14 @@ export const AI_PROVIDERS: Record<AIProviderKey, AIProviderConfig> = {
     envKey: "PERPLEXITY_API_KEY",
     supportsWebSearch: true,
   },
+  nvidia: {
+    key: "nvidia",
+    label: "NVIDIA NIM",
+    model: process.env.NVIDIA_MODEL || "nvidia/llama-3.1-nemotron-70b-instruct",
+    endpoint: "https://integrate.api.nvidia.com/v1/chat/completions",
+    envKey: "NVIDIA_API_KEY",
+    supportsWebSearch: false,
+  },
   gemini: {
     key: "gemini",
     label: "Gemini 2.0 Flash",
@@ -219,6 +227,8 @@ export async function generateWithProvider(
   switch (provider) {
     case "perplexity":
       return callPerplexity(config, req);
+    case "nvidia":
+      return callOpenAI(config, req); // NVIDIA NIM uses an OpenAI-compatible API
     case "gemini":
       return callGemini(config, req);
     case "gpt":

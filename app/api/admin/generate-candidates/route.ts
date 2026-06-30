@@ -435,8 +435,8 @@ export async function POST(request: Request) {
       }, { status: 400 });
     }
   } else {
-    // Default: use first available (prefer perplexity for web search)
-    providers = available.includes("perplexity") ? ["perplexity"] : [available[0]];
+    // Default provider policy: prefer Perplexity for web search, then NVIDIA, then other configured providers.
+    providers = [selectDefaultProvider(available)];
   }
 
   const systemPrompt = buildSystemPrompt(lang);
@@ -465,6 +465,8 @@ export async function POST(request: Request) {
     return NextResponse.json({
       error: reason,
       provider_results: providerResults,
+      providers_used: Object.keys(providerResults),
+      fallback_used: fallbackUsed,
     }, { status: 502 });
   }
 
@@ -494,6 +496,7 @@ export async function POST(request: Request) {
         available_providers: available.map((p) => ({ key: p, label: AI_PROVIDERS[p].label })),
         cross_verify: crossVerify,
         provider_results: providerResults,
+        fallback_used: fallbackUsed,
         total_generated: allCandidates.length,
         saved: 0,
         skipped_duplicates: skippedDuplicates,
@@ -546,6 +549,7 @@ export async function POST(request: Request) {
     available_providers: available.map((p) => ({ key: p, label: AI_PROVIDERS[p].label })),
     cross_verify: crossVerify,
     provider_results: providerResults,
+    fallback_used: fallbackUsed,
     ...(consensusSummary ? { consensus_summary: consensusSummary } : {}),
     total_generated: allCandidates.length,
     saved: saved.length,
