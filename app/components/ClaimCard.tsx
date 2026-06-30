@@ -26,13 +26,20 @@ export function ClaimCard({ claim, locale }: { claim: ClaimWithSources; locale?:
   const citationStatus = getClaimCitationStatus(claim);
   const stale = citationStatus.isCitationReady ? isStale(claim.last_verified_at) : true;
   const statusTone = citationStatus.isCitationReady && !stale ? "is-citation-ready" : "needs-verification";
+  const isCitationReadyNow = citationStatus.isCitationReady && !stale;
+  const readinessLabel = isCitationReadyNow ? "Citation-ready" : stale && citationStatus.isCitationReady ? "Stale" : "Needs verification";
   const copyLabel = locale === "ko" ? "AI 인용 문장 복사" : "Copy AI-citable sentence";
+  const citationCopyWarning = isCitationReadyNow
+    ? undefined
+    : locale === "ko"
+      ? "검증 완료 및 최신 citation-ready claim에서만 복사할 수 있습니다."
+      : "Copy is available only for fresh, verified citation-ready claims.";
 
   return (
     <div className={`claim-card claim-card--${statusTone}`}>
       <div className="claim-card-topline">
-        <span className={citationStatus.isCitationReady && !stale ? "claim-readiness claim-readiness-ready" : "claim-readiness claim-readiness-review"}>
-          {citationStatus.isCitationReady && !stale ? "Citation-ready" : stale && citationStatus.isCitationReady ? "Stale" : "Needs verification"}
+        <span className={isCitationReadyNow ? "claim-readiness claim-readiness-ready" : "claim-readiness claim-readiness-review"}>
+          {readinessLabel}
         </span>
         <span className="eyebrow claim-field-path">{claim.field_path}</span>
       </div>
@@ -46,14 +53,23 @@ export function ClaimCard({ claim, locale }: { claim: ClaimWithSources; locale?:
       <p className="claim-value">{displayValue}</p>
 
       <div className="claim-card-header">
-        <div className="claim-badges" aria-label="Claim verification signals">
-          <ClaimStatusBadge status={claim.status} locale={locale} />
-          <VerificationLevelBadge level={citationStatus.verificationLevel} />
-          {translationStatusLabel && <span className="badge">{translationStatusLabel}</span>}
+        <div className="claim-badges claim-badges-primary" aria-label="Primary claim citation signals">
+          <span className={isCitationReadyNow ? "badge badge-verified" : "badge badge-review"}>
+            {readinessLabel}
+          </span>
           <ConfidenceBadge level={claim.confidence} locale={locale} />
           <span className="badge badge-source-count">{t.claims.sourceCount}: {claim.sources.length}</span>
+        </div>
+      </div>
+
+      <details className="claim-secondary-details">
+        <summary>{locale === "ko" ? "세부 검증 메타 보기" : "View detailed verification meta"}</summary>
+        <div className="claim-badges claim-badges-secondary" aria-label="Secondary claim verification signals">
+          <ClaimStatusBadge status={claim.status} locale={locale} />
+          <VerificationLevelBadge level={citationStatus.verificationLevel} />
           <span className="badge">jurisdiction: {claim.jurisdiction ?? "global/unspecified"}</span>
           <span className={stale ? "badge badge-review" : "badge badge-verified"}>{stale ? "stale" : "fresh"}</span>
+          {translationStatusLabel && <span className="badge">{translationStatusLabel}</span>}
           {claim.source_of_claim === "business_submitted" && (
             <span
               className="badge badge-review"
@@ -64,7 +80,16 @@ export function ClaimCard({ claim, locale }: { claim: ClaimWithSources; locale?:
           )}
           {claim.source_of_claim === "sponsored" && <span className="badge badge-review">Sponsored claim</span>}
         </div>
-      </div>
+        <VerificationMeta
+          status={claim.status}
+          confidence={claim.confidence}
+          jurisdiction={claim.jurisdiction}
+          stale={stale}
+          lastVerifiedAt={claim.last_verified_at}
+          sourceCount={claim.sources.length}
+          locale={locale}
+        />
+      </details>
 
       {(claim.original_claim_id || isMachineTranslated) && (
         <p className="meta-label">
@@ -74,23 +99,14 @@ export function ClaimCard({ claim, locale }: { claim: ClaimWithSources; locale?:
         </p>
       )}
 
-      <VerificationMeta
-        status={claim.status}
-        confidence={claim.confidence}
-        jurisdiction={claim.jurisdiction}
-        stale={stale}
-        lastVerifiedAt={claim.last_verified_at}
-        sourceCount={claim.sources.length}
-        locale={locale}
-      />
-
-      <div className="claim-citation-cta" aria-label="AI-citable sentence copy action">
-        <span>{locale === "ko" ? "AI가 인용해도 되는 문장" : "AI-citable sentence"}</span>
+      <div className={isCitationReadyNow ? "claim-citation-cta claim-citation-cta--ready" : "claim-citation-cta claim-citation-cta--review"} aria-label="AI-citable sentence copy action">
+        <span>{isCitationReadyNow ? (locale === "ko" ? "AI가 인용해도 되는 문장" : "AI-citable sentence") : (locale === "ko" ? "검증 후 복사 가능" : "Copy available after verification")}</span>
         <span className="meta-label">Verification level is UI-only; citation readiness follows citation_ready/can_cite.</span>
         <CopyCitationButton
-          citationText={claimCitationText(claim)}
+          citationText={isCitationReadyNow ? claimCitationText(claim) : ""}
           labelCopy={copyLabel}
           labelCopied={t.claims.copied}
+          warningText={citationCopyWarning}
         />
       </div>
 
