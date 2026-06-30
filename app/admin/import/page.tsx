@@ -1,10 +1,18 @@
 "use client";
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { AdminSecretField, useAdminSecret } from "../AdminSecretProvider";
 
 const JSONL_PLACEHOLDER = `{"entity_id":"kr-person-athlete-son-001","type":"person_athlete","name":"손흥민 현재 소속팀","title":"손흥민 현재 소속팀","slug":"son-heung-min-current-team","category":"person_athlete","lang":"ko","country":"KR","jurisdiction":"KR","claims":[{"field_path":"athlete.current_team","claim_text":"현재 소속팀은 확인이 필요합니다.","claim_value":"확인 필요","confidence":"low","status":"needs_review","sources":[]}]}
 {"entity_id":"global-food-allergen-001","type":"product_food","name":"민트초코 알레르기 성분","title":"민트초코 알레르기 성분","slug":"mint-choco-allergens","category":"product_food","lang":"ko","country":"global","jurisdiction":"global","claims":[{"field_path":"food.allergens","claim_text":"알레르기 유발 성분은 확인이 필요합니다.","claim_value":"확인 필요","confidence":"low","status":"needs_review","sources":[]}]}`;
+
+interface CatalogEntry {
+  file: string;
+  label: string;
+  rows: number;
+  categories: string[];
+  countries: string[];
+}
 
 interface ImportResult {
   success: boolean;
@@ -18,8 +26,23 @@ export default function AdminImportPage() {
   const { adminSecret, setAdminSecret, resetAdminSecret } = useAdminSecret();
   const [jsonlText, setJsonlText] = useState("");
   const [loading, setLoading] = useState(false);
+  const [catalogLoading, setCatalogLoading] = useState(false);
+  const [catalogs, setCatalogs] = useState<CatalogEntry[]>([]);
+  const [selectedCatalog, setSelectedCatalog] = useState("");
   const [result, setResult] = useState<ImportResult | null>(null);
   const [parseError, setParseError] = useState("");
+
+  useEffect(() => {
+    if (!adminSecret) { setCatalogs([]); return; }
+    let cancelled = false;
+    setCatalogLoading(true);
+    fetch("/api/admin/import", { headers: { "x-admin-secret": adminSecret } })
+      .then(res => res.ok ? res.json() : { catalogs: [] })
+      .then(data => { if (!cancelled) setCatalogs(Array.isArray(data.catalogs) ? data.catalogs : []); })
+      .catch(() => { if (!cancelled) setCatalogs([]); })
+      .finally(() => { if (!cancelled) setCatalogLoading(false); });
+    return () => { cancelled = true; };
+  }, [adminSecret]);
 
   function parseJsonl(raw: string): { rows: Record<string, unknown>[]; error: string } {
     const lines = raw.split("\n").map(l => l.trim()).filter(Boolean);
@@ -32,6 +55,34 @@ export default function AdminImportPage() {
       }
     }
     return { rows, error: "" };
+  }
+
+  async function handleCatalogImport() {
+    if (!selectedCatalog) return;
+    setParseError("");
+    setResult(null);
+    setLoading(true);
+    try {
+      const res = await fetch("/api/admin/import", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-admin-secret": adminSecret,
+          "x-admin-csrf": "1",
+        },
+        body: JSON.stringify({ catalog: selectedCatalog }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setResult({ success: true, imported: data.imported, claims_created: data.claims_created, validation: data.validation });
+      } else {
+        setResult({ success: false, error: data.error ?? String(res.status) });
+      }
+    } catch {
+      setResult({ success: false, error: "네트워크 오류. 잠시 후 다시 시도해 주세요." });
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -106,6 +157,31 @@ export default function AdminImportPage() {
         </section>
       )}
 
+
+      <section className="registry-panel" aria-labelledby="seed-catalog-title">
+        <h2 id="seed-catalog-title">Seed topic catalog 가져오기</h2>
+        <p style={{ fontSize: 13, color: "#6b7280", lineHeight: 1.7 }}>
+          <code>data/topic-candidates</code>의 country/category별 seed catalog를 선택해 가져옵니다.
+          catalog seed도 모두 <strong>needs_review / low confidence</strong> 상태로 저장됩니다.
+        </p>
+        <div className="registry-form">
+          <label>
+            Seed catalog
+            <select value={selectedCatalog} onChange={e => setSelectedCatalog(e.target.value)} disabled={catalogLoading || catalogs.length === 0}>
+              <option value="">{catalogLoading ? "catalog 불러오는 중..." : "catalog 선택"}</option>
+              {catalogs.map(catalog => (
+                <option key={catalog.file} value={catalog.file}>
+                  {catalog.label} · {catalog.rows} rows · {catalog.countries.join(", ") || "global"} · {catalog.categories.join(", ")}
+                </option>
+              ))}
+            </select>
+          </label>
+          <button type="button" onClick={handleCatalogImport} disabled={loading || !selectedCatalog}>
+            {loading && selectedCatalog ? "가져오는 중..." : "선택한 seed catalog 가져오기"}
+          </button>
+        </div>
+      </section>
+
       <section className="registry-panel" aria-labelledby="import-form-title">
         <h2 id="import-form-title">JSONL 입력 {lineCount > 0 && <span style={{ fontWeight: 400, fontSize: 14 }}>({lineCount}개)</span>}</h2>
         <form onSubmit={handleSubmit} className="registry-form">
@@ -138,7 +214,7 @@ export default function AdminImportPage() {
 
       <section className="registry-panel" aria-labelledby="jsonl-format-guide">
         <h2 id="jsonl-format-guide">JSONL 형식</h2>
-        <p style={{ fontSize: 13, color: "#6b7280", lineHeight: 1.7 }}>필수 필드: <code>entity_id</code>, <code>type</code>, <code>title</code>, <code>slug</code>, <code>category</code>, <code>country</code></p>
+        <p style={{ fontSize: 13, color: "#6b7280", lineHeight: 1.7 }}>필수 필드: <code>entity_id</code>, <code>slug</code>, <code>country</code>, <code>type 또는 category</code>, <code>title 또는 name</code></p>
         <pre style={{ fontSize: 12, background: "#f9fafb", padding: "10px 12px", borderRadius: 6, overflow: "auto" }}>{`{
   "entity_id": "kr-topic-example-001",
   "type": "administration.documents",
