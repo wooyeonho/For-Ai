@@ -16,6 +16,7 @@ export type RegistryIndexItem = {
   entity_id: string;
   entity_name: string;
   type: string;
+  category: string;
   country: string;
   lang: string;
   verification: "verified" | "candidate";
@@ -47,6 +48,7 @@ type SupabaseIndexRow = {
   title?: string;
   lang?: string;
   status?: string;
+  category?: string;
   confidence?: string;
   last_verified_at?: string | null;
   updated_at?: string | null;
@@ -67,6 +69,7 @@ type SupabaseIndexRow = {
 // not citation-ready. (Moved here from app/llms.txt so the judgment is single-sourced.)
 export function isVerifiedSupabaseDoc(doc: {
   status?: string;
+  category?: string;
   confidence?: string;
   claims?: {
     status?: string;
@@ -125,6 +128,7 @@ function staticIndexItems(): RegistryIndexItem[] {
       entity_name: entity.canonical_name,
       type: entity.type,
       country: entity.country,
+      category: document.category,
       lang: document.lang,
       verification: status.isVerifiedDocument ? "verified" : "candidate",
       confidence: document.confidence,
@@ -155,7 +159,7 @@ export async function getSupabaseIndexItems(staticSlugs: Set<string>): Promise<R
     const { data } = await sb
       .from("documents")
       .select(
-        "slug,title,lang,status,confidence,last_verified_at,updated_at," +
+        "slug,title,lang,status,category,confidence,last_verified_at,updated_at," +
           "entities(id,canonical_name,type,country)," +
           "claims(status,confidence,claim_value,last_verified_at,claim_sources(id),verification_events(new_status,event_type))",
       )
@@ -175,6 +179,7 @@ export async function getSupabaseIndexItems(staticSlugs: Set<string>): Promise<R
           entity_name: row.entities?.canonical_name ?? "",
           type: row.entities?.type ?? "",
           country: row.entities?.country ?? "",
+          category: row.category ?? row.entities?.type ?? "uncategorized",
           lang: row.lang ?? DEFAULT_LOCALE,
           verification: verified ? "verified" : "candidate",
           confidence: row.confidence ?? "low",
@@ -204,7 +209,7 @@ function matchesFilters(item: RegistryIndexItem, filters: RegistryIndexFilters):
   if (filters.type && !item.type.toLowerCase().startsWith(filters.type.toLowerCase())) return false;
   if (filters.q) {
     const q = filters.q.toLowerCase();
-    const haystack = `${item.title} ${item.entity_name} ${item.type}`.toLowerCase();
+    const haystack = `${item.title} ${item.entity_name} ${item.type} ${item.category}`.toLowerCase();
     if (!haystack.includes(q)) return false;
   }
   return true;
