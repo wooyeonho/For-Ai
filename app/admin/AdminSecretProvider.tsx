@@ -5,6 +5,29 @@ import { useCallback, useEffect, useState } from "react";
 
 const ADMIN_SECRET_STORAGE_KEY = "for-ai-admin-secret";
 
+export function adminApiHeaders(adminSecret = "", headers: Record<string, string> = {}): HeadersInit {
+  const isBrowser = typeof window !== "undefined";
+  return {
+    ...headers,
+    "x-admin-csrf": headers["x-admin-csrf"] ?? "1",
+    ...(!isBrowser && adminSecret ? { "x-admin-secret": adminSecret } : {}),
+  };
+}
+
+export async function establishAdminSession(adminSecret: string): Promise<void> {
+  if (!adminSecret || typeof window === "undefined") return;
+  try {
+    await fetch("/api/admin/login", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: adminSecret }),
+    });
+  } catch {
+    // Individual admin API calls still surface authentication failures.
+  }
+}
+
+
 export function useAdminSecret() {
   const [adminSecret, setAdminSecretState] = useState("");
 
@@ -16,6 +39,7 @@ export function useAdminSecret() {
     setAdminSecretState(value);
     if (value) {
       sessionStorage.setItem(ADMIN_SECRET_STORAGE_KEY, value);
+      void establishAdminSession(value);
     } else {
       sessionStorage.removeItem(ADMIN_SECRET_STORAGE_KEY);
     }

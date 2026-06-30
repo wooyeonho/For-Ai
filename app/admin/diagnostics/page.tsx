@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useState } from "react";
+import { adminApiHeaders, establishAdminSession } from "../AdminSecretProvider";
 
 type TableCheck = {
   accessible: boolean;
@@ -40,7 +41,7 @@ export default function AdminDiagnosticsPage() {
   const load = useCallback(async () => {
     setLoading(true);
     setMessage(null);
-    const res = await fetch("/api/admin/diagnostics", { headers: { "x-admin-secret": secret } });
+    const res = await fetch("/api/admin/diagnostics", { headers: adminApiHeaders(secret) });
     const payload = await res.json();
     setLoading(false);
     if (res.ok) {
@@ -69,7 +70,7 @@ export default function AdminDiagnosticsPage() {
             aria-label="Admin secret"
             type="password"
             value={secret}
-            onChange={(event) => setSecret(event.target.value)}
+            onChange={(event) => { setSecret(event.target.value); void establishAdminSession(event.target.value); }}
             placeholder="ADMIN_SECRET"
             style={{ flex: 1, padding: 10 }}
           />

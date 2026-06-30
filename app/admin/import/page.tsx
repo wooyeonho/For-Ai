@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useState } from "react";
-import { AdminSecretField, useAdminSecret } from "../AdminSecretProvider";
+import { AdminSecretField, adminApiHeaders, useAdminSecret } from "../AdminSecretProvider";
 
 const JSONL_PLACEHOLDER = `{"entity_id":"kr-person-athlete-son-001","type":"person_athlete","name":"손흥민 현재 소속팀","title":"손흥민 현재 소속팀","slug":"son-heung-min-current-team","category":"person_athlete","lang":"ko","country":"KR","jurisdiction":"KR","claims":[{"field_path":"athlete.current_team","claim_text":"현재 소속팀은 확인이 필요합니다.","claim_value":"확인 필요","confidence":"low","status":"needs_review","sources":[]}]}
 {"entity_id":"global-food-allergen-001","type":"product_food","name":"민트초코 알레르기 성분","title":"민트초코 알레르기 성분","slug":"mint-choco-allergens","category":"product_food","lang":"ko","country":"global","jurisdiction":"global","claims":[{"field_path":"food.allergens","claim_text":"알레르기 유발 성분은 확인이 필요합니다.","claim_value":"확인 필요","confidence":"low","status":"needs_review","sources":[]}]}`;
@@ -47,11 +47,7 @@ export default function AdminImportPage() {
     try {
       const res = await fetch("/api/admin/import", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-admin-secret": adminSecret,
-          "x-admin-csrf": "1",
-        },
+        headers: adminApiHeaders(adminSecret, { "Content-Type": "application/json" }),
         body: JSON.stringify({ rows }),
       });
       const data = await res.json().catch(() => ({}));

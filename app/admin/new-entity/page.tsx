@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useState } from "react";
-import { AdminSecretField, useAdminSecret } from "../AdminSecretProvider";
+import { AdminSecretField, adminApiHeaders, useAdminSecret } from "../AdminSecretProvider";
 
 export default function NewEntityPage() {
   const { adminSecret, setAdminSecret, resetAdminSecret } = useAdminSecret();
@@ -21,11 +21,7 @@ export default function NewEntityPage() {
     try {
       const res = await fetch("/api/admin/new-entity", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-admin-secret": adminSecret,
-          "x-admin-csrf": "1",
-        },
+        headers: adminApiHeaders(adminSecret, { "Content-Type": "application/json" }),
         body: JSON.stringify({
           id: id.trim(),
           type: type.trim(),

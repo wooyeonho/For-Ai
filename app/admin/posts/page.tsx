@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { AdminSecretField, useAdminSecret } from "../AdminSecretProvider";
+import { AdminSecretField, adminApiHeaders, useAdminSecret } from "../AdminSecretProvider";
 
 interface Post {
   id: string;
@@ -43,7 +43,7 @@ export default function AdminPostsPage() {
     const params = new URLSearchParams({ status: statusFilter });
     if (authorFilter !== "all") params.set("author_type", authorFilter);
     try {
-      const r = await fetch(`/api/admin/posts?${params.toString()}`, { headers: { "x-admin-secret": adminSecret } });
+      const r = await fetch(`/api/admin/posts?${params.toString()}`, { headers: adminApiHeaders(adminSecret) });
       const d = await r.json();
       setPosts(Array.isArray(d.posts) ? d.posts : []);
       if (!r.ok) flash(d.error ?? "조회 실패", false);
@@ -64,7 +64,7 @@ export default function AdminPostsPage() {
     if (!adminSecret) { flash("admin secret을 입력하세요", false); return; }
     const r = await fetch("/api/admin/posts", {
       method: "PATCH",
-      headers: { "Content-Type": "application/json", "x-admin-secret": adminSecret, "x-admin-csrf": "1" },
+      headers: adminApiHeaders(adminSecret, { "Content-Type": "application/json" }),
       body: JSON.stringify({ id, status }),
     });
     const d = await r.json();
@@ -79,7 +79,7 @@ export default function AdminPostsPage() {
     try {
       const r = await fetch("/api/admin/posts", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "x-admin-secret": adminSecret, "x-admin-csrf": "1" },
+        headers: adminApiHeaders(adminSecret, { "Content-Type": "application/json" }),
         body: JSON.stringify({
           content: newContent.trim(),
           author_type: newAuthorType,

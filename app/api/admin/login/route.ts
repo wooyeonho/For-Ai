@@ -33,7 +33,7 @@ export async function POST(request: Request) {
 
   const sb = supabaseAdmin();
   if (sb) {
-    await logAdminAuditEvent(sb, request, "admin.login", { success: true });
+    await logAdminAuditEvent(sb, request, "admin.login", { success: true, auth_method: "admin_secret", admin_role: "admin" });
   }
 
   return response;

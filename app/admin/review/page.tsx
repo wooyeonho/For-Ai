@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
 import { ageInDays, isStale } from "../../../lib/citation-status";
-import { AdminSecretField, useAdminSecret } from "../AdminSecretProvider";
+import { AdminSecretField, adminApiHeaders, useAdminSecret } from "../AdminSecretProvider";
 
 type Counts = {
   pending_community_posts: number;
@@ -164,7 +164,7 @@ export default function AdminReviewPage() {
   const load = useCallback(async () => {
     setLoading(true);
     setMessage(null);
-    const res = await fetch("/api/admin/review", { headers: { "x-admin-secret": adminSecret } });
+    const res = await fetch("/api/admin/review", { headers: adminApiHeaders(adminSecret) });
     const payload = await res.json();
     setLoading(false);
     if (res.ok) {

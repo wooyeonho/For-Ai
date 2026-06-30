@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { adminApiHeaders, establishAdminSession } from "../AdminSecretProvider";
 
 type SourceRow = { id: string; title?: string | null; url?: string | null; source_type?: string | null; citation?: string | null; observed_at?: string | null };
 type VerificationEventRow = { id: string; note?: string | null; created_at?: string | null; new_status?: string | null };
@@ -133,7 +134,7 @@ export default function VerifyClaimPage() {
     if (!secret) return;
     setLoading(true);
     const res = await fetch(`/api/admin/verify-claim?${buildQuery(overridePage)}`, {
-      headers: { "x-admin-secret": secret, ...(adminActor.trim() ? { "x-admin-actor": adminActor.trim() } : {}) },
+      headers: adminApiHeaders(secret, { ...(adminActor.trim() ? { "x-admin-actor": adminActor.trim() } : {}) }),
     });
     const data = await res.json();
     setLoading(false);
@@ -191,7 +192,7 @@ export default function VerifyClaimPage() {
     try {
       const res = await fetch("/api/admin/check-source", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "x-admin-secret": secret, "x-admin-csrf": "1", ...(adminActor.trim() ? { "x-admin-actor": adminActor.trim() } : {}) },
+        headers: adminApiHeaders(secret, { "Content-Type": "application/json", ...(adminActor.trim() ? { "x-admin-actor": adminActor.trim() } : {}) }),
         body: JSON.stringify({
           url: url.trim(),
           match: claimValue.trim(),
@@ -213,7 +214,7 @@ export default function VerifyClaimPage() {
     if (!selectedClaim) return;
     const res = await fetch("/api/admin/verify-claim", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-admin-secret": secret, "x-admin-csrf": "1", ...(adminActor.trim() ? { "x-admin-actor": adminActor.trim() } : {}) },
+      headers: adminApiHeaders(secret, { "Content-Type": "application/json", ...(adminActor.trim() ? { "x-admin-actor": adminActor.trim() } : {}) }),
       body: JSON.stringify({
         action,
         claim_id: selectedClaim.id,
@@ -243,7 +244,7 @@ export default function VerifyClaimPage() {
     if (!actionReason?.trim()) return;
     const res = await fetch("/api/admin/verify-claim", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-admin-secret": secret, "x-admin-csrf": "1", ...(adminActor.trim() ? { "x-admin-actor": adminActor.trim() } : {}) },
+      headers: adminApiHeaders(secret, { "Content-Type": "application/json", ...(adminActor.trim() ? { "x-admin-actor": adminActor.trim() } : {}) }),
       body: JSON.stringify({ action, claim_id: claim.id, reason: actionReason.trim() }),
     });
     const data = await res.json();
@@ -264,7 +265,7 @@ export default function VerifyClaimPage() {
     }
     const res = await fetch("/api/admin/verify-claim", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-admin-secret": secret, "x-admin-csrf": "1", ...(adminActor.trim() ? { "x-admin-actor": adminActor.trim() } : {}) },
+      headers: adminApiHeaders(secret, { "Content-Type": "application/json", ...(adminActor.trim() ? { "x-admin-actor": adminActor.trim() } : {}) }),
       body: JSON.stringify({ action: "bulk_needs_verification", claim_ids: selectedClaimIds, reason: reason.trim() }),
     });
     const data = await res.json();
@@ -342,7 +343,7 @@ export default function VerifyClaimPage() {
             aria-label="Admin secret"
             type="password"
             value={secret}
-            onChange={(e) => setSecret(e.target.value)}
+            onChange={(e) => { setSecret(e.target.value); void establishAdminSession(e.target.value); }}
             placeholder="ADMIN_SECRET"
             style={{ flex: 1, padding: 10 }}
             onKeyDown={(e) => e.key === "Enter" && load(1)}

@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { AdminSecretField, useAdminSecret } from "../AdminSecretProvider";
+import { AdminSecretField, adminApiHeaders, useAdminSecret } from "../AdminSecretProvider";
 
 const PROVIDER_ICONS: Record<string, string> = {
   perplexity: "🔍",
@@ -92,7 +92,7 @@ export default function AdminGeneratePage() {
     async function loadProviders() {
       try {
         if (!adminSecret) { setProvidersLoading(false); return; }
-        const res = await fetch("/api/admin/generate-candidates", { headers: { "x-admin-secret": adminSecret } });
+        const res = await fetch("/api/admin/generate-candidates", { headers: adminApiHeaders(adminSecret) });
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
         const providers = (data.available_providers ?? []) as ProviderOption[];
@@ -123,11 +123,7 @@ export default function AdminGeneratePage() {
     try {
       const res = await fetch("/api/admin/generate-candidates", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-admin-secret": adminSecret,
-          "x-admin-csrf": "1",
-        },
+        headers: adminApiHeaders(adminSecret, { "Content-Type": "application/json" }),
         body: JSON.stringify({
           topic: topic.trim(),
           count,

@@ -33,7 +33,7 @@ type AdminAuthContext = {
   adminUserId: string | null;
   adminUserHash: string;
   role: AdminRole;
-  authMethod: "supabase" | "admin_secret";
+  authMethod: "supabase" | "admin_secret" | "session";
 };
 
 type AdminUserRow = {
@@ -135,7 +135,7 @@ function signSessionPayload(payload: string): string {
   return createHmac("sha256", ADMIN_SECRET).update(payload).digest("base64url");
 }
 
-function adminSessionValid(request: Request): boolean {
+export function adminSessionValid(request: Request): boolean {
   if (!ADMIN_SECRET) return false;
   const cookie = request.headers.get("cookie") ?? "";
   const token = cookie
@@ -230,9 +230,18 @@ async function supabaseAuthContext(request: Request): Promise<AdminAuthContext |
   };
 }
 
+function sessionContext(request: Request): AdminAuthContext | null {
+  if (!adminSessionValid(request)) return null;
+  return {
+    adminUserId: null,
+    adminUserHash: hashSafe(`admin_session:${ADMIN_SECRET}`),
+    role: "admin",
+    authMethod: "session",
+  };
+}
+
 function fallbackSecretContext(request: Request): AdminAuthContext | null {
-  const auth = request.headers.get("x-admin-secret") ?? "";
-  if (!safeSecretEqual(ADMIN_SECRET, auth)) return null;
+  if (!internalSecretValid(request)) return null;
   return {
     adminUserId: null,
     adminUserHash: hashSafe(`admin_secret:${ADMIN_SECRET}`),
@@ -241,8 +250,12 @@ function fallbackSecretContext(request: Request): AdminAuthContext | null {
   };
 }
 
+async function adminAuthContext(request: Request): Promise<AdminAuthContext | null> {
+  return sessionContext(request) ?? await supabaseAuthContext(request) ?? fallbackSecretContext(request);
+}
+
 export async function authorized(request: Request): Promise<boolean> {
-  return (await supabaseAuthContext(request)) !== null || fallbackSecretContext(request) !== null;
+  return (await adminAuthContext(request)) !== null;
 }
 
 export function safeRequestMetadata(request: Request): AdminAuditMetadata {
@@ -299,7 +312,7 @@ export async function requireAdmin(request: Request, action: string): Promise<Ne
     return NextResponse.json({ error: "rate_limited" }, { status: 429 });
   }
 
-  const context = await supabaseAuthContext(request) ?? fallbackSecretContext(request);
+  const context = await adminAuthContext(request);
   if (!context) {
     console.info("[admin-audit]", JSON.stringify({ action, allowed: false, reason: "unauthorized", at: new Date().toISOString() }));
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });

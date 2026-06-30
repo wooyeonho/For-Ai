@@ -1,5 +1,6 @@
 "use client";
 import { useMemo, useState } from "react";
+import { adminApiHeaders, useAdminSecret } from "../AdminSecretProvider";
 
 type ClaimRow = {
   id: string;
@@ -151,11 +152,7 @@ export default function NewDocumentPage() {
     try {
       const res = await fetch("/api/admin/new-document", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-admin-secret": adminSecret,
-          "x-admin-csrf": "1",
-        },
+        headers: adminApiHeaders(adminSecret, { "Content-Type": "application/json" }),
         body: JSON.stringify({
           entity_id: entityId.trim(),
           slug: slug.trim(),
