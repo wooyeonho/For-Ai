@@ -10,7 +10,7 @@ export function useAdminSecret() {
     setAdminSecret("");
   }, []);
 
-  return { adminSecret, setAdminSecret, resetAdminSecret };
+  return { adminSecret, setAdminSecret, resetAdminSecret, loginAdmin, authenticated, authMessage };
 }
 
 export function AdminSecretField({
@@ -24,6 +24,8 @@ export function AdminSecretField({
   adminSecret: string;
   setAdminSecret: (value: string) => void;
   resetAdminSecret: () => void;
+  loginAdmin?: () => Promise<boolean>;
+  authMessage?: string | null;
   label?: string;
   placeholder?: string;
   inputStyle?: CSSProperties;
@@ -66,6 +68,9 @@ export function AdminSecretField({
           type="password"
           value={adminSecret}
           onChange={(event) => setAdminSecret(event.target.value)}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") void loginAdmin?.();
+          }}
           placeholder={placeholder}
           style={inputStyle ?? { flex: 1, padding: 8 }}
         />
@@ -77,6 +82,7 @@ export function AdminSecretField({
       <p style={{ margin: 0, fontSize: 11, color: "#6b7280" }}>
         관리자 키는 브라우저에 저장하지 않으며, 로그인 성공 후 httpOnly cookie로만 API를 호출합니다.
       </p>
+      {authMessage && <p style={{ margin: 0, fontSize: 12, color: authMessage.includes("실패") ? "#991b1b" : "#166534" }}>{authMessage}</p>}
     </div>
   );
 }

@@ -23,7 +23,7 @@ interface ImportResult {
 }
 
 export default function AdminImportPage() {
-  const { adminSecret, setAdminSecret, resetAdminSecret } = useAdminSecret();
+  const { adminSecret, setAdminSecret, resetAdminSecret, loginAdmin, authMessage } = useAdminSecret();
   const [jsonlText, setJsonlText] = useState("");
   const [loading, setLoading] = useState(false);
   const [catalogLoading, setCatalogLoading] = useState(false);
@@ -203,6 +203,8 @@ export default function AdminImportPage() {
             adminSecret={adminSecret}
             setAdminSecret={setAdminSecret}
             resetAdminSecret={resetAdminSecret}
+            loginAdmin={loginAdmin}
+            authMessage={authMessage}
             label="Admin Secret *"
             placeholder="관리자 비밀키"
           />

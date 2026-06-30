@@ -25,7 +25,7 @@ export default function CandidatesPage(){
   const [filter,setFilter]=useState("new");
   const [sourceHintFilter,setSourceHintFilter]=useState("all");
   const [selected,setSelected]=useState<string|null>(null);
-  const { adminSecret, setAdminSecret, resetAdminSecret } = useAdminSecret();
+  const { adminSecret, setAdminSecret, resetAdminSecret, loginAdmin, authMessage } = useAdminSecret();
   const [msg,setMsg]=useState<{text:string;ok:boolean}|null>(null);
   const [promoting,setPromoting]=useState<string|null>(null);
   const load=useCallback(async()=>{
@@ -59,7 +59,7 @@ export default function CandidatesPage(){
           <div><h1 style={{fontSize:22,fontWeight:700,margin:0}}>📋 후보 검토 큐</h1>
             <p style={{color:"#6b7280",fontSize:13,margin:"4px 0 0"}}>public submit → triage → AI 사실 생성 → 🚀 공개 등록</p></div>
           <div style={{display:"flex",gap:8,alignItems:"center"}}>
-            <AdminSecretField adminSecret={adminSecret} setAdminSecret={setAdminSecret} resetAdminSecret={resetAdminSecret} label="관리자 인증키" placeholder="admin secret" inputStyle={{ border: "1px solid #d1d5db", borderRadius: 6, padding: "6px 10px", fontSize: 13, width: 160 }}/>
+            <AdminSecretField adminSecret={adminSecret} setAdminSecret={setAdminSecret} resetAdminSecret={resetAdminSecret} loginAdmin={loginAdmin} authMessage={authMessage} label="관리자 인증키" placeholder="admin secret" inputStyle={{ border: "1px solid #d1d5db", borderRadius: 6, padding: "6px 10px", fontSize: 13, width: 160 }}/>
             <Link href="/admin/generate" style={{fontSize:13,color:"#2563eb"}}>→ AI 생성</Link>
           </div>
         </div>

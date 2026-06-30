@@ -178,7 +178,6 @@ export default function VerifyClaimPage() {
   }, [search, claimStatusFilter, docStatusFilter, page, filters, targetClaimId]);
 
   const load = useCallback(async (overridePage?: number) => {
-    if (!secret) return;
     setLoading(true);
     const res = await fetch(`/api/admin/verify-claim?${buildQuery(overridePage)}`, {
       headers: { ...(adminActor.trim() ? { "x-admin-actor": adminActor.trim() } : {}) },

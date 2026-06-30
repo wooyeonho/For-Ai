@@ -86,7 +86,7 @@ export default function AdminGeneratePage() {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<GenerateResult | null>(null);
   const [error, setError] = useState("");
-  const { adminSecret, setAdminSecret, resetAdminSecret } = useAdminSecret();
+  const { adminSecret, setAdminSecret, resetAdminSecret, loginAdmin, authMessage } = useAdminSecret();
 
   useEffect(() => {
     async function loadProviders() {
@@ -169,6 +169,8 @@ export default function AdminGeneratePage() {
             adminSecret={adminSecret}
             setAdminSecret={setAdminSecret}
             resetAdminSecret={resetAdminSecret}
+            loginAdmin={loginAdmin}
+            authMessage={authMessage}
             label={`관리자 인증키 ${adminSecret ? "✓" : ""}`}
             placeholder="ADMIN_SECRET 입력"
             inputStyle={{ flex: 1, padding: "8px 12px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 }}

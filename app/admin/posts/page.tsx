@@ -35,7 +35,7 @@ const STATUS_STYLE: Record<string, { bg: string; color: string }> = {
 export default function AdminPostsPage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
-  const { adminSecret, setAdminSecret, resetAdminSecret } = useAdminSecret();
+  const { adminSecret, setAdminSecret, resetAdminSecret, loginAdmin, authMessage } = useAdminSecret();
   const [statusFilter, setStatusFilter] = useState("pending");
   const [authorFilter, setAuthorFilter] = useState("all");
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
@@ -131,6 +131,8 @@ export default function AdminPostsPage() {
               adminSecret={adminSecret}
               setAdminSecret={setAdminSecret}
               resetAdminSecret={resetAdminSecret}
+            loginAdmin={loginAdmin}
+            authMessage={authMessage}
               label="관리자 인증키"
               placeholder="admin secret"
               inputStyle={{ border: "1px solid #d1d5db", borderRadius: 6, padding: "6px 10px", fontSize: 13, width: 160 }}
