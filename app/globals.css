@@ -140,7 +140,6 @@ h2 {
   margin: 0;
   font-size: 0.9rem;
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
-  word-break: break-all;
 }
 
 /* Badges */
@@ -1436,7 +1435,6 @@ details.technical-meta dt {
 }
 details.technical-meta dd {
   margin: 0;
-  word-break: break-all;
 }
 
 /* ── Dark mode ─────────────────────────────────────────────────────────── */

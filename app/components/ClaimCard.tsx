@@ -115,7 +115,7 @@ export function ClaimCard({ claim, locale }: { claim: ClaimWithSources; locale?:
       </details>
 
       <div className="claim-citation-cta" aria-label="AI-citable sentence copy action">
-        <span>{locale === "ko" ? "AI가 인용해도 되는 문장" : "AI-citable sentence"}</span>
+        <span className="citation-text">{locale === "ko" ? "AI가 인용해도 되는 문장" : "AI-citable sentence"}</span>
         <span className="meta-label">Verification level is UI-only; citation readiness follows citation_ready/can_cite.</span>
         <CopyCitationButton
           citationText={claimCitationText(claim)}
