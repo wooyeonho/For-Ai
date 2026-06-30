@@ -5,6 +5,7 @@ import { getRegistryBundleBySlug, getAllRegistryBundles } from "../../../../lib/
 import { buildDocumentMetadata, buildDocumentJsonLd } from "../../../../lib/seo";
 import { siteUrl } from "../../../../lib/urls";
 import { SUPPORTED_LOCALES, LOCALE_CONFIG, isValidLocale, getTranslations } from "../../../../lib/i18n";
+import { localizedPath, withLangQuery } from "../../../../lib/i18n/routing";
 import type { SupportedLocale } from "../../../../lib/i18n";
 import { getEntityLabels } from "../../../../lib/i18n/entity-labels";
 import type { RegistryDocumentBundle } from "../../../../lib/types";
@@ -65,6 +66,10 @@ export default async function WikiDocumentPage({
   const whyPeopleAsk = (docData?.why_people_ask_ai as string) ?? null;
   const apiUrl = `/api/documents/${document.slug}`;
   const rawUrl = `/raw/${document.slug}.md`;
+  const wikiPath = localizedPath(locale, `/wiki/${document.slug}`);
+  const reportUrl = withLangQuery(locale, `/report/${document.slug}?return=${wikiPath}`);
+  const hallucinationUrl = withLangQuery(locale, `/hallucination/${document.slug}?return=${wikiPath}`);
+  const diagnosticsUrl = withLangQuery(locale, `/diagnostics/${document.slug}?return=${wikiPath}`);
   const isPromoted = !getRegistryBundleBySlug(slug);
   const jsonLd = buildDocumentJsonLd(bundle);
   const citationStatus = getDocumentCitationStatus(bundle);
@@ -281,9 +286,9 @@ export default async function WikiDocumentPage({
         <ul className="link-list">
           <li><Link href={apiUrl}>JSON API ({apiUrl})</Link></li>
           <li><Link href={rawUrl}>Raw Markdown ({rawUrl})</Link></li>
-          <li><Link href={`/report/${document.slug}`}>{t.wiki.correctionReport}</Link></li>
-          <li><Link href={`/hallucination/${document.slug}`}>{t.wiki.hallucinationReport}</Link></li>
-          <li><Link href={`/diagnostics/${document.slug}`}>{t.wiki.diagnostics}</Link></li>
+          <li><Link href={reportUrl}>{t.wiki.correctionReport}</Link></li>
+          <li><Link href={hallucinationUrl}>{t.wiki.hallucinationReport}</Link></li>
+          <li><Link href={diagnosticsUrl}>{t.wiki.diagnostics}</Link></li>
         </ul>
       </nav>
 
@@ -307,7 +312,7 @@ export default async function WikiDocumentPage({
         <ul className="link-list" style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
           {SUPPORTED_LOCALES.filter((l) => l !== locale).map((l) => (
             <li key={l}>
-              <Link href={`/${l}/wiki/${slug}`}>
+              <Link href={localizedPath(l, `/wiki/${slug}`)}>
                 {LOCALE_CONFIG[l].flag} {LOCALE_CONFIG[l].nativeName}
               </Link>
             </li>

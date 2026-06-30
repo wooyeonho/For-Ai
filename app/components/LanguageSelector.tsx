@@ -1,39 +1,21 @@
 "use client";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { SUPPORTED_LOCALES, DEFAULT_LOCALE, LOCALE_CONFIG, isValidLocale } from "../../lib/i18n";
-
-const DOCUMENT_ACTION_ROUTES = new Set(["report", "hallucination", "diagnostics"]);
-
-export function getLocalePath(pathname: string, locale: string): string {
-  const segments = pathname.split("/").filter(Boolean);
-
-  if (segments[0] && isValidLocale(segments[0])) {
-    const [, route, identifier] = segments;
-    if ((route === "wiki" || route === "entity") && identifier) {
-      return "/" + [locale, ...segments.slice(1)].join("/");
-    }
-  }
-
-  const [route, identifier] = segments;
-  if (route && DOCUMENT_ACTION_ROUTES.has(route) && identifier) {
-    return `/${locale}/wiki/${identifier}`;
-  }
-
-  // Non-locale pages (homepage, api-docs, community, etc.) stay as-is
-  return pathname;
-}
+import { SUPPORTED_LOCALES, LOCALE_CONFIG } from "../../lib/i18n";
+import { getCurrentLocaleFromPath, localizedPath, withLangQuery } from "../../lib/i18n/routing";
 
 export function LanguageSelector() {
   const pathname = usePathname();
 
-  // Extract current locale from path
-  const segments = pathname.split("/").filter(Boolean);
-  const currentLocale = segments[0] && isValidLocale(segments[0]) ? segments[0] : DEFAULT_LOCALE;
+  const currentLocale = getCurrentLocaleFromPath(pathname);
 
-  // Build path for other locales
   function getPathForLocale(locale: string): string {
-    return getLocalePath(pathname, locale);
+    const segments = pathname.split("/").filter(Boolean);
+    const [route, identifier] = segments[0] && segments[0] === currentLocale ? segments.slice(1) : segments;
+    if ((route === "report" || route === "hallucination" || route === "diagnostics") && identifier) {
+      return localizedPath(locale, `/wiki/${identifier}`);
+    }
+    return localizedPath(locale, pathname) === pathname ? withLangQuery(locale, pathname) : localizedPath(locale, pathname);
   }
 
   return (

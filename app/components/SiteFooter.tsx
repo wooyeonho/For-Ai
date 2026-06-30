@@ -1,7 +1,14 @@
 "use client";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
+import { getCurrentLocaleFromPath, localizedPath, withLangQuery } from "../../lib/i18n/routing";
 
 export function SiteFooter() {
+  const pathname = usePathname();
+  const locale = getCurrentLocaleFromPath(pathname);
+  const pageLink = (path: string) => localizedPath(locale, path) === path ? withLangQuery(locale, path) : localizedPath(locale, path);
+  const formLink = (path: string) => withLangQuery(locale, path);
+
   return (
     <footer className="site-footer">
       <div className="site-footer-inner">
@@ -14,17 +21,17 @@ export function SiteFooter() {
 
         <div className="footer-col">
           <p className="footer-col-title">For Humans</p>
-          <Link href="/#registry">Browse Registry</Link>
-          <Link href="/suggest-topic">Suggest Topic</Link>
-          <Link href="/community">Community</Link>
+          <Link href={pageLink("/#registry")}>Browse Registry</Link>
+          <Link href={formLink("/suggest-topic")}>Suggest Topic</Link>
+          <Link href={pageLink("/community")}>Community</Link>
         </div>
 
         <div className="footer-col">
           <p className="footer-col-title">For Machines</p>
-          <Link href="/llms.txt">llms.txt</Link>
-          <Link href="/api-docs">API Docs</Link>
-          <Link href="/sitemap.xml">sitemap.xml</Link>
-          <Link href="/robots.txt">robots.txt</Link>
+          <Link href={pageLink("/llms.txt")}>llms.txt</Link>
+          <Link href={pageLink("/api-docs")}>API Docs</Link>
+          <Link href={pageLink("/sitemap.xml")}>sitemap.xml</Link>
+          <Link href={pageLink("/robots.txt")}>robots.txt</Link>
         </div>
 
         <div className="footer-col">
