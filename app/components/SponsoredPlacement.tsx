@@ -5,11 +5,12 @@ import type { CSSProperties } from "react";
 
 interface SponsoredPlacementProps {
   businessName: string;
-  placementType: "sidebar" | "inline" | "banner" | "featured";
+  placementType: "sidebar" | "inline" | "banner" | "featured" | "category_featured" | "search_promoted" | "related_entity";
   title: string;
   description?: string;
   url?: string;
   imageUrl?: string;
+  displayLabel?: string;
 }
 
 const SPONSORED_DISCLOSURE = "Sponsored — not a verified factual claim";
@@ -25,6 +26,7 @@ export function SponsoredPlacement({
   description,
   url,
   imageUrl,
+  displayLabel = SPONSORED_DISCLOSURE,
 }: SponsoredPlacementProps) {
   const wrapperStyle: CSSProperties = {
     border: "1px dashed var(--accent)",
@@ -43,7 +45,7 @@ export function SponsoredPlacement({
   return (
     <aside
       style={wrapperStyle}
-      aria-label={`${SPONSORED_DISCLOSURE} from ${businessName}`}
+      aria-label={`${displayLabel} — ${SPONSORED_DISCLOSURE} from ${businessName}`}
       data-content-kind="sponsored-placement"
       data-claim-status="not-a-factual-claim"
       data-placement-type={placementType}
@@ -64,7 +66,7 @@ export function SponsoredPlacement({
           marginBottom: 10,
         }}
       >
-        {SPONSORED_DISCLOSURE}
+        {displayLabel.includes("Sponsored") ? displayLabel : SPONSORED_DISCLOSURE}
       </div>
 
       <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>

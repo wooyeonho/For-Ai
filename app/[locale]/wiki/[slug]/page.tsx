@@ -107,6 +107,7 @@ export default async function WikiDocumentPage({
     "application_channel",
     "official_page",
   ];
+  const sponsoredPlacements = await getActiveSponsoredPlacementsForEntity(entity.id);
   const isGovernmentFeeTemplate =
     docData.disclaimer_type === "check_official_source" &&
     claims.some((claim) => standardGovernmentFeeFieldPaths.includes(claim.field_path)) &&
@@ -274,6 +275,25 @@ export default async function WikiDocumentPage({
               <li key={fieldPath}><code>{fieldPath}</code></li>
             ))}
           </ul>
+        </section>
+      )}
+
+      {sponsoredPlacements.length > 0 && (
+        <section className="registry-panel" aria-labelledby="sponsored-placements">
+          <p className="eyebrow">Sponsored placements</p>
+          <h2 id="sponsored-placements">Sponsored</h2>
+          <p className="meta-label">Paid promotional content below is separate from claim verification and does not affect citation status.</p>
+          {sponsoredPlacements.map((placement) => (
+            <SponsoredPlacement
+              key={placement.id}
+              businessName={placement.business_name}
+              placementType={placement.placement_type}
+              title={placement.category ? `${placement.business_name} · ${placement.category}` : placement.business_name}
+              description="Sponsored placement. Not a verified factual claim."
+              url={placement.target_url ?? undefined}
+              displayLabel={placement.display_label}
+            />
+          ))}
         </section>
       )}
 

@@ -201,13 +201,16 @@ create table sponsored_placements (
   impressions     bigint not null default 0,
   clicks          bigint not null default 0,
   created_at      timestamptz not null default now(),
+  updated_at      timestamptz not null default now(),
   constraint sponsored_placements_label_required check (lower(display_label) like '%sponsored%' or lower(display_label) like '%ad%')
 );
 
 create index sponsored_placements_profile_id_idx on sponsored_placements(profile_id);
 create index sponsored_placements_active_idx on sponsored_placements(is_active, placement_type);
 
-comment on table sponsored_placements is 'Sponsored promotional placements. MUST always render with a visible "Sponsored" label. Never blends with verified facts.';
+comment on table sponsored_placements is 'Sponsored promotional placements. MUST always render with a visible "Sponsored" label. Never blends with verified facts and never affects claim verification status.';
+comment on column sponsored_placements.display_label is 'Disclosure label only. This must not be interpreted as verification_status, source trust, or citation readiness.';
+comment on column sponsored_placements.entity_id is 'Targeting scope for promotional display only; sponsored_placements intentionally has no claim_id and cannot verify claims.';
 
 
 -- Guardrail: direct writes must not flip canonical claims to verified. Admin flows
@@ -296,6 +299,15 @@ create policy vbp_public_select on verified_business_profiles for select to anon
   using (status = 'verified');
 
 -- No public access to api_keys, corrections, alerts, or sponsored management.
+-- Active sponsored placements may be publicly selected only for transparent display
+-- with visible Sponsored labels; writes remain admin/service-role only.
+create policy sponsored_placements_public_active_select on sponsored_placements for select to anon
+  using (
+    is_active
+    and lower(display_label) like '%sponsored%'
+    and (starts_at is null or starts_at <= now())
+    and (ends_at is null or ends_at >= now())
+  );
 -- All managed through admin/service-role API routes.
 
 -- API usage tracking table (lightweight)
