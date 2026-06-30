@@ -105,8 +105,8 @@ export default function AdminDashboardPage() {
     {
       title: "API abuse warnings",
       count: dashboardCounts?.api_abuse_warnings,
-      href: "/api-docs",
-      cta: "API 정책 보기",
+      href: "/admin/api-keys",
+      cta: "API key 관리로 이동",
       detail: countHint(dashboardCounts?.api_abuse_warnings, "최근 rate limit 또는 4xx/5xx 사용량 이상 징후입니다."),
       tone: "#9333ea",
     },

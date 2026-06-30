@@ -61,3 +61,7 @@ CREATE POLICY "service_role_only_usage"
 
 CREATE INDEX IF NOT EXISTS idx_api_usage_key_id ON api_usage_events (key_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_api_usage_created_at ON api_usage_events (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_api_usage_status_created_at ON api_usage_events (status_code, created_at DESC);
+
+COMMENT ON COLUMN api_usage_events.key_id IS 'Connects each usage event to api_keys for admin usage logs, tier operations, and abuse-warning review.';
+COMMENT ON COLUMN api_usage_events.status_code IS 'Used by admin tooling to derive abuse warnings such as rate-limit responses and elevated 4xx/5xx volume.';
