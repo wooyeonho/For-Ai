@@ -126,14 +126,13 @@ export default function AdminPostsPage() {
         )}
 
         <div style={{ display: "flex", gap: 8, marginBottom: 16, flexWrap: "wrap", alignItems: "center" }}>
-          <button onClick={() => setShowCreate(!showCreate)}
-            style={{ padding: "8px 16px", background: "#2563eb", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer" }}>
+          <button onClick={() => setShowCreate(!showCreate)} className="btn btn-primary">
             + 관리자 글 작성
           </button>
           <div style={{ flex: 1 }} />
           {["pending", "published", "hidden", "spam", "deleted", "all"].map((s) => (
             <button key={s} onClick={() => setStatusFilter(s)}
-              style={{ padding: "5px 14px", borderRadius: 20, fontSize: 12, cursor: "pointer", border: statusFilter === s ? "none" : "1px solid #d1d5db", background: statusFilter === s ? "#111827" : "#fff", color: statusFilter === s ? "#fff" : "#374151" }}>
+              className={`btn btn-ghost ${statusFilter === s ? "is-active" : ""}`}>
               {s}
             </button>
           ))}
@@ -148,7 +147,7 @@ export default function AdminPostsPage() {
             { key: "admin", label: "🛡️ 관리자" },
           ].map((f) => (
             <button key={f.key} onClick={() => setAuthorFilter(f.key)}
-              style={{ padding: "5px 12px", borderRadius: 16, fontSize: 12, fontWeight: 500, cursor: "pointer", border: authorFilter === f.key ? "none" : "1px solid #d1d5db", background: authorFilter === f.key ? "#2563eb" : "#fff", color: authorFilter === f.key ? "#fff" : "#374151" }}>
+              className={`btn btn-ghost ${authorFilter === f.key ? "is-active" : ""}`}>
               {f.label}
             </button>
           ))}
@@ -176,12 +175,10 @@ export default function AdminPostsPage() {
               placeholder="글 내용 입력..."
               style={{ width: "100%", minHeight: 80, padding: 10, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14, marginBottom: 12, resize: "vertical" }} />
             <div style={{ display: "flex", gap: 8 }}>
-              <button type="submit" disabled={creating}
-                style={{ padding: "8px 20px", background: creating ? "#9ca3af" : "#2563eb", color: "#fff", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: creating ? "not-allowed" : "pointer" }}>
+              <button type="submit" disabled={creating} className="btn btn-primary">
                 {creating ? "등록 중..." : "등록"}
               </button>
-              <button type="button" onClick={() => setShowCreate(false)}
-                style={{ padding: "8px 20px", background: "#f3f4f6", color: "#374151", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 13, cursor: "pointer" }}>
+              <button type="button" onClick={() => setShowCreate(false)} className="btn btn-secondary">
                 취소
               </button>
             </div>
@@ -213,26 +210,22 @@ export default function AdminPostsPage() {
                 </div>
                 <div style={{ marginTop: 12, display: "flex", gap: 6, flexWrap: "wrap" }}>
                   {p.status !== "published" && (
-                    <button onClick={() => updateStatus(p.id, "published")}
-                      style={{ padding: "5px 12px", background: "#16a34a", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, cursor: "pointer" }}>
+                    <button onClick={() => updateStatus(p.id, "published")} className="btn btn-primary">
                       공개
                     </button>
                   )}
                   {p.status !== "hidden" && (
-                    <button onClick={() => updateStatus(p.id, "hidden")}
-                      style={{ padding: "5px 12px", background: "#f59e0b", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, cursor: "pointer" }}>
+                    <button onClick={() => updateStatus(p.id, "hidden")} className="btn btn-secondary">
                       숨기기
                     </button>
                   )}
                   {p.status !== "spam" && (
-                    <button onClick={() => updateStatus(p.id, "spam")}
-                      style={{ padding: "5px 12px", background: "#dc2626", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, cursor: "pointer" }}>
+                    <button onClick={() => updateStatus(p.id, "spam")} className="btn btn-danger">
                       스팸
                     </button>
                   )}
                   {p.status !== "deleted" && (
-                    <button onClick={() => updateStatus(p.id, "deleted")}
-                      style={{ padding: "5px 12px", background: "#6b7280", color: "#fff", border: "none", borderRadius: 6, fontSize: 12, cursor: "pointer" }}>
+                    <button onClick={() => updateStatus(p.id, "deleted")} className="btn btn-ghost">
                       삭제
                     </button>
                   )}

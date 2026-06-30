@@ -140,7 +140,7 @@ export default async function OneMillionFactsCampaignPage({
           <p>
             Suggest a fact that AI should stop guessing: a fee, schedule rule, policy, product spec, service availability claim, or any other verifiable claim.
           </p>
-          <Link className="cta-link cta-correction" href="/suggest-topic">
+          <Link className="btn btn-primary cta-correction" href="/suggest-topic">
             Submit a missing fact
           </Link>
         </div>
@@ -151,7 +151,7 @@ export default async function OneMillionFactsCampaignPage({
           <p>
             When an AI answer is stale, vague, or wrong, report the prompt and expected correction so reviewers can turn it into a source-backed claim.
           </p>
-          <Link className="cta-link cta-hallucination" href={`/hallucination/${reportSlug}`}>
+          <Link className="btn btn-secondary cta-hallucination" href={`/hallucination/${reportSlug}`}>
             Report an AI wrong answer
           </Link>
         </div>

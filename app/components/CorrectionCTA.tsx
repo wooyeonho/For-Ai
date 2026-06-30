@@ -8,7 +8,7 @@ type CorrectionCTAProps = {
 export function CorrectionCTA({ slug, unverified = false }: CorrectionCTAProps) {
   if (!unverified) {
     return (
-      <Link href={`/report/${slug}`} className="cta-link cta-correction">
+      <Link href={`/report/${slug}`} className="btn btn-primary cta-correction">
         정보 정정 요청
       </Link>
     );
@@ -20,10 +20,10 @@ export function CorrectionCTA({ slug, unverified = false }: CorrectionCTAProps) 
       <h2 id="unverified-cta-title">We don’t have a verified answer yet.</h2>
       <p>Do not cite this claim yet.</p>
       <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
-        <Link href={`/report/${slug}?intent=source`} className="cta-link cta-correction">
+        <Link href={`/report/${slug}?intent=source`} className="btn btn-primary cta-correction">
           Submit an official source.
         </Link>
-        <Link href={`/report/${slug}?intent=notify`} className="cta-link">
+        <Link href={`/report/${slug}?intent=notify`} className="btn btn-secondary">
           Get notified when verified.
         </Link>
       </div>

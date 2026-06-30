@@ -98,7 +98,7 @@ export default async function ChallengeDetailPage({
             <li>Accepted contribution means intake acceptance, not factual verification.</li>
             <li>Verified claims still require claim sources and verification events.</li>
           </ul>
-          <Link className="cta-link" href={`/${locale}/challenges`}>
+          <Link className="btn btn-secondary" href={`/${locale}/challenges`}>
             Back to challenges
           </Link>
         </div>
