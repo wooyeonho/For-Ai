@@ -4,11 +4,11 @@ import { logAdminAuditEvent, requireAdmin, supabaseAdmin } from "@/lib/admin-api
 import { recordContributionEvent } from "@/lib/contributions";
 import { scoreSourceTrust } from "@/lib/source-trust";
 import { awardPoints, checkAndAwardBadges, POINT_VALUES } from "@/lib/gamification";
+import { getVerifiedPromotionGuardrail, isHighRiskVerificationCategory } from "@/lib/citation-status";
 
 const DEFAULT_STATUS = "needs_review";
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 200;
-const HIGH_RISK_CATEGORIES = new Set(["finance", "banking", "insurance", "healthcare", "genomics", "dna", "government", "labor", "tax", "travel", "real_estate", "housing"]);
 const ADMIN_ACCEPTED_SOURCE_POINTS = 10;
 const VERIFIED_CLAIM_LINK_POINTS = 50;
 
@@ -58,14 +58,14 @@ function firstDocument(row: ClaimWithDocument) {
 }
 
 function riskRank(category?: string | null) {
-  return HIGH_RISK_CATEGORIES.has(String(category ?? "").toLowerCase()) ? 0 : 1;
+  return isHighRiskVerificationCategory(category) ? 0 : 1;
 }
 
 function claimDate(row: ClaimWithDocument) {
   return new Date(row.created_at ?? row.updated_at ?? 0).getTime();
 }
 
-type ClaimAction = "verify" | "reject" | "mark_unknown" | "edit_value" | "attach_source" | "promote_document";
+type ClaimAction = "verify" | "reject" | "mark_unknown" | "edit_value" | "attach_source" | "promote_document" | "bulk_verify" | "bulk_needs_verification";
 
 type SourceInput = {
   source_type?: string;
@@ -318,7 +318,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "bulk verify is disabled; review each claim with a source manually" }, { status: 403 });
   }
 
-  if (action === ("bulk_needs_verification" as ClaimAction)) {
+  if (action === "bulk_needs_verification") {
     const reason = String(body.reason ?? "").trim();
     if (claimIds.length === 0) return NextResponse.json({ error: "claim_ids are required" }, { status: 400 });
     if (!reason) return NextResponse.json({ error: "reason is required for needs-verification actions" }, { status: 400 });
@@ -386,10 +386,39 @@ export async function POST(request: Request) {
 
   const { data: existingClaim, error: fetchError } = await sb
     .from("claims")
-    .select("id, document_id, entity_id, status, confidence, claim_value")
+    .select("id, document_id, entity_id, status, confidence, claim_value, claim_sources(source_type,url,citation), documents(category)")
     .eq("id", claimId)
     .single();
   if (fetchError || !existingClaim) return NextResponse.json({ error: "claim not found", detail: fetchError?.message }, { status: 404 });
+
+  const documentRow = Array.isArray(existingClaim.documents) ? existingClaim.documents[0] : existingClaim.documents;
+  const prospectiveSources = [
+    ...((existingClaim.claim_sources ?? []) as Array<{ source_type?: string | null; url?: string | null; citation?: string | null }>),
+    ...(shouldAttachSource ? [{ source_type: sourceType, url, citation }] : []),
+  ];
+  if (action === "verify") {
+    const guardrail = getVerifiedPromotionGuardrail({
+      claim_value: claimValue,
+      confidence,
+      sources: prospectiveSources,
+      category: (documentRow as { category?: string | null } | null)?.category,
+      highRiskConfirmed: body.high_risk_confirmed === true,
+    });
+    if (!guardrail.ok) {
+      await logAdminAuditEvent(sb, request, "admin.verify_claim.verify_guardrail_blocked", {
+        claim_id: claimId,
+        document_id: existingClaim.document_id,
+        violations: guardrail.violations,
+        warnings: guardrail.warnings,
+        category: (documentRow as { category?: string | null } | null)?.category ?? null,
+      });
+      return NextResponse.json({
+        error: "verified promotion guardrail blocked this claim",
+        operator_explanation: guardrail.violations,
+        warnings: guardrail.warnings,
+      }, { status: 422 });
+    }
+  }
 
   const now = new Date().toISOString();
   let sourceId: string | null = null;

@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 
+import { getVerifiedPromotionGuardrail, isHighRiskVerificationCategory } from "@/lib/citation-status";
+
 type SourceRow = { id: string; title?: string | null; url?: string | null; source_type?: string | null; citation?: string | null; observed_at?: string | null };
 type VerificationEventRow = { id: string; note?: string | null; created_at?: string | null; new_status?: string | null };
 type SourceCandidate = { title?: string; url?: string; source_type?: string; citation?: string };
@@ -97,6 +99,7 @@ export default function VerifyClaimPage() {
   const [reason, setReason] = useState("");
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const [checking, setChecking] = useState(false);
+  const [highRiskConfirmed, setHighRiskConfirmed] = useState(false);
   const [sourceCheck, setSourceCheck] = useState<{
     reachable: boolean;
     status: number;
@@ -180,6 +183,7 @@ export default function VerifyClaimPage() {
     setSourceType("official");
     setConfidence("high");
     setSourceCheck(null);
+    setHighRiskConfirmed(false);
     setMessage(null);
     setTimeout(() => document.getElementById("verify-form")?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
   }
@@ -226,6 +230,7 @@ export default function VerifyClaimPage() {
         source_check_status: sourceCheck?.source_check_status ?? "unchecked",
         source_trust_score: sourceCheck?.source_trust_score ?? 0,
         source_check_notes: sourceCheck?.source_check_notes ?? [],
+        high_risk_confirmed: highRiskConfirmed,
       }),
     });
     const data = await res.json();
@@ -306,6 +311,19 @@ export default function VerifyClaimPage() {
   const reviewCount = allClaims.filter(({ claim }) => claim.status !== "verified").length;
   const verifiedCount = allClaims.filter(({ claim }) => claim.status === "verified").length;
   const needsReviewCount = documents.reduce((sum, doc) => sum + (doc.claims ?? []).filter((c) => c.status === "needs_review").length, 0);
+  const selectedDocument = selectedClaim ? documents.find((doc) => (doc.claims ?? []).some((claim) => claim.id === selectedClaim.id)) ?? null : null;
+  const prospectiveSources = selectedClaim ? [
+    ...(selectedClaim.claim_sources ?? []),
+    ...(title.trim() || url.trim() || citation.trim() || sourceType ? [{ source_type: sourceType, url, citation }] : []),
+  ] : [];
+  const verifyGuardrail = selectedClaim ? getVerifiedPromotionGuardrail({
+    claim_value: claimValue,
+    confidence,
+    sources: prospectiveSources,
+    category: selectedDocument?.category,
+    highRiskConfirmed,
+  }) : null;
+  const verifyDisabledReason = verifyGuardrail?.ok ? null : verifyGuardrail?.violations.join(" · ");
 
   return (
     <div style={{ maxWidth: 960, margin: "0 auto", padding: "40px 20px" }}>
@@ -680,8 +698,28 @@ export default function VerifyClaimPage() {
             </select>
           </label>
 
+
+          {verifyGuardrail && (
+            <div style={{ padding: 12, borderRadius: 8, marginBottom: 12, fontSize: 13, background: verifyGuardrail.ok ? "#f0fdf4" : "#fffbeb", border: `1px solid ${verifyGuardrail.ok ? "#86efac" : "#fde68a"}` }}>
+              <strong>{verifyGuardrail.ok ? "✓ verified 승격 조건 충족" : "verified 승격 전 필수 조건"}</strong>
+              {!verifyGuardrail.ok && (
+                <ul style={{ margin: "6px 0 0", paddingLeft: 18 }}>
+                  {verifyGuardrail.violations.map((violation) => <li key={violation}>{violation}</li>)}
+                </ul>
+              )}
+              {verifyGuardrail.warnings.map((warning) => <p key={warning} style={{ margin: "6px 0 0", color: "#92400e" }}>⚠ {warning}</p>)}
+            </div>
+          )}
+
+          {selectedDocument && isHighRiskVerificationCategory(selectedDocument.category) && (
+            <label style={{ display: "block", marginBottom: 12, padding: 12, border: "1px solid #f59e0b", borderRadius: 8, background: "#fffbeb" }}>
+              <input type="checkbox" checked={highRiskConfirmed} onChange={(e) => setHighRiskConfirmed(e.target.checked)} />{" "}
+              high-risk category({selectedDocument.category}) second confirmation 완료 — 공식/권위 출처와 최신성을 재확인했습니다.
+            </label>
+          )}
+
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button onClick={submitVerify} disabled={!claimValue.trim()}>1. verify claim (저장 + verified 승격)</button>
+            <button onClick={submitVerify} disabled={!verifyGuardrail?.ok} title={verifyDisabledReason ?? undefined}>1. verify claim (저장 + verified 승격)</button>
             <button onClick={() => runClaimAction("reject")} type="button">2. reject claim</button>
             <button onClick={() => runClaimAction("mark_unknown")} type="button">3. mark as unknown</button>
             <button onClick={() => runClaimAction("edit_value")} type="button">4. edit claim value</button>

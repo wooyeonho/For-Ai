@@ -45,7 +45,7 @@ export const FRESHNESS_WINDOWS_DAYS: Record<FreshnessDomain, number> = {
   default: FRESHNESS_TTL_DAYS,
 };
 
-export type FreshnessPolicyUpdateFrequency = UpdateFrequency | "unknown";
+export type FreshnessPolicyUpdateFrequency = RegistryUpdateFrequency | "unknown";
 
 export type FreshnessPolicy = {
   ttlDays: number;
@@ -82,7 +82,8 @@ const FAST_CHANGING_TYPE_PATTERNS = [
 export type FreshnessLabel = "fresh" | "stale" | "unknown";
 export type VerifiedClaimInput = Pick<ClaimWithSources, "claim_value" | "confidence" | "status" | "last_verified_at" | "sources" | "verification_events">;
 
-const VERIFIED_CONFIDENCE = new Set(["medium", "high"]);
+export const VERIFIED_CONFIDENCE = new Set(["medium", "high"]);
+export const HIGH_RISK_VERIFICATION_CATEGORIES = new Set(["finance", "banking", "insurance", "healthcare", "genomics", "dna", "government", "labor", "tax", "travel", "real_estate", "housing"]);
 
 export function ageInDays(iso: string | null | undefined, now: Date = new Date()): number | null {
   if (!iso) return null;
@@ -203,6 +204,55 @@ export function getClaimVerificationLevel(
   if (hasSource) return getVerificationLevelInfo(2);
   if (hasSourceCandidateSignal(claim)) return getVerificationLevelInfo(1);
   return getVerificationLevelInfo(0);
+}
+
+export type VerifiedClaimGuardrailSource = {
+  source_type?: string | null;
+  url?: string | null;
+  citation?: string | null;
+};
+
+export type VerifiedClaimGuardrailInput = {
+  claim_value?: string | null;
+  confidence?: string | null;
+  sources: VerifiedClaimGuardrailSource[];
+  category?: string | null;
+  highRiskConfirmed?: boolean;
+};
+
+export type VerifiedClaimGuardrailResult = {
+  ok: boolean;
+  violations: string[];
+  warnings: string[];
+  isHighRisk: boolean;
+};
+
+export function isHighRiskVerificationCategory(category: string | null | undefined): boolean {
+  return HIGH_RISK_VERIFICATION_CATEGORIES.has(String(category ?? "").toLowerCase());
+}
+
+export function getVerifiedPromotionGuardrail(input: VerifiedClaimGuardrailInput): VerifiedClaimGuardrailResult {
+  const violations: string[] = [];
+  const warnings: string[] = [];
+  const claimValue = input.claim_value?.trim() ?? "";
+  const sources = input.sources ?? [];
+  const sourceCount = sources.length;
+  const hasNonUnknownSource = sources.some((source) => (source.source_type ?? "unknown").trim().toLowerCase() !== "unknown");
+  const hasUrlOrCitation = sources.some((source) => Boolean(source.url?.trim()) || Boolean(source.citation?.trim()));
+  const isHighRisk = isHighRiskVerificationCategory(input.category);
+
+  if (!claimValue) violations.push("claim_value is required before verified promotion");
+  if (claimValue === UNKNOWN_FACT_TEXT) violations.push("claim_value must not be the unknown placeholder before verified promotion");
+  if (!VERIFIED_CONFIDENCE.has(input.confidence ?? "")) violations.push("confidence must be medium or high before verified promotion");
+  if (sourceCount < 1) violations.push("at least one claim source is required before verified promotion");
+  if (sourceCount > 0 && !hasNonUnknownSource) violations.push("source_type cannot be only unknown before verified promotion");
+  if (sourceCount > 0 && !hasUrlOrCitation) violations.push("at least one source URL or citation is required before verified promotion");
+  if (isHighRisk && !input.highRiskConfirmed) {
+    violations.push("high-risk category requires second confirmation before verified promotion");
+    warnings.push("High-risk category: verify against authoritative/current sources and confirm a second review.");
+  }
+
+  return { ok: violations.length === 0, violations, warnings, isHighRisk };
 }
 
 export function getVerifiedClaimViolations(claim: VerifiedClaimInput): string[] {

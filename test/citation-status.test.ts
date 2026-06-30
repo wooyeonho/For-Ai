@@ -7,6 +7,7 @@ import {
   getClaimCitationStatus,
   getClaimVerificationLevel,
   getVerifiedClaimViolations,
+  getVerifiedPromotionGuardrail,
   getDocumentCitationStatus,
   getFreshnessWindowDays,
   getFreshnessPolicy,
@@ -219,6 +220,41 @@ test("getVerifiedClaimViolations reports every verified transition requirement",
       "admin approval must set status to verified",
     ],
   );
+});
+
+
+test("getVerifiedPromotionGuardrail blocks unsafe verified promotions", () => {
+  const blocked = getVerifiedPromotionGuardrail({
+    claim_value: UNKNOWN_FACT_TEXT,
+    confidence: "low",
+    sources: [{ source_type: "unknown", url: null, citation: null }],
+    category: "finance",
+    highRiskConfirmed: false,
+  });
+
+  assert.equal(blocked.ok, false);
+  assert.equal(blocked.isHighRisk, true);
+  assert.deepEqual(blocked.violations, [
+    "claim_value must not be the unknown placeholder before verified promotion",
+    "confidence must be medium or high before verified promotion",
+    "source_type cannot be only unknown before verified promotion",
+    "at least one source URL or citation is required before verified promotion",
+    "high-risk category requires second confirmation before verified promotion",
+  ]);
+});
+
+test("getVerifiedPromotionGuardrail allows sourced medium/high confidence claims with high-risk confirmation", () => {
+  const ready = getVerifiedPromotionGuardrail({
+    claim_value: "Published filing fee is USD 25",
+    confidence: "medium",
+    sources: [{ source_type: "official", url: "https://example.gov/fees", citation: null }],
+    category: "government",
+    highRiskConfirmed: true,
+  });
+
+  assert.equal(ready.ok, true);
+  assert.equal(ready.isHighRisk, true);
+  assert.deepEqual(ready.violations, []);
 });
 
 test("getDocumentCitationStatus requires verified document status and every claim to be ready", () => {
