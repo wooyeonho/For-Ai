@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
 import { ageInDays, isStale } from "../../../lib/citation-status";
+import { recommendAdminActions, type AdminRecommendation } from "../../../lib/admin-recommendations";
 import { AdminSecretField, useAdminSecret } from "../AdminSecretProvider";
 import { AdminDbDetails, adminLabel } from "../admin-labels";
 
@@ -10,6 +11,7 @@ type Counts = {
   pending_community_posts: number;
   candidates_new: number;
   candidates_generated: number;
+  candidates_approved?: number;
   documents_published: number;
   claim_sources: number;
   claims_needs_review: number;
@@ -96,6 +98,7 @@ type TopCited = {
 type ReviewPayload = {
   counts: Counts;
   priority_ordering: PriorityOrdering[];
+  recommendations?: AdminRecommendation[];
   community_posts: { pending: PendingCommunityPost[] };
   priorities: {
     needs_review_claims: PriorityClaim[];
@@ -155,6 +158,7 @@ export default function AdminReviewPage() {
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
 
   const counts = data?.counts ?? EMPTY_COUNTS;
+  const dashboardRecommendations = data?.recommendations ?? (data ? recommendAdminActions({ counts }) : []);
 
   const checklist = useMemo(() => [
     { label: "글 관리", count: counts.pending_community_posts, hint: "community_posts.status = pending", href: "/admin/posts?status=pending", urgent: counts.pending_community_posts > 0 },
@@ -219,6 +223,13 @@ export default function AdminReviewPage() {
           </span>
         </div>
       )}
+
+
+      <RecommendationPanel
+        title="운영자 추천 action"
+        emptyText="운영 데이터를 불러오면 rule engine 추천 action이 표시됩니다."
+        recommendations={dashboardRecommendations}
+      />
 
       <section className="registry-panel" aria-labelledby="priority-title">
         <h2 id="priority-title">오늘 무엇부터 처리할까요?</h2>
@@ -525,6 +536,25 @@ export default function AdminReviewPage() {
         </div>
       </nav>
     </div>
+  );
+}
+
+function RecommendationPanel({ title, emptyText, recommendations, compact = false }: { title: string; emptyText: string; recommendations: AdminRecommendation[]; compact?: boolean }) {
+  return (
+    <section className={compact ? undefined : "registry-panel"} style={compact ? { margin: "10px 0", padding: 12, borderRadius: 8, background: "#f8fafc", border: "1px solid #e2e8f0" } : undefined}>
+      <h2 style={{ fontSize: compact ? 14 : undefined, margin: compact ? "0 0 8px" : undefined }}>{title}</h2>
+      {recommendations.length === 0 ? <p style={{ color: "#6b7280", margin: 0 }}>{emptyText}</p> : (
+        <ul style={{ margin: 0, paddingLeft: 18, display: "grid", gap: 8 }}>
+          {recommendations.map((item) => (
+            <li key={`${item.action}-${item.reason}`}>
+              <strong>{item.label}</strong> <span className="badge">{item.action}</span> <span className={item.priority === "high" ? "badge badge-review" : "badge"}>{item.priority}</span>
+              <p style={{ margin: "4px 0", color: "#374151", fontSize: 13 }}>{item.reason}</p>
+              {item.href && <Link href={item.href} style={{ fontSize: 12, color: "#2563eb", fontWeight: 700 }}>바로 처리 →</Link>}
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
   );
 }
 

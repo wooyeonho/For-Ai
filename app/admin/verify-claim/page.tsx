@@ -73,6 +73,24 @@ const POLICY_ITEMS = [
   "출처 자동 확인(출처 확인 버튼)은 보조 수단입니다. 직접 육안으로 확인 후 저장하세요.",
 ];
 
+function RecommendationPanel({ recommendations }: { recommendations: AdminRecommendation[] }) {
+  if (recommendations.length === 0) return null;
+  return (
+    <div style={{ margin: "10px 0", padding: 12, borderRadius: 8, background: "#f8fafc", border: "1px solid #e2e8f0" }}>
+      <strong style={{ display: "block", marginBottom: 8 }}>운영자 추천 action</strong>
+      <ul style={{ margin: 0, paddingLeft: 18, display: "grid", gap: 8 }}>
+        {recommendations.map((item) => (
+          <li key={`${item.action}-${item.reason}`}>
+            <strong>{item.label}</strong> <span className="badge">{item.action}</span> <span className={item.priority === "high" ? "badge badge-review" : "badge"}>{item.priority}</span>
+            <p style={{ margin: "4px 0", color: "#374151", fontSize: 13 }}>{item.reason}</p>
+            {item.href && <a href={item.href} style={{ fontSize: 12, color: "#2563eb", fontWeight: 700 }}>추천 위치로 이동 →</a>}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 export default function VerifyClaimPage() {
   const [secret, setSecret] = useState("");
   const [adminActor, setAdminActor] = useState("");

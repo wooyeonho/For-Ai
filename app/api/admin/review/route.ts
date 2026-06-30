@@ -3,6 +3,7 @@ import { calculateDocumentQuality } from "@/lib/document-quality";
 import { DEFAULT_LOCALE } from "@/lib/i18n";
 import { NextResponse } from "next/server";
 import { documentPageUrl } from "../../../../lib/urls";
+import { recommendAdminActions } from "../../../../lib/admin-recommendations";
 
 type SupabaseAdminClient = NonNullable<ReturnType<typeof supabaseAdmin>>;
 
@@ -430,6 +431,16 @@ export async function GET(request: Request) {
         claims_verified: claimsVerified,
         documents_verified: documentsVerified,
       },
+      recommendations: recommendAdminActions({
+        counts: {
+          pending_community_posts: pendingCommunityPosts,
+          candidates_new: candidatesNew,
+          candidates_generated: candidatesGenerated,
+          claims_needs_review: claimsNeedsReview,
+          stale_claims: staleClaims,
+          source_check_failures: sourceCheckFailures,
+        },
+      }),
       priority_ordering: priorityOrdering,
       community_posts: { pending: communityPosts ?? [] },
       priorities: {
