@@ -5,16 +5,22 @@
 // not a distributed quota. For hard limits across regions, back this with Redis/
 // Upstash. Sufficient for protecting view/cite counter integrity.
 
+import { createHash } from "crypto";
+
 type Bucket = { count: number; resetAt: number };
 
 const stores = new Map<string, Map<string, Bucket>>();
 
-export function clientIp(request: Request): string {
+function clientIp(request: Request): string {
   return (
     request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
     request.headers.get("x-real-ip") ||
     "unknown"
   );
+}
+
+export function clientHash(request: Request): string {
+  return createHash("sha256").update(clientIp(request)).digest("hex").slice(0, 16);
 }
 
 /**

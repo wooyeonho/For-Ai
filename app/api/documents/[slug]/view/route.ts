@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/admin-api";
 import { recordDocumentAnalyticsEvent } from "@/lib/analytics";
-import { clientIp, rateLimited } from "@/lib/rate-limit";
+import { clientHash, rateLimited } from "@/lib/rate-limit";
 
 // Cap repeat views from the same caller for the same document within a window.
 const VIEW_MAX_PER_WINDOW = 10;
@@ -13,7 +13,7 @@ export async function POST(
 ) {
   const { slug } = await params;
 
-  if (rateLimited("doc-view", `${clientIp(request)}:${slug}`, VIEW_MAX_PER_WINDOW, VIEW_WINDOW_MS)) {
+  if (rateLimited("doc-view", `${clientHash(request)}:${slug}`, VIEW_MAX_PER_WINDOW, VIEW_WINDOW_MS)) {
     return NextResponse.json({ error: "rate_limited" }, { status: 429 });
   }
 

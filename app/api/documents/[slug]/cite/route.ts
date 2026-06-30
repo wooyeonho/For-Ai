@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/admin-api";
-import { clientIp, rateLimited } from "@/lib/rate-limit";
+import { recordDocumentAnalyticsEvent } from "@/lib/analytics";
+import { clientHash, rateLimited } from "@/lib/rate-limit";
 
 // Cap repeat citations from the same caller for the same document so the public,
 // unauthenticated counter cannot be trivially inflated.
@@ -13,7 +14,7 @@ export async function POST(
 ) {
   const { slug } = await params;
 
-  if (rateLimited("doc-cite", `${clientIp(request)}:${slug}`, CITE_MAX_PER_WINDOW, CITE_WINDOW_MS)) {
+  if (rateLimited("doc-cite", `${clientHash(request)}:${slug}`, CITE_MAX_PER_WINDOW, CITE_WINDOW_MS)) {
     return NextResponse.json({ error: "rate_limited" }, { status: 429 });
   }
 
@@ -24,30 +25,8 @@ export async function POST(
     return NextResponse.json({ error: "DB not configured", missing: ["SUPABASE_SERVICE_ROLE_KEY"] }, { status: 500 });
   }
 
-  const { data: doc } = await sb
-    .from("documents")
-    .select("id")
-    .eq("slug", slug)
-    .maybeSingle();
-
-  if (!doc) return NextResponse.json({ error: "document not found" }, { status: 404 });
-
-  const { data: existing } = await sb
-    .from("document_stats")
-    .select("ai_citation_count")
-    .eq("document_id", doc.id)
-    .maybeSingle();
-
-  if (existing) {
-    await sb
-      .from("document_stats")
-      .update({ ai_citation_count: existing.ai_citation_count + 1, updated_at: new Date().toISOString() })
-      .eq("document_id", doc.id);
-  } else {
-    await sb
-      .from("document_stats")
-      .insert({ document_id: doc.id, view_count: 0, ai_citation_count: 1 });
-  }
+  const recorded = await recordDocumentAnalyticsEvent(sb, request, slug, "api_cite");
+  if (!recorded) return NextResponse.json({ error: "document not found" }, { status: 404 });
 
   return NextResponse.json({ success: true });
 }

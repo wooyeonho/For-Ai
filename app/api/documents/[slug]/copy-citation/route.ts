@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/admin-api";
 import { recordDocumentAnalyticsEvent } from "@/lib/analytics";
-import { clientIp, rateLimited } from "@/lib/rate-limit";
+import { clientHash, rateLimited } from "@/lib/rate-limit";
 
 const COPY_MAX_PER_WINDOW = 10;
 const COPY_WINDOW_MS = 60_000;
@@ -12,7 +12,7 @@ export async function POST(
 ) {
   const { slug } = await params;
 
-  if (rateLimited("doc-copy-citation", `${clientIp(request)}:${slug}`, COPY_MAX_PER_WINDOW, COPY_WINDOW_MS)) {
+  if (rateLimited("doc-copy-citation", `${clientHash(request)}:${slug}`, COPY_MAX_PER_WINDOW, COPY_WINDOW_MS)) {
     return NextResponse.json({ error: "rate_limited" }, { status: 429 });
   }
 
