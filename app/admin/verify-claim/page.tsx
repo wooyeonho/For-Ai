@@ -91,6 +91,9 @@ export default function VerifyClaimPage() {
   const [title, setTitle] = useState("");
   const [url, setUrl] = useState("");
   const [citation, setCitation] = useState("");
+  const [contributorHash, setContributorHash] = useState("");
+  const [prefillClaimId, setPrefillClaimId] = useState<string | null>(null);
+  const [prefillSource, setPrefillSource] = useState<SourceCandidate & { contributor_hash?: string | null } | null>(null);
   const [confidence, setConfidence] = useState("high");
   const [localFilters, setLocalFilters] = useState({ country: "all", domain: "all", source: "all", confidence: "all", status: "all", stale: "all" });
   const [selectedClaimIds, setSelectedClaimIds] = useState<string[]>([]);
@@ -153,7 +156,16 @@ export default function VerifyClaimPage() {
   }, [secret, adminActor, buildQuery, filters.limit]);
 
   useEffect(() => {
-    const slug = new URLSearchParams(window.location.search).get("slug");
+    const params = new URLSearchParams(window.location.search);
+    const slug = params.get("slug");
+    const claimId = params.get("claim_id");
+    const source_title = params.get("source_title") ?? undefined;
+    const source_url = params.get("source_url") ?? undefined;
+    const source_citation = params.get("source_citation") ?? undefined;
+    const source_type = params.get("source_type") ?? undefined;
+    const contributor_hash = params.get("contributor_hash");
+    if (claimId) setPrefillClaimId(claimId);
+    if (source_title || source_url || source_citation || source_type || contributor_hash) setPrefillSource({ title: source_title, url: source_url, citation: source_citation, source_type, contributor_hash });
     if (slug) {
       setTargetSlug(slug);
       setFilters((current) => ({ ...current, slug, offset: "0" }));
@@ -166,18 +178,22 @@ export default function VerifyClaimPage() {
     if (!doc) return;
     const el = document.getElementById(`doc-${doc.slug}`);
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-    const firstUnverified = (doc.claims ?? []).find((c) => c.status !== "verified");
-    if (firstUnverified) openVerify(firstUnverified);
+    const targetClaim = prefillClaimId ? (doc.claims ?? []).find((c) => c.id === prefillClaimId) : null;
+    const firstUnverified = targetClaim ?? (doc.claims ?? []).find((c) => c.status !== "verified");
+    if (firstUnverified) openVerify(firstUnverified, targetClaim ? prefillSource ?? undefined : undefined);
     setTargetSlug(null);
-  }, [targetSlug, documents]);
+    setPrefillClaimId(null);
+    setPrefillSource(null);
+  }, [targetSlug, documents, prefillClaimId, prefillSource]);
 
-  function openVerify(claim: ClaimRow) {
+  function openVerify(claim: ClaimRow, source?: SourceCandidate & { contributor_hash?: string | null }) {
     setSelectedClaim(claim);
     setClaimValue(claim.claim_value === "확인 필요" ? "" : claim.claim_value);
-    setTitle("");
-    setUrl("");
-    setCitation("");
-    setSourceType("official");
+    setTitle(source?.title ?? "");
+    setUrl(source?.url ?? "");
+    setCitation(source?.citation ?? "");
+    setContributorHash(source?.contributor_hash ?? "");
+    setSourceType(source?.source_type ?? "official");
     setConfidence("high");
     setSourceCheck(null);
     setMessage(null);
@@ -219,7 +235,7 @@ export default function VerifyClaimPage() {
         claim_id: selectedClaim.id,
         claim_value: claimValue,
         source_type: sourceType,
-        title, url, citation, confidence,
+        title, url, citation, confidence, contributor_hash: contributorHash,
         observed_at: new Date().toISOString(),
         claim_text: selectedClaim.claim_text,
         fetch_ok: sourceCheck?.reachable ?? null,
@@ -665,6 +681,16 @@ export default function VerifyClaimPage() {
               onChange={(e) => setCitation(e.target.value)}
               placeholder="어떤 문구·수치를 확인했는지 기록 (예: '영업시간 09:00–18:00' 명시)"
               style={{ display: "block", width: "100%", marginTop: 4, padding: 8, minHeight: 80 }}
+            />
+          </label>
+
+          <label style={{ display: "block", marginBottom: 12 }}>
+            <span style={{ fontWeight: 600 }}>contributor_hash (accepted suggestion attribution)</span>
+            <input
+              value={contributorHash}
+              onChange={(e) => setContributorHash(e.target.value)}
+              placeholder="source suggestion contributor_hash (optional)"
+              style={{ display: "block", width: "100%", marginTop: 4, padding: 8 }}
             />
           </label>
 

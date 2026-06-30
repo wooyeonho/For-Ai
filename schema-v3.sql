@@ -16,6 +16,7 @@ create type disclaimer_type as enum ('none', 'check_official_source', 'not_medic
 create type source_authority as enum ('primary', 'official', 'regulator', 'legal', 'platform', 'secondary', 'community', 'unknown');
 create type translation_status as enum ('source_language', 'human_translated', 'machine_translated', 'needs_translation_review');
 create type submission_status as enum ('new', 'reviewing', 'accepted', 'rejected', 'spam', 'spam_suspected');
+create type source_suggestion_status as enum ('pending', 'accepted', 'rejected', 'duplicate', 'spam');
 create type verification_event_type as enum ('created', 'reviewed', 'source_added', 'source_removed', 'source_verified', 'status_changed', 'confidence_changed');
 create type notification_preference as enum ('none', 'in_app', 'email_digest', 'webhook');
 create type watch_event_type as enum ('claim_stale', 'source_update_needed', 'verified_fix');
@@ -138,6 +139,32 @@ comment on column claims.translation_status is 'machine_translated until human r
 comment on column claim_sources.lang is 'Original language of the source; preserve instead of translating source identity.';
 
 create index claim_sources_claim_id_idx on claim_sources (claim_id);
+
+create table source_suggestions (
+  id uuid primary key default gen_random_uuid(),
+  claim_id text not null references claims(id) on delete cascade,
+  contributor_hash text not null,
+  source_type source_type not null default 'web',
+  url text,
+  title text,
+  citation text,
+  domain text,
+  status source_suggestion_status not null default 'pending',
+  reviewed_at timestamptz,
+  created_at timestamptz not null default now(),
+  constraint source_suggestions_evidence_required check (
+    nullif(trim(coalesce(url, '')), '') is not null
+    or nullif(trim(coalesce(title, '')), '') is not null
+    or nullif(trim(coalesce(citation, '')), '') is not null
+  )
+);
+
+comment on table source_suggestions is 'Public source suggestions for claims. They remain unverified until an admin accepts them and optionally converts them into claim_sources.';
+comment on column source_suggestions.contributor_hash is 'Salted non-raw contributor identifier. Never store raw IP addresses.';
+
+create index source_suggestions_claim_id_idx on source_suggestions(claim_id);
+create index source_suggestions_status_created_idx on source_suggestions(status, created_at);
+create index source_suggestions_contributor_hash_idx on source_suggestions(contributor_hash);
 
 create table edits (
   id uuid primary key default gen_random_uuid(),
@@ -269,6 +296,7 @@ alter table entities enable row level security;
 alter table documents enable row level security;
 alter table claims enable row level security;
 alter table claim_sources enable row level security;
+alter table source_suggestions enable row level security;
 alter table verification_events enable row level security;
 alter table listings enable row level security;
 
@@ -292,6 +320,12 @@ create policy claim_sources_public_select on claim_sources for select to anon
     where c.id = claim_sources.claim_id
       and d.status in ('published', 'verified')
   ));
+
+create policy source_suggestions_public_insert_only on source_suggestions for insert to anon
+  with check (
+    status = 'pending'
+    and contributor_hash is not null
+  );
 
 create policy verification_events_public_select on verification_events for select to anon
   using (exists (

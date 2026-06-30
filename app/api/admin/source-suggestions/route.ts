@@ -5,10 +5,11 @@ import {
   checkAndAwardBadges,
   POINT_VALUES,
 } from '@/lib/gamification';
+import { scoreSourceTrust } from '@/lib/source-trust';
 
 // GET: list pending source suggestions
 export async function GET(request: Request) {
-  const adminError = requireAdmin(request, 'source_suggestions.read');
+  const adminError = await requireAdmin(request, 'source_suggestions.read');
   if (adminError) return adminError;
   const sb = supabaseAdmin();
   if (!sb) return NextResponse.json({ error: 'SUPABASE_SERVICE_ROLE_KEY not configured' }, { status: 500 });
@@ -19,7 +20,7 @@ export async function GET(request: Request) {
 
   const { data, error } = await sb
     .from('source_suggestions')
-    .select('*, claims(id, field_path, claim_text, document_id, entity_id)')
+    .select('*, claims(id, field_path, claim_text, claim_value, status, document_id, entity_id, documents(slug, title, lang))')
     .eq('status', status)
     .order('created_at', { ascending: true })
     .limit(limit);
@@ -33,7 +34,7 @@ export async function GET(request: Request) {
 
 // PATCH: accept or reject a suggestion, trigger point awards
 export async function PATCH(request: Request) {
-  const adminError = requireAdmin(request, 'source_suggestions.review');
+  const adminError = await requireAdmin(request, 'source_suggestions.review');
   if (adminError) return adminError;
   const sb = supabaseAdmin();
   if (!sb) return NextResponse.json({ error: 'SUPABASE_SERVICE_ROLE_KEY not configured' }, { status: 500 });
@@ -42,6 +43,7 @@ export async function PATCH(request: Request) {
   const id = String(body.id ?? '').trim();
   const action = String(body.action ?? '').trim(); // 'accept' | 'reject' | 'duplicate' | 'spam'
   const promoteToClaimSource = Boolean(body.promote_to_claim_source); // if true, also insert into claim_sources
+  const reviewerNote = String(body.reviewer_note ?? '').trim() || null;
 
   const allowedActions = new Set(['accept', 'reject', 'duplicate', 'spam']);
   if (!id || !allowedActions.has(action)) {
@@ -85,6 +87,15 @@ export async function PATCH(request: Request) {
     // Optionally promote to official claim_source
     if (promoteToClaimSource && suggestion.claim_id) {
       const sourceId = `src-${suggestion.claim_id}-${Date.now()}`;
+      const observedAt = new Date().toISOString();
+      const sourceTrust = scoreSourceTrust({
+        url: suggestion.url,
+        source_type: suggestion.source_type,
+        fetch_ok: null,
+        title: suggestion.title,
+        observed_at: observedAt,
+        claim_text: String(suggestion.citation ?? ''),
+      });
       const { error: srcErr } = await sb.from('claim_sources').insert({
         id: sourceId,
         claim_id: suggestion.claim_id,
@@ -93,9 +104,30 @@ export async function PATCH(request: Request) {
         url: suggestion.url,
         citation: suggestion.citation,
         contributor_hash: suggestion.contributor_hash,
-        observed_at: new Date().toISOString(),
+        observed_at: observedAt,
+        source_check_status: sourceTrust.source_check_status,
+        source_trust_score: sourceTrust.source_trust_score,
+        source_check_notes: sourceTrust.source_check_notes.join(' '),
       });
-      if (!srcErr) claimSourceId = sourceId;
+      if (srcErr) {
+        return NextResponse.json({ error: `claim_sources insert failed: ${srcErr.message}` }, { status: 500 });
+      }
+      claimSourceId = sourceId;
+      const { data: claimForEvent } = await sb
+        .from('claims')
+        .select('status, confidence')
+        .eq('id', suggestion.claim_id)
+        .single();
+      await sb.from('verification_events').insert({
+        claim_id: suggestion.claim_id,
+        event_type: 'source_added',
+        previous_status: claimForEvent?.status ?? 'needs_review',
+        new_status: claimForEvent?.status ?? 'needs_review',
+        previous_confidence: claimForEvent?.confidence ?? 'low',
+        new_confidence: claimForEvent?.confidence ?? 'low',
+        note: reviewerNote ?? suggestion.citation ?? suggestion.title ?? suggestion.url,
+        contributor_hash: suggestion.contributor_hash,
+      });
     }
 
     await checkAndAwardBadges(sb, suggestion.contributor_hash);
