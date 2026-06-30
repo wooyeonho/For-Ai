@@ -3,12 +3,13 @@
 import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
 import { ageInDays, isStale } from "../../../lib/citation-status";
-import { AdminSecretField, useAdminSecret } from "../AdminSecretProvider";
+import { useAdminSecret } from "../AdminSecretProvider";
 
 type Counts = {
   pending_community_posts: number;
   candidates_new: number;
   candidates_generated: number;
+  candidates_approved?: number;
   documents_published: number;
   claim_sources: number;
   claims_needs_review: number;
@@ -144,7 +145,7 @@ function urgencyBand(claims_needs_review: number, candidates_approved: number) {
 }
 
 export default function AdminReviewPage() {
-  const { adminSecret, setAdminSecret, resetAdminSecret } = useAdminSecret();
+  const { adminSecret, setAdminSecret } = useAdminSecret();
   const [data, setData] = useState<ReviewPayload | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);

@@ -127,6 +127,7 @@ export async function GET(request: Request) {
       pendingCommunityPosts,
       candidatesNew,
       candidatesGenerated,
+      candidatesApproved,
       documentsPublished,
       claimSources,
       claimsNeedsReview,
@@ -143,6 +144,7 @@ export async function GET(request: Request) {
       countRows(sb, "community_posts", { status: "pending" }),
       countRows(sb, "topic_candidates", { status: "new" }),
       countRows(sb, "topic_candidates", { status: "generated" }),
+      countRows(sb, "topic_candidates", { status: "approved" }),
       countRows(sb, "documents", { status: "published" }),
       countRows(sb, "claim_sources"),
       countRows(sb, "claims", { status: "needs_review" }),
@@ -188,6 +190,14 @@ export async function GET(request: Request) {
       .order("reviewed_at", { ascending: true, nullsFirst: false })
       .limit(10);
     if (candidatesError) throw candidatesError;
+
+    const { data: approvedCandidates, error: approvedCandidatesError } = await sb
+      .from("topic_candidates")
+      .select("id, title, slug, lang, category, risk_tier, status, created_at, reviewed_at")
+      .eq("status", "approved")
+      .order("reviewed_at", { ascending: true, nullsFirst: false })
+      .limit(10);
+    if (approvedCandidatesError) throw approvedCandidatesError;
 
     const { data: promotedCandidates, error: promotedError } = await sb
       .from("topic_candidates")
@@ -300,6 +310,7 @@ export async function GET(request: Request) {
       priority_claims_count: priorityClaims?.length ?? 0,
       new_candidates_count: newCandidates?.length ?? 0,
       generated_candidates_count: generatedCandidates?.length ?? 0,
+      approved_candidates_count: approvedCandidates?.length ?? 0,
       promoted_candidates_count: promotedCandidates?.length ?? 0,
       verified_documents_count: verifiedDocuments?.length ?? 0,
       high_risk_count: (highRiskCandidates?.length ?? 0) + highRiskDocuments.length,
@@ -316,6 +327,7 @@ export async function GET(request: Request) {
         pending_community_posts: pendingCommunityPosts,
         candidates_new: candidatesNew,
         candidates_generated: candidatesGenerated,
+        candidates_approved: candidatesApproved,
         documents_published: documentsPublished,
         claim_sources: claimSources,
         claims_needs_review: claimsNeedsReview,
@@ -341,6 +353,7 @@ export async function GET(request: Request) {
           };
         }),
         new_candidates: newCandidates ?? [],
+        approved_candidates: approvedCandidates ?? [],
         generated_candidates: generatedCandidates ?? [],
       },
       promoted_documents: (promotedCandidates ?? []).map((candidate) => ({
@@ -372,10 +385,13 @@ export async function GET(request: Request) {
       },
       dashboard: {
         counts: {
-          pending_claim_reviews: claimsNeedsReview,
+          pending_community_posts: pendingCommunityPosts,
           new_topic_suggestions: candidatesNew,
-          new_hallucination_reports: newHallucinationReports,
+          generated_candidates: candidatesGenerated,
+          pending_claim_reviews: claimsNeedsReview,
           stale_claims: staleClaims,
+          source_suggestions: sourceCheckFailures,
+          new_hallucination_reports: newHallucinationReports,
           source_check_failures: sourceCheckFailures,
           business_verification_requests: sumOptional(pendingBusinessProfiles, pendingBusinessCorrections),
           api_abuse_warnings: apiAbuseWarnings,
