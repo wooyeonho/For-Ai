@@ -8,7 +8,7 @@ import {
 
 // GET: list pending source suggestions
 export async function GET(request: Request) {
-  const adminError = requireAdmin(request, 'source_suggestions.read');
+  const adminError = await requireAdmin(request, 'source_suggestions.read');
   if (adminError) return adminError;
   const sb = supabaseAdmin();
   if (!sb) return NextResponse.json({ error: 'SUPABASE_SERVICE_ROLE_KEY not configured' }, { status: 500 });
@@ -33,7 +33,7 @@ export async function GET(request: Request) {
 
 // PATCH: accept or reject a suggestion, trigger point awards
 export async function PATCH(request: Request) {
-  const adminError = requireAdmin(request, 'source_suggestions.review');
+  const adminError = await requireAdmin(request, 'source_suggestions.review');
   if (adminError) return adminError;
   const sb = supabaseAdmin();
   if (!sb) return NextResponse.json({ error: 'SUPABASE_SERVICE_ROLE_KEY not configured' }, { status: 500 });
