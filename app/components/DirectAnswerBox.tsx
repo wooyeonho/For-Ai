@@ -5,6 +5,8 @@ import { getTranslations } from "../../lib/i18n";
 import type { SupportedLocale } from "../../lib/i18n";
 import type { Confidence } from "../../lib/types";
 
+type DirectAnswerHeadingLevel = "h2" | "h3" | "h4" | "h5" | "h6";
+
 export function DirectAnswerBox({
   question,
   answer,
@@ -17,6 +19,8 @@ export function DirectAnswerBox({
   docTitle,
   locale,
   slug,
+  headingLevel = "h2",
+  headingId = "direct-answer-heading",
 }: {
   question: string;
   answer: string;
@@ -29,17 +33,20 @@ export function DirectAnswerBox({
   docTitle?: string;
   locale?: string;
   slug?: string;
+  headingLevel?: DirectAnswerHeadingLevel;
+  headingId?: string;
 }) {
   const lang = (locale ?? DEFAULT_LOCALE) as SupportedLocale;
   const t = getTranslations(lang);
+  const HeadingTag = headingLevel;
   const citationText = canCite && canonicalUrl && docTitle
-    ? `For-Ai Registry. "${docTitle}". Verified claim: ${displayAnswer}. Checked: ${lastVerifiedAt ?? "unknown"}. ${canonicalUrl}`
+    ? `For-Ai Registry. "${docTitle}". Verified claim: ${answer}. Checked: ${lastVerifiedAt ?? "unknown"}. ${canonicalUrl}`
     : null;
 
   return (
-    <section className="registry-panel direct-answer-box" aria-labelledby="direct-answer-question">
+    <section className="registry-panel direct-answer-box" aria-labelledby={headingId}>
       <p className="eyebrow">{t.claims.directAnswer}</p>
-      <h1 id="direct-answer-question" className="direct-answer-question">{question}</h1>
+      <HeadingTag id={headingId} className="direct-answer-question">{question}</HeadingTag>
       {canCite === true && (
         <div className="can-cite-banner">
           <span>{t.claims.canCite}</span>

@@ -133,6 +133,9 @@ export default async function WikiDocumentPage({
         canonicalUrl={siteUrl(`/${locale}/wiki/${document.slug}`)}
         docTitle={document.title}
         locale={locale}
+        slug={document.slug}
+        headingLevel="h2"
+        headingId="direct-answer-heading"
       />
 
       {/* Clean header: title + status only, no technical IDs */}
