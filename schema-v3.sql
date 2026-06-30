@@ -670,6 +670,100 @@ create policy source_candidates_public_insert_only
 -- are private review/reputation data exposed only through service-role APIs.
 
 
+
+
+create type bounty_status as enum ('open', 'reviewing', 'awarded', 'closed');
+create type bounty_sponsor_type as enum ('none', 'community', 'business', 'institution', 'platform', 'government', 'other');
+create type bounty_submission_status as enum ('new', 'reviewing', 'accepted_source_candidate', 'rejected', 'spam', 'spam_suspected');
+
+-- claim_bounties: public source-finding tasks for claims or topic candidates.
+-- Bounty sponsorship never determines whether a claim is verified; verification
+-- remains an independent human-reviewed source-backed workflow through claims,
+-- claim_sources, and verification_events.
+create table claim_bounties (
+  bounty_id uuid primary key default gen_random_uuid(),
+  claim_id text references claims(id) on delete cascade,
+  topic_candidate_id uuid references topic_candidates(id) on delete cascade,
+  title text not null,
+  description text not null,
+  country text not null default 'global',
+  category text not null,
+  reward_points integer not null default 0 check (reward_points >= 0),
+  sponsor_type bounty_sponsor_type not null default 'none',
+  sponsor_label text,
+  status bounty_status not null default 'open',
+  created_at timestamptz not null default now(),
+  expires_at timestamptz,
+  constraint claim_bounties_exactly_one_target check (
+    (claim_id is not null and topic_candidate_id is null)
+    or (claim_id is null and topic_candidate_id is not null)
+  ),
+  constraint claim_bounties_sponsored_label_required check (
+    sponsor_type = 'none' or nullif(trim(sponsor_label), '') is not null
+  )
+);
+
+comment on table claim_bounties is 'Source-finding bounties for unverified claims or topic candidates. Sponsored bounties must be labeled; sponsorship does not affect verification.';
+comment on column claim_bounties.sponsor_type is 'Sponsorship display category only. It must not be used as verification authority.';
+comment on column claim_bounties.sponsor_label is 'Public sponsor label shown on sponsored bounties; never implies verified status.';
+
+create index claim_bounties_claim_id_idx on claim_bounties(claim_id);
+create index claim_bounties_topic_candidate_id_idx on claim_bounties(topic_candidate_id);
+create index claim_bounties_status_created_idx on claim_bounties(status, created_at desc);
+create index claim_bounties_country_category_idx on claim_bounties(country, category);
+
+-- bounty_submissions: public contributors can submit source candidates only.
+-- They cannot write claim_sources directly and cannot mark claims verified.
+create table bounty_submissions (
+  id uuid primary key default gen_random_uuid(),
+  bounty_id uuid not null references claim_bounties(bounty_id) on delete cascade,
+  submitted_source_url text,
+  submitted_source_title text,
+  submitted_citation text,
+  submitted_source_type source_type not null default 'unknown',
+  submitted_source_authority source_authority not null default 'unknown',
+  source_observed_at timestamptz,
+  contributor_hash text not null,
+  reviewer_note text,
+  accepted_claim_source_id text references claim_sources(id) on delete set null,
+  reward_points_awarded integer not null default 0 check (reward_points_awarded >= 0),
+  status bounty_submission_status not null default 'new',
+  created_at timestamptz not null default now(),
+  reviewed_at timestamptz,
+  constraint bounty_submissions_source_candidate_required check (
+    nullif(trim(coalesce(submitted_source_url, '')), '') is not null
+    or nullif(trim(coalesce(submitted_citation, '')), '') is not null
+  )
+);
+
+comment on table bounty_submissions is 'Public source-candidate submissions for bounties. Contributors submit evidence only; admins/verifiers independently decide claim_sources and verification_events.';
+comment on column bounty_submissions.contributor_hash is 'Salted non-raw contributor identifier. Never store raw IP addresses.';
+comment on column bounty_submissions.accepted_claim_source_id is 'Set only after independent review converts the candidate into a claim_sources row; this does not by itself mark the claim verified.';
+
+create index bounty_submissions_bounty_id_idx on bounty_submissions(bounty_id);
+create index bounty_submissions_status_created_idx on bounty_submissions(status, created_at desc);
+create index bounty_submissions_contributor_hash_idx on bounty_submissions(contributor_hash);
+
+alter table claim_bounties enable row level security;
+alter table bounty_submissions enable row level security;
+
+create policy claim_bounties_public_select
+  on claim_bounties for select to anon
+  using (status in ('open', 'reviewing', 'awarded'));
+
+create policy bounty_submissions_public_insert_only
+  on bounty_submissions for insert to anon
+  with check (
+    status in ('new', 'spam_suspected')
+    and contributor_hash is not null
+    and accepted_claim_source_id is null
+    and reward_points_awarded = 0
+    and reviewed_at is null
+  );
+
+-- No public SELECT/UPDATE policies for bounty_submissions. Moderation and any
+-- conversion into claim_sources/verification_events require service-role APIs.
+
 -- Privacy/retention policy notes:
 -- - Never persist raw IP addresses. Public contributors are identified only by contributor_hash.
 -- - Raw user-agent strings are not stored in admin audit metadata; store a short salted/one-way hash or omit.
