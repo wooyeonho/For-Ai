@@ -9,7 +9,7 @@ interface Candidate {
   claims:{question:string;placeholder_value:string}[];
   source_hints:{url:string;title:string}[];
   status:string;source:string;generation_model?:string;created_at:string;
-  consensus_score?:number;consensus_level?:string;lang?:string;
+  consensus_score?:number;consensus_level?:string;lang?:string;country?:string;duplicate_detection?:DuplicateDetection;
 }
 const CONSENSUS_STYLE:Record<string,{bg:string;color:string}> = {
   unanimous:{bg:"#dcfce7",color:"#15803d"},
@@ -106,6 +106,15 @@ export default function CandidatesPage(){
             </div>
             {selected===c.id&&(
               <div style={{marginTop:16,paddingTop:16,borderTop:"1px solid #f3f4f6"}} onClick={e=>e.stopPropagation()}>
+                {c.duplicate_detection?.recommendations?.length ? <div style={{marginBottom:12,padding:10,background:c.duplicate_detection.has_potential_duplicate?"#fef2f2":"#f8fafc",border:`1px solid ${c.duplicate_detection.has_potential_duplicate?"#fecaca":"#e2e8f0"}`,borderRadius:8}}>
+                  <div style={{fontSize:12,fontWeight:800,color:c.duplicate_detection.has_potential_duplicate?"#991b1b":"#334155",marginBottom:6}}>중복/관련 기존 문서 추천</div>
+                  {c.duplicate_detection.recommendations.map((m)=><div key={m.id} style={{fontSize:12,display:"flex",gap:8,alignItems:"center",marginBottom:4,flexWrap:"wrap"}}>
+                    <a href={`/${m.lang}/wiki/${m.slug}`} target="_blank" rel="noopener" style={{color:"#2563eb",fontWeight:700}}>{m.title}</a>
+                    <span style={{color:"#64748b"}}>{m.country} · {m.category}</span>
+                    <span style={{color:"#991b1b",fontWeight:700}}>slug {Math.round(m.slug_similarity*100)}% · title {Math.round(m.title_similarity*100)}%</span>
+                    <span style={{color:"#64748b"}}>{m.reasons.join(", ")}</span>
+                  </div>)}
+                </div> : null}
                 {c.claims?.length>0&&<div style={{marginBottom:12}}>
                   <div style={{fontSize:12,fontWeight:600,color:"#6b7280",marginBottom:6}}>확인 필요 ({c.claims.length}개)</div>
                   {c.claims.map((cl,i)=><div key={i} style={{fontSize:13,display:"flex",gap:8,marginBottom:4}}><span style={{color:"#9ca3af"}}>Q.</span><span>{cl.question}</span><span style={{marginLeft:"auto",color:"#f97316",fontWeight:600}}>확인 필요</span></div>)}</div>}
