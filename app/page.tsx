@@ -42,11 +42,66 @@ const INITIAL_VERTICAL = {
 };
 
 const AI_WRONG_QUESTIONS = [
-  "여권 재발급 수수료가 지금 얼마야?",
-  "전입신고는 며칠 안에 해야 해?",
-  "주민등록증 재발급 수수료는 무료야?",
-  "자동차세 납부 기간은 언제야?",
+  {
+    question: "How much is a U.S. passport renewal fee right now?",
+    locale: "en",
+    country: "US",
+    category: "Government",
+  },
+  {
+    question: "東京メトロの初乗り運賃はいくら？",
+    locale: "ja",
+    country: "JP",
+    category: "Transport",
+  },
+  {
+    question: "¿Necesito visa para viajar de México a España como turista?",
+    locale: "es",
+    country: "ES",
+    category: "Travel",
+  },
+  {
+    question: "영국 온라인 쇼핑 환불 기간은 며칠이야?",
+    locale: "ko",
+    country: "GB",
+    category: "Commerce",
+  },
+  {
+    question: "दिल्ली में ड्राइविंग लाइसेंस नवीनीकरण की समय सीमा क्या है?",
+    locale: "hi",
+    country: "IN",
+    category: "Government",
+  },
+  {
+    question: "ما آخر موعد لتجديد الإقامة في الإمارات؟",
+    locale: "ar",
+    country: "AE",
+    category: "Government",
+  },
+  {
+    question: "중국 환승 비자 면제 조건은 지금 어떻게 돼?",
+    locale: "ko",
+    country: "CN",
+    category: "Travel",
+  },
+  {
+    question: "What is the current subway fare from Heathrow to central London?",
+    locale: "en",
+    country: "GB",
+    category: "Transport",
+  },
 ];
+
+function suggestTopicHref(item: (typeof AI_WRONG_QUESTIONS)[number]) {
+  const params = new URLSearchParams({
+    q: item.question,
+    lang: item.locale,
+    country: item.country,
+    category: item.category,
+  });
+
+  return `/suggest-topic?${params.toString()}`;
+}
 
 const VERTICAL_GROUPS = [
   {
@@ -510,13 +565,16 @@ export default async function HomePage() {
       </section>
 
       <section className="section" aria-labelledby="ai-wrong-questions">
-        <p className="section-eyebrow">Entry points</p>
-        <h2 className="section-title" id="ai-wrong-questions">AI가 자주 틀리는 질문으로 시작하기</h2>
+        <p className="section-eyebrow">Global entry points</p>
+        <h2 className="section-title" id="ai-wrong-questions">Start with questions AI often gets wrong</h2>
+        <p className="section-lede">
+          Passport fees, subway fares, visa rules, refund windows, civic deadlines, and other source-backed claims vary by country, language, category, and date.
+        </p>
         <div className="question-grid">
-          {AI_WRONG_QUESTIONS.map((question) => (
-            <Link key={question} href="/suggest-topic" className="question-card">
-              <span>{question}</span>
-              <small>Submit or verify this claim →</small>
+          {AI_WRONG_QUESTIONS.map((item) => (
+            <Link key={`${item.country}-${item.locale}-${item.question}`} href={suggestTopicHref(item)} className="question-card">
+              <span>{item.question}</span>
+              <small>{item.country} · {item.locale} · {item.category} →</small>
             </Link>
           ))}
         </div>

@@ -26,12 +26,32 @@ const languages = [
   { code: "ar", label: "العربية" },
 ];
 
-export default function SuggestTopicForm() {
-  const [question, setQuestion] = useState("");
-  const [country, setCountry] = useState("");
+function normalizeCategory(value: string) {
+  return categories.find((category) => category.toLowerCase() === value.toLowerCase()) ?? categories[0];
+}
+
+function normalizeLanguage(value: string) {
+  return languages.some((language) => language.code === value) ? value : "en";
+}
+
+interface SuggestTopicFormProps {
+  initialQuestion?: string;
+  initialCountry?: string;
+  initialCategory?: string;
+  initialLanguage?: string;
+}
+
+export default function SuggestTopicForm({
+  initialQuestion = "",
+  initialCountry = "",
+  initialCategory = "",
+  initialLanguage = "",
+}: SuggestTopicFormProps) {
+  const [question, setQuestion] = useState(initialQuestion);
+  const [country, setCountry] = useState(initialCountry);
   const [cityRegion, setCityRegion] = useState("");
-  const [category, setCategory] = useState(categories[0]);
-  const [language, setLanguage] = useState("en");
+  const [category, setCategory] = useState(normalizeCategory(initialCategory));
+  const [language, setLanguage] = useState(normalizeLanguage(initialLanguage));
   const [sourceUrl, setSourceUrl] = useState("");
   const [whyThisMatters, setWhyThisMatters] = useState("");
   const [email, setEmail] = useState("");

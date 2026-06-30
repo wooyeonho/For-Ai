@@ -7,6 +7,27 @@ export const metadata: Metadata = {
     "Suggest a global, source-backed fact topic that should enter For-Ai's candidate review queue before any claim is verified.",
 };
 
-export default function SuggestTopicPage() {
-  return <SuggestTopicForm />;
+type SuggestTopicSearchParams = Promise<Record<string, string | string[] | undefined>>;
+
+function firstSearchParam(params: Record<string, string | string[] | undefined>, keys: string[]) {
+  for (const key of keys) {
+    const value = params[key];
+    const firstValue = Array.isArray(value) ? value[0] : value;
+    if (firstValue?.trim()) return firstValue.trim();
+  }
+
+  return "";
+}
+
+export default async function SuggestTopicPage({ searchParams }: { searchParams: SuggestTopicSearchParams }) {
+  const params = await searchParams;
+
+  return (
+    <SuggestTopicForm
+      initialQuestion={firstSearchParam(params, ["q", "question"])}
+      initialCountry={firstSearchParam(params, ["country"])}
+      initialCategory={firstSearchParam(params, ["category"])}
+      initialLanguage={firstSearchParam(params, ["lang", "locale", "language"])}
+    />
+  );
 }
