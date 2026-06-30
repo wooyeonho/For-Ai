@@ -194,6 +194,31 @@ export default async function WikiDocumentPage({
         <DocumentStatsBar documentId={document.id} />
       </section>
 
+      {citationStatus.isVerifiedDocument && citationStatus.freshness === "stale" && (
+        <section
+          className="registry-panel"
+          role="alert"
+          aria-labelledby="stale-document-warning"
+          style={{
+            background: "#fffbeb",
+            border: "2px solid #f59e0b",
+            borderInlineStart: "6px solid #d97706",
+          }}
+        >
+          <p className="eyebrow" style={{ color: "#92400e" }}>STALE · 재검증 필요</p>
+          <h2 id="stale-document-warning" style={{ marginTop: 0 }}>Verified but freshness TTL has expired</h2>
+          <p>
+            This document has verified, source-backed claims, but at least one citation-ready claim exceeded its freshness TTL.
+            Treat the affected claim as needing re-verification before relying on it for current answers.
+          </p>
+          <ul className="link-list">
+            <li>Freshness TTL: <strong>{citationStatus.freshnessWindowDays} days</strong></li>
+            <li>Oldest verified claim date: <strong>{citationStatus.oldestVerifiedAt ?? "unknown"}</strong></li>
+            <li>Stale claims: <strong>{citationStatus.staleClaims.map((claim) => claim.fieldPath).join(", ") || "unknown"}</strong></li>
+          </ul>
+        </section>
+      )}
+
       {!citationStatus.isVerifiedDocument && (
         <section
           className="registry-panel"

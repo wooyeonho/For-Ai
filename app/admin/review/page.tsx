@@ -16,6 +16,7 @@ type Counts = {
   claim_sources: number;
   claims_needs_review: number;
   claims_verified: number;
+  stale_claims?: number;
   documents_verified: number;
 };
 
@@ -45,6 +46,9 @@ type PriorityClaim = {
   ai_model?: string | null;
   source_candidates?: { title?: string; url?: string; source_type?: string }[];
   source_trust_scores?: { id: string; score: number }[];
+  ttl_days?: number;
+  age_days?: number | null;
+  stale_reason?: string;
   document_url?: string | null;
   verify_url?: string | null;
   documents?: { title?: string | null; slug?: string | null; lang?: string | null; status?: string | null; category?: string | null } | null;
@@ -105,6 +109,7 @@ type ReviewPayload = {
     new_candidates: Candidate[];
     approved_candidates: Candidate[];
     generated_candidates: Candidate[];
+    stale_claims: PriorityClaim[];
   };
   promoted_documents: Candidate[];
   verified_documents: VerifiedDocument[];
@@ -132,6 +137,7 @@ const EMPTY_COUNTS: Counts = {
   claims_needs_review: 0,
   claims_verified: 0,
   documents_verified: 0,
+  stale_claims: 0,
 };
 
 const primaryButtonStyle = { padding: "8px 12px", borderRadius: 8, background: "#111827", color: "#fff", textDecoration: "none", display: "inline-block", fontWeight: 700 };
@@ -186,6 +192,7 @@ export default function AdminReviewPage() {
 
   const urgency = urgencyBand(counts.claims_needs_review, counts.candidates_approved ?? 0);
   const staleDocCount = (data?.verified_documents ?? []).filter((doc) => isStale(doc.last_verified_at)).length;
+  const staleClaimCount = counts.stale_claims ?? data?.priorities.stale_claims.length ?? 0;
 
   return (
     <div style={{ maxWidth: 1120, margin: "0 auto", padding: "40px 20px" }}>
@@ -218,7 +225,7 @@ export default function AdminReviewPage() {
         <div style={{ padding: "12px 20px", borderRadius: 8, marginBottom: 24, background: "#fafafa", border: "1px solid #e5e7eb", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
           <span style={{ fontWeight: 700, fontSize: 18, color: urgency.color }}>{urgency.label}</span>
           <span style={{ fontSize: 13, color: "#6b7280" }}>
-            {staleDocCount > 0 && <span style={{ color: "#92400e", marginRight: 12 }}>⏳ 재검증 필요 {staleDocCount}건</span>}
+            {staleClaimCount > 0 && <span style={{ color: "#92400e", marginRight: 12 }}>⏳ stale claim 재검증 {staleClaimCount}건</span>}
             마지막 갱신: {new Date().toLocaleTimeString("ko-KR")}
           </span>
         </div>

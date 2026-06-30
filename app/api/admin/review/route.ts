@@ -57,15 +57,66 @@ async function optionalCountRows(
   }
 }
 
-async function countStaleVerifiedClaims(sb: SupabaseAdminClient): Promise<number> {
-  const cutoff = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString();
-  const { count, error } = await sb
+type StaleClaimForReview = {
+  id: string;
+  document_id?: string | null;
+  entity_id?: string | null;
+  field_path: string;
+  claim_text?: string | null;
+  claim_value?: string | null;
+  confidence?: string | null;
+  status?: string | null;
+  last_verified_at?: string | null;
+  update_frequency?: string | null;
+  ttl_days: number;
+  age_days: number | null;
+  stale_reason: string;
+  document_url?: string | null;
+  verify_url?: string | null;
+  documents?: { title?: string | null; slug?: string | null; lang?: string | null; status?: string | null; category?: string | null } | null;
+};
+
+function staleClaimTtlDays(claim: { update_frequency?: string | null }, doc?: { update_frequency?: string | null } | null) {
+  return getFreshnessTtlDays((claim.update_frequency ?? doc?.update_frequency ?? null) as Parameters<typeof getFreshnessTtlDays>[0]);
+}
+
+function describeStaleness(claim: { last_verified_at?: string | null; update_frequency?: string | null }, ttlDays: number, ageDays: number | null) {
+  if (!claim.last_verified_at) return `missing last_verified_at; TTL ${ttlDays} days`;
+  return `last verified ${ageDays ?? "unknown"} days ago; TTL ${ttlDays} days from update_frequency=${claim.update_frequency ?? "document/default"}`;
+}
+
+async function getStaleVerifiedClaims(sb: SupabaseAdminClient, limit = 25): Promise<StaleClaimForReview[]> {
+  const { data, error } = await sb
     .from("claims")
-    .select("id", { count: "exact", head: true })
+    .select("id, document_id, entity_id, field_path, claim_text, claim_value, confidence, status, last_verified_at, update_frequency, updated_at, documents(slug, lang, title, status, category, update_frequency)")
     .eq("status", "verified")
-    .or(`last_verified_at.is.null,last_verified_at.lt.${cutoff}`);
+    .order("last_verified_at", { ascending: true, nullsFirst: true })
+    .limit(500);
   if (error) throw error;
-  return count ?? 0;
+
+  return (data ?? [])
+    .map((claim) => {
+      const doc = Array.isArray(claim.documents) ? claim.documents[0] : claim.documents;
+      const ttlDays = staleClaimTtlDays(claim, doc);
+      const ageDays = ageInDays(claim.last_verified_at);
+      return { claim, doc, ttlDays, ageDays, stale: isStale(claim.last_verified_at, ttlDays) };
+    })
+    .filter((item) => item.stale)
+    .sort((a, b) => (b.ageDays ?? Number.MAX_SAFE_INTEGER) - (a.ageDays ?? Number.MAX_SAFE_INTEGER))
+    .slice(0, limit)
+    .map(({ claim, doc, ttlDays, ageDays }) => ({
+      ...claim,
+      documents: doc ?? null,
+      ttl_days: ttlDays,
+      age_days: ageDays,
+      stale_reason: describeStaleness(claim, ttlDays, ageDays),
+      document_url: publicDocumentLink(doc ?? {}),
+      verify_url: doc?.slug ? `/admin/verify-claim?stale=true&slug=${encodeURIComponent(doc.slug)}` : "/admin/verify-claim?stale=true",
+    }));
+}
+
+async function countStaleVerifiedClaims(sb: SupabaseAdminClient): Promise<number> {
+  return (await getStaleVerifiedClaims(sb, 500)).length;
 }
 
 async function countApiAbuseWarnings(sb: SupabaseAdminClient): Promise<OptionalCount> {
@@ -267,6 +318,8 @@ export async function GET(request: Request) {
       .limit(10);
     if (claimsError) throw claimsError;
 
+    const staleClaimsQueue = await getStaleVerifiedClaims(sb, 10);
+
     const { data: newCandidates, error: newCandidatesError } = await sb
       .from("topic_candidates")
       .select("id, title, slug, lang, category, risk_tier, status, created_at")
@@ -395,8 +448,9 @@ export async function GET(request: Request) {
       { rank: 1, key: "pending_community_posts", label: "Pending community posts", count: pendingCommunityPosts, href: "/admin/posts?status=pending", reason: "공개 제출물은 스팸/오류 노출을 막기 위해 먼저 승인 또는 숨김 처리합니다." },
       { rank: 2, key: "high_risk", label: "High-risk finance/healthcare/legal/realtime", count: (highRiskCandidates?.length ?? 0) + highRiskDocuments.length, href: "/admin/candidates?status=new", reason: "금융·의료·법률·실시간성 항목은 잘못 인용될 때 피해가 커서 우선 검토합니다." },
       { rank: 3, key: "needs_review_claims", label: "Needs_review claims", count: claimsNeedsReview, href: verifyClaimLink(firstPriorityDoc?.slug), reason: "claim source를 추가하고 verified로 승격해야 AI 인용 가능성이 생깁니다." },
-      { rank: 4, key: "generated_candidates", label: "Generated topic candidates", count: candidatesGenerated, href: "/admin/candidates?status=generated", reason: "AI claim generation이 끝난 generated candidate를 공개 등록합니다." },
-      { rank: 5, key: "new_candidates", label: "New topic candidates", count: candidatesNew, href: "/admin/candidates?status=new", reason: "신규 후보를 reviewing/approved/rejected로 분류합니다." },
+      { rank: 4, key: "stale_claims", label: "Stale verified claims", count: staleClaims, href: "/admin/verify-claim?stale=true&claim_status=verified", reason: "freshness TTL이 지난 verified claim은 재검증 이벤트를 기록해 최신성을 회복합니다." },
+      { rank: 5, key: "generated_candidates", label: "Generated topic candidates", count: candidatesGenerated, href: "/admin/candidates?status=generated", reason: "AI claim generation이 끝난 generated candidate를 공개 등록합니다." },
+      { rank: 6, key: "new_candidates", label: "New topic candidates", count: candidatesNew, href: "/admin/candidates?status=new", reason: "신규 후보를 reviewing/approved/rejected로 분류합니다." },
     ];
 
     await logAdminAuditEvent(sb, request, "admin.review.read", {
@@ -430,6 +484,7 @@ export async function GET(request: Request) {
         claims_needs_review: claimsNeedsReview,
         claims_verified: claimsVerified,
         documents_verified: documentsVerified,
+        stale_claims: staleClaims,
       },
       recommendations: recommendAdminActions({
         counts: {
@@ -460,7 +515,9 @@ export async function GET(request: Request) {
           };
         }),
         new_candidates: newCandidates ?? [],
+        approved_candidates: [],
         generated_candidates: generatedCandidates ?? [],
+        stale_claims: staleClaimsQueue,
       },
       promoted_documents: (promotedCandidates ?? []).map((candidate) => ({
         ...candidate,
