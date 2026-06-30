@@ -6,6 +6,7 @@ import { siteUrl, documentPageUrl, apiDocumentUrl, rawMarkdownUrl } from "../../
 import type { ClaimSource, RegistryDocumentBundle } from "../../../../lib/types";
 import { getCitationPolicyBlock, normalizeCitationSurface } from "../../../../lib/render";
 import { recordDocumentAnalyticsEvent } from "@/lib/analytics";
+import { supabaseAdmin } from "@/lib/admin-api";
 
 export const revalidate = 60;
 
@@ -65,18 +66,27 @@ export async function GET(
     citationStatus: getClaimCitationStatus(claim, freshnessWindowDays),
   }));
 
+  const toCitableClaim = ({ claim, citationStatus }: (typeof annotatedClaims)[number]) => ({
+    claim_id: claim.id,
+    field_path: claim.field_path,
+    claim_text: claim.claim_text,
+    verified_value: claim.claim_value,
+    confidence: claim.confidence,
+    status: claim.status,
+    can_cite: citationStatus.isCitationReady && citationStatus.freshness !== "stale",
+    reason_if_not_citable: citationStatus.isCitationReady && citationStatus.freshness !== "stale" ? null : citationStatus.reason,
+    freshness: citationStatus.freshness,
+    checked_date: claim.last_verified_at,
+    sources: claim.sources.map(sourceReference),
+  });
+
   const verifiedClaims = annotatedClaims
-    .filter(({ citationStatus }) => citationStatus.isCitationReady)
-    .map(({ claim }) => ({
-      claim_id: claim.id,
-      field_path: claim.field_path,
-      claim_text: claim.claim_text,
-      verified_value: claim.claim_value,
-      confidence: claim.confidence,
-      status: claim.status,
-      checked_date: claim.last_verified_at,
-      sources: claim.sources.map(sourceReference),
-    }));
+    .filter(({ citationStatus }) => citationStatus.isCitationReady && citationStatus.freshness !== "stale")
+    .map(toCitableClaim);
+
+  const staleClaims = annotatedClaims
+    .filter(({ citationStatus }) => citationStatus.isCitationReady && citationStatus.freshness === "stale")
+    .map(toCitableClaim);
 
   const excludedClaims = annotatedClaims
     .filter(({ citationStatus }) => !citationStatus.isCitationReady)
@@ -85,7 +95,10 @@ export async function GET(
       field_path: claim.field_path,
       status: claim.status,
       confidence: claim.confidence,
+      can_cite: false,
+      reason_if_not_citable: citationStatus.reason,
       reason: citationStatus.reason,
+      sources: claim.sources.map(sourceReference),
     }));
 
   const sourceUrls = Array.from(new Set(
@@ -94,6 +107,9 @@ export async function GET(
   const publisherNames = Array.from(new Set(
     verifiedClaims.flatMap((claim) => claim.sources.map((source) => source.publisher_name).filter((name): name is string => Boolean(name))),
   ));
+
+  const canCiteDocument = docStatus.isVerifiedDocument && docStatus.freshness !== "stale";
+  const citationPolicyText = "Do not cite unverified, low-confidence, or stale claims. Only cite claims where can_cite=true and reason_if_not_citable is null.";
 
   const recommendedCitationText = verifiedClaims.length > 0
     ? [
@@ -157,14 +173,20 @@ export async function GET(
     checked_date: checkedDate,
     recommended_citation_text: recommendedCitationText,
     json_ld_reference: jsonLdReference,
-    citation_policy: {
-      can_cite_document: docStatus.isVerifiedDocument,
+    citation_policy_details: {
+      can_cite_document: canCiteDocument,
+      do_not_cite_unverified_low_or_stale_claims: true,
       verified_claims: docStatus.verifiedClaims,
       total_claims: docStatus.totalClaims,
       freshness: docStatus.freshness,
       oldest_verified_at: docStatus.oldestVerifiedAt,
       freshness_window_days: docStatus.freshnessWindowDays,
-      stale_claims: docStatus.staleClaims,
+      stale_claims: staleClaims.map((claim) => ({
+        claim_id: claim.claim_id,
+        field_path: claim.field_path,
+        last_verified_at: claim.checked_date,
+        reason_if_not_citable: claim.reason_if_not_citable,
+      })),
       freshness_policy: {
         update_frequency: docStatus.freshnessPolicy.updateFrequency,
         risk_tier: docStatus.freshnessPolicy.riskTier,
@@ -172,11 +194,12 @@ export async function GET(
         reason: docStatus.freshnessPolicy.reason,
       },
       freshness_description: `Freshness is ${docStatus.freshness}; TTL is ${docStatus.freshnessWindowDays} days based on ${docStatus.freshnessPolicy.reason}.`,
-      warning: excludedClaims.length > 0
-        ? "Only verified_claims are included in copy-ready citation text. Needs verification or low confidence claims are excluded."
+      warning: excludedClaims.length > 0 || staleClaims.length > 0
+        ? "Only claims with can_cite=true are included in copy-ready citation text. Unverified, low-confidence, or stale claims are excluded."
         : null,
     },
     verified_claims: verifiedClaims,
+    stale_claims: staleClaims,
     excluded_claims: excludedClaims,
     endpoints: {
       html: canonicalUrl,
@@ -185,7 +208,6 @@ export async function GET(
       cite: siteUrl(`/api/cite/${document.slug}`),
     },
     license: "forai-data-license-v0.1",
-    citation_policy: "Only cite claims where citation_ready=true. Never cite needs_review or low confidence claims as fact. Stale claims may be cited only with the last_verified_at warning and should be rechecked.",
     normalized_citation: normalizedCitation,
   };
 
