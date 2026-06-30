@@ -26,8 +26,12 @@ export async function generateMetadata({
   };
 }
 
-function formatDateTime(value: string) {
-  return new Intl.DateTimeFormat("en", { dateStyle: "long", timeStyle: "short", timeZone: "UTC" }).format(new Date(value));
+function formatDateTime(value: string, locale = "en") {
+  return new Intl.DateTimeFormat(locale, { dateStyle: "long", timeStyle: "short", timeZone: "UTC" }).format(new Date(value));
+}
+
+function formatNumber(value: number, locale = "en") {
+  return value.toLocaleString(locale);
 }
 
 export default async function ChallengeDetailPage({
@@ -37,6 +41,7 @@ export default async function ChallengeDetailPage({
 }) {
   const { locale, id } = await params;
   if (!isValidLocale(locale)) notFound();
+  const displayLocale = locale || "en";
 
   const challenge = getCommunityChallenge(id);
   if (!challenge) notFound();
@@ -64,13 +69,13 @@ export default async function ChallengeDetailPage({
         <h2 id="challenge-progress-title">Progress</h2>
         <div className="challenge-progress challenge-progress-large">
           <div>
-            <strong>{challenge.progress.accepted_count.toLocaleString("en-US")}</strong>
-            <span> accepted contributions counted toward {challenge.target_count.toLocaleString("en-US")} {challenge.target_metric}</span>
+            <strong>{formatNumber(challenge.progress.accepted_count, displayLocale)}</strong>
+            <span> accepted contributions counted toward {formatNumber(challenge.target_count, displayLocale)} {challenge.target_metric}</span>
           </div>
           <div className="challenge-progress-bar" aria-hidden="true">
             <span style={{ inlineSize: `${challenge.progress_percent}%` }} />
           </div>
-          <small>{challenge.progress_percent}% complete. Last updated {formatDateTime(challenge.progress.updated_at)}.</small>
+          <small>{formatNumber(challenge.progress_percent, displayLocale)}% complete. Last updated {formatDateTime(challenge.progress.updated_at, displayLocale)}.</small>
         </div>
       </section>
 
@@ -83,9 +88,9 @@ export default async function ChallengeDetailPage({
             <div className="meta-item"><dt className="meta-label">category</dt><dd>{challenge.category}</dd></div>
             <div className="meta-item"><dt className="meta-label">country</dt><dd>{challenge.country ?? "Optional / GLOBAL"}</dd></div>
             <div className="meta-item"><dt className="meta-label">target_metric</dt><dd>{challenge.target_metric}</dd></div>
-            <div className="meta-item"><dt className="meta-label">target_count</dt><dd>{challenge.target_count.toLocaleString("en-US")}</dd></div>
-            <div className="meta-item"><dt className="meta-label">starts_at</dt><dd>{formatDateTime(challenge.starts_at)}</dd></div>
-            <div className="meta-item"><dt className="meta-label">ends_at</dt><dd>{formatDateTime(challenge.ends_at)}</dd></div>
+            <div className="meta-item"><dt className="meta-label">target_count</dt><dd>{formatNumber(challenge.target_count, displayLocale)}</dd></div>
+            <div className="meta-item"><dt className="meta-label">starts_at</dt><dd>{formatDateTime(challenge.starts_at, displayLocale)}</dd></div>
+            <div className="meta-item"><dt className="meta-label">ends_at</dt><dd>{formatDateTime(challenge.ends_at, displayLocale)}</dd></div>
             <div className="meta-item"><dt className="meta-label">status</dt><dd>{challenge.status}</dd></div>
             <div className="meta-item"><dt className="meta-label">sponsor_label</dt><dd>{challenge.sponsor_label ?? "None"}</dd></div>
           </dl>

@@ -62,9 +62,13 @@ function countryName(country: string, locale: SupportedLocale): string {
   }
 }
 
-function dateLabel(value: string | null): string {
+function dateLabel(value: string | null, locale = "en"): string {
   if (!value) return "Needs verification";
-  return value.slice(0, 10);
+  return new Intl.DateTimeFormat(locale, { dateStyle: "medium", timeZone: "UTC" }).format(new Date(value));
+}
+
+function formatNumber(value: number, locale = "en"): string {
+  return value.toLocaleString(locale);
 }
 
 function collectCountryClaims(country: string): CountryClaim[] {
@@ -208,7 +212,8 @@ export default async function CountryRegistryPage({
   const { locale, country } = await params;
   if (!isValidLocale(locale)) notFound();
 
-  const supportedLocale = locale as SupportedLocale;
+  const displayLocale = locale || "en";
+  const supportedLocale = displayLocale as SupportedLocale;
   const normalizedCountry = normalizeCountry(country);
   const items = await getRegistryIndex({ country: normalizedCountry });
   const name = countryName(normalizedCountry, supportedLocale);
@@ -230,18 +235,18 @@ export default async function CountryRegistryPage({
           Supabase-backed rows can be included when the optional index connection is configured.
         </p>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
-          <span className="badge badge-verified">Verified facts: {questStats.verifiedClaims}</span>
-          <span className="badge badge-review">Needs review facts: {questStats.needsReviewClaims}</span>
-          <span className="badge">Stale facts: {questStats.staleClaims}</span>
-          <span className="badge">Target facts: {questStats.targetClaims}</span>
+          <span className="badge badge-verified">Verified facts: {formatNumber(questStats.verifiedClaims, displayLocale)}</span>
+          <span className="badge badge-review">Needs review facts: {formatNumber(questStats.needsReviewClaims, displayLocale)}</span>
+          <span className="badge">Stale facts: {formatNumber(questStats.staleClaims, displayLocale)}</span>
+          <span className="badge">Target facts: {formatNumber(questStats.targetClaims, displayLocale)}</span>
         </div>
       </header>
 
       <section className="registry-panel" aria-labelledby="country-progress">
         <p className="eyebrow">Quest progress</p>
-        <h2 id="country-progress">{overallProgress}% to the current country target</h2>
+        <h2 id="country-progress">{formatNumber(overallProgress, displayLocale)}% to the current country target</h2>
         <p className="meta-label">Progress = verified claims / target claims. It is a participation signal only; it never replaces source quality, confidence, freshness, or human verification.</p>
-        <div aria-label={`Overall progress ${overallProgress}%`} style={{ background: "#e5e7eb", borderRadius: 999, height: 12, overflow: "hidden", marginTop: 12 }}>
+        <div aria-label={`Overall progress ${formatNumber(overallProgress, displayLocale)}%`} style={{ background: "#e5e7eb", borderRadius: 999, height: 12, overflow: "hidden", marginTop: 12 }}>
           <div style={{ width: `${overallProgress}%`, background: "#2563eb", height: "100%" }} />
         </div>
       </section>
@@ -256,8 +261,8 @@ export default async function CountryRegistryPage({
               const categoryPercent = percent(category.verified, category.target);
               return (
                 <li key={category.category}>
-                  <strong>{category.category}</strong>: {category.verified}/{category.target} verified ({categoryPercent}%)
-                  {category.stale > 0 ? <span className="meta-label"> · {category.stale} stale</span> : null}
+                  <strong>{category.category}</strong>: {formatNumber(category.verified, displayLocale)}/{formatNumber(category.target, displayLocale)} verified ({formatNumber(categoryPercent, displayLocale)}%)
+                  {category.stale > 0 ? <span className="meta-label"> · {formatNumber(category.stale, displayLocale)} stale</span> : null}
                 </li>
               );
             })}
@@ -272,7 +277,7 @@ export default async function CountryRegistryPage({
         ) : (
           <ul className="link-list">
             {questStats.neededSources.map((source) => (
-              <li key={source.label}>{source.label}<span className="meta-label"> · {source.count} claim(s)</span></li>
+              <li key={source.label}>{source.label}<span className="meta-label"> · {formatNumber(source.count, displayLocale)} claim(s)</span></li>
             ))}
           </ul>
         )}
@@ -287,7 +292,7 @@ export default async function CountryRegistryPage({
             {questStats.contributors.map((contributor) => (
               <li key={contributor.hash}>
                 <code>{displayContributorHash(contributor.hash)}</code>
-                <span className="meta-label"> · {contributor.count} contribution(s) · last seen {dateLabel(contributor.lastSeenAt)}</span>
+                <span className="meta-label"> · {formatNumber(contributor.count, displayLocale)} contribution(s) · last seen {dateLabel(contributor.lastSeenAt, displayLocale)}</span>
               </li>
             ))}
           </ul>
@@ -303,7 +308,7 @@ export default async function CountryRegistryPage({
             {recentFacts.map((fact) => (
               <li key={fact.id}>
                 <Link href={`/${locale}/wiki/${fact.documentSlug}`}>{fact.documentTitle}</Link>: {fact.value}
-                <span className="meta-label"> · {dateLabel(fact.lastVerifiedAt)} · {fact.category}</span>
+                <span className="meta-label"> · {dateLabel(fact.lastVerifiedAt, displayLocale)} · {fact.category}</span>
               </li>
             ))}
           </ul>
@@ -319,7 +324,7 @@ export default async function CountryRegistryPage({
             {staleFacts.map((item) => (
               <li key={item.slug}>
                 <Link href={`/${locale}/wiki/${item.slug}`}>{item.title}</Link>
-                <span className="meta-label"> · oldest verified: {dateLabel(item.oldest_verified_at)} · {item.type}</span>
+                <span className="meta-label"> · oldest verified: {dateLabel(item.oldest_verified_at, displayLocale)} · {item.type}</span>
               </li>
             ))}
           </ul>

@@ -24,9 +24,14 @@ function shortHash(hash: string) {
   return `${hash.slice(0, 8)}…${hash.slice(-4)}`;
 }
 
+function formatNumber(value: number, locale = "en") {
+  return value.toLocaleString(locale);
+}
+
 export default async function QuestsPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
   if (!isValidLocale(locale)) notFound();
+  const displayLocale = locale || "en";
   const [quests, events] = await Promise.all([getCountryQuests(), getContributionEvents()]);
   const contributors = summarizeContributors(events).slice(0, 12);
 
@@ -50,7 +55,7 @@ export default async function QuestsPage({ params }: { params: Promise<{ locale:
             {quests.map((quest) => (
               <li key={quest.country} style={{ paddingBlock: 10 }}>
                 <Link href={`/${locale}/country/${quest.country.toLowerCase()}`}>{countryName(quest.country, locale)}</Link>
-                <div className="meta-label">{quest.verified} verified claims / {quest.target} target · {quest.remaining} remaining</div>
+                <div className="meta-label">{formatNumber(quest.verified, displayLocale)} verified claims / {formatNumber(quest.target, displayLocale)} target · {formatNumber(quest.remaining, displayLocale)} remaining</div>
                 <progress value={quest.verified} max={quest.target} style={{ width: "100%" }} aria-label={`${quest.country} quest progress`} />
               </li>
             ))}
@@ -67,12 +72,12 @@ export default async function QuestsPage({ params }: { params: Promise<{ locale:
             {contributors.map((contributor) => (
               <li key={contributor.contributor_hash} style={{ paddingBlock: 10 }}>
                 <strong>Contributor {shortHash(contributor.contributor_hash)}</strong>
-                <div className="meta-label">{contributor.total_points} points · {contributor.weekly_accepted} weekly accepted</div>
+                <div className="meta-label">{formatNumber(contributor.total_points, displayLocale)} points · {formatNumber(contributor.weekly_accepted, displayLocale)} weekly accepted</div>
                 <div style={{ display: "grid", gap: 8, marginTop: 8 }}>
                   {contributor.badges.map((badge) => (
                     <div key={badge.code}>
                       <span className={badge.earned ? "badge badge-verified" : "badge badge-review"}>{badge.name}</span>{" "}
-                      <span className="meta-label">{badge.progress}/{badge.target} · {badge.description}</span>
+                      <span className="meta-label">{formatNumber(badge.progress, displayLocale)}/{formatNumber(badge.target, displayLocale)} · {badge.description}</span>
                     </div>
                   ))}
                 </div>

@@ -89,6 +89,10 @@ const WEIGHTS: Record<ContributionMetric, number> = {
 const DUPLICATE_URL_FREE_LIMIT = 2;
 const REJECTED_OR_SPAM_PENALTY = 6;
 
+function formatNumber(value: number, locale = "en"): string {
+  return value.toLocaleString(locale);
+}
+
 export function generateStaticParams() {
   return SUPPORTED_LOCALES.map((locale) => ({ locale }));
 }
@@ -110,6 +114,7 @@ export async function generateMetadata({ params }: { params: Promise<Leaderboard
 export default async function LeaderboardPage({ params }: { params: Promise<LeaderboardParams> }) {
   const { locale } = await params;
   if (!isValidLocale(locale)) notFound();
+  const displayLocale = locale || "en";
 
   const leaderboard = await getLeaderboard();
   const hasLiveData = isServiceRoleConfigured();
@@ -123,10 +128,10 @@ export default async function LeaderboardPage({ params }: { params: Promise<Lead
           This leaderboard rewards accepted, source-backed, claim-level work. It intentionally excludes raw submission count so spam, repeated URLs, and noisy public intake cannot outrank verified contributions.
         </p>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
-          <span className="badge badge-verified">accepted sources × {WEIGHTS.accepted_sources}</span>
-          <span className="badge badge-verified">verified claims × {WEIGHTS.verified_claims}</span>
-          <span className="badge badge-warning">stale fixes × {WEIGHTS.stale_fixes}</span>
-          <span className="badge">country coverage × {WEIGHTS.country_coverage}</span>
+          <span className="badge badge-verified">accepted sources × {formatNumber(WEIGHTS.accepted_sources, displayLocale)}</span>
+          <span className="badge badge-verified">verified claims × {formatNumber(WEIGHTS.verified_claims, displayLocale)}</span>
+          <span className="badge badge-warning">stale fixes × {formatNumber(WEIGHTS.stale_fixes, displayLocale)}</span>
+          <span className="badge">country coverage × {formatNumber(WEIGHTS.country_coverage, displayLocale)}</span>
         </div>
       </header>
 
@@ -144,18 +149,18 @@ export default async function LeaderboardPage({ params }: { params: Promise<Lead
             {leaderboard.map((entry, index) => (
               <li key={entry.contributorHash} className="registry-row">
                 <div className="registry-row-main">
-                  <strong className="registry-row-title">#{index + 1} {displayContributor(entry.contributorHash)}</strong>
+                  <strong className="registry-row-title">#{formatNumber(index + 1, displayLocale)} {displayContributor(entry.contributorHash)}</strong>
                   <span className="registry-row-entity">
-                    {entry.countries.length} countries · {entry.categories.length} categories · abuse-adjusted score {entry.score}
+                    {formatNumber(entry.countries.length, displayLocale)} countries · {formatNumber(entry.categories.length, displayLocale)} categories · abuse-adjusted score {formatNumber(entry.score, displayLocale)}
                   </span>
                   <span className="meta-label">
-                    accepted sources {entry.acceptedSources}, verified claims {entry.verifiedClaims}, stale fixes {entry.staleFixes}, accepted hallucination reports {entry.acceptedHallucinations}
+                    accepted sources {formatNumber(entry.acceptedSources, displayLocale)}, verified claims {formatNumber(entry.verifiedClaims, displayLocale)}, stale fixes {formatNumber(entry.staleFixes, displayLocale)}, accepted hallucination reports {formatNumber(entry.acceptedHallucinations, displayLocale)}
                   </span>
                 </div>
                 <div className="registry-row-meta">
-                  <span className="badge badge-verified">{entry.score} pts</span>
-                  {entry.rejectedOrSpam > 0 ? <span className="badge badge-warning">moderation penalties {entry.rejectedOrSpam}</span> : null}
-                  {entry.duplicateUrlOverflow > 0 ? <span className="badge badge-warning">duplicate URL cap {entry.duplicateUrlOverflow}</span> : null}
+                  <span className="badge badge-verified">{formatNumber(entry.score, displayLocale)} pts</span>
+                  {entry.rejectedOrSpam > 0 ? <span className="badge badge-warning">moderation penalties {formatNumber(entry.rejectedOrSpam, displayLocale)}</span> : null}
+                  {entry.duplicateUrlOverflow > 0 ? <span className="badge badge-warning">duplicate URL cap {formatNumber(entry.duplicateUrlOverflow, displayLocale)}</span> : null}
                 </div>
               </li>
             ))}
@@ -167,7 +172,7 @@ export default async function LeaderboardPage({ params }: { params: Promise<Lead
         <p className="eyebrow">Scoring design</p>
         <h2 id="leaderboard-rules">Leaderboard criteria</h2>
         <ul className="link-list">
-          <li><strong>Accepted sources:</strong> claim_sources that pass review or are attached to a verified claim. Repeated identical URLs from the same contributor are capped after {DUPLICATE_URL_FREE_LIMIT} credits.</li>
+          <li><strong>Accepted sources:</strong> claim_sources that pass review or are attached to a verified claim. Repeated identical URLs from the same contributor are capped after {formatNumber(DUPLICATE_URL_FREE_LIMIT, displayLocale)} credits.</li>
           <li><strong>Verified claim contributions:</strong> contributor_hash values on verification_events that move claims to verified or record human review of a verified claim.</li>
           <li><strong>Stale claim fixes:</strong> high-value verification_events that restore stale or low-confidence facts to current verified claims.</li>
           <li><strong>Hallucination reports accepted:</strong> only moderated hallucination_reports with status accepted are counted.</li>
@@ -181,7 +186,7 @@ export default async function LeaderboardPage({ params }: { params: Promise<Lead
         <h2 id="spam-controls">Spam prevention rules</h2>
         <ul className="link-list">
           <li>Raw submission count is never part of the score.</li>
-          <li>Rejected or spam submissions are excluded and subtract {REJECTED_OR_SPAM_PENALTY} points each when visible to server-side moderation queries.</li>
+          <li>Rejected or spam submissions are excluded and subtract {formatNumber(REJECTED_OR_SPAM_PENALTY, displayLocale)} points each when visible to server-side moderation queries.</li>
           <li>Identical URL submissions by the same contributor_hash receive limited credit to prevent repeated-source farming.</li>
           <li>Abuse detection uses contributor_hash only. Raw IP addresses are not stored or displayed.</li>
           <li>Public output shows pseudonymous contributor labels, not full hashes or private submission rows.</li>
