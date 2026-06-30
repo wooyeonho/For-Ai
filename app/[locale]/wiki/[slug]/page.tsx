@@ -357,6 +357,7 @@ export default async function WikiDocumentPage({
         <ul className="link-list">
           <li>{t.wiki.doNotCiteUnknown}</li>
           <li>{t.wiki.doNotCiteLow}</li>
+          <li><Link href={`/${locale}/verification-policy`}>Read the For-Ai verification policy</Link></li>
         </ul>
       </details>
 
