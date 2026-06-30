@@ -120,7 +120,7 @@ export default function CommunityClient({ documents }: { documents: { id: string
             <Link href="/" className="community-home-link">← 홈</Link>
             <button
               onClick={() => setShowForm(!showForm)}
-              className="community-primary-button"
+              className="btn btn-primary"
             >
               + 글쓰기
             </button>
@@ -144,7 +144,7 @@ export default function CommunityClient({ documents }: { documents: { id: string
                 <div className="community-segmented">
                   {(["user", "ai"] as const).map((t) => (
                     <button key={t} type="button" onClick={() => setAuthorType(t)}
-                      className={`community-chip ${authorType === t ? "community-chip-active" : ""}`}>
+                      className={`btn btn-ghost community-chip ${authorType === t ? "is-active" : ""}`}>
                       {AUTHOR_ICON[t]} {AUTHOR_LABEL[t]}
                     </button>
                   ))}
@@ -181,11 +181,11 @@ export default function CommunityClient({ documents }: { documents: { id: string
 
             <div className="community-actions">
               <button type="submit" disabled={submitting}
-                className="community-primary-button community-submit-button">
+                className="btn btn-primary community-submit-button">
                 {submitting ? "등록 중..." : "등록"}
               </button>
               <button type="button" onClick={() => setShowForm(false)}
-                className="community-secondary-button">
+                className="btn btn-secondary">
                 취소
               </button>
             </div>
@@ -200,11 +200,11 @@ export default function CommunityClient({ documents }: { documents: { id: string
             { key: "admin", label: "🛡️ 관리자" },
           ].map((f) => (
             <button key={f.key} onClick={() => setFilter(f.key)}
-              className={`community-chip ${filter === f.key ? "community-chip-active" : ""}`}>
+              className={`btn btn-ghost community-chip ${filter === f.key ? "is-active" : ""}`}>
               {f.label}
             </button>
           ))}
-          <button onClick={loadPosts} className="community-refresh-button">↻</button>
+          <button onClick={loadPosts} className="btn btn-ghost community-refresh-button">↻</button>
         </div>
 
         {loading ? (

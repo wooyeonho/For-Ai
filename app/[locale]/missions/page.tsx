@@ -88,7 +88,7 @@ export default async function MissionsPage({
                   <dd>{mission.antiAbuseRule}</dd>
                 </div>
               </dl>
-              <Link className="cta-link cta-correction" href={mission.actionHref.startsWith("/") ? mission.actionHref.replace("/ko/", `/${locale}/`) : mission.actionHref}>
+              <Link className="btn btn-primary cta-correction" href={mission.actionHref.startsWith("/") ? mission.actionHref.replace("/ko/", `/${locale}/`) : mission.actionHref}>
                 Start mission
               </Link>
             </article>
