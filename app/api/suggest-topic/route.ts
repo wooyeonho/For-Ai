@@ -7,6 +7,7 @@ import {
   inspectSubmissionText,
 } from "@/lib/submission-limits";
 import { rateLimited } from "@/lib/rate-limit";
+import { invalidPublicSourceUrl, parsePublicSourceUrl } from "@/lib/source-contributions";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const SUPABASE_ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
@@ -19,16 +20,6 @@ function text(body: Record<string, unknown>, key: string, max = 500): string {
   return String(body[key] ?? "").trim().slice(0, max);
 }
 
-function optionalUrl(value: string): string | null {
-  if (!value) return null;
-  try {
-    const parsed = new URL(value);
-    if (!["http:", "https:"].includes(parsed.protocol)) return null;
-    return parsed.toString();
-  } catch {
-    return null;
-  }
-}
 
 function optionalEmail(value: string): string | null {
   if (!value) return null;
@@ -72,8 +63,9 @@ export async function POST(request: Request) {
   const languageInput = text(body, "language", 10) || text(body, "lang", 10) || "en";
   const language = SUPPORTED_LANGUAGES.has(languageInput) ? languageInput : "en";
   const whyThisMatters = text(body, "why_this_matters", 1000) || text(body, "reason", 1000);
-  const sourceUrlInput = text(body, "source_url", 500);
-  const sourceUrl = optionalUrl(sourceUrlInput);
+  const sourceUrlInput = text(body, "source_url", 2048);
+  const parsedSourceUrl = sourceUrlInput ? parsePublicSourceUrl(sourceUrlInput) : null;
+  const sourceUrl = parsedSourceUrl?.ok ? parsedSourceUrl.url : null;
   const emailInput = text(body, "email", 254);
   const email = optionalEmail(emailInput);
   const honeypot = text(body, "website", 200);
@@ -89,8 +81,9 @@ export async function POST(request: Request) {
     );
   }
 
-  if (sourceUrlInput && !sourceUrl) {
-    return NextResponse.json({ error: "source_url must be a valid http(s) URL" }, { status: 400 });
+  if (parsedSourceUrl && !parsedSourceUrl.ok) {
+    const invalidUrl = invalidPublicSourceUrl();
+    return NextResponse.json({ error: invalidUrl.error, code: invalidUrl.code }, { status: invalidUrl.status });
   }
 
   if (emailInput && !email) {

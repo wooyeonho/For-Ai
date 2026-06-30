@@ -12,6 +12,7 @@ import {
   type HallucinationFieldName,
 } from '@/lib/submission-limits';
 import { awardPoints, POINT_VALUES } from '@/lib/gamification';
+import { invalidPublicSourceUrl, parsePublicSourceUrl } from '@/lib/source-contributions';
 
 export async function POST(
   request: Request,
@@ -82,6 +83,14 @@ export async function POST(
         );
       }
 
+      const sourceUrl = typeof body.source_url === 'string' ? body.source_url.trim() : '';
+      const parsedSourceUrl = sourceUrl ? parsePublicSourceUrl(sourceUrl) : null;
+      if (parsedSourceUrl && !parsedSourceUrl.ok) {
+        const invalidUrl = invalidPublicSourceUrl();
+        return NextResponse.json({ error: invalidUrl.error, code: invalidUrl.code }, { status: invalidUrl.status });
+      }
+      const publicSourceUrl = parsedSourceUrl?.ok ? parsedSourceUrl.url : null;
+
       const spamCheck = inspectSubmissionText([
         aiService,
         normalizedBody.prompt,
@@ -103,7 +112,7 @@ export async function POST(
         status: spamCheck.status,
       });
       if (!error) {
-        await supabase.from('topic_candidates').insert(buildPublicTopicCandidate({
+        const { error: topicCandidateError } = await supabase.from('topic_candidates').insert(buildPublicTopicCandidate({
           kind: 'hallucination_report',
           title: `AI hallucination report: ${doc?.title ?? slug}`,
           slugSeed: `hallucination-${slug}`,
@@ -111,14 +120,15 @@ export async function POST(
           category: doc?.category ?? 'hallucination_report',
           reason: normalizedBody.expected_correction || normalizedBody.ai_answer || `AI hallucination reported from ${aiService}`,
           aiContext: `AI service: ${aiService}\nPrompt: ${normalizedBody.prompt || '(not provided)'}\nAI answer: ${normalizedBody.ai_answer || '(not provided)'}\nDocument: ${documentId ?? 'unknown'} / Entity: ${entityId ?? 'unknown'}`,
-          sourceUrls: [typeof body.source_url === 'string' ? body.source_url : null],
+          sourceUrls: [publicSourceUrl],
           contributorHash,
           claimQuestion: normalizedBody.expected_correction || `Which claim on ${doc?.title ?? slug} did ${aiService} answer incorrectly?`,
-        })).catch((err: unknown) => console.warn('[hallucination] topic_candidates insert skipped:', err));
+        }));
+        if (topicCandidateError) console.warn('[hallucination] topic_candidates insert skipped:', topicCandidateError.message);
       }
 
 
-      if (!error && typeof body.source_url === 'string' && body.source_url.trim()) {
+      if (!error && publicSourceUrl) {
         await recordContributionEvent(supabase, {
           contributor_hash: contributorHash,
           event_type: 'source_submitted',

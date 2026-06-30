@@ -8,6 +8,7 @@ import {
   extractDomain,
   POINT_VALUES,
 } from '../../../lib/gamification';
+import { invalidPublicSourceUrl, parsePublicSourceUrl } from '../../../lib/source-contributions';
 
 export async function POST(request: Request) {
   let body: Record<string, unknown>;
@@ -18,7 +19,9 @@ export async function POST(request: Request) {
   }
 
   const claimId = String(body.claim_id ?? '').trim();
-  const url = String(body.url ?? '').trim() || null;
+  const rawUrl = String(body.url ?? '').trim();
+  const parsedUrl = rawUrl ? parsePublicSourceUrl(rawUrl) : null;
+  const url = parsedUrl?.ok ? parsedUrl.url : null;
   const title = String(body.title ?? '').trim() || null;
   const citation = String(body.citation ?? '').trim() || null;
   const sourceType = String(body.source_type ?? 'web').trim();
@@ -26,6 +29,10 @@ export async function POST(request: Request) {
 
   if (!claimId) {
     return NextResponse.json({ error: 'claim_id is required' }, { status: 400 });
+  }
+  if (parsedUrl && !parsedUrl.ok) {
+    const invalidUrl = invalidPublicSourceUrl();
+    return NextResponse.json({ error: invalidUrl.error, code: invalidUrl.code }, { status: invalidUrl.status });
   }
   if (!url && !citation && !title) {
     return NextResponse.json({ error: 'At least one of url, title, or citation is required' }, { status: 400 });
