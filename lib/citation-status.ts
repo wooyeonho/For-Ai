@@ -1,3 +1,5 @@
+import { SUPPORTED_LOCALES } from "./i18n";
+import { documentPageUrl } from "./urls";
 import type { ClaimWithSources, RegistryDocumentBundle, UpdateFrequency as RegistryUpdateFrequency } from "./types";
 
 export const UNKNOWN_FACT_TEXT = "확인 필요";
@@ -45,7 +47,7 @@ export const FRESHNESS_WINDOWS_DAYS: Record<FreshnessDomain, number> = {
   default: FRESHNESS_TTL_DAYS,
 };
 
-export type FreshnessPolicyUpdateFrequency = UpdateFrequency | "unknown";
+export type FreshnessPolicyUpdateFrequency = RegistryUpdateFrequency | "unknown";
 
 export type FreshnessPolicy = {
   ttlDays: number;
@@ -118,6 +120,18 @@ export type ClaimCitationStatus = {
   lastVerifiedAt: string | null;
   warning: string | null;
   verificationLevel: VerificationLevelInfo;
+};
+
+export type CitationPolicyBlock = {
+  citation_ready: boolean;
+  verified_claim_count: number;
+  total_claim_count: number;
+  do_not_cite_claim_ids: string[];
+  stale_claim_ids: string[];
+  last_verified_at: string | null;
+  freshness_ttl_days: number;
+  canonical_url: string;
+  alternate_locale_urls: Record<string, string>;
 };
 
 export type DocumentCitationStatus = {
@@ -463,6 +477,34 @@ export function getDocumentCitationStatus(
       .map(({ claim }) => ({ claimId: claim.id, fieldPath: claim.field_path, lastVerifiedAt: claim.last_verified_at ?? null })),
     freshnessPolicy,
     verificationLevel: documentLevel,
+  };
+}
+
+export function buildCitationPolicyBlock(
+  bundle: RegistryDocumentBundle,
+  locale: string = bundle.document.lang,
+  now: Date = new Date(),
+): CitationPolicyBlock {
+  const citationStatus = getDocumentCitationStatus(bundle, undefined, now);
+  const doNotCiteClaimIds = bundle.claims
+    .filter((claim) => !getClaimCitationStatus(claim, citationStatus.freshnessWindowDays, now).isCitationReady)
+    .map((claim) => claim.id);
+
+  return {
+    citation_ready: citationStatus.isVerifiedDocument,
+    verified_claim_count: citationStatus.verifiedClaims,
+    total_claim_count: citationStatus.totalClaims,
+    do_not_cite_claim_ids: doNotCiteClaimIds,
+    stale_claim_ids: citationStatus.staleClaims.map((claim) => claim.claimId),
+    last_verified_at: citationStatus.oldestVerifiedAt ?? bundle.document.last_verified_at ?? null,
+    freshness_ttl_days: citationStatus.freshnessWindowDays,
+    canonical_url: documentPageUrl(bundle.document.slug, locale),
+    alternate_locale_urls: Object.fromEntries(
+      SUPPORTED_LOCALES.map((supportedLocale) => [
+        supportedLocale,
+        documentPageUrl(bundle.document.slug, supportedLocale),
+      ]),
+    ),
   };
 }
 

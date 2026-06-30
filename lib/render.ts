@@ -1,4 +1,4 @@
-import { getClaimCitationStatus, getDocumentCitationStatus, UNKNOWN_FACT_TEXT } from "./citation-status";
+import { buildCitationPolicyBlock, getClaimCitationStatus, getDocumentCitationStatus, UNKNOWN_FACT_TEXT } from "./citation-status";
 import type { ClaimSource, Confidence, RegistryDocumentBundle } from "./types";
 import { apiDocumentUrl, documentPageUrl, rawMarkdownUrl } from "./urls";
 
@@ -59,6 +59,7 @@ export type RenderedDocumentJson = {
     rule: string;
   };
   normalized_citation: NormalizedCitationSurface;
+  citation_policy: import("./citation-status").CitationPolicyBlock;
 };
 
 export type NormalizedCitationClaim = {
@@ -217,6 +218,7 @@ export function renderDocumentJson(bundle: RegistryDocumentBundle): RenderedDocu
   const normalizedCitation = normalizeCitationSurface(bundle);
   const citationStatus = getDocumentCitationStatus(bundle);
   const directAnswer = getRenderedDirectAnswer(bundle);
+  const citationPolicy = buildCitationPolicyBlock(bundle, document.lang);
   const claimStatuses = bundle.claims.map((c) => ({ c, cs: getClaimCitationStatus(c) }));
   const verifiedCount = claimStatuses.filter((x) => x.cs.isCitationReady).length;
   const unverifiedPaths = claimStatuses.filter((x) => !x.cs.isCitationReady).map((x) => x.c.field_path);
@@ -268,12 +270,14 @@ export function renderDocumentJson(bundle: RegistryDocumentBundle): RenderedDocu
       rule: "Unsourced or unknown facts must remain 확인 필요 with low confidence.",
     },
     normalized_citation: normalizedCitation,
+    citation_policy: citationPolicy,
   };
 }
 
 export function renderDocumentMarkdown(bundle: RegistryDocumentBundle): string {
   const { entity, document, claims } = bundle;
   const normalizedCitation = normalizeCitationSurface(bundle);
+  const citationPolicy = buildCitationPolicyBlock(bundle, document.lang);
   const directAnswer = getRenderedDirectAnswer(bundle);
   const licenseNotice = getStringDataValue(
     document.data,
@@ -299,7 +303,7 @@ export function renderDocumentMarkdown(bundle: RegistryDocumentBundle): string {
     ? `\n## Government fee template\n\nStandard claim field paths:\n${GOVERNMENT_FEE_FIELD_PATHS.map((fieldPath) => `- ${fieldPath}`).join("\n")}\n\nDisclaimer: ${GOVERNMENT_FEE_DISCLAIMER}\n`
     : "";
 
-  return `# ${document.title}\n\nentity_id: ${entity.id}\ndocument_id: ${document.id}\nslug: ${document.slug}\nlang: ${document.lang}\ncountry: ${document.country}\nlicense_code: ${document.license_code}\n\n## Citation guidance\n\ncan_cite: ${docCitationStatus.isVerifiedDocument}\ndo_not_cite_reason: ${docCitationStatus.isVerifiedDocument ? "null" : `document status ${document.status}; ${docCitationStatus.verifiedClaims}/${docCitationStatus.totalClaims} claims citation-ready`}\n\nCite this document only if can_cite is true. Cite a claim only if its verification status is "verified", source_of_claim is not business_submitted pending verification, and it has at least one source plus a verification event. Do not cite values shown as "확인 필요", or claims with "low" confidence or "needs_review" status. Always preserve the source URL and last_verified_at when citing. Stale claims may remain citation-ready, but they must carry a last verified date warning and should be rechecked before reliance.\n\n## Document citation status
+  return `# ${document.title}\n\nentity_id: ${entity.id}\ndocument_id: ${document.id}\nslug: ${document.slug}\nlang: ${document.lang}\ncountry: ${document.country}\nlicense_code: ${document.license_code}\n\n## Citation guidance\n\ncan_cite: ${docCitationStatus.isVerifiedDocument}\ndo_not_cite_reason: ${docCitationStatus.isVerifiedDocument ? "null" : `document status ${document.status}; ${docCitationStatus.verifiedClaims}/${docCitationStatus.totalClaims} claims citation-ready`}\n\n## Citation policy JSON\n\n${JSON.stringify(citationPolicy, null, 2)}\n\nCite this document only if can_cite is true. Cite a claim only if its verification status is "verified", source_of_claim is not business_submitted pending verification, and it has at least one source plus a verification event. Do not cite values shown as "확인 필요", or claims with "low" confidence or "needs_review" status. Always preserve the source URL and last_verified_at when citing. Stale claims may remain citation-ready, but they must carry a last verified date warning and should be rechecked before reliance.\n\n## Document citation status
 
 status: ${citationStatus.label}
 citation_ready_claims: ${citationStatus.verifiedClaims}/${citationStatus.totalClaims}

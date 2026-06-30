@@ -9,7 +9,7 @@ import type { SupportedLocale } from "../../../../lib/i18n";
 import { getEntityLabels } from "../../../../lib/i18n/entity-labels";
 import type { RegistryDocumentBundle } from "../../../../lib/types";
 import { getRegistryBundleFromSupabase } from "../../../../lib/supabase-documents";
-import { getCanonicalDirectAnswer, getDocumentCitationStatus } from "../../../../lib/citation-status";
+import { buildCitationPolicyBlock, getDocumentCitationStatus } from "../../../../lib/citation-status";
 import { getRenderedDirectAnswer, normalizeCitationSurface } from "../../../../lib/render";
 import { DirectAnswerBox } from "../../../components/DirectAnswerBox";
 import { ClaimTable } from "../../../components/ClaimTable";
@@ -68,6 +68,8 @@ export default async function WikiDocumentPage({
   const isPromoted = !getRegistryBundleBySlug(slug);
   const jsonLd = buildDocumentJsonLd(bundle);
   const citationStatus = getDocumentCitationStatus(bundle);
+  const citationPolicy = buildCitationPolicyBlock(bundle, locale);
+  const safeCitationPolicyJson = JSON.stringify(citationPolicy).replace(/</g, "\\u003c");
   const normalizedCitation = normalizeCitationSurface(bundle);
   const freshnessTtlDays = typeof document.freshness_ttl_days === "number"
     ? document.freshness_ttl_days
@@ -114,6 +116,11 @@ export default async function WikiDocumentPage({
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
+      <script
+        id="for-ai-citation-policy"
+        type="application/json"
+        dangerouslySetInnerHTML={{ __html: safeCitationPolicyJson }}
       />
       <script
         id="for-ai-normalized-citation"
