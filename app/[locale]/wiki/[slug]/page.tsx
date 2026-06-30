@@ -17,6 +17,7 @@ import { ViewTracker } from "../../../components/ViewTracker";
 import { DocumentStatsBar } from "../../../components/DocumentStatsBar";
 import { WikiPostSection } from "../../../components/WikiPostSection";
 import { CorrectionCTA } from "../../../components/CorrectionCTA";
+import { getBundleRiskDisclaimer } from "../../../../lib/risk-policy";
 
 export const revalidate = 60;
 
@@ -80,6 +81,7 @@ export default async function WikiDocumentPage({
         ? 30
         : null;
   const isCommercePolicy = document.template === "commerce_policy";
+  const riskDisclaimer = getBundleRiskDisclaimer(bundle);
   const topCitationLabel = citationStatus.freshness === "stale"
     ? "Stale"
     : citationStatus.isVerifiedDocument
@@ -137,6 +139,22 @@ export default async function WikiDocumentPage({
         docTitle={document.title}
         locale={locale}
       />
+
+      {riskDisclaimer && (
+        <section
+          className="registry-panel"
+          role="note"
+          aria-labelledby="high-risk-disclaimer"
+          style={{ background: "#fff7ed", borderInlineStart: "4px solid #f97316" }}
+        >
+          <p className="eyebrow">High-risk category · {riskDisclaimer.category}</p>
+          <h2 id="high-risk-disclaimer" style={{ marginTop: 0 }}>{riskDisclaimer.title}</h2>
+          <p>{riskDisclaimer.body}</p>
+          <p style={{ marginBottom: 0 }}>
+            Verified status requires human review plus at least one official or regulator source.
+          </p>
+        </section>
+      )}
 
       {/* Clean header: title + status only, no technical IDs */}
       <header className="registry-panel">
