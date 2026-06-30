@@ -29,6 +29,20 @@ export const metadata: Metadata = {
 };
 
 
+const EXPLORE_ITEMS = [
+  { label: "Registry", href: "/#registry", description: "Browse verified and candidate claim-level documents." },
+  { label: "Topics", href: "/en/topics/government-fees", description: "Start from high-change public facts grouped by topic." },
+  { label: "Countries", href: "/en/country/kr", description: "Open country-level claim coverage and source needs." },
+  { label: "Community", href: "/community", description: "Discuss public registry posts and document context." },
+  { label: "Contribute", href: "/contribute", description: "Submit source-backed corrections without login." },
+  { label: "Bounties", href: "/en/bounties", description: "Find focused verification tasks for contributors." },
+  { label: "Challenges", href: "/en/challenges", description: "Join structured registry intake goals." },
+  { label: "Missions", href: "/en/missions", description: "Review current contribution missions and rules." },
+  { label: "Leaderboard", href: "/en/leaderboard", description: "See accepted contribution rankings by hash." },
+  { label: "API Docs", href: "/api-docs", description: "Use public registry endpoints and citation formats." },
+  { label: "Suggest Topic", href: "/suggest-topic", description: "Request a missing fact topic for review." },
+];
+
 const INITIAL_VERTICAL = {
   title: "Public fees & civic processing times",
   label: "Initial focus vertical",
@@ -293,6 +307,22 @@ export default async function HomePage() {
           <Link href="/suggest-topic" className="btn btn-secondary">
             Suggest Topic
           </Link>
+        </div>
+      </section>
+
+      <section className="section explore-section" aria-labelledby="explore-public-features">
+        <p className="section-eyebrow">Explore</p>
+        <h2 className="section-title" id="explore-public-features">Public entry points for the fact registry</h2>
+        <p className="section-lede">
+          Jump to the main public surfaces for reading, contributing, verifying, and integrating For-Ai claim records.
+        </p>
+        <div className="explore-grid">
+          {EXPLORE_ITEMS.map((item) => (
+            <Link key={item.label} href={item.href} className="explore-card">
+              <strong>{item.label}</strong>
+              <span>{item.description}</span>
+            </Link>
+          ))}
         </div>
       </section>
 
