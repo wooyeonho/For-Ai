@@ -39,6 +39,16 @@ function hrefForLocale(link: ExploreLink, locale: SupportedLocale): string {
   return `${path}?locale=${locale}${hash ? `#${hash}` : ""}`;
 }
 
+function getCurrentLocale(pathname: string | null): SupportedLocale {
+  const firstSegment = pathname?.split("/").filter(Boolean)[0];
+  return firstSegment && isValidLocale(firstSegment) ? firstSegment : DEFAULT_LOCALE;
+}
+
+function localeHref(locale: SupportedLocale, path: string): string {
+  if (path.startsWith("#")) return `/${locale}${path}`;
+  return `/${locale}${path.startsWith("/") ? path : `/${path}`}`;
+}
+
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
@@ -53,6 +63,14 @@ export function SiteHeader() {
     { href: "/community", label: t.footer.community },
     { href: "/contribute", label: t.footer.contribute },
     { href: "/suggest-topic", label: t.nav.suggestTopic },
+  ];
+
+  const navLinks = [
+    { href: localeHref(locale, "/#registry"), label: t.nav.registry },
+    { href: localeHref(locale, "/api-docs"), label: t.nav.api },
+    { href: localeHref(locale, "/community"), label: t.nav.community },
+    { href: localeHref(locale, "/contribute"), label: t.nav.contribute },
+    { href: localeHref(locale, "/suggest-topic"), label: t.nav.suggestTopic },
   ];
 
   return (
