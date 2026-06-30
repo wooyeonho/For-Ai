@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
 import { ageInDays, isStale } from "../../../lib/citation-status";
-import { AdminSecretField, useAdminSecret } from "../AdminSecretProvider";
+import { useAdminSecret } from "../AdminSecretProvider";
+import { AdminDbDetails, adminLabel, adminStatusLabel } from "../label-mapping";
 
 type Counts = {
   pending_community_posts: number;
@@ -144,7 +145,7 @@ function urgencyBand(claims_needs_review: number, candidates_approved: number) {
 }
 
 export default function AdminReviewPage() {
-  const { adminSecret, setAdminSecret, resetAdminSecret } = useAdminSecret();
+  const { adminSecret, setAdminSecret } = useAdminSecret();
   const [data, setData] = useState<ReviewPayload | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
@@ -155,10 +156,10 @@ export default function AdminReviewPage() {
     { label: "글 관리", count: counts.pending_community_posts, hint: "community_posts.status = pending", href: "/admin/posts?status=pending", urgent: counts.pending_community_posts > 0 },
     { label: "신규 후보", count: counts.candidates_new, hint: "topic_candidates.status = new", href: "/admin/candidates?status=new", urgent: counts.candidates_new === 0 },
     { label: "AI claim 생성", count: counts.candidates_generated, hint: "topic_candidates.status = generated", href: "/admin/candidates", urgent: false },
-    { label: "needs_review claim", count: counts.claims_needs_review, hint: "claims.status = needs_review", href: "/admin/verify-claim", urgent: counts.claims_needs_review > 0 },
+    { label: `${adminLabel("needs_review")} claim`, count: counts.claims_needs_review, hint: `claims.status = ${adminLabel("needs_review")}`, href: "/admin/verify-claim", urgent: counts.claims_needs_review > 0 },
     { label: "공개 등록", count: counts.documents_published, hint: "documents.status = published", href: "/admin/candidates", urgent: false },
     { label: "claim source", count: counts.claim_sources, hint: "claim_sources rows", href: "/admin/verify-claim", urgent: false },
-    { label: "verified 문서", count: counts.documents_verified, hint: "documents.status = verified", href: "#verified-documents", urgent: false },
+    { label: `${adminLabel("verified")} 문서`, count: counts.documents_verified, hint: `documents.status = ${adminLabel("verified")}`, href: "#verified-documents", urgent: false },
   ], [counts]);
 
   const load = useCallback(async () => {
@@ -184,9 +185,9 @@ export default function AdminReviewPage() {
         <p className="eyebrow">Unified admin operations</p>
         <h1>For-Ai 통합 운영 콘솔</h1>
         <p>
-          pending community posts, topic candidates, needs_review claims, promoted/verified documents,
+          pending community posts, topic candidates, 검토 필요 claims, promoted/검증 완료 documents,
           high-risk categories를 한 화면에서 확인하고 오늘 처리 순서대로 이동합니다.
-          후보 생성부터 verified 문서 공유까지 claim-level 운영 상태를 admin API count로 확인합니다.
+          후보 생성부터 검증 완료 문서 공유까지 claim-level 운영 상태를 admin API count로 확인합니다.
         </p>
         <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
           <input
@@ -259,7 +260,7 @@ export default function AdminReviewPage() {
             <span className="stat-num" style={{ color: counts.claims_needs_review > 0 ? "#991b1b" : "#166534" }}>
               {counts.claims_needs_review}
             </span>
-            <span className="stat-label">needs_review claim</span>
+            <span className="stat-label">{adminLabel("needs_review")} claim</span>
           </div>
           <div className="stat"><span className="stat-num">{counts.candidates_generated}</span><span className="stat-label">generated candidate</span></div>
           <div className="stat">
@@ -272,24 +273,24 @@ export default function AdminReviewPage() {
 
         {/* Priority 1: needs_review claims */}
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h3 style={{ margin: "0 0 12px" }}>1순위 · needs_review claim 검증</h3>
+          <h3 style={{ margin: "0 0 12px" }}>1순위 · 검토 필요 claim 검증</h3>
         </div>
         {(data?.priorities.needs_review_claims.length ?? 0) === 0 && (
-          <p style={{ color: "#6b7280" }}>✓ 대기 중인 needs_review claim이 없습니다.</p>
+          <p style={{ color: "#6b7280" }}>✓ 대기 중인 검토 필요 claim이 없습니다.</p>
         )}
         {data?.priorities.needs_review_claims.map((claim) => {
           const doc = Array.isArray(claim.documents) ? claim.documents[0] : claim.documents;
           const slug = doc?.slug;
           return (
             <div className="claim-card" key={claim.id} style={{ borderLeft: "3px solid #fca5a5" }}>
-              <p className="eyebrow">
-                {doc?.title ?? slug ?? claim.id} · <code style={{ fontSize: 11 }}>{claim.field_path}</code>
-              </p>
-              <p className="meta-label">entity_id: {claim.entity_id ?? "-"} · document_id: {claim.document_id ?? "-"}</p>
-              <p style={{ margin: "4px 0" }}><strong>{claim.claim_value}</strong></p>
+              <p className="eyebrow">{doc?.title ?? slug ?? claim.id} · {adminLabel("field_path")}: <code style={{ fontSize: 11 }}>{claim.field_path}</code></p>
+              <AdminDbDetails>
+                <p className="meta-label">entity_id: {claim.entity_id ?? "-"} · document_id: {claim.document_id ?? "-"}</p>
+              </AdminDbDetails>
+              <p style={{ margin: "4px 0" }}><strong>{adminLabel("claim_value")}: {claim.claim_value}</strong></p>
               <p style={{ fontSize: 13, color: "#6b7280", margin: "0 0 8px" }}>{claim.claim_text}</p>
               <p style={{ margin: "0 0 8px" }}>
-                <span className="badge badge-review">{claim.status}</span>{" "}
+                <span className="badge badge-review">{adminStatusLabel(claim.status)}</span>{" "}
                 <span className="badge">confidence: {claim.confidence}</span>{" "}
                 <span className="badge">last_verified_at: {claim.last_verified_at ?? "확인 필요"}</span>
               </p>
@@ -432,7 +433,7 @@ export default function AdminReviewPage() {
             신선도가 만료된(180일 경과) 문서는 AI가 인용을 회피할 수 있습니다. 우선 재검증을 진행하세요.
           </p>
         )}
-        {(data?.verified_documents.length ?? 0) === 0 && <p>외부 공유 가능한 verified 문서가 없습니다.</p>}
+        {(data?.verified_documents.length ?? 0) === 0 && <p>외부 공유 가능한 검증 완료 문서가 없습니다.</p>}
         <ul className="link-list">
           {data?.verified_documents.map((doc) => {
             const stale = isStale(doc.last_verified_at);

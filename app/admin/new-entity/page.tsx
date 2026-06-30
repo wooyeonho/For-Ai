@@ -2,6 +2,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { AdminSecretField, useAdminSecret } from "../AdminSecretProvider";
+import { AdminDbDetails, adminLabel } from "../label-mapping";
 
 export default function NewEntityPage() {
   const { adminSecret, setAdminSecret, resetAdminSecret } = useAdminSecret();
@@ -69,7 +70,7 @@ export default function NewEntityPage() {
           {result.success ? (
             <>
               <h2>생성 완료</h2>
-              <p>Entity ID: <code>{result.entity_id}</code></p>
+              <p>{adminLabel("entity_id")}: <code>{result.entity_id}</code></p>
               <p style={{ marginTop: 8 }}>
                 다음 단계: &nbsp;
                 <Link href="/admin/new-document" style={{ color: "#2563eb" }}>이 Entity에 Document 추가 →</Link>
@@ -87,7 +88,7 @@ export default function NewEntityPage() {
       <section className="registry-panel" aria-labelledby="entity-form-title">
         <h2 id="entity-form-title">Entity 필드</h2>
         <form onSubmit={handleSubmit} className="registry-form">
-          <label>Entity ID <span aria-label="필수">*</span>
+          <label>{adminLabel("entity_id")} <span aria-label="필수">*</span>
             <input
               type="text" value={id} onChange={e => setId(e.target.value)} required
               placeholder="kr-person-athlete-ryu-hyun-jin-001"
@@ -136,6 +137,7 @@ export default function NewEntityPage() {
 
       <section className="registry-panel" aria-labelledby="entity-type-guide">
         <h2 id="entity-type-guide">Type 참고값</h2>
+        <AdminDbDetails summary="고급 DB 정보: entities.type 값">
         <ul style={{ fontSize: 13, lineHeight: 1.8, color: "#6b7280" }}>
           <li><code>person_athlete</code> — 스포츠 선수</li>
           <li><code>person_entertainer</code> — 연예인/아티스트</li>
@@ -147,6 +149,7 @@ export default function NewEntityPage() {
           <li><code>place_country</code> — 국가정보</li>
           <li><code>concept</code> — 개념/정책</li>
         </ul>
+        </AdminDbDetails>
       </section>
     </article>
   );

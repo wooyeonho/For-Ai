@@ -1,5 +1,7 @@
 "use client";
 import { useMemo, useState } from "react";
+import { useAdminSecret } from "../AdminSecretProvider";
+import { AdminDbDetails, adminLabel, adminStatusLabel } from "../label-mapping";
 
 type ClaimRow = {
   id: string;
@@ -95,7 +97,7 @@ function serializeClaims(rows: ClaimRow[]) {
 }
 
 export default function NewDocumentPage() {
-  const { adminSecret, setAdminSecret, resetAdminSecret } = useAdminSecret();
+  const { adminSecret, setAdminSecret } = useAdminSecret();
   const [entityId, setEntityId] = useState("");
   const [slug, setSlug] = useState("");
   const [lang, setLang] = useState("ko");
@@ -208,14 +210,14 @@ export default function NewDocumentPage() {
 
       {result && (
         <section className="registry-panel" style={{ background: result.success ? "#f0fdf4" : "#fef2f2", borderLeft: `3px solid ${result.success ? "#16a34a" : "#dc2626"}` }} aria-live="polite">
-          {result.success ? (<><h2>생성 완료</h2><p>Document ID: <code>{result.document_id}</code></p><p>Claim 생성: {result.claims_created}개</p>{result.url && (<p style={{ marginTop: 8 }}><a href={result.url} style={{ color: "#2563eb" }}>위키 페이지 보기 → {result.url}</a></p>)}</>) : (<><h2>오류</h2><p>{result.error}</p></>)}
+          {result.success ? (<><h2>생성 완료</h2><p>{adminLabel("document_id")}: <code>{result.document_id}</code></p><p>Claim 생성: {result.claims_created}개</p>{result.url && (<p style={{ marginTop: 8 }}><a href={result.url} style={{ color: "#2563eb" }}>위키 페이지 보기 → {result.url}</a></p>)}</>) : (<><h2>오류</h2><p>{result.error}</p></>)}
         </section>
       )}
 
       <section className="registry-panel" aria-labelledby="document-form-title">
         <h2 id="document-form-title">Document 필드</h2>
         <form onSubmit={handleSubmit} className="registry-form">
-          <label>Entity ID <span aria-label="필수">*</span><input type="text" value={entityId} onChange={e => setEntityId(e.target.value)} required placeholder="kr-person-athlete-ryu-hyun-jin-001" /></label>
+          <label>{adminLabel("entity_id")} <span aria-label="필수">*</span><input type="text" value={entityId} onChange={e => setEntityId(e.target.value)} required placeholder="kr-person-athlete-ryu-hyun-jin-001" /></label>
           <label>Slug (URL) <span aria-label="필수">*</span><input type="text" value={slug} onChange={e => setSlug(e.target.value)} required placeholder="ryu-hyun-jin-stats" /></label>
           <label>Language<input type="text" value={lang} onChange={e => setLang(e.target.value)} required placeholder="ko" /></label>
           <label>Country <span aria-label="필수">*</span><input type="text" value={country} onChange={e => { setCountry(e.target.value); if (!jurisdiction) setJurisdiction(e.target.value); }} required placeholder="KR" /></label>
@@ -233,7 +235,7 @@ export default function NewDocumentPage() {
               {claimRows.map((row, index) => (
                 <fieldset key={row.id} style={{ border: "1px solid #e5e7eb", borderRadius: 12, padding: 12, display: "grid", gap: 10 }}>
                   <legend style={{ padding: "0 6px", fontWeight: 700 }}>Claim {index + 1}</legend>
-                  <label>field_path<input value={row.field_path} onChange={e => updateClaimRow(row.id, { field_path: e.target.value })} placeholder="parking.availability" /></label>
+                  <label>{adminLabel("field_path")}<input value={row.field_path} onChange={e => updateClaimRow(row.id, { field_path: e.target.value })} placeholder="parking.availability" /></label>
                   <label>question / claim_text<input value={row.claim_text} onChange={e => updateClaimRow(row.id, { claim_text: e.target.value })} placeholder="주차 가능 여부는?" /></label>
                   <label>placeholder value<input value={row.placeholder_value} onChange={e => updateClaimRow(row.id, { placeholder_value: e.target.value })} placeholder="확인 필요" /></label>
                   <label>jurisdiction<input value={row.jurisdiction} onChange={e => updateClaimRow(row.id, { jurisdiction: e.target.value })} placeholder={normalizedJurisdiction || "KR"} /></label>
@@ -252,13 +254,13 @@ export default function NewDocumentPage() {
             <h3 id="wiki-preview-title">저장 전 공개 위키 미리보기</h3>
             <p className="eyebrow">/{lang || "ko"}/wiki/{slug || "slug"}</p>
             <h2>{title || "문서 제목"}</h2>
-            <p style={{ color: "#6b7280" }}>{category || "category"} · {country || "country"} · confidence low · needs_review</p>
+            <p style={{ color: "#6b7280" }}>{category || "category"} · {country || "country"} · confidence low · {adminStatusLabel("needs_review")}</p>
             <div style={{ display: "grid", gap: 10 }}>
               {claimsPayload.length > 0 ? claimsPayload.map(claim => (
                 <article key={claim.field_path} style={{ border: "1px solid #e5e7eb", borderRadius: 10, padding: 12, background: "#fff" }}>
                   <strong>{claim.claim_text}</strong>
-                  <p style={{ margin: "6px 0" }}>{claim.claim_value}</p>
-                  <small>field: {claim.field_path} · jurisdiction: {claim.jurisdiction} · source required: {claim.required_source_type}</small>
+                  <p style={{ margin: "6px 0" }}>{adminLabel("claim_value")}: {claim.claim_value}</p>
+                  <AdminDbDetails><small>field_path: {claim.field_path} · jurisdiction: {claim.jurisdiction} · source required: {claim.required_source_type}</small></AdminDbDetails>
                   {claim.source_hint && <p style={{ margin: "6px 0 0", color: "#6b7280" }}>Source hint: {claim.source_hint}</p>}
                 </article>
               )) : <p>아직 입력된 claim이 없습니다.</p>}
@@ -272,7 +274,10 @@ export default function NewDocumentPage() {
 
       <section className="registry-panel" aria-labelledby="claims-format-guide">
         <h2 id="claims-format-guide">Claims 형식 및 API payload 안내</h2>
-        <p style={{ fontSize: 13, color: "#6b7280", lineHeight: 1.7 }}>각 행은 하나의 claim입니다. textarea는 대량 붙여넣기용으로 유지되며 <code>field_path::질문::placeholder::jurisdiction::source_type::source_hint</code> 순서를 사용합니다. 저장 payload의 <code>claims[]</code>는 <code>field_path</code>, <code>claim_text</code>, <code>claim_value</code>, <code>placeholder_value</code>, <code>jurisdiction</code>, <code>required_source_type</code>, <code>source_hint</code>를 포함합니다. <code>draft_metadata.payload_version</code>과 <code>draft_metadata.editor</code>는 이후 draft autosave 및 edit history 연결 지점입니다.</p>
+        <p style={{ fontSize: 13, color: "#6b7280", lineHeight: 1.7 }}>각 행은 하나의 claim입니다. textarea는 대량 붙여넣기용으로 유지됩니다.</p>
+        <AdminDbDetails summary="API payload 형식 보기">
+          <p style={{ fontSize: 13, color: "#6b7280", lineHeight: 1.7 }}><code>field_path::질문::placeholder::jurisdiction::source_type::source_hint</code> 순서를 사용합니다. 저장 payload의 <code>claims[]</code>는 <code>field_path</code>, <code>claim_text</code>, <code>claim_value</code>, <code>placeholder_value</code>, <code>jurisdiction</code>, <code>required_source_type</code>, <code>source_hint</code>를 포함합니다. <code>draft_metadata.payload_version</code>과 <code>draft_metadata.editor</code>는 이후 draft autosave 및 edit history 연결 지점입니다.</p>
+        </AdminDbDetails>
       </section>
     </article>
   );

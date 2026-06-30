@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { AdminSecretField, useAdminSecret } from "../AdminSecretProvider";
+import { AdminDbDetails, adminStatusLabel } from "../label-mapping";
 interface Candidate {
   id:string;title:string;slug:string;category:string;subcategory?:string;
   risk_tier:string;why_people_ask_ai?:string;why_ai_gets_wrong?:string;
@@ -87,7 +88,7 @@ export default function CandidatesPage(){
             <div style={{display:"flex",justifyContent:"space-between",gap:12}}>
               <div style={{flex:1,minWidth:0}}>
                 <div style={{display:"flex",gap:6,flexWrap:"wrap",marginBottom:6}}>
-                  <span style={{fontSize:11,padding:"2px 8px",borderRadius:12,fontWeight:600,...Object.fromEntries((SC[c.status]||"").split(";").filter(Boolean).map(s=>s.trim().split(":").map(x=>x.trim())).filter(a=>a.length===2))}}>{c.status}</span>
+                  <span style={{fontSize:11,padding:"2px 8px",borderRadius:12,fontWeight:600,...Object.fromEntries((SC[c.status]||"").split(";").filter(Boolean).map(s=>s.trim().split(":").map(x=>x.trim())).filter(a=>a.length===2))}}>{adminStatusLabel(c.status)}</span>
                   <span style={{fontSize:11,color:"#9ca3af"}}>{c.category}{c.subcategory?` / ${c.subcategory}`:""}</span>
                   {c.source_hints?.length>0
                     ? <span style={{fontSize:11,padding:"2px 8px",borderRadius:12,fontWeight:600,background:"#ecfdf5",color:"#047857"}}>source hint 있음</span>
@@ -120,7 +121,9 @@ export default function CandidatesPage(){
                   {c.status==="promoted"&&<Link href={`/admin/verify-claim?slug=${encodeURIComponent(c.slug)}`} style={{padding:"8px 16px",background:"#16a34a",color:"#fff",border:"none",borderRadius:8,fontSize:13,fontWeight:600,textDecoration:"none"}}>✅ 검증하기</Link>}
                   {c.status==="promoted"&&<a href={`/${c.lang??"en"}/wiki/${c.slug}`} target="_blank" rel="noopener" style={{padding:"8px 16px",background:"#f3f4f6",color:"#7e22ce",border:"1px solid #e9d5ff",borderRadius:8,fontSize:13,fontWeight:600,textDecoration:"none"}}>🔗 공개 페이지 보기</a>}
                   {c.status!=="rejected"&&c.status!=="promoted"&&<button onClick={()=>act(c.id,"rejected")} style={{padding:"8px 16px",background:"#dc2626",color:"#fff",border:"none",borderRadius:8,fontSize:13,fontWeight:600,cursor:"pointer"}}>❌ 거절</button>}
-                  <span style={{fontSize:11,color:"#9ca3af",marginLeft:"auto"}}>{c.generation_model} · {c.slug}</span>
+                  <AdminDbDetails>
+                    <span style={{fontSize:11,color:"#9ca3af",marginLeft:"auto"}}>{c.generation_model} · {c.slug}</span>
+                  </AdminDbDetails>
                 </div>
               </div>
             )}
