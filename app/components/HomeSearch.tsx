@@ -13,9 +13,9 @@ interface DocItem {
   lang?: string;
 }
 
-export default function HomeSearch({ docs, locale = "ko" }: { docs: DocItem[]; locale?: string }) {
+export default function HomeSearch({ docs, locale }: { docs: DocItem[]; locale: SupportedLocale }) {
   const [query, setQuery] = useState("");
-  const t = getTranslations(locale as SupportedLocale);
+  const t = getTranslations(locale);
   const q = query.trim().toLowerCase();
   const filtered = q
     ? docs.filter(
