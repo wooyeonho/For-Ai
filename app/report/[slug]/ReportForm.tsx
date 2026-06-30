@@ -1,7 +1,9 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { REPORT_MESSAGE_MAX_LENGTH } from "@/lib/submission-limits";
+import { isValidLocale } from "@/lib/i18n/locales";
 
 type ClaimOption = {
   id: string;
@@ -24,6 +26,7 @@ export function ReportForm({
   claims: ClaimOption[];
   intent?: ReportIntent;
 }) {
+  const searchParams = useSearchParams();
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -59,6 +62,15 @@ export function ReportForm({
       success: "신고가 접수되었습니다. 검토 후 반영됩니다.",
     };
   }, [intent]);
+  const returnHref = useMemo(() => {
+    const requestedReturn = searchParams.get("return");
+    if (requestedReturn?.startsWith("/") && !requestedReturn.startsWith("//")) {
+      return requestedReturn;
+    }
+
+    const lang = searchParams.get("lang");
+    return isValidLocale(lang ?? "") ? `/${lang}/wiki/${slug}` : `/en/wiki/${slug}`;
+  }, [searchParams, slug]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -106,7 +118,7 @@ export function ReportForm({
       <div className="submission-success">
         <p>{copy.success}</p>
         {pointsAwarded !== null ? <p className="meta-label">points awarded: {pointsAwarded}</p> : null}
-        <a href={`/en/wiki/${slug}`} className="cta-link">
+        <a href={returnHref} className="cta-link">
           문서로 돌아가기
         </a>
       </div>

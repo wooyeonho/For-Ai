@@ -65,6 +65,9 @@ export default async function WikiDocumentPage({
   const whyPeopleAsk = (docData?.why_people_ask_ai as string) ?? null;
   const apiUrl = `/api/documents/${document.slug}`;
   const rawUrl = `/raw/${document.slug}.md`;
+  const documentReturnUrl = `/${locale}/wiki/${document.slug}`;
+  const reportActionUrl = `/report/${document.slug}?lang=${locale}&return=${documentReturnUrl}`;
+  const hallucinationActionUrl = `/hallucination/${document.slug}?lang=${locale}&return=${documentReturnUrl}`;
   const isPromoted = !getRegistryBundleBySlug(slug);
   const jsonLd = buildDocumentJsonLd(bundle);
   const citationStatus = getDocumentCitationStatus(bundle);
@@ -281,8 +284,8 @@ export default async function WikiDocumentPage({
         <ul className="link-list">
           <li><Link href={apiUrl}>JSON API ({apiUrl})</Link></li>
           <li><Link href={rawUrl}>Raw Markdown ({rawUrl})</Link></li>
-          <li><Link href={`/report/${document.slug}`}>{t.wiki.correctionReport}</Link></li>
-          <li><Link href={`/hallucination/${document.slug}`}>{t.wiki.hallucinationReport}</Link></li>
+          <li><Link href={reportActionUrl}>{t.wiki.correctionReport}</Link></li>
+          <li><Link href={hallucinationActionUrl}>{t.wiki.hallucinationReport}</Link></li>
           <li><Link href={`/diagnostics/${document.slug}`}>{t.wiki.diagnostics}</Link></li>
         </ul>
       </nav>

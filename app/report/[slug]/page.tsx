@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import { getRegistryBundleBySlug } from "../../../lib/data";
 import { getRegistryBundleFromSupabase } from "../../../lib/supabase-documents";
 import { ReportForm } from "./ReportForm";
@@ -70,13 +71,15 @@ export default async function ReportPage({
         {isSourceIntent ? (
           <p className="meta-label">Official sources are reviewed by humans before any claim status changes to verified.</p>
         ) : null}
-        <ReportForm
-          documentId={document.id}
-          entityId={entity.id}
-          slug={document.slug}
-          intent={isSourceIntent ? "source" : isNotifyIntent ? "notify" : "correction"}
-          claims={claims.map((claim) => ({ id: claim.id, field_path: claim.field_path, claim_text: claim.claim_text }))}
-        />
+        <Suspense fallback={null}>
+          <ReportForm
+            documentId={document.id}
+            entityId={entity.id}
+            slug={document.slug}
+            intent={isSourceIntent ? "source" : isNotifyIntent ? "notify" : "correction"}
+            claims={claims.map((claim) => ({ id: claim.id, field_path: claim.field_path, claim_text: claim.claim_text }))}
+          />
+        </Suspense>
       </section>
 
       <section className="notice-box" aria-labelledby="privacy-notice">
