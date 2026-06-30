@@ -1,8 +1,15 @@
 // lib/ai-providers.ts
 // Multi-AI provider abstraction for For-Ai fact registry
-// Supports provider keys: perplexity, gemini, gpt, grok (Perplexity, Gemini, OpenAI GPT, xAI Grok)
+// Supports provider keys: perplexity, gemini, gpt, grok, nvidia_*
 
-export type AIProviderKey = "perplexity" | "gemini" | "gpt" | "grok";
+export type AIProviderKey =
+  | "perplexity"
+  | "gemini"
+  | "gpt"
+  | "grok"
+  | "nvidia_llama_70b"
+  | "nvidia_nemotron_70b"
+  | "nvidia_llama_8b";
 
 export interface AIProviderConfig {
   key: AIProviderKey;
@@ -44,6 +51,30 @@ export const AI_PROVIDERS: Record<AIProviderKey, AIProviderConfig> = {
     model: "grok-3-mini",
     endpoint: "https://api.x.ai/v1/chat/completions",
     envKey: "XAI_API_KEY",
+    supportsWebSearch: false,
+  },
+  nvidia_llama_70b: {
+    key: "nvidia_llama_70b",
+    label: "NVIDIA Llama 70B",
+    model: "meta/llama-3.1-70b-instruct",
+    endpoint: "https://integrate.api.nvidia.com/v1/chat/completions",
+    envKey: "NVIDIA_API_KEY",
+    supportsWebSearch: false,
+  },
+  nvidia_nemotron_70b: {
+    key: "nvidia_nemotron_70b",
+    label: "NVIDIA Nemotron 70B",
+    model: "nvidia/llama-3.1-nemotron-70b-instruct",
+    endpoint: "https://integrate.api.nvidia.com/v1/chat/completions",
+    envKey: "NVIDIA_API_KEY",
+    supportsWebSearch: false,
+  },
+  nvidia_llama_8b: {
+    key: "nvidia_llama_8b",
+    label: "NVIDIA Llama 8B",
+    model: "meta/llama-3.1-8b-instruct",
+    endpoint: "https://integrate.api.nvidia.com/v1/chat/completions",
+    envKey: "NVIDIA_API_KEY",
     supportsWebSearch: false,
   },
 };
@@ -193,7 +224,10 @@ export async function generateWithProvider(
     case "gpt":
       return callOpenAI(config, req);
     case "grok":
-      return callOpenAI(config, req); // Grok uses OpenAI-compatible API
+    case "nvidia_llama_70b":
+    case "nvidia_nemotron_70b":
+    case "nvidia_llama_8b":
+      return callOpenAI(config, req); // Grok and NVIDIA use OpenAI-compatible APIs
   }
 }
 
