@@ -1,9 +1,37 @@
 "use client";
-import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { SUPPORTED_LOCALES, DEFAULT_LOCALE, LOCALE_CONFIG, isValidLocale } from "../../lib/i18n";
 
 const DOCUMENT_ACTION_ROUTES = new Set(["report", "hallucination", "diagnostics"]);
+
+function normalizeLocale(locale: string | null | undefined): string | null {
+  if (!locale) return null;
+  const normalized = locale.toLowerCase().split("-")[0];
+  return isValidLocale(normalized) ? normalized : null;
+}
+
+function getBrowserLocale(): string | null {
+  if (typeof navigator === "undefined") return null;
+
+  for (const language of navigator.languages?.length ? navigator.languages : [navigator.language]) {
+    const locale = normalizeLocale(language);
+    if (locale) return locale;
+  }
+
+  return null;
+}
+
+export function getCurrentLocale(
+  pathname: string,
+  queryLocale?: string | null,
+  browserLocale?: string | null,
+  detectBrowser = false,
+): string {
+  const pathLocale = normalizeLocale(pathname.split("/").filter(Boolean)[0]);
+  return normalizeLocale(queryLocale) ?? pathLocale ?? normalizeLocale(browserLocale) ?? (detectBrowser ? getBrowserLocale() : null) ?? DEFAULT_LOCALE;
+}
 
 export function getLocalePath(pathname: string, locale: string): string {
   const segments = pathname.split("/").filter(Boolean);
@@ -20,16 +48,25 @@ export function getLocalePath(pathname: string, locale: string): string {
     return `/${locale}/wiki/${identifier}`;
   }
 
-  // Non-locale pages (homepage, api-docs, community, etc.) stay as-is
+  if (segments[0] === "community") {
+    return `/community?lang=${locale}`;
+  }
+
+  // Non-locale pages (homepage, api-docs, etc.) stay as-is
   return pathname;
 }
 
 export function LanguageSelector() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [browserLocale, setBrowserLocale] = useState<string | null>(null);
+  const currentLocale = getCurrentLocale(pathname, searchParams.get("lang"), browserLocale);
 
-  // Extract current locale from path
-  const segments = pathname.split("/").filter(Boolean);
-  const currentLocale = segments[0] && isValidLocale(segments[0]) ? segments[0] : DEFAULT_LOCALE;
+  useEffect(() => {
+    if (!searchParams.get("lang")) {
+      setBrowserLocale(getBrowserLocale());
+    }
+  }, [searchParams]);
 
   // Build path for other locales
   function getPathForLocale(locale: string): string {

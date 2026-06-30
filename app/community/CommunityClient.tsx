@@ -1,6 +1,8 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
+import { DEFAULT_LOCALE, isValidLocale } from "../../lib/i18n";
 
 interface Post {
   id: string;
@@ -18,6 +20,23 @@ const AUTHOR_ICON: Record<string, string> = { user: "👤", ai: "✦", admin: "�
 const AUTHOR_LABEL: Record<string, string> = { user: "사용자", ai: "AI", admin: "관리자" };
 const POST_REVIEW_MESSAGE = "글이 검토 대기열에 등록되었습니다. 관리자 승인 전에는 공개 목록에 표시되지 않습니다. 승인 후 게시됩니다.";
 
+function normalizeLocale(locale: string | null | undefined): string | null {
+  if (!locale) return null;
+  const normalized = locale.toLowerCase().split("-")[0];
+  return isValidLocale(normalized) ? normalized : null;
+}
+
+function getBrowserLocale(): string | null {
+  if (typeof navigator === "undefined") return null;
+
+  for (const language of navigator.languages?.length ? navigator.languages : [navigator.language]) {
+    const locale = normalizeLocale(language);
+    if (locale) return locale;
+  }
+
+  return null;
+}
+
 export default function CommunityClient({ documents }: { documents: { id: string; title: string; slug: string }[] }) {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
@@ -30,6 +49,18 @@ export default function CommunityClient({ documents }: { documents: { id: string
   const [documentId, setDocumentId] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const queryLocale = normalizeLocale(searchParams.get("lang"));
+  const pathLocale = normalizeLocale(pathname.split("/").filter(Boolean)[0]);
+  const [browserLocale, setBrowserLocale] = useState<string | null>(null);
+  const locale = queryLocale ?? pathLocale ?? browserLocale ?? DEFAULT_LOCALE;
+
+  useEffect(() => {
+    if (!queryLocale && !pathLocale) {
+      setBrowserLocale(getBrowserLocale());
+    }
+  }, [queryLocale, pathLocale]);
 
   const loadPosts = useCallback(async () => {
     setLoading(true);
@@ -234,7 +265,7 @@ export default function CommunityClient({ documents }: { documents: { id: string
                   {p.document_id && (
                     <div className="community-related-doc">
                       관련 문서: {p.document_slug ? (
-                        <Link href={`/en/wiki/${p.document_slug}`} className="community-related-link">{p.document_title ?? p.document_slug}</Link>
+                        <Link href={`/${locale}/wiki/${p.document_slug}`} className="community-related-link">{p.document_title ?? p.document_slug}</Link>
                       ) : (
                         <span>{p.document_id}</span>
                       )}

@@ -1,11 +1,23 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import { LanguageSelector } from "./LanguageSelector";
+import { usePathname, useSearchParams } from "next/navigation";
+import { LanguageSelector, getCurrentLocale } from "./LanguageSelector";
 
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const [browserLocale, setBrowserLocale] = useState<string | null>(null);
+  const locale = getCurrentLocale(pathname, searchParams.get("lang"), browserLocale);
+  const communityHref = `/community?lang=${locale}`;
   const close = () => setOpen(false);
+
+  useEffect(() => {
+    if (!searchParams.get("lang")) {
+      setBrowserLocale(getCurrentLocale(pathname, null, null, true));
+    }
+  }, [pathname, searchParams]);
 
   return (
     <header className="site-header">
@@ -17,7 +29,7 @@ export function SiteHeader() {
         <nav className="site-nav" aria-label="Main menu">
           <Link href="/#registry">Registry</Link>
           <Link href="/api-docs">API</Link>
-          <Link href="/community">Community</Link>
+          <Link href={communityHref}>Community</Link>
           <Link href="/contribute">Contribute</Link>
           <Link href="/suggest-topic">Suggest</Link>
           <LanguageSelector />
@@ -38,7 +50,7 @@ export function SiteHeader() {
         <nav className="site-nav-mobile" aria-label="Mobile menu">
           <Link href="/#registry" onClick={close}>Registry</Link>
           <Link href="/api-docs" onClick={close}>API</Link>
-          <Link href="/community" onClick={close}>Community</Link>
+          <Link href={communityHref} onClick={close}>Community</Link>
           <Link href="/contribute" onClick={close}>Contribute</Link>
           <Link href="/suggest-topic" onClick={close}>Suggest Topic</Link>
           <div className="site-nav-mobile-lang"><LanguageSelector /></div>
