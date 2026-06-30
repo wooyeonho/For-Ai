@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { logAdminAuditEvent, requireAdmin, supabaseAdmin } from "@/lib/admin-api";
+import { findDuplicateDocuments } from "@/lib/duplicate-detection";
 import { DEFAULT_LOCALE, LOCALE_CONFIG, isValidLocale } from "@/lib/i18n/locales";
 
 function defaultCountryForLang(lang: string): string {
@@ -26,7 +27,19 @@ export async function GET(request: Request) {
     status,
     result_count: data?.length ?? 0,
   });
-  return NextResponse.json({ candidates: data ?? [] });
+  const candidates = await Promise.all((data ?? []).map(async (candidate) => ({
+    ...candidate,
+    duplicate_detection: await findDuplicateDocuments(sb, {
+      id: String(candidate.id ?? ""),
+      title: String(candidate.title ?? ""),
+      slug: String(candidate.slug ?? ""),
+      lang: String(candidate.lang ?? ""),
+      country: String(candidate.country ?? ""),
+      category: String(candidate.category ?? ""),
+      entity_id: String(candidate.entity_id ?? ""),
+    }),
+  })));
+  return NextResponse.json({ candidates });
 }
 
 export async function POST(request: Request) {
@@ -70,13 +83,18 @@ export async function POST(request: Request) {
     }
   }
 
+  const rowsWithDuplicateDetection = await Promise.all(insertRows.map(async (row) => ({
+    row,
+    duplicate_detection: await findDuplicateDocuments(sb, row),
+  })));
+
   const { error, data } = await sb.from("topic_candidates").insert(insertRows).select("id, slug");
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   await logAdminAuditEvent(sb, request, "admin.candidates.bulk_import", {
     imported_count: data?.length ?? 0,
   });
-  return NextResponse.json({ success: true, imported: data?.length ?? 0, candidates: data });
+  return NextResponse.json({ success: true, imported: data?.length ?? 0, candidates: data, duplicate_detection: rowsWithDuplicateDetection });
 }
 
 export async function PATCH(request: Request) {
@@ -88,7 +106,7 @@ export async function PATCH(request: Request) {
   const body = await request.json();
   const id = String(body.id ?? "").trim();
   const status = String(body.status ?? "").trim();
-  const allowed = new Set(["new", "triaged", "generated", "rejected", "promoted"]);
+  const allowed = new Set(["new", "triaged", "generated", "rejected", "reject_duplicate", "promoted"]);
   if (!id || !allowed.has(status)) return NextResponse.json({ error: "valid id and status are required" }, { status: 400 });
 
   const { data, error } = await sb
