@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getRegistryBundleBySlug } from "../../../lib/data";
+import { calculateBundleDocumentQuality } from "../../../lib/document-quality";
 import { getRegistryDocumentPaths } from "../../../lib/seo";
 import { getRegistryBundleFromSupabase } from "../../../lib/supabase-documents";
 
@@ -20,6 +21,7 @@ export default async function DiagnosticsPage({ params }: { params: Promise<{ sl
 
   const { document, entity, claims } = bundle;
   const paths = getRegistryDocumentPaths(bundle);
+  const quality = calculateBundleDocumentQuality(bundle);
   const lowConfidenceClaims = claims.filter((claim) => claim.confidence === "low").length;
   const claimsWithUnknownValues = claims.filter((claim) => claim.claim_value === "확인 필요").length;
   const verifiedClaims = claims.filter((claim) => claim.status === "verified").length;
@@ -75,8 +77,33 @@ export default async function DiagnosticsPage({ params }: { params: Promise<{ sl
           <div><span className="meta-label">verified_claims</span><br />{verifiedClaims}</div>
           <div><span className="meta-label">needs_review_claims</span><br />{needsReviewClaims}</div>
           <div><span className="meta-label">source_count</span><br />{sourceCount}</div>
+          <div><span className="meta-label">quality_score</span><br />{quality.score}/{quality.maxScore} · {quality.publicLabel}</div>
         </div>
       </header>
+
+      <section className="registry-panel" aria-labelledby="quality-summary">
+        <h2 id="quality-summary">Public-safe quality summary</h2>
+        <p>문서 품질 점수는 claim coverage, source coverage, verification status, freshness, i18n coverage, citation surface coverage, correction/report CTA 존재를 합산합니다. 공개 diagnostics에는 비공개 운영자 정보 없이 개선 상태만 표시합니다.</p>
+        <div className="stat-strip">
+          <div className="stat"><span className="stat-num">{quality.score}</span><span className="stat-label">quality score / {quality.maxScore}</span></div>
+          <div className="stat"><span className="stat-num">{quality.percent}%</span><span className="stat-label">{quality.publicLabel}</span></div>
+          <div className="stat"><span className="stat-num">{quality.nextTasks.length}</span><span className="stat-label">다음 작업</span></div>
+        </div>
+        <ul className="diagnostics-list">
+          {quality.factors.map((factor) => (
+            <li key={factor.key}>
+              <span className={factor.score === factor.maxScore ? "badge badge-pass" : "badge badge-review"}>{factor.score}/{factor.maxScore}</span>{" "}
+              <strong>{factor.label}</strong><br />
+              <span className="meta-label">{factor.summary}</span>
+            </li>
+          ))}
+        </ul>
+        <h3>다음 작업</h3>
+        <ul>
+          {quality.publicNextTasks.map((task) => <li key={task}>{task}</li>)}
+        </ul>
+        <p><Link href={`/report/${document.slug}`}>Correction/report 제출하기</Link></p>
+      </section>
 
       <section className="registry-panel" aria-labelledby="diagnostics-checklist">
         <h2 id="diagnostics-checklist">Diagnostics checklist</h2>
