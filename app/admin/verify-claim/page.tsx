@@ -21,6 +21,10 @@ type ClaimRow = {
   source_candidates?: SourceCandidate[];
   claim_sources?: SourceRow[];
   verification_events?: VerificationEventRow[];
+  stale?: boolean;
+  stale_age_days?: number | null;
+  freshness_ttl_days?: number;
+  stale_reason?: string | null;
 };
 type DocumentRow = {
   id: string;
@@ -39,7 +43,7 @@ type DocumentRow = {
 };
 type ClaimListMeta = { count: number; limit: number; offset: number; has_more: boolean };
 type Pagination = { page: number; limit: number; total: number; total_pages: number };
-type ClaimStats = { total: number; needs_review: number; verified: number };
+type ClaimStats = { total: number; needs_review: number; verified: number; stale?: number };
 
 const SOURCE_TYPES = ["official", "law", "platform", "document", "web", "review", "user", "phone", "photo", "other", "unknown"];
 const SOURCE_TRUST: Record<string, number> = { official: 95, platform: 85, document: 80, web: 65, photo: 60, phone: 55, review: 40, user: 30, other: 25, unknown: 0 };
@@ -126,8 +130,9 @@ export default function VerifyClaimPage() {
     if (filters.category.trim()) params.set("category", filters.category.trim());
     if (filters.slug.trim()) params.set("slug", filters.slug.trim());
     if (filters.sort) params.set("sort", filters.sort);
+    if (localFilters.stale === "stale") params.set("stale", "true");
     return params.toString();
-  }, [search, claimStatusFilter, docStatusFilter, page, filters]);
+  }, [search, claimStatusFilter, docStatusFilter, page, filters, localFilters.stale]);
 
   const load = useCallback(async (overridePage?: number) => {
     if (!secret) return;
@@ -153,10 +158,16 @@ export default function VerifyClaimPage() {
   }, [secret, adminActor, buildQuery, filters.limit]);
 
   useEffect(() => {
-    const slug = new URLSearchParams(window.location.search).get("slug");
+    const params = new URLSearchParams(window.location.search);
+    const slug = params.get("slug");
+    const stale = params.get("stale") === "true";
     if (slug) {
       setTargetSlug(slug);
       setFilters((current) => ({ ...current, slug, offset: "0" }));
+    }
+    if (stale) {
+      setClaimStatusFilter("verified");
+      setLocalFilters((current) => ({ ...current, stale: "stale" }));
     }
   }, []);
 
@@ -277,7 +288,8 @@ export default function VerifyClaimPage() {
     }
   }
 
-  function isStale(claim: ClaimRow) {
+  function isStale(claim: ClaimRow & { stale?: boolean }) {
+    if (typeof claim.stale === "boolean") return claim.stale;
     if (claim.status !== "verified" || !claim.last_verified_at) return false;
     return Date.now() - new Date(claim.last_verified_at).getTime() > 180 * 24 * 60 * 60 * 1000;
   }
@@ -394,6 +406,7 @@ export default function VerifyClaimPage() {
         <div className="stat"><span className="stat-num">{allClaims.length}</span><span className="stat-label">전체 claim (현재 페이지)</span></div>
         <div className="stat"><span className="stat-num" style={{ color: (claimStats.needs_review || reviewCount) > 0 ? "#b91c1c" : undefined }}>{claimStats.needs_review || reviewCount}</span><span className="stat-label">확인 필요</span></div>
         <div className="stat"><span className="stat-num" style={{ color: "#166534" }}>{claimStats.verified || verifiedCount}</span><span className="stat-label">검증됨</span></div>
+        <div className="stat"><span className="stat-num" style={{ color: (claimStats.stale ?? 0) > 0 ? "#92400e" : undefined }}>{claimStats.stale ?? allClaims.filter(({ claim }) => isStale(claim)).length}</span><span className="stat-label">stale claim</span></div>
         <div className="stat"><span className="stat-num">{pagination.total || meta.count}</span><span className="stat-label">전체 문서</span></div>
       </div>
 
@@ -527,7 +540,7 @@ export default function VerifyClaimPage() {
                 )}
                 {(claim.verification_events?.length ?? 0) > 0 && <p className="meta-label">latest reason: {claim.verification_events?.at(-1)?.note ?? "—"}</p>}
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
-                  {claim.status !== "verified" && <button onClick={() => openVerify(claim)}>출처 추가 + verified 승격</button>}
+                  {(claim.status !== "verified" || isStale(claim)) && <button onClick={() => openVerify(claim)}>{isStale(claim) ? "재검증 + verification_event 기록" : "출처 추가 + verified 승격"}</button>}
                   <button type="button" onClick={() => markClaim("needs_verification", claim)}>needs verification + reason</button>
                   <button type="button" onClick={() => markClaim("reject", claim)}>reject/dispute + reason</button>
                 </div>

@@ -9,10 +9,12 @@ type Counts = {
   pending_community_posts: number;
   candidates_new: number;
   candidates_generated: number;
+  candidates_approved?: number;
   documents_published: number;
   claim_sources: number;
   claims_needs_review: number;
   claims_verified: number;
+  stale_claims: number;
   documents_verified: number;
 };
 
@@ -94,6 +96,7 @@ type ReviewPayload = {
   community_posts: { pending: PendingCommunityPost[] };
   priorities: {
     needs_review_claims: PriorityClaim[];
+    stale_claims: PriorityClaim[];
     new_candidates: Candidate[];
     approved_candidates: Candidate[];
     generated_candidates: Candidate[];
@@ -124,6 +127,7 @@ const EMPTY_COUNTS: Counts = {
   claims_needs_review: 0,
   claims_verified: 0,
   documents_verified: 0,
+  stale_claims: 0,
 };
 
 const primaryButtonStyle = { padding: "8px 12px", borderRadius: 8, background: "#111827", color: "#fff", textDecoration: "none", display: "inline-block", fontWeight: 700 };
@@ -156,6 +160,7 @@ export default function AdminReviewPage() {
     { label: "신규 후보", count: counts.candidates_new, hint: "topic_candidates.status = new", href: "/admin/candidates?status=new", urgent: counts.candidates_new === 0 },
     { label: "AI claim 생성", count: counts.candidates_generated, hint: "topic_candidates.status = generated", href: "/admin/candidates", urgent: false },
     { label: "needs_review claim", count: counts.claims_needs_review, hint: "claims.status = needs_review", href: "/admin/verify-claim", urgent: counts.claims_needs_review > 0 },
+    { label: "stale claim", count: counts.stale_claims, hint: "verified claims past freshness TTL", href: "/admin/verify-claim?stale=true", urgent: counts.stale_claims > 0 },
     { label: "공개 등록", count: counts.documents_published, hint: "documents.status = published", href: "/admin/candidates", urgent: false },
     { label: "claim source", count: counts.claim_sources, hint: "claim_sources rows", href: "/admin/verify-claim", urgent: false },
     { label: "verified 문서", count: counts.documents_verified, hint: "documents.status = verified", href: "#verified-documents", urgent: false },
@@ -177,6 +182,7 @@ export default function AdminReviewPage() {
 
   const urgency = urgencyBand(counts.claims_needs_review, counts.candidates_approved ?? 0);
   const staleDocCount = (data?.verified_documents ?? []).filter((doc) => isStale(doc.last_verified_at)).length;
+  const staleClaimCount = data?.counts.stale_claims ?? data?.priorities.stale_claims.length ?? 0;
 
   return (
     <div style={{ maxWidth: 1120, margin: "0 auto", padding: "40px 20px" }}>
@@ -208,7 +214,7 @@ export default function AdminReviewPage() {
         <div style={{ padding: "12px 20px", borderRadius: 8, marginBottom: 24, background: "#fafafa", border: "1px solid #e5e7eb", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
           <span style={{ fontWeight: 700, fontSize: 18, color: urgency.color }}>{urgency.label}</span>
           <span style={{ fontSize: 13, color: "#6b7280" }}>
-            {staleDocCount > 0 && <span style={{ color: "#92400e", marginRight: 12 }}>⏳ 재검증 필요 {staleDocCount}건</span>}
+            {(staleClaimCount > 0 || staleDocCount > 0) && <span style={{ color: "#92400e", marginRight: 12 }}>⏳ stale claim {staleClaimCount}건 · 문서 {staleDocCount}건</span>}
             마지막 갱신: {new Date().toLocaleTimeString("ko-KR")}
           </span>
         </div>
@@ -310,8 +316,26 @@ export default function AdminReviewPage() {
           );
         })}
 
-        {/* Priority 2: approved candidates */}
-        <h3 style={{ margin: "24px 0 12px" }}>2순위 · approved candidate 공개 등록</h3>
+        {/* Priority 2: stale claims */}
+        <h3 style={{ margin: "24px 0 12px" }}>2순위 · stale claim 재검증</h3>
+        {(data?.priorities.stale_claims.length ?? 0) === 0 && (
+          <p style={{ color: "#6b7280" }}>✓ freshness TTL이 지난 verified claim이 없습니다.</p>
+        )}
+        {data?.priorities.stale_claims.map((claim) => {
+          const doc = Array.isArray(claim.documents) ? claim.documents[0] : claim.documents;
+          return (
+            <div className="claim-card" key={claim.id} style={{ borderLeft: "3px solid #f59e0b" }}>
+              <p className="eyebrow">{doc?.title ?? doc?.slug ?? claim.id} · <code style={{ fontSize: 11 }}>{claim.field_path}</code></p>
+              <p><strong>{claim.claim_value}</strong></p>
+              <p style={{ fontSize: 13, color: "#6b7280" }}>{claim.claim_text}</p>
+              <p><span className="badge badge-review">stale · TTL {(claim as PriorityClaim & { freshness_ttl_days?: number }).freshness_ttl_days ?? 180}일</span> <span className="badge">last_verified_at: {claim.last_verified_at ?? "없음"}</span></p>
+              <Link href={claim.verify_url ?? `/admin/verify-claim?stale=true${doc?.slug ? `&slug=${encodeURIComponent(doc.slug)}` : ""}`} style={primaryButtonStyle}>재검증하기 →</Link>
+            </div>
+          );
+        })}
+
+        {/* Priority 3: approved candidates */}
+        <h3 style={{ margin: "24px 0 12px" }}>3순위 · approved candidate 공개 등록</h3>
         {(data?.priorities.approved_candidates.length ?? 0) === 0 && (
           <p style={{ color: "#6b7280" }}>✓ 공개 등록 대기 중인 approved candidate가 없습니다.</p>
         )}

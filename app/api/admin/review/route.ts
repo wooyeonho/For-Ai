@@ -1,4 +1,5 @@
 import { logAdminAuditEvent, requireAdmin, supabaseAdmin } from "@/lib/admin-api";
+import { getStaleClaimStatus } from "@/lib/citation-status";
 import { DEFAULT_LOCALE } from "@/lib/i18n";
 import { NextResponse } from "next/server";
 import { documentPageUrl } from "../../../../lib/urls";
@@ -44,16 +45,6 @@ async function optionalCountRows(
   }
 }
 
-async function countStaleVerifiedClaims(sb: SupabaseAdminClient): Promise<number> {
-  const cutoff = new Date(Date.now() - 180 * 24 * 60 * 60 * 1000).toISOString();
-  const { count, error } = await sb
-    .from("claims")
-    .select("id", { count: "exact", head: true })
-    .eq("status", "verified")
-    .or(`last_verified_at.is.null,last_verified_at.lt.${cutoff}`);
-  if (error) throw error;
-  return count ?? 0;
-}
 
 async function countApiAbuseWarnings(sb: SupabaseAdminClient): Promise<OptionalCount> {
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
@@ -132,7 +123,6 @@ export async function GET(request: Request) {
       claimsNeedsReview,
       claimsVerified,
       documentsVerified,
-      staleClaims,
       newHallucinationReports,
       sourceCheckFailures,
       pendingBusinessProfiles,
@@ -148,7 +138,6 @@ export async function GET(request: Request) {
       countRows(sb, "claims", { status: "needs_review" }),
       countRows(sb, "claims", { status: "verified" }),
       countRows(sb, "documents", { status: "verified" }),
-      countStaleVerifiedClaims(sb),
       optionalCountRows(sb, "hallucination_reports", { status: "new" }),
       optionalCountRows(sb, "claim_sources", { source_type: "unknown" }),
       optionalCountRows(sb, "verified_business_profiles", { status: "pending" }),
@@ -172,6 +161,19 @@ export async function GET(request: Request) {
       .order("updated_at", { ascending: true })
       .limit(10);
     if (claimsError) throw claimsError;
+
+    const { data: staleClaimCandidates, error: staleClaimsError } = await sb
+      .from("claims")
+      .select("id, document_id, entity_id, field_path, claim_text, claim_value, confidence, status, last_verified_at, update_frequency, updated_at, documents(slug, lang, title, status, category, data)")
+      .eq("status", "verified")
+      .order("last_verified_at", { ascending: true, nullsFirst: true })
+      .limit(200);
+    if (staleClaimsError) throw staleClaimsError;
+    const staleClaimQueue = (staleClaimCandidates ?? [])
+      .map((claim) => ({ claim, freshness: getStaleClaimStatus(claim) }))
+      .filter(({ freshness }) => freshness.isStale)
+      .sort((a, b) => (b.freshness.ageDays ?? Number.POSITIVE_INFINITY) - (a.freshness.ageDays ?? Number.POSITIVE_INFINITY));
+    const staleClaims = staleClaimQueue.length;
 
     const { data: newCandidates, error: newCandidatesError } = await sb
       .from("topic_candidates")
@@ -286,8 +288,9 @@ export async function GET(request: Request) {
       { rank: 1, key: "pending_community_posts", label: "Pending community posts", count: pendingCommunityPosts, href: "/admin/posts?status=pending", reason: "공개 제출물은 스팸/오류 노출을 막기 위해 먼저 승인 또는 숨김 처리합니다." },
       { rank: 2, key: "high_risk", label: "High-risk finance/healthcare/legal/realtime", count: (highRiskCandidates?.length ?? 0) + highRiskDocuments.length, href: "/admin/candidates?status=new", reason: "금융·의료·법률·실시간성 항목은 잘못 인용될 때 피해가 커서 우선 검토합니다." },
       { rank: 3, key: "needs_review_claims", label: "Needs_review claims", count: claimsNeedsReview, href: verifyClaimLink(firstPriorityDoc?.slug), reason: "claim source를 추가하고 verified로 승격해야 AI 인용 가능성이 생깁니다." },
-      { rank: 4, key: "generated_candidates", label: "Generated topic candidates", count: candidatesGenerated, href: "/admin/candidates?status=generated", reason: "AI claim generation이 끝난 generated candidate를 공개 등록합니다." },
-      { rank: 5, key: "new_candidates", label: "New topic candidates", count: candidatesNew, href: "/admin/candidates?status=new", reason: "신규 후보를 reviewing/approved/rejected로 분류합니다." },
+      { rank: 4, key: "stale_claims", label: "Stale verified claims", count: staleClaims, href: "/admin/verify-claim?stale=true", reason: "freshness TTL이 지난 verified claim은 재검증 큐에서 다시 확인합니다." },
+      { rank: 5, key: "generated_candidates", label: "Generated topic candidates", count: candidatesGenerated, href: "/admin/candidates?status=generated", reason: "AI claim generation이 끝난 generated candidate를 공개 등록합니다." },
+      { rank: 6, key: "new_candidates", label: "New topic candidates", count: candidatesNew, href: "/admin/candidates?status=new", reason: "신규 후보를 reviewing/approved/rejected로 분류합니다." },
     ];
 
     await logAdminAuditEvent(sb, request, "admin.review.read", {
@@ -321,10 +324,24 @@ export async function GET(request: Request) {
         claims_needs_review: claimsNeedsReview,
         claims_verified: claimsVerified,
         documents_verified: documentsVerified,
+        stale_claims: staleClaims,
       },
       priority_ordering: priorityOrdering,
       community_posts: { pending: communityPosts ?? [] },
       priorities: {
+        stale_claims: staleClaimQueue.slice(0, 10).map(({ claim, freshness }) => {
+          const doc = Array.isArray(claim.documents) ? claim.documents[0] : claim.documents;
+          return {
+            ...claim,
+            documents: doc,
+            document_url: publicDocumentLink(doc ?? {}),
+            verify_url: `${verifyClaimLink(doc?.slug)}${doc?.slug ? "&" : "?"}stale=true`,
+            stale: true,
+            stale_age_days: freshness.ageDays,
+            freshness_ttl_days: freshness.ttlDays,
+            stale_reason: freshness.reason,
+          };
+        }),
         needs_review_claims: (priorityClaims ?? []).map((claim) => {
           const doc = Array.isArray(claim.documents) ? claim.documents[0] : claim.documents;
           const docData = ((doc as { data?: Record<string, unknown> } | null)?.data ?? {}) as Record<string, unknown>;

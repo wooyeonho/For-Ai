@@ -45,7 +45,7 @@ export const FRESHNESS_WINDOWS_DAYS: Record<FreshnessDomain, number> = {
   default: FRESHNESS_TTL_DAYS,
 };
 
-export type FreshnessPolicyUpdateFrequency = UpdateFrequency | "unknown";
+export type FreshnessPolicyUpdateFrequency = RegistryUpdateFrequency | "unknown";
 
 export type FreshnessPolicy = {
   ttlDays: number;
@@ -99,6 +99,38 @@ export function isStale(
   const age = ageInDays(iso, now);
   if (age === null) return true; // no verification date → treat as not-fresh
   return age > (ttlDays ?? FRESHNESS_TTL_DAYS);
+}
+
+
+export type StaleClaimInput = {
+  status?: string | null;
+  last_verified_at?: string | null;
+  update_frequency?: RegistryUpdateFrequency | string | null;
+};
+
+export type StaleClaimStatus = {
+  isStale: boolean;
+  ttlDays: number;
+  ageDays: number | null;
+  reason: "not_verified" | "missing_last_verified_at" | "invalid_last_verified_at" | "ttl_exceeded" | "fresh";
+};
+
+export function getStaleClaimStatus(
+  claim: StaleClaimInput,
+  now: Date = new Date(),
+): StaleClaimStatus {
+  const ttlDays = getFreshnessTtlDays(normalizeUpdateFrequency(claim.update_frequency ?? null));
+  if (claim.status !== "verified") {
+    return { isStale: false, ttlDays, ageDays: null, reason: "not_verified" };
+  }
+  if (!claim.last_verified_at) {
+    return { isStale: true, ttlDays, ageDays: null, reason: "missing_last_verified_at" };
+  }
+  const ageDays = ageInDays(claim.last_verified_at, now);
+  if (ageDays === null) return { isStale: true, ttlDays, ageDays, reason: "invalid_last_verified_at" };
+  return ageDays > ttlDays
+    ? { isStale: true, ttlDays, ageDays, reason: "ttl_exceeded" }
+    : { isStale: false, ttlDays, ageDays, reason: "fresh" };
 }
 
 export type VerificationLevel = 0 | 1 | 2 | 3 | 4 | 5;

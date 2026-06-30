@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { logAdminAuditEvent, requireAdmin, supabaseAdmin } from "@/lib/admin-api";
 import { recordContributionEvent } from "@/lib/contributions";
+import { getStaleClaimStatus } from "@/lib/citation-status";
 import { scoreSourceTrust } from "@/lib/source-trust";
 import { awardPoints, checkAndAwardBadges, POINT_VALUES } from "@/lib/gamification";
 
@@ -23,6 +24,11 @@ type ClaimWithDocument = {
   confidence: string;
   status: string;
   last_verified_at?: string | null;
+  update_frequency?: string | null;
+  stale?: boolean;
+  stale_age_days?: number | null;
+  freshness_ttl_days?: number;
+  stale_reason?: string;
   created_at?: string | null;
   updated_at?: string | null;
   claim_sources?: unknown[];
@@ -41,6 +47,11 @@ type DocumentForReview = {
   status: string;
   confidence: string;
   last_verified_at?: string | null;
+  update_frequency?: string | null;
+  stale?: boolean;
+  stale_age_days?: number | null;
+  freshness_ttl_days?: number;
+  stale_reason?: string;
   created_at?: string | null;
   updated_at?: string | null;
   entities?: unknown;
@@ -65,7 +76,7 @@ function claimDate(row: ClaimWithDocument) {
   return new Date(row.created_at ?? row.updated_at ?? 0).getTime();
 }
 
-type ClaimAction = "verify" | "reject" | "mark_unknown" | "edit_value" | "attach_source" | "promote_document";
+type ClaimAction = "verify" | "reject" | "mark_unknown" | "edit_value" | "attach_source" | "promote_document" | "bulk_verify" | "bulk_needs_verification" | "needs_verification";
 
 type SourceInput = {
   source_type?: string;
@@ -197,7 +208,8 @@ export async function GET(request: Request) {
 
   // PR params: search, claim_status, doc_status, page
   const search = params.get("search")?.trim() ?? "";
-  const claimStatus = params.get("claim_status") ?? "all"; // "needs_review" | "verified" | "all"
+  const staleOnly = params.get("stale") === "true";
+  const claimStatus = params.get("claim_status") ?? (staleOnly ? "verified" : "all"); // "needs_review" | "verified" | "all"
   const docStatus = params.get("doc_status") ?? "all";     // "published" | "verified" | "all"
   const page = Math.max(1, parseInt(params.get("page") ?? "1", 10));
   const offset = boundedInt(params.get("offset"), (page - 1) * limit);
@@ -241,6 +253,27 @@ export async function GET(request: Request) {
     })).filter((doc) => (doc.claims ?? []).length > 0);
   }
 
+  documents = documents.map((doc) => ({
+    ...doc,
+    claims: ((doc.claims ?? []) as ClaimWithDocument[]).map((claim) => {
+      const freshness = getStaleClaimStatus(claim as Parameters<typeof getStaleClaimStatus>[0]);
+      return {
+        ...claim,
+        stale: freshness.isStale,
+        stale_age_days: freshness.ageDays,
+        freshness_ttl_days: freshness.ttlDays,
+        stale_reason: freshness.reason,
+      };
+    }),
+  }));
+
+  if (staleOnly) {
+    documents = documents.map((doc) => ({
+      ...doc,
+      claims: ((doc.claims ?? []) as ClaimWithDocument[]).filter((c) => c.stale === true),
+    })).filter((doc) => (doc.claims ?? []).length > 0);
+  }
+
   // Apply HEAD's status filter on claims when claim_status is "all" but status param is set
   if (claimStatus === "all" && status !== "all") {
     documents = documents.map((doc) => ({
@@ -264,6 +297,7 @@ export async function GET(request: Request) {
     total: allClaims.length,
     needs_review: allClaims.filter((c) => c.status === "needs_review").length,
     verified: allClaims.filter((c) => c.status === "verified").length,
+    stale: allClaims.filter((c) => getStaleClaimStatus(c as Parameters<typeof getStaleClaimStatus>[0]).isStale).length,
   };
 
   await logAdminAuditEvent(sb, request, "admin.verify_claim.list", {
@@ -276,6 +310,7 @@ export async function GET(request: Request) {
     status,
     search,
     claim_status: claimStatus,
+    stale: staleOnly,
     doc_status: docStatus,
     country: country ?? null,
     lang: lang ?? null,
@@ -379,7 +414,7 @@ export async function POST(request: Request) {
   });
 
   if (!claimId) return NextResponse.json({ error: "claim_id is required" }, { status: 400 });
-  if (!["verify", "reject", "mark_unknown", "edit_value", "attach_source", "promote_document"].includes(action)) return NextResponse.json({ error: "invalid action" }, { status: 400 });
+  if (!["verify", "reject", "mark_unknown", "edit_value", "attach_source", "promote_document", "needs_verification"].includes(action)) return NextResponse.json({ error: "invalid action" }, { status: 400 });
   if (!ALLOWED_CONFIDENCE.has(confidence)) return NextResponse.json({ error: "invalid confidence" }, { status: 400 });
   if (shouldAttachSource && (!ALLOWED_SOURCES.has(sourceType) || (!title && !url && !citation))) return NextResponse.json({ error: "valid source_type and at least one source title, url, or citation are required" }, { status: 400 });
   if (["verify", "edit_value"].includes(action) && (!claimValue || claimValue === "확인 필요")) return NextResponse.json({ error: "verified/edited claim_value is required" }, { status: 400 });
@@ -445,6 +480,11 @@ export async function POST(request: Request) {
       Object.assign(update, { claim_value: claimValue, confidence, status: "verified", last_verified_at: observedAt });
       nextStatus = "verified";
       nextConfidence = confidence;
+    }
+    if (action === "needs_verification") {
+      Object.assign(update, { status: "needs_review", confidence: "low", last_verified_at: null });
+      nextStatus = "needs_review";
+      nextConfidence = "low";
     }
     if (action === "reject") {
       Object.assign(update, { status: "disputed", confidence: "low" });
