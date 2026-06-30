@@ -296,6 +296,31 @@ export default async function HomePage() {
         </div>
       </section>
 
+
+      <section className="section explore-section" aria-labelledby="explore-ia">
+        <p className="section-eyebrow">Explore</p>
+        <h2 className="section-title" id="explore-ia">Public information architecture</h2>
+        <p className="section-lede">Enter the registry by topic, country, contribution task, API surface, or community workflow.</p>
+        <div className="explore-grid">
+          {[
+            ["Topics", "/en/topics", "Browse claim groups by domain."],
+            ["Countries", "/en/country", "Find jurisdiction-aware facts."],
+            ["Bounties", "/en/bounties", "Source-finding tasks for claims."],
+            ["Challenges", "/en/challenges", "Structured verification campaigns."],
+            ["Missions", "/en/missions", "Guided contributor workflows."],
+            ["Leaderboard", "/en/leaderboard", "Contributor reputation signals."],
+            ["API Docs", "/api-docs", "Machine-readable access for AI systems."],
+            ["Community", "/community", "Discuss and report public facts."],
+            ["Suggest Topic", "/suggest-topic", "Request a fact registry topic."],
+          ].map(([label, href, description]) => (
+            <Link key={label} href={href} className="explore-card">
+              <strong>{label}</strong>
+              <span>{description}</span>
+            </Link>
+          ))}
+        </div>
+      </section>
+
       {/* Trust / stats */}
       <section className="stat-strip" aria-label="Registry stats">
         <div className="stat">
