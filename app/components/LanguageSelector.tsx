@@ -53,6 +53,10 @@ export function getLocalePath(pathname: string, locale: string, searchParams?: S
     return `/${locale}/wiki/${identifier}`;
   }
 
+  if (pathname === "/" || segments.length === 0) {
+    return `/${locale}`;
+  }
+
   // Other non-locale pages stay as-is.
   return getCurrentUrl(pathname, searchParams);
 }
