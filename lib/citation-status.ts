@@ -1,4 +1,5 @@
 import type { ClaimWithSources, RegistryDocumentBundle, UpdateFrequency as RegistryUpdateFrequency } from "./types";
+import { hasOfficialOrRegulatorSource, isHighRiskCategory } from "./risk-policy";
 
 export const UNKNOWN_FACT_TEXT = "확인 필요";
 
@@ -45,7 +46,7 @@ export const FRESHNESS_WINDOWS_DAYS: Record<FreshnessDomain, number> = {
   default: FRESHNESS_TTL_DAYS,
 };
 
-export type FreshnessPolicyUpdateFrequency = UpdateFrequency | "unknown";
+export type FreshnessPolicyUpdateFrequency = RegistryUpdateFrequency | "unknown";
 
 export type FreshnessPolicy = {
   ttlDays: number;
@@ -80,7 +81,7 @@ const FAST_CHANGING_TYPE_PATTERNS = [
 ];
 
 export type FreshnessLabel = "fresh" | "stale" | "unknown";
-export type VerifiedClaimInput = Pick<ClaimWithSources, "claim_value" | "confidence" | "status" | "last_verified_at" | "sources" | "verification_events">;
+export type VerifiedClaimInput = Pick<ClaimWithSources, "claim_value" | "confidence" | "status" | "last_verified_at" | "sources" | "verification_events"> & { category?: string | null };
 
 const VERIFIED_CONFIDENCE = new Set(["medium", "high"]);
 
@@ -216,6 +217,7 @@ export function getVerifiedClaimViolations(claim: VerifiedClaimInput): string[] 
   if (claimValue === UNKNOWN_FACT_TEXT) violations.push("claim_value must not be the unknown placeholder");
   if (!VERIFIED_CONFIDENCE.has(claim.confidence)) violations.push("confidence must be medium or high");
   if (claim.sources.length < 1) violations.push("at least one source is required");
+  if (isHighRiskCategory(claim.category) && !hasOfficialOrRegulatorSource(claim.sources)) violations.push("high-risk claims require an official or regulator source");
   if (!claim.last_verified_at) violations.push("last_verified_at is required");
   if (!hasVerificationEvent) violations.push("verification event is required");
   if (claim.status !== "verified") violations.push("admin approval must set status to verified");
@@ -246,6 +248,7 @@ export function getClaimCitationStatus(
   claim: ClaimWithSources,
   ttlDays: number = FRESHNESS_TTL_DAYS,
   now: Date = new Date(),
+  category?: string | null,
 ): ClaimCitationStatus {
   if (claim.source_of_claim === "business_submitted" && claim.business_submission_status === "pending_verification") {
     return {
@@ -266,12 +269,14 @@ export function getClaimCitationStatus(
     event.new_status === "verified" || event.event_type === "source_verified",
   );
   const hasVerifiedValue = Boolean(claim.claim_value?.trim()) && claim.claim_value !== UNKNOWN_FACT_TEXT;
+  const hasRequiredHighRiskSource = !isHighRiskCategory(category) || hasOfficialOrRegulatorSource(claim.sources);
   const isCitationReady =
     claim.status === "verified" &&
     claim.confidence !== "low" &&
     hasVerifiedValue &&
     hasSource &&
     hasVerificationEvent &&
+    hasRequiredHighRiskSource &&
     Boolean(claim.last_verified_at);
   const stale = isCitationReady && isStale(claim.last_verified_at, ttlDays, now);
 
@@ -293,7 +298,9 @@ export function getClaimCitationStatus(
   return {
     isCitationReady,
     label: "unverified",
-    reason: "requires verified status, non-low confidence, source, verification event, and last_verified_at",
+    reason: isHighRiskCategory(category) && !hasOfficialOrRegulatorSource(claim.sources)
+      ? "high-risk claims require an official or regulator source"
+      : "requires verified status, non-low confidence, source, verification event, and last_verified_at",
     freshness: "unknown",
     freshnessWindowDays: ttlDays,
     lastVerifiedAt: claim.last_verified_at ?? null,
@@ -416,7 +423,7 @@ export function getDocumentCitationStatus(
   now: Date = new Date(),
 ): DocumentCitationStatus {
   const freshnessPolicy = getFreshnessPolicy(bundle, ttlDays);
-  const claimStatuses = bundle.claims.map((claim) => ({ claim, status: getClaimCitationStatus(claim, freshnessPolicy.ttlDays, now) }));
+  const claimStatuses = bundle.claims.map((claim) => ({ claim, status: getClaimCitationStatus(claim, freshnessPolicy.ttlDays, now, bundle.document.category) }));
   const verifiedClaims = claimStatuses.filter(({ status }) => status.isCitationReady).length;
   const totalClaims = bundle.claims.length;
   const unverifiedClaims = totalClaims - verifiedClaims;

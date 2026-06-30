@@ -4,11 +4,12 @@ import { logAdminAuditEvent, requireAdmin, supabaseAdmin } from "@/lib/admin-api
 import { recordContributionEvent } from "@/lib/contributions";
 import { scoreSourceTrust } from "@/lib/source-trust";
 import { awardPoints, checkAndAwardBadges, POINT_VALUES } from "@/lib/gamification";
+import { hasOfficialOrRegulatorSource, HIGH_RISK_CATEGORIES, isHighRiskCategory } from "@/lib/risk-policy";
 
 const DEFAULT_STATUS = "needs_review";
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 200;
-const HIGH_RISK_CATEGORIES = new Set(["finance", "banking", "insurance", "healthcare", "genomics", "dna", "government", "labor", "tax", "travel", "real_estate", "housing"]);
+
 const ADMIN_ACCEPTED_SOURCE_POINTS = 10;
 const VERIFIED_CLAIM_LINK_POINTS = 50;
 
@@ -58,7 +59,7 @@ function firstDocument(row: ClaimWithDocument) {
 }
 
 function riskRank(category?: string | null) {
-  return HIGH_RISK_CATEGORIES.has(String(category ?? "").toLowerCase()) ? 0 : 1;
+  return isHighRiskCategory(category) ? 0 : 1;
 }
 
 function claimDate(row: ClaimWithDocument) {
@@ -330,6 +331,7 @@ export async function GET(request: Request) {
   });
 
   return NextResponse.json({
+    high_risk_categories: HIGH_RISK_CATEGORIES,
     documents,
     // HEAD-compatible fields
     count: count ?? 0,
@@ -583,6 +585,8 @@ export async function POST(request: Request) {
       entity_id: existingClaim.entity_id,
       source_id: sourceId,
       source_type: shouldAttachSource ? sourceType : null,
+      source_authority: shouldAttachSource ? sourceAuthority : null,
+      high_risk_second_confirmation: isHighRiskClaim ? secondConfirmation : null,
       source_check_status: shouldAttachSource ? String(body.source_check_status ?? sourceTrust.source_check_status) : null,
       source_trust_score: shouldAttachSource ? Number(body.source_trust_score ?? sourceTrust.source_trust_score) : null,
       previous_status: existingClaim.status,

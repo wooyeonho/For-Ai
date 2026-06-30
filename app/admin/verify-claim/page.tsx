@@ -3,8 +3,9 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { AdminDbDetails, adminLabel } from "../admin-labels";
+import { isHighRiskCategory } from "@/lib/risk-policy";
 
-type SourceRow = { id: string; title?: string | null; url?: string | null; source_type?: string | null; citation?: string | null; observed_at?: string | null };
+type SourceRow = { id: string; title?: string | null; url?: string | null; source_type?: string | null; source_authority?: string | null; citation?: string | null; observed_at?: string | null };
 type VerificationEventRow = { id: string; note?: string | null; created_at?: string | null; new_status?: string | null };
 type SourceCandidate = { title?: string; url?: string; source_type?: string; citation?: string };
 type ClaimRow = {
@@ -105,12 +106,15 @@ export default function VerifyClaimPage() {
   const [completionLinks, setCompletionLinks] = useState<{ publicUrl: string; apiUrl: string } | null>(null);
   const [claimValue, setClaimValue] = useState("");
   const [sourceType, setSourceType] = useState("official");
+  const [sourceAuthority, setSourceAuthority] = useState("official");
   const [title, setTitle] = useState("");
   const [url, setUrl] = useState("");
   const [citation, setCitation] = useState("");
   const [confidence, setConfidence] = useState("high");
   const [localFilters, setLocalFilters] = useState({ country: "all", domain: "all", source: "all", confidence: "all", status: "all", stale: "all" });
   const [selectedClaimIds, setSelectedClaimIds] = useState<string[]>([]);
+  const [selectedDocCategory, setSelectedDocCategory] = useState<string | null>(null);
+  const [highRiskSecondConfirmation, setHighRiskSecondConfirmation] = useState(false);
   const [reason, setReason] = useState("");
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const [checking, setChecking] = useState(false);
@@ -199,6 +203,7 @@ export default function VerifyClaimPage() {
     setUrl("");
     setCitation("");
     setSourceType("official");
+    setSourceAuthority("official");
     setConfidence("high");
     setSourceCheck(null);
     setMessage(null);
@@ -232,6 +237,10 @@ export default function VerifyClaimPage() {
 
   async function runClaimAction(action: "verify" | "reject" | "mark_unknown" | "edit_value" | "attach_source" | "promote_document") {
     if (!selectedClaim) return;
+    if (action === "verify" && isHighRiskCategory(selectedDocCategory) && !highRiskSecondConfirmation) {
+      setMessage({ ok: false, text: "고위험 claim은 second confirmation 체크가 필요합니다." });
+      return;
+    }
     const res = await fetch("/api/admin/verify-claim", {
       method: "POST",
       headers: { "Content-Type": "application/json", "x-admin-csrf": "1", ...(adminActor.trim() ? { "x-admin-actor": adminActor.trim() } : {}) },
@@ -240,7 +249,9 @@ export default function VerifyClaimPage() {
         claim_id: selectedClaim.id,
         claim_value: claimValue,
         source_type: sourceType,
+        source_authority: sourceAuthority,
         title, url, citation, confidence,
+        second_confirmation: isHighRiskCategory(selectedDocCategory) ? highRiskSecondConfirmation : false,
         observed_at: new Date().toISOString(),
         claim_text: selectedClaim.claim_text,
         fetch_ok: sourceCheck?.reachable ?? null,
@@ -561,7 +572,7 @@ export default function VerifyClaimPage() {
                   <ul style={{ margin: "4px 0", paddingLeft: 16, fontSize: 13 }}>
                     {claim.claim_sources?.map((source) => (
                       <li key={source.id}>
-                        {source.source_type} · trust {trustScore(source.source_type, source.url, source.citation)} ·{" "}
+                        {source.source_type} / {source.source_authority ?? "unknown"} · trust {trustScore(source.source_type, source.url, source.citation)} ·{" "}
                         <a href={source.url ?? "#"} target="_blank" rel="noopener noreferrer">
                           {source.title ?? source.url ?? source.citation ?? source.source_type}
                         </a>
@@ -676,6 +687,24 @@ export default function VerifyClaimPage() {
               style={{ display: "block", width: "100%", marginTop: 4, padding: 8 }}
             >
               {SOURCE_TYPES.map((t) => <option key={t} value={t}>{t}</option>)}
+            </select>
+          </label>
+
+          <label style={{ display: "block", marginBottom: 12 }}>
+            <span style={{ fontWeight: 600 }}>source_authority</span>
+            <select
+              value={sourceAuthority}
+              onChange={(e) => setSourceAuthority(e.target.value)}
+              style={{ display: "block", width: "100%", marginTop: 4, padding: 8 }}
+            >
+              <option value="official">official</option>
+              <option value="regulator">regulator</option>
+              <option value="primary">primary</option>
+              <option value="legal">legal</option>
+              <option value="platform">platform</option>
+              <option value="secondary">secondary</option>
+              <option value="community">community</option>
+              <option value="unknown">unknown</option>
             </select>
           </label>
 
