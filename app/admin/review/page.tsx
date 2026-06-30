@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
 import { ageInDays, isStale } from "../../../lib/citation-status";
+import { ensureAdminSession } from "../../../lib/admin-client";
 import { AdminSecretField, useAdminSecret } from "../AdminSecretProvider";
 
 type Counts = {
@@ -164,7 +165,8 @@ export default function AdminReviewPage() {
   const load = useCallback(async () => {
     setLoading(true);
     setMessage(null);
-    const res = await fetch("/api/admin/review", { headers: { "x-admin-secret": adminSecret } });
+    if (adminSecret) await ensureAdminSession(adminSecret);
+    const res = await fetch("/api/admin/review", { headers: {} });
     const payload = await res.json();
     setLoading(false);
     if (res.ok) {
@@ -190,11 +192,11 @@ export default function AdminReviewPage() {
         </p>
         <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
           <input
-            aria-label="Admin secret"
+            aria-label="Admin password"
             type="password"
             value={adminSecret}
             onChange={(event) => setAdminSecret(event.target.value)}
-            placeholder="ADMIN_SECRET"
+            placeholder="Admin password"
             style={{ flex: 1, padding: 10 }}
             onKeyDown={(e) => e.key === "Enter" && load()}
           />

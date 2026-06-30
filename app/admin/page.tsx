@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ensureAdminSession } from "../../lib/admin-client";
 import { useCallback, useMemo, useState } from "react";
 
 type DashboardCounts = {
@@ -124,7 +125,8 @@ export default function AdminDashboardPage() {
     setLoading(true);
     setMessage(null);
     try {
-      const res = await fetch("/api/admin/review", { headers: { "x-admin-secret": secret } });
+      if (secret) await ensureAdminSession(secret);
+      const res = await fetch("/api/admin/review", { headers: {} });
       const payload = await res.json();
       setData(res.ok ? payload : null);
       setMessage({ ok: res.ok, text: res.ok ? "관리 대시보드 집계를 불러왔습니다." : payload.error ?? "대시보드 조회 실패" });
@@ -146,7 +148,7 @@ export default function AdminDashboardPage() {
             verified 승격은 반드시 출처와 사람 검토를 거칩니다.
           </p>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <input aria-label="Admin secret" type="password" value={secret} onChange={(event) => setSecret(event.target.value)} placeholder="ADMIN_SECRET" style={{ flex: "1 1 260px", padding: "10px 12px", border: "1px solid #d1d5db", borderRadius: 10 }} />
+            <input aria-label="Admin password" type="password" value={secret} onChange={(event) => setSecret(event.target.value)} placeholder="Admin password" style={{ flex: "1 1 260px", padding: "10px 12px", border: "1px solid #d1d5db", borderRadius: 10 }} />
             <button onClick={load} disabled={loading} style={{ padding: "10px 16px", border: 0, borderRadius: 10, background: "#111827", color: "#fff", fontWeight: 700, cursor: loading ? "not-allowed" : "pointer" }}>{loading ? "불러오는 중..." : "집계 불러오기"}</button>
           </div>
           {message && <p style={{ color: message.ok ? "#166534" : "#991b1b", marginBottom: 0 }}>{message.text}</p>}
@@ -172,7 +174,7 @@ export default function AdminDashboardPage() {
             <Link href="/admin/review" style={{ color: "#2563eb", fontSize: 13, fontWeight: 700 }}>전체 review checklist →</Link>
           </div>
           {(data?.dashboard?.recent_admin_actions?.length ?? 0) === 0 ? (
-            <p style={{ color: "#6b7280" }}>ADMIN_SECRET으로 집계를 불러오면 최근 작업 로그가 표시됩니다.</p>
+            <p style={{ color: "#6b7280" }}>관리자 cookie 인증 후 집계를 불러오면 최근 작업 로그가 표시됩니다.</p>
           ) : (
             <div style={{ marginTop: 14, display: "grid", gap: 8 }}>
               {data?.dashboard?.recent_admin_actions?.map((action) => (

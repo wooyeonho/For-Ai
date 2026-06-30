@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { ensureAdminSession } from "../../../lib/admin-client";
 import { useCallback, useState } from "react";
 
 type TableCheck = {
@@ -40,7 +41,8 @@ export default function AdminDiagnosticsPage() {
   const load = useCallback(async () => {
     setLoading(true);
     setMessage(null);
-    const res = await fetch("/api/admin/diagnostics", { headers: { "x-admin-secret": secret } });
+    if (secret) await ensureAdminSession(secret);
+    const res = await fetch("/api/admin/diagnostics", { headers: {} });
     const payload = await res.json();
     setLoading(false);
     if (res.ok) {
@@ -66,11 +68,11 @@ export default function AdminDiagnosticsPage() {
         </p>
         <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
           <input
-            aria-label="Admin secret"
+            aria-label="Admin password"
             type="password"
             value={secret}
             onChange={(event) => setSecret(event.target.value)}
-            placeholder="ADMIN_SECRET"
+            placeholder="Admin password"
             style={{ flex: 1, padding: 10 }}
           />
           <button onClick={load} disabled={loading}>{loading ? "Checking..." : "Run diagnostics"}</button>

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # For-Ai API — cURL Examples
 # Replace API_KEY with your actual key (forai_free_..., forai_pro_..., etc.)
+# CLI/internal admin calls may use X-Admin-Secret. Browser admin UI must use /api/admin/login and the httpOnly cookie only.
 
 set -euo pipefail
 

@@ -4,7 +4,7 @@
 --   - public submissions are insert-only and must enter the review queue as new.
 --   - public clients must not read review queues such as topic_candidates.
 --   - admin/service-role API routes read and mutate review queues because the
---     service role bypasses RLS and is gated by x-admin-secret in /api/admin/*.
+--     service role bypasses RLS and is gated by the httpOnly admin cookie for browser UI or x-admin-secret for CLI/internal callers in /api/admin/*.
 
 alter table edits enable row level security;
 alter table reports enable row level security;

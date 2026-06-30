@@ -40,7 +40,7 @@ Notes:
 
 - `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are required for public Supabase reads and browser-safe client paths.
 - `SUPABASE_SERVICE_ROLE_KEY` is required only on trusted server-side routes; never expose it to client code.
-- `ADMIN_SECRET` gates admin APIs and admin-only UI actions.
+- `ADMIN_SECRET` gates admin APIs. Browser admin UI users submit the password to `/api/admin/login` and then rely on the httpOnly admin session cookie; do not send `x-admin-secret` from browser-origin requests. CLI/internal callers may continue to use `x-admin-secret` with CSRF where required.
 - `CONTRIBUTOR_SALT` is required so public submissions store only `contributor_hash` and never raw IP addresses.
 
 ### 2. Supabase SQL Editor migrations

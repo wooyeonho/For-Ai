@@ -148,12 +148,12 @@ export default function NewDocumentPage() {
     e.preventDefault();
     setLoading(true);
     setResult(null);
+    if (adminSecret) await ensureAdminSession(adminSecret);
     try {
       const res = await fetch("/api/admin/new-document", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-admin-secret": adminSecret,
           "x-admin-csrf": "1",
         },
         body: JSON.stringify({
@@ -265,7 +265,7 @@ export default function NewDocumentPage() {
             </div>
           </section>
 
-          <label>Admin Secret <span aria-label="필수">*</span><input type="password" value={adminSecret} onChange={e => setAdminSecret(e.target.value)} required placeholder="관리자 비밀키" /></label>
+          <label>Admin Password <span aria-label="필수">*</span><input type="password" value={adminSecret} onChange={e => setAdminSecret(e.target.value)} required placeholder="Admin password" /></label>
           <button type="submit" disabled={loading}>{loading ? "생성 중..." : "Document 생성"}</button>
         </form>
       </section>

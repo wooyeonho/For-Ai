@@ -230,9 +230,18 @@ async function supabaseAuthContext(request: Request): Promise<AdminAuthContext |
   };
 }
 
+function cookieSessionContext(request: Request): AdminAuthContext | null {
+  if (!adminSessionValid(request)) return null;
+  return {
+    adminUserId: null,
+    adminUserHash: hashSafe(`admin_cookie:${ADMIN_SECRET}`),
+    role: "admin",
+    authMethod: "admin_secret",
+  };
+}
+
 function fallbackSecretContext(request: Request): AdminAuthContext | null {
-  const auth = request.headers.get("x-admin-secret") ?? "";
-  if (!safeSecretEqual(ADMIN_SECRET, auth)) return null;
+  if (!internalSecretValid(request)) return null;
   return {
     adminUserId: null,
     adminUserHash: hashSafe(`admin_secret:${ADMIN_SECRET}`),
@@ -242,7 +251,7 @@ function fallbackSecretContext(request: Request): AdminAuthContext | null {
 }
 
 export async function authorized(request: Request): Promise<boolean> {
-  return (await supabaseAuthContext(request)) !== null || fallbackSecretContext(request) !== null;
+  return (await supabaseAuthContext(request)) !== null || cookieSessionContext(request) !== null || fallbackSecretContext(request) !== null;
 }
 
 export function safeRequestMetadata(request: Request): AdminAuditMetadata {
@@ -299,7 +308,7 @@ export async function requireAdmin(request: Request, action: string): Promise<Ne
     return NextResponse.json({ error: "rate_limited" }, { status: 429 });
   }
 
-  const context = await supabaseAuthContext(request) ?? fallbackSecretContext(request);
+  const context = await supabaseAuthContext(request) ?? cookieSessionContext(request) ?? fallbackSecretContext(request);
   if (!context) {
     console.info("[admin-audit]", JSON.stringify({ action, allowed: false, reason: "unauthorized", at: new Date().toISOString() }));
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });

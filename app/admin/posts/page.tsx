@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { ensureAdminSession } from "../../../lib/admin-client";
 import { AdminSecretField, useAdminSecret } from "../AdminSecretProvider";
 
 interface Post {
@@ -38,12 +39,12 @@ export default function AdminPostsPage() {
   const [creating, setCreating] = useState(false);
 
   const load = useCallback(async () => {
-    if (!adminSecret) { setLoading(false); return; }
+    if (adminSecret) await ensureAdminSession(adminSecret);
     setLoading(true);
     const params = new URLSearchParams({ status: statusFilter });
     if (authorFilter !== "all") params.set("author_type", authorFilter);
     try {
-      const r = await fetch(`/api/admin/posts?${params.toString()}`, { headers: { "x-admin-secret": adminSecret } });
+      const r = await fetch(`/api/admin/posts?${params.toString()}`, { headers: {} });
       const d = await r.json();
       setPosts(Array.isArray(d.posts) ? d.posts : []);
       if (!r.ok) flash(d.error ?? "조회 실패", false);
@@ -61,10 +62,10 @@ export default function AdminPostsPage() {
   }
 
   async function updateStatus(id: string, status: string) {
-    if (!adminSecret) { flash("admin secret을 입력하세요", false); return; }
+    if (adminSecret) await ensureAdminSession(adminSecret);
     const r = await fetch("/api/admin/posts", {
       method: "PATCH",
-      headers: { "Content-Type": "application/json", "x-admin-secret": adminSecret, "x-admin-csrf": "1" },
+      headers: { "Content-Type": "application/json",  "x-admin-csrf": "1" },
       body: JSON.stringify({ id, status }),
     });
     const d = await r.json();
@@ -74,12 +75,13 @@ export default function AdminPostsPage() {
 
   async function createPost(e: React.FormEvent) {
     e.preventDefault();
-    if (!adminSecret || !newContent.trim()) return;
+    if (!newContent.trim()) return;
+    if (adminSecret) await ensureAdminSession(adminSecret);
     setCreating(true);
     try {
       const r = await fetch("/api/admin/posts", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "x-admin-secret": adminSecret, "x-admin-csrf": "1" },
+        headers: { "Content-Type": "application/json",  "x-admin-csrf": "1" },
         body: JSON.stringify({
           content: newContent.trim(),
           author_type: newAuthorType,
@@ -112,8 +114,8 @@ export default function AdminPostsPage() {
               adminSecret={adminSecret}
               setAdminSecret={setAdminSecret}
               resetAdminSecret={resetAdminSecret}
-              label="관리자 인증키"
-              placeholder="admin secret"
+              label="관리자 비밀번호"
+              placeholder="Admin password"
               inputStyle={{ border: "1px solid #d1d5db", borderRadius: 6, padding: "6px 10px", fontSize: 13, width: 160 }}
             />
             <Link href="/admin/candidates" style={{ fontSize: 13, color: "#2563eb" }}>후보 큐</Link>

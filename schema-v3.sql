@@ -357,7 +357,7 @@ create policy topic_candidates_public_insert
 
 -- No public SELECT/UPDATE policies: topic candidates are review-queue
 -- intake records and are readable only through admin/service-role API routes
--- (/api/admin/*) gated by x-admin-secret.
+-- (/api/admin/*) gated by httpOnly admin cookie for browser UI or x-admin-secret for CLI/internal callers only.
 
 -- community_posts: users, AI (aiai), and admins can all leave posts.
 create table community_posts (

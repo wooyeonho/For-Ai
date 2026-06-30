@@ -1,6 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useState } from "react";
+import { ensureAdminSession } from "../../../lib/admin-client";
 import { AdminSecretField, useAdminSecret } from "../AdminSecretProvider";
 
 const JSONL_PLACEHOLDER = `{"entity_id":"kr-person-athlete-son-001","type":"person_athlete","name":"손흥민 현재 소속팀","title":"손흥민 현재 소속팀","slug":"son-heung-min-current-team","category":"person_athlete","lang":"ko","country":"KR","jurisdiction":"KR","claims":[{"field_path":"athlete.current_team","claim_text":"현재 소속팀은 확인이 필요합니다.","claim_value":"확인 필요","confidence":"low","status":"needs_review","sources":[]}]}
@@ -45,11 +46,11 @@ export default function AdminImportPage() {
 
     setLoading(true);
     try {
+      if (adminSecret) await ensureAdminSession(adminSecret);
       const res = await fetch("/api/admin/import", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-admin-secret": adminSecret,
           "x-admin-csrf": "1",
         },
         body: JSON.stringify({ rows }),
@@ -128,7 +129,7 @@ export default function AdminImportPage() {
             adminSecret={adminSecret}
             setAdminSecret={setAdminSecret}
             resetAdminSecret={resetAdminSecret}
-            label="Admin Secret *"
+            label="Admin Password *"
             placeholder="관리자 비밀키"
           />
           <button type="submit" disabled={loading || lineCount === 0}>
