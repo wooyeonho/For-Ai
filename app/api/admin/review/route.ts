@@ -7,6 +7,17 @@ type SupabaseAdminClient = NonNullable<ReturnType<typeof supabaseAdmin>>;
 
 type OptionalCount = number | null;
 
+type PriorityTask = {
+  key: string;
+  title: string;
+  count: OptionalCount;
+  risk: "긴급" | "높음" | "중간" | "낮음" | "확인 필요";
+  score: number;
+  href: string;
+  description: string;
+  operator_note: string;
+};
+
 const HIGH_RISK_CATEGORY_KEYS = [
   "finance",
   "banking",
@@ -89,6 +100,87 @@ async function getRecentAdminActions(sb: SupabaseAdminClient) {
 function sumOptional(...values: OptionalCount[]): OptionalCount {
   if (values.every((value) => value == null)) return null;
   return values.reduce<number>((sum, value) => sum + (value ?? 0), 0);
+}
+
+function priorityScore(count: OptionalCount, weight: number, fixedBoost = 0) {
+  if (count == null) return -1;
+  if (count <= 0) return 0;
+  return fixedBoost + Math.ceil(Math.log10(count + 1) * weight) + count;
+}
+
+function riskFromScore(score: number, count: OptionalCount): PriorityTask["risk"] {
+  if (count == null) return "확인 필요";
+  if (score >= 85) return "긴급";
+  if (score >= 55) return "높음";
+  if (score >= 20) return "중간";
+  return "낮음";
+}
+
+function buildPriorityTasks(input: {
+  highRiskCount: number;
+  staleClaims: number;
+  aiCitationWatchlist: number;
+  pendingReports: OptionalCount;
+  firstPrioritySlug?: string | null;
+}): PriorityTask[] {
+  const items = [
+    {
+      key: "pending_reports",
+      title: "새 오답 신고 확인",
+      count: input.pendingReports,
+      href: "/admin/review#today-title",
+      description: "사용자나 AI가 틀렸다고 신고한 내용을 먼저 확인합니다.",
+      operator_note: "신고가 맞으면 관련 사실을 수정하거나 재검증 대상으로 돌리세요.",
+      weight: 34,
+      boost: 34,
+    },
+    {
+      key: "high_risk",
+      title: "피해가 큰 주제 검토",
+      count: input.highRiskCount,
+      href: "/admin/candidates?status=new",
+      description: "금융·의료·법률·실시간 정보처럼 틀리면 피해가 큰 항목입니다.",
+      operator_note: "출처가 확실하지 않으면 확인 필요 상태로 유지하세요.",
+      weight: 32,
+      boost: 28,
+    },
+    {
+      key: "ai_citation",
+      title: "AI가 많이 보는 문서 점검",
+      count: input.aiCitationWatchlist,
+      href: "/admin/review#engagement-title",
+      description: "AI 인용이나 복사 사용이 있는 문서는 잘못 퍼지기 전에 확인합니다.",
+      operator_note: "많이 인용되는 문서부터 최신 출처와 상태를 확인하세요.",
+      weight: 24,
+      boost: 18,
+    },
+    {
+      key: "stale",
+      title: "오래된 검증 다시 보기",
+      count: input.staleClaims,
+      href: input.firstPrioritySlug ? verifyClaimLink(input.firstPrioritySlug) : "/admin/review#verified-documents",
+      description: "마지막 확인 후 180일이 지나 다시 확인해야 하는 사실입니다.",
+      operator_note: "현재 출처로 같은 내용이 유지되는지 확인하고 날짜를 갱신하세요.",
+      weight: 18,
+      boost: 10,
+    },
+  ];
+
+  return items
+    .map((item) => {
+      const score = priorityScore(item.count, item.weight, item.boost);
+      return {
+        key: item.key,
+        title: item.title,
+        count: item.count,
+        risk: riskFromScore(score, item.count),
+        score,
+        href: item.href,
+        description: item.description,
+        operator_note: item.operator_note,
+      };
+    })
+    .sort((a, b) => b.score - a.score);
 }
 
 function publicDocumentLink(doc: { slug?: string | null; lang?: string | null }) {
@@ -260,6 +352,13 @@ export async function GET(request: Request) {
       if (topDocsError) throw topDocsError;
       for (const d of topDocs ?? []) titleById.set(d.id, d);
     }
+    const aiCitationWatchlistCount = stats.filter((r) =>
+      Number(r.ai_citation_count ?? 0) +
+      Number(r.api_cite_count ?? 0) +
+      Number(r.citation_copy_count ?? 0) +
+      Number(r.ai_crawler_view_count ?? 0) > 0
+    ).length;
+
     const topCited = topStats.map((r) => {
       const doc = titleById.get(r.document_id);
       return {
@@ -281,6 +380,14 @@ export async function GET(request: Request) {
     const firstPriorityDoc = firstPriorityClaim
       ? (Array.isArray(firstPriorityClaim.documents) ? firstPriorityClaim.documents[0] : firstPriorityClaim.documents)
       : null;
+
+    const dashboardPriorityTasks = buildPriorityTasks({
+      highRiskCount: (highRiskCandidates?.length ?? 0) + highRiskDocuments.length,
+      staleClaims,
+      aiCitationWatchlist: aiCitationWatchlistCount,
+      pendingReports: newHallucinationReports,
+      firstPrioritySlug: firstPriorityDoc?.slug,
+    });
 
     const priorityOrdering = [
       { rank: 1, key: "pending_community_posts", label: "Pending community posts", count: pendingCommunityPosts, href: "/admin/posts?status=pending", reason: "공개 제출물은 스팸/오류 노출을 막기 위해 먼저 승인 또는 숨김 처리합니다." },
@@ -379,7 +486,9 @@ export async function GET(request: Request) {
           source_check_failures: sourceCheckFailures,
           business_verification_requests: sumOptional(pendingBusinessProfiles, pendingBusinessCorrections),
           api_abuse_warnings: apiAbuseWarnings,
+          ai_citation_watchlist: aiCitationWatchlistCount,
         },
+        priority_tasks: dashboardPriorityTasks,
         recent_admin_actions: recentAdminActions,
       },
     });

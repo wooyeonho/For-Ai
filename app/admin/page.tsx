@@ -11,6 +11,18 @@ type DashboardCounts = {
   source_check_failures?: number | null;
   business_verification_requests?: number | null;
   api_abuse_warnings?: number | null;
+  ai_citation_watchlist?: number;
+};
+
+type PriorityTask = {
+  key: string;
+  title: string;
+  count: number | null;
+  risk: "긴급" | "높음" | "중간" | "낮음" | "확인 필요";
+  score: number;
+  href: string;
+  description: string;
+  operator_note: string;
 };
 
 type RecentAdminAction = {
@@ -27,6 +39,7 @@ type ReviewPayload = {
   };
   dashboard?: {
     counts?: DashboardCounts;
+    priority_tasks?: PriorityTask[];
     recent_admin_actions?: RecentAdminAction[];
   };
 };
@@ -35,6 +48,7 @@ const PAGE = { minHeight: "100vh", background: "#f9fafb", padding: "32px 20px", 
 const WRAP = { maxWidth: 1120, margin: "0 auto" };
 const PANEL = { background: "#fff", border: "1px solid #e5e7eb", borderRadius: 16, padding: 20 };
 const GRID = { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 14 };
+const riskColors: Record<PriorityTask["risk"], string> = { 긴급: "#dc2626", 높음: "#ea580c", 중간: "#d97706", 낮음: "#2563eb", "확인 필요": "#6b7280" };
 
 function displayCount(value: number | null | undefined) {
   return value == null ? "—" : value.toLocaleString("ko-KR");
@@ -52,70 +66,72 @@ export default function AdminDashboardPage() {
 
   const dashboardCounts = data?.dashboard?.counts;
   const fallbackCounts = data?.counts;
+  const priorityTasks = data?.dashboard?.priority_tasks ?? [];
+  const firstTask = priorityTasks[0];
 
   const cards = useMemo(() => [
     {
-      title: "Pending claim reviews",
+      title: "검토할 사실",
       count: dashboardCounts?.pending_claim_reviews ?? fallbackCounts?.claims_needs_review,
       href: "/admin/review",
-      cta: "Review checklist로 이동",
-      detail: "needs_review 상태의 claim을 출처 기반으로 검증합니다.",
+      cta: "검토 목록으로 이동",
+      detail: "출처 확인이 필요해 아직 확정하지 않은 사실입니다.",
       tone: "#2563eb",
     },
     {
-      title: "New topic suggestions",
+      title: "새 주제 제안",
       count: dashboardCounts?.new_topic_suggestions ?? fallbackCounts?.candidates_new,
       href: "/admin/candidates",
-      cta: "후보 검토 큐로 이동",
-      detail: "AI/시드가 생성한 새 topic candidate를 승인·거절합니다.",
+      cta: "주제 제안 보기",
+      detail: "새로 들어온 주제를 공개할지, 보류할지 결정합니다.",
       tone: "#7c3aed",
     },
     {
-      title: "New hallucination reports",
+      title: "새 오답 신고",
       count: dashboardCounts?.new_hallucination_reports,
       href: "/admin/review#today-title",
-      cta: "신고 검토 흐름으로 이동",
-      detail: countHint(dashboardCounts?.new_hallucination_reports, "새 AI 오답 신고를 claim 수정/재검증으로 전환합니다."),
+      cta: "신고 확인하기",
+      detail: countHint(dashboardCounts?.new_hallucination_reports, "AI가 틀리게 답했거나 문서가 잘못됐다는 신고입니다."),
       tone: "#dc2626",
     },
     {
-      title: "Stale claims",
+      title: "오래된 검증",
       count: dashboardCounts?.stale_claims,
       href: "/admin/review#verified-documents",
-      cta: "재검증 대상 보기",
-      detail: "last_verified_at 기준 180일이 지난 verified claim입니다.",
+      cta: "다시 확인하기",
+      detail: "마지막 확인 후 180일이 지나 최신 상태인지 다시 봐야 합니다.",
       tone: "#d97706",
     },
     {
-      title: "Source check failures",
+      title: "출처 확인 필요",
       count: dashboardCounts?.source_check_failures,
       href: "/admin/verify-claim",
-      cta: "출처 보강 페이지로 이동",
-      detail: countHint(dashboardCounts?.source_check_failures, "자동 출처 점검 실패 또는 unknown source를 확인합니다."),
+      cta: "출처 보강하기",
+      detail: countHint(dashboardCounts?.source_check_failures, "출처가 없거나 신뢰도를 확인하기 어려운 항목입니다."),
       tone: "#b91c1c",
     },
     {
-      title: "Business verification requests",
+      title: "사업자 확인 요청",
       count: dashboardCounts?.business_verification_requests,
       href: "/api-docs#business-api",
-      cta: "Business API 안내 보기",
-      detail: countHint(dashboardCounts?.business_verification_requests, "pending business profile/correction 요청입니다."),
+      cta: "요청 안내 보기",
+      detail: countHint(dashboardCounts?.business_verification_requests, "사업자가 직접 정보를 확인하거나 수정해 달라고 요청했습니다."),
       tone: "#047857",
     },
     {
-      title: "API abuse warnings",
+      title: "비정상 사용 알림",
       count: dashboardCounts?.api_abuse_warnings,
       href: "/api-docs",
-      cta: "API 정책 보기",
-      detail: countHint(dashboardCounts?.api_abuse_warnings, "최근 rate limit 또는 4xx/5xx 사용량 이상 징후입니다."),
+      cta: "사용 정책 보기",
+      detail: countHint(dashboardCounts?.api_abuse_warnings, "짧은 시간에 실패 요청이 많이 발생한 사용 흔적입니다."),
       tone: "#9333ea",
     },
     {
-      title: "Recent admin actions",
+      title: "최근 운영 기록",
       count: data?.dashboard?.recent_admin_actions?.length,
       href: "#recent-admin-actions",
-      cta: "최근 작업 로그 보기",
-      detail: "admin_audit_events에 기록된 최신 운영 작업입니다.",
+      cta: "운영 기록 보기",
+      detail: "운영자가 최근 처리한 작업을 확인합니다.",
       tone: "#111827",
     },
   ], [dashboardCounts, data?.dashboard?.recent_admin_actions?.length, fallbackCounts]);
@@ -140,10 +156,10 @@ export default function AdminDashboardPage() {
       <main style={WRAP}>
         <header style={{ ...PANEL, marginBottom: 18 }}>
           <p style={{ margin: "0 0 6px", color: "#6b7280", fontSize: 12, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase" }}>For-Ai admin</p>
-          <h1 style={{ margin: 0, fontSize: 30 }}>Claim-level operations dashboard</h1>
+          <h1 style={{ margin: 0, fontSize: 30 }}>오늘의 운영 센터</h1>
           <p style={{ color: "#4b5563", lineHeight: 1.6, maxWidth: 760 }}>
-            흩어진 관리 화면을 한 곳에서 시작합니다. 모든 카드는 관련 관리 페이지로 바로 이동하며,
-            verified 승격은 반드시 출처와 사람 검토를 거칩니다.
+            오늘 먼저 처리할 일을 한눈에 보여줍니다. 위험도가 높은 신고와 오래된 사실, AI가 많이 보는 문서부터
+            확인해 잘못된 정보가 퍼지지 않도록 관리합니다.
           </p>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <input aria-label="Admin secret" type="password" value={secret} onChange={(event) => setSecret(event.target.value)} placeholder="ADMIN_SECRET" style={{ flex: "1 1 260px", padding: "10px 12px", border: "1px solid #d1d5db", borderRadius: 10 }} />
@@ -152,7 +168,33 @@ export default function AdminDashboardPage() {
           {message && <p style={{ color: message.ok ? "#166534" : "#991b1b", marginBottom: 0 }}>{message.text}</p>}
         </header>
 
-        <section aria-label="Admin dashboard cards" style={GRID}>
+        <section aria-labelledby="today-title" style={{ ...PANEL, marginBottom: 18, borderTop: `6px solid ${firstTask ? riskColors[firstTask.risk] : "#111827"}` }}>
+          <p style={{ margin: "0 0 6px", color: "#6b7280", fontSize: 12, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase" }}>Daily command center</p>
+          <h2 id="today-title" style={{ margin: 0, fontSize: 24 }}>오늘 가장 먼저 처리할 일</h2>
+          {priorityTasks.length === 0 ? (
+            <p style={{ color: "#4b5563", lineHeight: 1.6 }}>ADMIN_SECRET을 입력하고 집계를 불러오면 신고, 위험 주제, AI 인용, 오래된 검증 순서로 오늘의 우선순위가 표시됩니다.</p>
+          ) : (
+            <div style={{ marginTop: 14, display: "grid", gap: 12 }}>
+              {priorityTasks.map((task, index) => (
+                <Link key={task.key} href={task.href} style={{ display: "grid", gridTemplateColumns: "auto 1fr auto", gap: 14, alignItems: "center", padding: 14, border: "1px solid #e5e7eb", borderRadius: 14, background: index === 0 ? "#fff7ed" : "#f9fafb", textDecoration: "none", color: "inherit" }}>
+                  <div style={{ width: 38, height: 38, borderRadius: 999, background: riskColors[task.risk], color: "#fff", display: "grid", placeItems: "center", fontWeight: 800 }}>{index + 1}</div>
+                  <div>
+                    <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+                      <strong style={{ fontSize: 17 }}>{task.title}</strong>
+                      <span style={{ color: riskColors[task.risk], fontSize: 12, fontWeight: 800 }}>위험도 {task.risk}</span>
+                      <span style={{ color: "#111827", fontSize: 12, fontWeight: 800 }}>개수 {displayCount(task.count)}</span>
+                    </div>
+                    <p style={{ margin: "6px 0 2px", color: "#4b5563", lineHeight: 1.5 }}>{task.description}</p>
+                    <p style={{ margin: 0, color: "#6b7280", fontSize: 13 }}>{task.operator_note}</p>
+                  </div>
+                  <span style={{ color: riskColors[task.risk], fontSize: 13, fontWeight: 800, whiteSpace: "nowrap" }}>바로 처리 →</span>
+                </Link>
+              ))}
+            </div>
+          )}
+        </section>
+
+        <section aria-label="운영 현황 카드" style={GRID}>
           {cards.map((card) => (
             <Link key={card.title} href={card.href} style={{ ...PANEL, display: "block", textDecoration: "none", color: "inherit", borderTop: `5px solid ${card.tone}` }}>
               <p style={{ margin: 0, color: "#6b7280", fontSize: 12, fontWeight: 700 }}>{card.title}</p>
@@ -166,13 +208,13 @@ export default function AdminDashboardPage() {
         <section id="recent-admin-actions" style={{ ...PANEL, marginTop: 18 }}>
           <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center", flexWrap: "wrap" }}>
             <div>
-              <h2 style={{ margin: 0, fontSize: 18 }}>Recent admin actions</h2>
-              <p style={{ margin: "4px 0 0", color: "#6b7280", fontSize: 13 }}>민감 데이터 없이 action과 안전한 metadata만 보여줍니다.</p>
+              <h2 style={{ margin: 0, fontSize: 18 }}>최근 운영 기록</h2>
+              <p style={{ margin: "4px 0 0", color: "#6b7280", fontSize: 13 }}>민감한 정보 없이 최근 작업 종류와 시간만 보여줍니다.</p>
             </div>
-            <Link href="/admin/review" style={{ color: "#2563eb", fontSize: 13, fontWeight: 700 }}>전체 review checklist →</Link>
+            <Link href="/admin/review" style={{ color: "#2563eb", fontSize: 13, fontWeight: 700 }}>전체 검토 목록 →</Link>
           </div>
           {(data?.dashboard?.recent_admin_actions?.length ?? 0) === 0 ? (
-            <p style={{ color: "#6b7280" }}>ADMIN_SECRET으로 집계를 불러오면 최근 작업 로그가 표시됩니다.</p>
+            <p style={{ color: "#6b7280" }}>ADMIN_SECRET으로 집계를 불러오면 최근 운영 기록이 표시됩니다.</p>
           ) : (
             <div style={{ marginTop: 14, display: "grid", gap: 8 }}>
               {data?.dashboard?.recent_admin_actions?.map((action) => (
