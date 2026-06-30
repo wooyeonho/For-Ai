@@ -3,23 +3,46 @@ import { supabaseAdmin, requireAdmin, logAdminAuditEvent } from "@/lib/admin-api
 import { makeContributorHashForRequest } from "@/lib/contributor-hash";
 import { calculateBusinessProfileCompletenessScore, getEntityProfile } from "@/lib/entity-profile";
 
-// GET: List verified business profiles (public — only verified ones)
-export async function GET() {
+// GET: List business profiles. Public callers only see verified profiles;
+// admins may pass ?status=pending|verified|rejected|suspended for review queues.
+export async function GET(request: Request) {
   const sb = supabaseAdmin();
   if (!sb) return NextResponse.json({ error: "Database not configured" }, { status: 500 });
+  const url = new URL(request.url);
+  const requestedStatus = url.searchParams.get("status");
+  const isAdminQueue = Boolean(requestedStatus);
 
-  const { data, error } = await sb
+  if (isAdminQueue) {
+    const adminError = await requireAdmin(request, "business_profiles.read");
+    if (adminError) return adminError;
+  }
+
+  let query = sb
     .from("verified_business_profiles")
-    .select("id, entity_id, business_name, business_url, country, industry, tier, status, verification_method, verified_at")
-    .eq("status", "verified")
-    .order("verified_at", { ascending: false })
+    .select("*")
+    .order(isAdminQueue ? "created_at" : "verified_at", { ascending: false })
     .limit(100);
+  query = query.eq("status", requestedStatus ?? "verified");
+
+  const { data, error } = await query;
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   const profiles = await Promise.all((data ?? []).map(async (profile) => {
     const entityProfile = await getEntityProfile(String(profile.entity_id));
+    const publicProfile = isAdminQueue ? profile : {
+      id: profile.id,
+      entity_id: profile.entity_id,
+      business_name: profile.business_name,
+      business_url: profile.business_url,
+      country: profile.country,
+      industry: profile.industry,
+      tier: profile.tier,
+      status: profile.status,
+      verification_method: profile.verification_method,
+      verified_at: profile.verified_at,
+    };
     return {
-      ...profile,
+      ...publicProfile,
       completeness: calculateBusinessProfileCompletenessScore(entityProfile?.documents ?? [], profile),
     };
   }));
@@ -139,20 +162,29 @@ export async function PATCH(request: Request) {
 
   const body = await request.json();
   const profileId = String(body.profile_id ?? "").trim();
+  const action = String(body.action ?? "").trim();
   const newStatus = String(body.status ?? "").trim();
   const tier = String(body.tier ?? "").trim() || undefined;
+  const reviewerNote = body.reviewer_note ? String(body.reviewer_note).trim() : null;
 
-  if (!profileId || !["verified", "rejected", "suspended"].includes(newStatus)) {
+  if (!profileId || (action !== "request_source" && !["verified", "rejected", "suspended"].includes(newStatus))) {
     return NextResponse.json(
-      { error: "profile_id and valid status (verified/rejected/suspended) required" },
+      { error: "profile_id and valid status (verified/rejected/suspended) or action=request_source required" },
       { status: 400 },
     );
   }
 
   const update: Record<string, unknown> = {
-    status: newStatus,
+    status: action === "request_source" ? "pending" : newStatus,
     updated_at: new Date().toISOString(),
   };
+  if (action === "request_source") {
+    update.metadata = {
+      admin_review_state: "source_requested",
+      source_requested_at: new Date().toISOString(),
+      ...(reviewerNote ? { reviewer_note: reviewerNote } : {}),
+    };
+  }
   if (newStatus === "verified") update.verified_at = new Date().toISOString();
   if (tier && ["free", "pro", "enterprise"].includes(tier)) update.tier = tier;
 
@@ -167,7 +199,8 @@ export async function PATCH(request: Request) {
 
   await logAdminAuditEvent(sb, request, "admin.business_profile.update", {
     profile_id: profileId,
-    new_status: newStatus,
+    new_status: String(update.status),
+    action: action || "status_update",
     tier: tier ?? data.tier,
   });
 

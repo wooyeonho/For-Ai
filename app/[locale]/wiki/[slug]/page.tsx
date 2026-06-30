@@ -112,6 +112,8 @@ export default async function WikiDocumentPage({
     claims.some((claim) => standardGovernmentFeeFieldPaths.includes(claim.field_path)) &&
     (document.category.toLowerCase().includes("government") ||
       document.category.toLowerCase().includes("administration"));
+  const hasBusinessSubmittedClaims = claims.some((claim) => claim.source_of_claim === "business_submitted");
+  const hasSponsoredClaims = claims.some((claim) => claim.source_of_claim === "sponsored");
 
   return (
     <article>
@@ -209,6 +211,31 @@ export default async function WikiDocumentPage({
             <li>Document status: <strong>{document.status}</strong></li>
             <li>Citation-ready claims: <strong>{citationStatus.verifiedClaims}/{citationStatus.totalClaims}</strong></li>
             <li>Required before citation: document status <strong>verified</strong> and every claim verified with source-backed evidence.</li>
+          </ul>
+        </section>
+      )}
+
+      {(hasBusinessSubmittedClaims || hasSponsoredClaims) && (
+        <section
+          className="registry-panel"
+          aria-labelledby="business-disclosure"
+          style={{ background: "#fffbeb", border: "2px solid #f59e0b", borderInlineStart: "6px solid #d97706" }}
+        >
+          <p className="eyebrow" style={{ color: "#92400e" }}>Business / sponsored disclosure</p>
+          <h2 id="business-disclosure" style={{ marginTop: 0 }}>Commercial-origin content is clearly labeled</h2>
+          <ul className="link-list">
+            {hasBusinessSubmittedClaims && (
+              <li>
+                Business-submitted claims on this page are <strong>not citation-ready</strong> until independent human verification
+                adds normal sources and verification events in the canonical claim chain.
+              </li>
+            )}
+            {hasSponsoredClaims && (
+              <li>
+                Sponsored or business-claimed content is promotional/commercial-origin material and must not be confused with
+                independently verified facts.
+              </li>
+            )}
           </ul>
         </section>
       )}
