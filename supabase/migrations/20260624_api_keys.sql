@@ -61,3 +61,50 @@ CREATE POLICY "service_role_only_usage"
 
 CREATE INDEX IF NOT EXISTS idx_api_usage_key_id ON api_usage_events (key_id, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_api_usage_created_at ON api_usage_events (created_at DESC);
+
+-- Admin API key abuse review helpers. These views keep API usage events
+-- connected to keys without exposing raw key material or IP addresses.
+CREATE OR REPLACE VIEW api_key_usage_24h AS
+SELECT
+  k.id AS key_id,
+  k.key_prefix,
+  k.name,
+  k.tier,
+  k.is_active,
+  COUNT(e.id)::INTEGER AS total_24h,
+  COUNT(e.id) FILTER (WHERE e.status_code >= 400)::INTEGER AS errors_24h,
+  COUNT(e.id) FILTER (WHERE e.status_code = 429)::INTEGER AS rate_limited_24h,
+  COALESCE(
+    COUNT(e.id) FILTER (WHERE e.status_code >= 400)::NUMERIC / NULLIF(COUNT(e.id), 0),
+    0
+  ) AS error_rate_24h,
+  MAX(e.created_at) AS last_event_at
+FROM api_keys k
+LEFT JOIN api_usage_events e
+  ON e.key_id = k.id
+ AND e.created_at >= NOW() - INTERVAL '24 hours'
+GROUP BY k.id, k.key_prefix, k.name, k.tier, k.is_active;
+
+COMMENT ON VIEW api_key_usage_24h IS 'Admin usage summary connecting api_keys to api_usage_events for the most recent 24 hours.';
+
+CREATE OR REPLACE VIEW api_key_abuse_warnings AS
+SELECT
+  key_id,
+  key_prefix,
+  name,
+  tier,
+  is_active,
+  total_24h,
+  errors_24h,
+  rate_limited_24h,
+  error_rate_24h,
+  ARRAY_REMOVE(ARRAY[
+    CASE WHEN total_24h >= 1000 THEN 'high_usage_24h' END,
+    CASE WHEN total_24h >= 20 AND error_rate_24h >= 0.20 THEN 'high_error_rate_24h' END,
+    CASE WHEN rate_limited_24h > 0 THEN 'rate_limited_24h' END
+  ], NULL) AS warnings
+FROM api_key_usage_24h;
+
+COMMENT ON VIEW api_key_abuse_warnings IS 'Computed warning flags for high-volume, high-error-rate, or rate-limited API keys.';
+
+CREATE INDEX IF NOT EXISTS idx_api_usage_status_created_at ON api_usage_events (status_code, created_at DESC);
