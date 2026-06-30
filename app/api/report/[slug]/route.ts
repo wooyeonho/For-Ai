@@ -10,7 +10,7 @@ import {
   inspectSubmissionText,
 } from '../../../../lib/submission-limits';
 import { recordDocumentAnalyticsEvent } from '@/lib/analytics';
-import { normalizeSourceUrl, pointEventForSubmission } from '@/lib/source-contributions';
+import { invalidPublicSourceUrl, normalizeSourceUrl, parsePublicSourceUrl, pointEventForSubmission } from '@/lib/source-contributions';
 import { recordContributionEvent } from '@/lib/contributions';
 
 export async function POST(
@@ -78,8 +78,14 @@ export async function POST(
       const citation = typeof body.citation === 'string' ? body.citation.trim() : '';
       const claimId = typeof body.claim_id === 'string' && body.claim_id.trim() ? body.claim_id.trim() : null;
       const fieldPath = typeof body.field_path === 'string' && body.field_path.trim() ? body.field_path.trim() : null;
-      const normalizedUrl = normalizeSourceUrl(sourceUrl);
-      const spamCheck = inspectSubmissionText([message, sourceUrl, sourceTitle, citation]);
+      const parsedSourceUrl = sourceUrl ? parsePublicSourceUrl(sourceUrl) : null;
+      if (parsedSourceUrl && !parsedSourceUrl.ok) {
+        const invalidUrl = invalidPublicSourceUrl();
+        return NextResponse.json({ error: invalidUrl.error, code: invalidUrl.code }, { status: invalidUrl.status });
+      }
+      const publicSourceUrl = parsedSourceUrl?.ok ? parsedSourceUrl.url : '';
+      const normalizedUrl = normalizeSourceUrl(publicSourceUrl);
+      const spamCheck = inspectSubmissionText([message, publicSourceUrl, sourceTitle, citation]);
       const { error } = await supabase.from('reports').insert({
         document_id: documentId,
         entity_id: entityId,
@@ -91,7 +97,7 @@ export async function POST(
 
       let pointsAwarded = 0;
       let sourceCandidateId: string | null = null;
-      if (!error && (sourceUrl || sourceTitle || citation)) {
+      if (!error && (publicSourceUrl || sourceTitle || citation)) {
         const { data: contributor, error: contributorError } = await supabase
           .from('contributors')
           .upsert({ contributor_hash: contributorHash, updated_at: new Date().toISOString() }, { onConflict: 'contributor_hash' })
@@ -120,7 +126,7 @@ export async function POST(
           claim_id: claimId,
           field_path: fieldPath,
           title: sourceTitle || null,
-          url: sourceUrl || null,
+          url: publicSourceUrl || null,
           normalized_url: normalizedUrl,
           citation: citation || null,
           source_type: body.report_type === 'source_candidate' ? 'official' : 'unknown',
@@ -172,7 +178,7 @@ export async function POST(
           category: doc?.category ?? 'correction_report',
           reason: message,
           aiContext: `Public correction report for document_id=${documentId ?? 'unknown'}, entity_id=${entityId ?? 'unknown'}, report_type=${body.report_type ?? 'correction'}, source_candidate_id=${sourceCandidateId ?? 'none'}`,
-          sourceUrls: [sourceUrl || null],
+          sourceUrls: [publicSourceUrl || null],
           contributorHash,
           claimQuestion: `Which claim on ${doc?.title ?? slug} needs correction?`,
         }));
@@ -180,7 +186,7 @@ export async function POST(
       }
 
 
-      if (!error && typeof body.source_url === 'string' && body.source_url.trim()) {
+      if (!error && publicSourceUrl) {
         await recordContributionEvent(supabase, {
           contributor_hash: contributorHash,
           event_type: 'source_submitted',
