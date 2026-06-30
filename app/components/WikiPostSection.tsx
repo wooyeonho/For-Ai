@@ -88,8 +88,7 @@ export function WikiPostSection({ documentId }: { documentId: string }) {
     <section className="registry-panel" aria-labelledby="community-posts">
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
         <h2 id="community-posts">커뮤니티 ({posts.length})</h2>
-        <button onClick={() => setShowForm(!showForm)}
-          style={{ padding: "6px 14px", background: "#2563eb", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, cursor: "pointer" }}>
+        <button type="button" onClick={() => setShowForm(!showForm)} className="btn btn-primary">
           + 글쓰기
         </button>
       </div>
@@ -98,8 +97,7 @@ export function WikiPostSection({ documentId }: { documentId: string }) {
         <form onSubmit={submit} style={{ marginTop: 12, padding: 12, background: "#f9fafb", borderRadius: 8, border: "1px solid #e5e7eb" }}>
           <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
             {(["user", "ai"] as const).map((t) => (
-              <button key={t} type="button" onClick={() => setAuthorType(t)}
-                style={{ padding: "4px 12px", borderRadius: 16, fontSize: 12, cursor: "pointer", border: authorType === t ? "none" : "1px solid #d1d5db", background: authorType === t ? "#111827" : "#fff", color: authorType === t ? "#fff" : "#374151" }}>
+              <button key={t} type="button" onClick={() => setAuthorType(t)} className={authorType === t ? "btn btn-primary btn-compact" : "btn btn-ghost btn-compact"}>
                 {AUTHOR_ICON[t]} {t === "user" ? "사용자" : "AI"}
               </button>
             ))}
@@ -111,12 +109,10 @@ export function WikiPostSection({ documentId }: { documentId: string }) {
             style={{ width: "100%", minHeight: 60, padding: 8, border: "1px solid #d1d5db", borderRadius: 6, fontSize: 13, resize: "vertical", marginBottom: 8 }} />
           {msg && !msgOk && <p style={{ fontSize: 12, color: "#dc2626", marginBottom: 8 }}>{msg}</p>}
           <div style={{ display: "flex", gap: 6 }}>
-            <button type="submit" disabled={submitting}
-              style={{ padding: "6px 16px", background: submitting ? "#9ca3af" : "#2563eb", color: "#fff", border: "none", borderRadius: 6, fontSize: 13, cursor: submitting ? "not-allowed" : "pointer" }}>
+            <button type="submit" disabled={submitting} className="btn btn-primary">
               {submitting ? "등록 중..." : "등록"}
             </button>
-            <button type="button" onClick={() => setShowForm(false)}
-              style={{ padding: "6px 16px", background: "#f3f4f6", color: "#374151", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 13, cursor: "pointer" }}>
+            <button type="button" onClick={() => setShowForm(false)} className="btn btn-secondary">
               취소
             </button>
           </div>

@@ -361,7 +361,7 @@ export default async function CountryRegistryPage({
         <p className="eyebrow">Submit source CTA</p>
         <h2>Know an official source for a needed {name} fact?</h2>
         <p>Submit a source or topic for {name}. Public submissions start as needs-review candidates and must be human verified before citation.</p>
-        <Link className="button" href={submitTopicHref}>Submit a source</Link>
+        <Link className="btn btn-primary" href={submitTopicHref}>Submit a source</Link>
       </section>
     </article>
   );

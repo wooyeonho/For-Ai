@@ -298,20 +298,22 @@ h2 {
 .cta-link {
   display: inline-flex;
   align-items: center;
-  padding: 8px 16px;
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  background: var(--soft);
+  gap: 6px;
+  padding: 4px 2px;
+  border: 0;
+  border-bottom: 1px solid currentColor;
+  border-radius: 0;
+  background: transparent;
   font-size: 0.85rem;
-  font-weight: 500;
+  font-weight: 650;
   text-decoration: none;
   color: var(--accent);
-  transition: border-color 0.15s, background 0.15s;
+  transition: color 0.15s, background 0.15s, border-color 0.15s;
 }
 
 .cta-link:hover {
-  border-color: var(--accent);
-  background: var(--panel);
+  color: var(--ink);
+  background: rgba(0, 242, 255, 0.08);
 }
 
 .cta-link:focus-visible {
@@ -320,11 +322,11 @@ h2 {
 }
 
 .cta-correction {
-  border-color: #7bb5e0;
+  color: #1d5d83;
 }
 
 .cta-hallucination {
-  border-color: #e4c36b;
+  color: #8a6100;
 }
 
 /* Machine Panel */
@@ -841,48 +843,80 @@ textarea::placeholder {
 .btn {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
   padding: 11px 20px;
-  border-radius: 4px;
+  border-radius: 8px;
   font-size: 0.92rem;
   font-weight: 600;
   text-decoration: none;
   border: 1px solid transparent;
-  transition: background 0.15s, border-color 0.15s, transform 0.05s;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, transform 0.05s, opacity 0.15s;
 }
 
 .btn:active {
   transform: translateY(1px);
 }
 
+.btn:disabled,
+.btn[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 .btn-primary {
-  background: #00f2ff;
-  color: #002022;
-  border-color: #00f2ff;
+  background: var(--ink);
+  color: var(--paper);
+  border-color: var(--ink);
 }
 
 .btn-primary:hover {
-  border-color: #e1fdff;
-  background: #5ff8ff;
-}
-
-.btn-primary:focus-visible {
-  outline: none;
-  box-shadow: var(--focus-glow);
+  background: #2a2a2c;
+  border-color: #2a2a2c;
 }
 
 .btn-secondary {
   background: var(--soft);
-  color: var(--accent);
+  color: var(--ink);
   border-color: var(--line);
 }
 
 .btn-secondary:hover {
-  border-color: var(--accent);
+  border-color: var(--muted);
   background: var(--panel);
 }
 
-.btn-secondary:focus-visible {
+.btn-danger {
+  background: var(--danger, #dc2626);
+  color: #fff;
+  border-color: var(--danger, #dc2626);
+}
+
+.btn-danger:hover {
+  background: #b91c1c;
+  border-color: #b91c1c;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--text);
+  border-color: var(--line);
+}
+
+.btn-ghost:hover {
+  background: var(--soft);
+  border-color: var(--muted);
+}
+
+.btn-compact {
+  min-height: 32px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 0.8rem;
+}
+
+.btn:focus-visible {
   outline: none;
   box-shadow: var(--focus-glow);
 }
@@ -1372,8 +1406,12 @@ details.technical-meta dd {
 }
 
 /* Touch targets: 44px minimum for primary interactive elements */
-.btn, .form-submit, .registry-form button, .cta-link, .machine-link {
+.btn, .form-submit, .registry-form button, .machine-link {
   min-height: 44px;
+}
+
+.btn.btn-compact {
+  min-height: 32px;
 }
 
 /* Mission Control */
@@ -1991,7 +2029,6 @@ body {
 .site-nav a:hover { background: #eae8e1; color: var(--text); }
 
 /* ── 3. 1차 버튼 = 잉크(검정) · 시안(#00f2ff) 전부 교체 ──────────────────── */
-.btn-primary,
 .form-submit,
 .registry-form button,
 .community-primary-button,
@@ -2000,7 +2037,6 @@ body {
   border-color: var(--ink);
   color: var(--paper);
 }
-.btn-primary:hover,
 .form-submit:hover,
 .registry-form button:hover {
   background: #2a2a2c;
@@ -2009,14 +2045,6 @@ body {
 .semantic-button-success { background: var(--success); border-color: var(--success); }
 .community-primary-button { border-radius: 8px; }
 .community-chip-active { background: var(--ink); border-color: var(--ink); color: var(--paper); }
-
-/* 2차 버튼 */
-.btn-secondary {
-  background: var(--panel);
-  color: var(--text);
-  border-color: #d9d7ce;
-}
-.btn-secondary:hover { border-color: #b9b7ad; background: var(--panel); }
 
 /* 햄버거 토글 — 시안 제거 */
 .nav-toggle {
@@ -2479,37 +2507,6 @@ body {
 .contribute-hero h1 { margin: 0 0 0.5rem; font-size: 1.75rem; }
 .contribute-tagline { color: var(--muted); margin: 0 0 1.5rem; max-width: 52ch; }
 .contribute-hero-actions { display: flex; gap: 0.75rem; flex-wrap: wrap; }
-
-.btn-primary {
-  display: inline-block;
-  padding: 0.5rem 1.25rem;
-  background: var(--accent-blue, #24415f);
-  color: #fff;
-  border-radius: 4px;
-  font-size: 0.9rem;
-  font-weight: 600;
-  text-decoration: none;
-  border: none;
-  cursor: pointer;
-  transition: opacity 0.15s;
-}
-.btn-primary:hover { opacity: 0.85; }
-.btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-
-.btn-secondary {
-  display: inline-block;
-  padding: 0.5rem 1.25rem;
-  background: transparent;
-  color: var(--ink);
-  border-radius: 4px;
-  font-size: 0.9rem;
-  font-weight: 500;
-  text-decoration: none;
-  border: 1px solid var(--line);
-  cursor: pointer;
-  transition: border-color 0.15s;
-}
-.btn-secondary:hover { border-color: var(--muted); }
 
 .contribute-section { margin-bottom: 2.5rem; }
 .contribute-section h2 { font-size: 1.25rem; margin: 0 0 0.4rem; }

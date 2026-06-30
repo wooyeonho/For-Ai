@@ -139,7 +139,7 @@ export function ContributeClient() {
               rows={3}
             />
           </div>
-          <button type="submit" className="btn-primary" disabled={submitting}>
+          <button type="submit" className="btn btn-primary" disabled={submitting}>
             {submitting ? "Submitting…" : "Submit Source"}
           </button>
         </form>

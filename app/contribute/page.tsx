@@ -95,9 +95,9 @@ export default async function ContributePage() {
             Help verify facts for AI. Find official sources, report AI hallucinations, and earn points for quality contributions.
           </p>
           <div className="contribute-hero-actions">
-            <Link href="/suggest-topic" className="btn-primary">Suggest a Topic</Link>
-            <Link href="/contribute/leaderboard" className="btn-secondary">View Leaderboard</Link>
-            <Link href="/contribute/country-quest" className="btn-secondary">Country Quests</Link>
+            <Link href="/suggest-topic" className="btn btn-primary">Suggest a Topic</Link>
+            <Link href="/contribute/leaderboard" className="btn btn-secondary">View Leaderboard</Link>
+            <Link href="/contribute/country-quest" className="btn btn-secondary">Country Quests</Link>
           </div>
         </div>
 
@@ -253,8 +253,8 @@ export default async function ContributePage() {
           <h2>Ready to Contribute?</h2>
           <p>Find a claim that needs a source and submit the official URL. Every accepted source makes AI more accurate.</p>
           <div className="contribute-cta-actions">
-            <Link href="/suggest-topic" className="btn-primary">Suggest a New Topic</Link>
-            <Link href="/community" className="btn-secondary">Community</Link>
+            <Link href="/suggest-topic" className="btn btn-primary">Suggest a New Topic</Link>
+            <Link href="/community" className="btn btn-secondary">Community</Link>
           </div>
           <ContributeClient />
         </section>
