@@ -42,6 +42,18 @@ type Pagination = { page: number; limit: number; total: number; total_pages: num
 type ClaimStats = { total: number; needs_review: number; verified: number };
 
 const SOURCE_TYPES = ["official", "law", "platform", "document", "web", "review", "user", "phone", "photo", "other", "unknown"];
+const HIGH_RISK_CATEGORIES = new Set(["finance", "banking", "insurance", "healthcare", "genomics", "dna", "government", "labor", "tax", "travel", "real_estate", "housing"]);
+const WIZARD_STEPS = ["대상 확인", "claim 확인", "출처 추가", "값 수정", "confidence 선택", "추가 확인", "verified 처리", "공개 페이지 확인"];
+const STEP_HELP = [
+  "검증할 문서와 entity_id가 맞는지 확인합니다. 다른 문서라면 목록으로 돌아가세요.",
+  "claim 문장과 현재 값을 읽고, 무엇을 사실로 확정하려는지 확인합니다.",
+  "공개 접근 가능한 출처를 추가합니다. 출처가 하나도 없으면 verified 단계로 이동할 수 없습니다.",
+  "출처에서 직접 확인한 값만 입력합니다. 모르면 확인 필요 상태로 남깁니다.",
+  "공식/법령/공식 플랫폼은 high, 신뢰 가능한 3자 출처는 medium을 선택합니다.",
+  "고위험 카테고리는 금융·의료·정부·여행 등 사용자에게 큰 영향을 줄 수 있어 한 번 더 확인합니다.",
+  "출처와 값, confidence를 모두 확인한 뒤 verified로 저장합니다.",
+  "완료 후 공개 페이지와 API JSON에서 citation-ready 상태를 확인합니다.",
+];
 const SOURCE_TRUST: Record<string, number> = { official: 95, platform: 85, document: 80, web: 65, photo: 60, phone: 55, review: 40, user: 30, other: 25, unknown: 0 };
 function trustScore(sourceType?: string | null, url?: string | null, citation?: string | null) {
   const base = SOURCE_TRUST[sourceType ?? "unknown"] ?? 0;
@@ -86,6 +98,10 @@ export default function VerifyClaimPage() {
 
   // Verification form state
   const [selectedClaim, setSelectedClaim] = useState<ClaimRow | null>(null);
+  const [selectedDocument, setSelectedDocument] = useState<DocumentRow | null>(null);
+  const [wizardStep, setWizardStep] = useState(0);
+  const [highRiskConfirmed, setHighRiskConfirmed] = useState(false);
+  const [completionLinks, setCompletionLinks] = useState<{ publicUrl: string; apiUrl: string } | null>(null);
   const [claimValue, setClaimValue] = useState("");
   const [sourceType, setSourceType] = useState("official");
   const [title, setTitle] = useState("");
@@ -167,12 +183,16 @@ export default function VerifyClaimPage() {
     const el = document.getElementById(`doc-${doc.slug}`);
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
     const firstUnverified = (doc.claims ?? []).find((c) => c.status !== "verified");
-    if (firstUnverified) openVerify(firstUnverified);
+    if (firstUnverified) openVerify(firstUnverified, doc);
     setTargetSlug(null);
   }, [targetSlug, documents]);
 
-  function openVerify(claim: ClaimRow) {
+  function openVerify(claim: ClaimRow, doc?: DocumentRow) {
     setSelectedClaim(claim);
+    setSelectedDocument(doc ?? documents.find((d) => (d.claims ?? []).some((c) => c.id === claim.id)) ?? null);
+    setWizardStep(0);
+    setHighRiskConfirmed(false);
+    setCompletionLinks(null);
     setClaimValue(claim.claim_value === "확인 필요" ? "" : claim.claim_value);
     setTitle("");
     setUrl("");
@@ -226,12 +246,18 @@ export default function VerifyClaimPage() {
         source_check_status: sourceCheck?.source_check_status ?? "unchecked",
         source_trust_score: sourceCheck?.source_trust_score ?? 0,
         source_check_notes: sourceCheck?.source_check_notes ?? [],
+        high_risk_confirmed: highRiskConfirmed,
       }),
     });
     const data = await res.json();
     if (res.ok) {
+      const doc = selectedDocument;
+      if (action === "verify" && doc) {
+        setCompletionLinks({ publicUrl: `/${doc.lang ?? "en"}/wiki/${doc.slug}`, apiUrl: `/api/documents/${doc.slug}` });
+        setWizardStep(7);
+      }
       setMessage({ ok: true, text: data.document_all_verified ? "✓ 검증 저장 완료 — 문서 전체 verified 승격!" : `✓ 액션 저장 완료: ${action}` });
-      setSelectedClaim(null);
+      if (action !== "verify") setSelectedClaim(null);
       await load(page);
     } else {
       setMessage({ ok: false, text: data.error ?? "액션 저장 실패" });
@@ -283,6 +309,18 @@ export default function VerifyClaimPage() {
   }
 
   async function submitVerify() { return runClaimAction("verify"); }
+
+  const selectedSourceCount = selectedClaim?.claim_sources?.length ?? 0;
+  const hasAnySource = selectedSourceCount > 0 || Boolean(title.trim() || url.trim() || citation.trim());
+  const selectedIsHighRisk = HIGH_RISK_CATEGORIES.has(String(selectedDocument?.category ?? "").toLowerCase());
+  const canVerifySelected = Boolean(selectedClaim && claimValue.trim() && hasAnySource && (!selectedIsHighRisk || highRiskConfirmed));
+  const maxWizardStep = selectedIsHighRisk ? 7 : 7;
+  function nextWizardStep() {
+    setWizardStep((step) => Math.min(maxWizardStep, step + 1));
+  }
+  function previousWizardStep() {
+    setWizardStep((step) => Math.max(0, step - 1));
+  }
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault();
@@ -527,7 +565,7 @@ export default function VerifyClaimPage() {
                 )}
                 {(claim.verification_events?.length ?? 0) > 0 && <p className="meta-label">latest reason: {claim.verification_events?.at(-1)?.note ?? "—"}</p>}
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 8 }}>
-                  {claim.status !== "verified" && <button onClick={() => openVerify(claim)}>출처 추가 + verified 승격</button>}
+                  {claim.status !== "verified" && <button onClick={() => openVerify(claim, doc)}>wizard로 검증하기</button>}
                   <button type="button" onClick={() => markClaim("needs_verification", claim)}>needs verification + reason</button>
                   <button type="button" onClick={() => markClaim("reject", claim)}>reject/dispute + reason</button>
                 </div>
@@ -574,7 +612,40 @@ export default function VerifyClaimPage() {
       {/* Verification form */}
       {selectedClaim && (
         <section id="verify-form" className="registry-panel" style={{ borderColor: "#2563eb", borderWidth: 2 }}>
-          <h2>Claim 검증 · {selectedClaim.field_path}</h2>
+          <h2>Claim 검증 Wizard · {selectedClaim.field_path}</h2>
+          <div style={{ display: "grid", gap: 8, gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))", marginBottom: 16 }}>
+            {WIZARD_STEPS.map((step, index) => (
+              <button
+                key={step}
+                type="button"
+                onClick={() => setWizardStep(index)}
+                disabled={index >= 6 && !hasAnySource}
+                style={{
+                  padding: 8,
+                  border: index === wizardStep ? "2px solid #2563eb" : "1px solid #d1d5db",
+                  background: index === wizardStep ? "#eff6ff" : index < wizardStep ? "#f0fdf4" : "#fff",
+                  color: index >= 6 && !hasAnySource ? "#9ca3af" : undefined,
+                }}
+              >
+                {index + 1}. {step}
+              </button>
+            ))}
+          </div>
+          <div style={{ padding: 14, borderRadius: 10, background: "#f8fafc", border: "1px solid #e5e7eb", marginBottom: 16 }}>
+            <strong>{WIZARD_STEPS[wizardStep]}</strong>
+            <p style={{ margin: "6px 0 0", color: "#4b5563" }}>{STEP_HELP[wizardStep]}</p>
+            {selectedDocument && (
+              <p className="meta-label" style={{ margin: "8px 0 0" }}>
+                대상: {selectedDocument.title} · entity_id: {selectedDocument.entity_id ?? "-"} · document_id: {selectedDocument.id} · category: {selectedDocument.category ?? "?"}
+              </p>
+            )}
+            {!hasAnySource && wizardStep >= 2 && (
+              <p style={{ margin: "8px 0 0", color: "#b91c1c", fontWeight: 700 }}>출처가 없으므로 verified 처리 단계로 이동할 수 없습니다.</p>
+            )}
+            {selectedIsHighRisk && (
+              <p style={{ margin: "8px 0 0", color: "#92400e", fontWeight: 700 }}>High-risk category: 추가 확인 체크가 필요합니다.</p>
+            )}
+          </div>
           <div className="claim-card" style={{ marginBottom: 16, background: "#f0f9ff" }}>
             <p className="eyebrow">현재 값</p>
             <p><strong>{selectedClaim.claim_value}</strong></p>
@@ -680,8 +751,28 @@ export default function VerifyClaimPage() {
             </select>
           </label>
 
+          {selectedIsHighRisk && (
+            <label style={{ display: "block", marginBottom: 16, padding: 12, background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 8 }}>
+              <input type="checkbox" checked={highRiskConfirmed} onChange={(e) => setHighRiskConfirmed(e.target.checked)} />{" "}
+              고위험 카테고리 claim임을 확인했고, 출처·값·confidence를 한 번 더 대조했습니다.
+            </label>
+          )}
+
+          {completionLinks && (
+            <div style={{ padding: 14, borderRadius: 10, background: "#f0fdf4", border: "1px solid #86efac", marginBottom: 16 }}>
+              <strong>검증 완료 후 확인 링크</strong>
+              <p>Public URL: <Link href={completionLinks.publicUrl} target="_blank">{completionLinks.publicUrl}</Link></p>
+              <p>API URL: <Link href={completionLinks.apiUrl} target="_blank">{completionLinks.apiUrl}</Link></p>
+            </div>
+          )}
+
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 12 }}>
+            <button type="button" onClick={previousWizardStep} disabled={wizardStep === 0}>이전 단계</button>
+            <button type="button" onClick={nextWizardStep} disabled={wizardStep >= maxWizardStep || (wizardStep >= 5 && !hasAnySource)}>다음 단계</button>
+          </div>
+
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button onClick={submitVerify} disabled={!claimValue.trim()}>1. verify claim (저장 + verified 승격)</button>
+            <button onClick={submitVerify} disabled={!canVerifySelected}>verified 처리 (저장 + 공개 URL/API URL 생성)</button>
             <button onClick={() => runClaimAction("reject")} type="button">2. reject claim</button>
             <button onClick={() => runClaimAction("mark_unknown")} type="button">3. mark as unknown</button>
             <button onClick={() => runClaimAction("edit_value")} type="button">4. edit claim value</button>

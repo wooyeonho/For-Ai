@@ -65,7 +65,7 @@ function claimDate(row: ClaimWithDocument) {
   return new Date(row.created_at ?? row.updated_at ?? 0).getTime();
 }
 
-type ClaimAction = "verify" | "reject" | "mark_unknown" | "edit_value" | "attach_source" | "promote_document";
+type ClaimAction = "verify" | "reject" | "mark_unknown" | "edit_value" | "attach_source" | "promote_document" | "bulk_verify" | "bulk_needs_verification" | "needs_verification";
 
 type SourceInput = {
   source_type?: string;
@@ -75,7 +75,7 @@ type SourceInput = {
   observed_at?: string;
 };
 
-const ALLOWED_SOURCES = new Set(["official", "platform", "review", "user", "phone", "photo", "document", "web", "other", "unknown"]);
+const ALLOWED_SOURCES = new Set(["official", "law", "platform", "review", "user", "phone", "photo", "document", "web", "other", "unknown"]);
 const ALLOWED_CONFIDENCE = new Set(["low", "medium", "high"]);
 
 function clean(value: unknown): string | null {
@@ -386,10 +386,21 @@ export async function POST(request: Request) {
 
   const { data: existingClaim, error: fetchError } = await sb
     .from("claims")
-    .select("id, document_id, entity_id, status, confidence, claim_value")
+    .select("id, document_id, entity_id, status, confidence, claim_value, claim_sources(id), documents(id, slug, lang, category)")
     .eq("id", claimId)
     .single();
   if (fetchError || !existingClaim) return NextResponse.json({ error: "claim not found", detail: fetchError?.message }, { status: 404 });
+
+  const existingSourceCount = Array.isArray(existingClaim.claim_sources) ? existingClaim.claim_sources.length : 0;
+  const documentRow = Array.isArray(existingClaim.documents) ? existingClaim.documents[0] : existingClaim.documents;
+  const category = String(documentRow?.category ?? "").toLowerCase();
+  const isHighRisk = HIGH_RISK_CATEGORIES.has(category);
+  if (action === "verify" && existingSourceCount === 0 && !shouldAttachSource) {
+    return NextResponse.json({ error: "at least one source is required before verified" }, { status: 400 });
+  }
+  if (action === "verify" && isHighRisk && body.high_risk_confirmed !== true) {
+    return NextResponse.json({ error: "high-risk category requires additional confirmation before verified" }, { status: 400 });
+  }
 
   const now = new Date().toISOString();
   let sourceId: string | null = null;
@@ -527,7 +538,14 @@ export async function POST(request: Request) {
       await checkAndAwardBadges(sb, contributorHash);
     }
 
-    return NextResponse.json({ claim: updatedClaim, source_id: sourceId, source_trust_score: sourceId ? sourceTrust.source_trust_score : null, document_all_verified: documentAllVerified });
+    return NextResponse.json({
+      claim: updatedClaim,
+      source_id: sourceId,
+      source_trust_score: sourceId ? sourceTrust.source_trust_score : null,
+      document_all_verified: documentAllVerified,
+      public_url: documentRow?.slug ? `/${documentRow.lang ?? "en"}/wiki/${documentRow.slug}` : null,
+      api_url: documentRow?.slug ? `/api/documents/${documentRow.slug}` : null,
+    });
   } catch (error) {
     if (sourceId) await sb.from("claim_sources").delete().eq("id", sourceId);
     const message = error instanceof Error ? error.message : "claim action failed";
