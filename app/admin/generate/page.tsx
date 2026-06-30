@@ -8,6 +8,9 @@ const PROVIDER_ICONS: Record<string, string> = {
   gemini: "✦",
   gpt: "◎",
   grok: "⚡",
+  nvidia_llama_70b: "▣",
+  nvidia_nemotron_70b: "▣",
+  nvidia_llama_8b: "▣",
 };
 
 const FALLBACK_PROVIDERS = [
@@ -15,6 +18,9 @@ const FALLBACK_PROVIDERS = [
   { key: "gemini", label: "Gemini 2.0", icon: "✦" },
   { key: "gpt", label: "OpenAI GPT-4o", icon: "◎" },
   { key: "grok", label: "xAI Grok", icon: "⚡" },
+  { key: "nvidia_llama_70b", label: "NVIDIA Llama 70B", icon: "▣" },
+  { key: "nvidia_nemotron_70b", label: "NVIDIA Nemotron 70B", icon: "▣" },
+  { key: "nvidia_llama_8b", label: "NVIDIA Llama 8B", icon: "▣" },
 ];
 
 const CATEGORY_PRESETS = [
@@ -50,6 +56,13 @@ interface ProviderOption {
   label: string;
   model?: string;
   supports_web_search?: boolean;
+}
+
+function formatProviderLabel(provider: ProviderOption): string {
+  if (provider.key.startsWith("nvidia_")) {
+    return `${provider.label} (NVIDIA API)`;
+  }
+  return provider.label;
 }
 
 interface GenerateResult {
@@ -263,14 +276,17 @@ export default function AdminGeneratePage() {
                   fontSize: 14,
                 }}
               >
-                {PROVIDER_ICONS[p.key] ?? "•"} {p.label}
+                {PROVIDER_ICONS[p.key] ?? "•"} {formatProviderLabel(p)}
               </button>
             ))}
           </div>
+          <p style={{ marginTop: 8, fontSize: 12, color: "#6b7280" }}>
+            NVIDIA 항목은 같은 NVIDIA_API_KEY와 endpoint를 공유하며, 라벨로만 Llama/Nemotron 모델을 구분합니다.
+          </p>
           {providersLoading && <p style={{ marginTop: 8, fontSize: 12, color: "#6b7280" }}>사용 가능한 provider 확인 중...</p>}
           {!providersLoading && availableProviders.length === 0 && (
             <p style={{ marginTop: 8, fontSize: 12, color: "#b45309" }}>
-              사용 가능한 provider가 없습니다. 배포 환경변수에 PERPLEXITY_API_KEY, GOOGLE_GEMINI_API_KEY, OPENAI_API_KEY, XAI_API_KEY 중 최소 1개를 설정해야 합니다.
+              사용 가능한 provider가 없습니다. 배포 환경변수에 PERPLEXITY_API_KEY, GOOGLE_GEMINI_API_KEY, OPENAI_API_KEY, XAI_API_KEY, NVIDIA_API_KEY 중 최소 1개를 설정해야 합니다.
               {providersError && ` (${providersError})`}
             </p>
           )}

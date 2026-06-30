@@ -84,8 +84,47 @@ function buildSystemPrompt(lang: string): string {
 const UNKNOWN_VALUE = "확인 필요";
 const GENERATED_CLAIM_STATUS = "needs_review" as const;
 const GENERATED_CONFIDENCE = "low" as const;
+const OFFICIAL_SOURCE_HOST_HINTS = [".gov", ".go.", ".gob.", ".gouv.", ".edu", ".ac.", "who.int", "europa.eu", "un.org"];
 
 type ParsedCandidates = { candidates: Record<string, unknown>[]; parseError?: string };
+
+function assessSourceTrust(sourceHints: Record<string, string>[]): {
+  source_trust_level: "official" | "traceable" | "needs_review";
+  source_trust_reason: string;
+  source_hints: Record<string, string>[];
+} {
+  if (sourceHints.length === 0) {
+    return {
+      source_trust_level: "needs_review",
+      source_trust_reason: "No source_hints were generated; human verification is required.",
+      source_hints: sourceHints,
+    };
+  }
+
+  const enriched = sourceHints.map((hint) => {
+    const url = String(hint.url ?? "").trim();
+    let hostname = "";
+    try {
+      hostname = new URL(url).hostname.toLowerCase();
+    } catch {
+      // Keep malformed URLs traceable for review instead of dropping them.
+    }
+    const looksOfficial = OFFICIAL_SOURCE_HOST_HINTS.some((officialHint) => hostname.includes(officialHint));
+    return {
+      ...hint,
+      source_trust: looksOfficial ? "official_like" : "traceable_unverified",
+    };
+  });
+  const hasOfficial = enriched.some((hint) => hint.source_trust === "official_like");
+
+  return {
+    source_trust_level: hasOfficial ? "official" : "traceable",
+    source_trust_reason: hasOfficial
+      ? "At least one generated source hint appears to be an official/public-interest domain; human verification is still required."
+      : "Generated source hints are traceable but not recognized as official domains; human verification is required.",
+    source_hints: enriched,
+  };
+}
 
 function parseCandidatesFromResponse(
   response: AIGenerateResponse,
@@ -135,6 +174,8 @@ function parseCandidatesFromResponse(
           catch { return { url: u, title: u }; }
         });
 
+      const sourceTrust = assessSourceTrust([...hints, ...extra]);
+
       return {
         ...c,
         source: "ai_generated",
@@ -157,7 +198,7 @@ function parseCandidatesFromResponse(
             status: GENERATED_CLAIM_STATUS,
           };
         }),
-        source_hints: [...hints, ...extra],
+        source_hints: sourceTrust.source_hints,
       };
     });
     return { candidates };
@@ -270,6 +311,97 @@ function applyConsensus(
   };
 }
 
+async function generateCandidateBatch(
+  providers: AIProviderKey[],
+  aiRequest: { systemPrompt: string; userPrompt: string; temperature: number },
+  lang: string,
+  crossVerify: boolean
+): Promise<{
+  candidates: Record<string, unknown>[];
+  providerResults: Record<string, { generated: number; error?: string; parse_error?: string }>;
+  consensusResults: ConsensusCandidate[] | null;
+  consensusSummary: Record<string, unknown> | null;
+}> {
+  const providerResults: Record<string, { generated: number; error?: string; parse_error?: string }> = {};
+  let allCandidates: Record<string, unknown>[] = [];
+  let consensusResults: ConsensusCandidate[] | null = null;
+  let consensusSummary: Record<string, unknown> | null = null;
+
+  if (crossVerify && providers.length >= 2) {
+    const responses = await generateWithAll(providers, aiRequest);
+    const candidatesByProvider = new Map<string, Record<string, unknown>[]>();
+
+    for (const resp of responses) {
+      const { candidates, parseError } = parseCandidatesFromResponse(resp, lang);
+      providerResults[resp.provider] = {
+        generated: candidates.length,
+        error: resp.error || undefined,
+        parse_error: parseError,
+      };
+      if (candidates.length > 0) {
+        candidatesByProvider.set(resp.provider, candidates);
+      }
+    }
+
+    if (candidatesByProvider.size >= 2) {
+      consensusResults = buildConsensus(candidatesByProvider, providers.length);
+      allCandidates = consensusResults;
+    } else {
+      for (const candidates of candidatesByProvider.values()) {
+        allCandidates.push(...candidates);
+      }
+    }
+
+    const consensus = applyConsensus(allCandidates, providers.length);
+    allCandidates = consensus.candidates;
+    consensusSummary = consensus.summary;
+  } else {
+    const primaryProvider = providers[0];
+    const response = await generateWithProvider(primaryProvider, aiRequest);
+    const { candidates, parseError } = parseCandidatesFromResponse(response, lang);
+    providerResults[primaryProvider] = {
+      generated: candidates.length,
+      error: response.error || undefined,
+      parse_error: parseError,
+    };
+    allCandidates = candidates;
+  }
+
+  return { candidates: allCandidates, providerResults, consensusResults, consensusSummary };
+}
+
+async function filterDuplicateCandidates(
+  candidates: Record<string, unknown>[],
+  client: ReturnType<typeof supabaseAdmin>
+): Promise<{ deduped: Record<string, unknown>[]; skippedDuplicates: number }> {
+  if (!client) return { deduped: candidates, skippedDuplicates: 0 };
+
+  const candidateSlugs = candidates.map((c) => String(c.slug ?? "")).filter(Boolean);
+  const { data: existingRows } = await client
+    .from("topic_candidates")
+    .select("slug")
+    .in("slug", candidateSlugs);
+  const existingSlugs = new Set(existingRows?.map((r) => r.slug) ?? []);
+  const deduped = candidates.filter((c) => !existingSlugs.has(String(c.slug ?? "")));
+
+  return {
+    deduped,
+    skippedDuplicates: candidates.length - deduped.length,
+  };
+}
+
+function toTopicCandidateDbRows(candidates: Record<string, unknown>[]): Record<string, unknown>[] {
+  return candidates.map((c) => {
+    const row = { ...c } as Record<string, unknown>;
+    delete row.merged_source_hints;
+    delete row.merged_claims;
+    delete row.total_providers;
+    delete row.consensus_sources;
+    delete row.agreed_providers;
+    return row;
+  });
+}
+
 export async function POST(request: Request) {
   const adminError = await requireAdmin(request, "candidates.generate");
   if (adminError) return adminError;
@@ -311,54 +443,12 @@ export async function POST(request: Request) {
   const userPrompt = buildPrompt(topic, count, lang);
   const aiRequest = { systemPrompt, userPrompt, temperature: 0.3 };
 
-  let allCandidates: Record<string, unknown>[] = [];
-  const providerResults: Record<string, { generated: number; error?: string; parse_error?: string }> = {};
-  let consensusResults: ConsensusCandidate[] | null = null;
-
-  let consensusSummary: Record<string, unknown> | null = null;
-
-  if (crossVerify && providers.length >= 2) {
-    // Cross-verification: run all providers, build consensus
-    const responses = await generateWithAll(providers, aiRequest);
-    const candidatesByProvider = new Map<string, Record<string, unknown>[]>();
-
-    for (const resp of responses) {
-      const { candidates, parseError } = parseCandidatesFromResponse(resp, lang);
-      providerResults[resp.provider] = {
-        generated: candidates.length,
-        error: resp.error || undefined,
-        parse_error: parseError,
-      };
-      if (candidates.length > 0) {
-        candidatesByProvider.set(resp.provider, candidates);
-      }
-    }
-
-    if (candidatesByProvider.size >= 2) {
-      consensusResults = buildConsensus(candidatesByProvider, providers.length);
-      allCandidates = consensusResults;
-    } else {
-      // Only one provider returned results — no consensus possible
-      for (const candidates of candidatesByProvider.values()) {
-        allCandidates.push(...candidates);
-      }
-    }
-
-    const consensus = applyConsensus(allCandidates, providers.length);
-    allCandidates = consensus.candidates;
-    consensusSummary = consensus.summary;
-  } else {
-    // Single provider (or sequential)
-    const primaryProvider = providers[0];
-    const response = await generateWithProvider(primaryProvider, aiRequest);
-    const { candidates, parseError } = parseCandidatesFromResponse(response, lang);
-    providerResults[primaryProvider] = {
-      generated: candidates.length,
-      error: response.error || undefined,
-      parse_error: parseError,
-    };
-    allCandidates = candidates;
-  }
+  const {
+    candidates: allCandidates,
+    providerResults,
+    consensusResults,
+    consensusSummary,
+  } = await generateCandidateBatch(providers, aiRequest, lang, crossVerify);
 
   if (allCandidates.length === 0) {
     const parseErrors = Object.entries(providerResults)
@@ -386,26 +476,11 @@ export async function POST(request: Request) {
   const client = supabaseAdmin();
 
   if (saveToDb && client) {
-    // Deduplicate: skip slugs already in topic_candidates
-    const candidateSlugs = allCandidates.map((c) => String(c.slug ?? "")).filter(Boolean);
-    const { data: existingRows } = await client
-      .from("topic_candidates")
-      .select("slug")
-      .in("slug", candidateSlugs);
-    const existingSlugs = new Set(existingRows?.map((r) => r.slug) ?? []);
-    const deduped = allCandidates.filter((c) => !existingSlugs.has(String(c.slug ?? "")));
-    skippedDuplicates = allCandidates.length - deduped.length;
+    const duplicateFilter = await filterDuplicateCandidates(allCandidates, client);
+    const deduped = duplicateFilter.deduped;
+    skippedDuplicates = duplicateFilter.skippedDuplicates;
 
-    // Strip non-DB fields; keep only schema-compatible columns including consensus
-    const dbRows = deduped.map((c) => {
-      const row = { ...c } as Record<string, unknown>;
-      delete row.merged_source_hints;
-      delete row.merged_claims;
-      delete row.total_providers;
-      delete row.consensus_sources;
-      delete row.agreed_providers;
-      return row;
-    });
+    const dbRows = toTopicCandidateDbRows(deduped);
 
     if (dbRows.length === 0) {
       saved = [];
