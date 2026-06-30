@@ -13,6 +13,7 @@ export function DirectAnswerBox({
   lastVerifiedAt,
   sourceCount,
   canCite,
+  citationStatusLabel,
   canonicalUrl,
   docTitle,
   locale,
@@ -25,6 +26,7 @@ export function DirectAnswerBox({
   lastVerifiedAt?: string | null;
   sourceCount: number;
   canCite: boolean;
+  citationStatusLabel?: string;
   canonicalUrl?: string;
   docTitle?: string;
   locale?: string;
@@ -57,24 +59,24 @@ export function DirectAnswerBox({
       <p className="direct-answer-text">{answer}</p>
       <dl className="direct-answer-meta" aria-label="Direct answer trust signals">
         <div>
-          <dt>Applied region</dt>
-          <dd>{region}</dd>
+          <dt>Citation status</dt>
+          <dd><span className={canCite ? "badge badge-verified" : "badge badge-review"}>{citationStatusLabel ?? (canCite ? "Citation-ready" : "Needs verification")}</span></dd>
         </div>
         <div>
           <dt>{t.claims.lastVerified}</dt>
           <dd>{lastVerifiedAt ?? "Needs verification"}</dd>
         </div>
         <div>
-          <dt>{t.claims.confidence}</dt>
-          <dd><ConfidenceBadge level={confidence} locale={locale} /></dd>
-        </div>
-        <div>
           <dt>{t.claims.sourceCount}</dt>
           <dd>{sourceCount}</dd>
         </div>
         <div>
-          <dt>Can cite</dt>
-          <dd><span className={canCite ? "badge badge-verified" : "badge badge-review"}>{canCite ? "yes" : "no"}</span></dd>
+          <dt>{t.claims.confidence}</dt>
+          <dd><ConfidenceBadge level={confidence} locale={locale} /></dd>
+        </div>
+        <div>
+          <dt>Applied region</dt>
+          <dd>{region}</dd>
         </div>
       </dl>
     </section>
