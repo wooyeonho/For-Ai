@@ -21,6 +21,8 @@ const CATEGORY_DESCRIPTIONS: Record<string, string> = {
   "travel-rules": "Entry, transit, baggage, customs, transportation, and destination rules that travelers and AI assistants need to verify before citation.",
 };
 
+const CANONICAL_CATEGORY_SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
 const CATEGORY_ALIASES: Record<string, string[]> = {
   visa: ["visa", "immigration", "travel.visa"],
   transport: ["transport", "transit", "fare", "schedule", "metro", "rail", "bus"],
@@ -63,7 +65,7 @@ export async function generateMetadata({
     description,
     alternates: {
       languages: Object.fromEntries(
-        SUPPORTED_LOCALES.map((l) => [l, `/${l}/topics/${category}`]),
+        SUPPORTED_LOCALES.map((l) => [l, `/${l}/topics/${encodeURIComponent(category)}`]),
       ),
     },
   };
@@ -161,7 +163,7 @@ export default async function TopicCategoryPage({
         <ul className="link-list" style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
           {SUPPORTED_LOCALES.filter((l) => l !== locale).map((l) => (
             <li key={l}>
-              <Link href={`/${l}/topics/${category}`}>
+              <Link href={`/${l}/topics/${encodeURIComponent(category)}`}>
                 {LOCALE_CONFIG[l].flag} {LOCALE_CONFIG[l].nativeName}
               </Link>
             </li>
@@ -173,7 +175,10 @@ export default async function TopicCategoryPage({
 }
 
 function isKnownCategory(category: string): boolean {
-  return Object.prototype.hasOwnProperty.call(CATEGORY_DESCRIPTIONS, category);
+  return (
+    CANONICAL_CATEGORY_SLUG_PATTERN.test(category) &&
+    Object.prototype.hasOwnProperty.call(CATEGORY_DESCRIPTIONS, category)
+  );
 }
 
 function formatCategoryTitle(category: string): string {
