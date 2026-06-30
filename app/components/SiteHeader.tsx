@@ -41,7 +41,7 @@ export function SiteHeader() {
           <Link href="/community" onClick={close}>Community</Link>
           <Link href="/contribute" onClick={close}>Contribute</Link>
           <Link href="/suggest-topic" onClick={close}>Suggest Topic</Link>
-          <div className="site-nav-mobile-lang"><LanguageSelector /></div>
+          <div className="site-nav-mobile-lang"><LanguageSelector onNavigate={close} /></div>
         </nav>
       )}
     </header>
