@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getAllRegistryBundles } from "../../../../lib/data";
+import { getClaimCitationStatus, getDocumentCitationStatus } from "../../../../lib/citation-status";
 import { getRegistryIndex, type RegistryIndexItem } from "../../../../lib/registry-index";
 import { SUPPORTED_LOCALES, isValidLocale } from "../../../../lib/i18n";
 import type { SupportedLocale } from "../../../../lib/i18n";
@@ -21,6 +22,19 @@ type CountryClaim = {
   documentSlug: string;
   category: string;
   lastVerifiedAt: string | null;
+};
+
+type CategoryProgress = {
+  category: string;
+  verified: number;
+  target: number;
+  stale: number;
+};
+
+type RecentContributor = {
+  hash: string;
+  count: number;
+  lastSeenAt: string | null;
 };
 
 const UNKNOWN_LABELS: Record<SupportedLocale, string> = {
@@ -82,6 +96,89 @@ function popularQuestionsFor(items: RegistryIndexItem[]): string[] {
   return items.slice(0, 6).map((item) => item.title);
 }
 
+function percent(value: number, target: number): number {
+  if (target <= 0) return 0;
+  return Math.min(100, Math.round((value / target) * 100));
+}
+
+function displayContributorHash(hash: string): string {
+  return hash.length > 14 ? `${hash.slice(0, 10)}…` : hash;
+}
+
+function sourceNeedLabel(category: string, fieldPath: string): string {
+  if (/visa|travel|immigration|entry/.test(`${category} ${fieldPath}`)) return "Official immigration or regulator source";
+  if (/government|gov|passport|resident|license|fee|tax/.test(`${category} ${fieldPath}`)) return "Official government source";
+  if (/transport|transit|metro|fare|rail|bus/.test(`${category} ${fieldPath}`)) return "Official operator fare/rule source";
+  if (/commerce|refund|return|shipping|price/.test(`${category} ${fieldPath}`)) return "Official merchant/platform policy source";
+  if (/finance|bank|rate|loan|card/.test(`${category} ${fieldPath}`)) return "Official financial institution/regulator source";
+  return "Traceable primary source";
+}
+
+function buildCountryQuestStats(country: string, items: RegistryIndexItem[]) {
+  const countryBundles = getAllRegistryBundles().filter((bundle) => bundle.entity.country.toLowerCase() === country.toLowerCase());
+  const byCategory = new Map<string, CategoryProgress>();
+  const neededSources = new Map<string, number>();
+  const contributors = new Map<string, RecentContributor>();
+
+  const verifiedClaims = items.reduce((sum, item) => sum + item.verified_claims, 0);
+  let targetClaims = items.reduce((sum, item) => sum + item.total_claims, 0);
+  let staleClaims = items.reduce((sum, item) => sum + (item.freshness === "stale" ? item.verified_claims : 0), 0);
+
+  for (const item of items) {
+    const category = item.type || "uncategorized";
+    const current = byCategory.get(category) ?? { category, verified: 0, target: 0, stale: 0 };
+    current.verified += item.verified_claims;
+    current.target += item.total_claims;
+    current.stale += item.freshness === "stale" ? item.verified_claims : 0;
+    byCategory.set(category, current);
+  }
+
+  for (const bundle of countryBundles) {
+    const documentStatus = getDocumentCitationStatus(bundle);
+    staleClaims += Math.max(0, documentStatus.staleClaims.length - (documentStatus.freshness === "stale" ? documentStatus.verifiedClaims : 0));
+
+    for (const claim of bundle.claims) {
+      const claimStatus = getClaimCitationStatus(claim, documentStatus.freshnessPolicy.ttlDays);
+      if (!claimStatus.isCitationReady || claim.sources.length === 0) {
+        const label = sourceNeedLabel(bundle.document.category || bundle.entity.type, claim.field_path);
+        neededSources.set(label, (neededSources.get(label) ?? 0) + 1);
+      }
+
+      for (const source of claim.sources) {
+        if (!source.contributor_hash) continue;
+        const existing = contributors.get(source.contributor_hash) ?? { hash: source.contributor_hash, count: 0, lastSeenAt: null };
+        existing.count += 1;
+        if (source.created_at && (!existing.lastSeenAt || Date.parse(source.created_at) > Date.parse(existing.lastSeenAt))) {
+          existing.lastSeenAt = source.created_at;
+        }
+        contributors.set(source.contributor_hash, existing);
+      }
+
+      for (const event of claim.verification_events) {
+        if (!event.contributor_hash) continue;
+        const existing = contributors.get(event.contributor_hash) ?? { hash: event.contributor_hash, count: 0, lastSeenAt: null };
+        existing.count += 1;
+        if (event.created_at && (!existing.lastSeenAt || Date.parse(event.created_at) > Date.parse(existing.lastSeenAt))) {
+          existing.lastSeenAt = event.created_at;
+        }
+        contributors.set(event.contributor_hash, existing);
+      }
+    }
+  }
+
+  targetClaims = Math.max(targetClaims, verifiedClaims);
+
+  return {
+    verifiedClaims,
+    needsReviewClaims: Math.max(0, targetClaims - verifiedClaims),
+    staleClaims,
+    targetClaims,
+    categoryProgress: [...byCategory.values()].sort((a, b) => b.target - a.target || a.category.localeCompare(b.category)),
+    neededSources: [...neededSources.entries()].map(([label, count]) => ({ label, count })).sort((a, b) => b.count - a.count).slice(0, 6),
+    contributors: [...contributors.values()].sort((a, b) => Date.parse(b.lastSeenAt ?? "") - Date.parse(a.lastSeenAt ?? "") || b.count - a.count).slice(0, 6),
+  };
+}
+
 export async function generateStaticParams() {
   const countries = [...new Set(getAllRegistryBundles().map((b) => b.entity.country.toLowerCase()))];
   return SUPPORTED_LOCALES.flatMap((locale) => countries.map((country) => ({ locale, country })));
@@ -115,9 +212,8 @@ export default async function CountryRegistryPage({
   const normalizedCountry = normalizeCountry(country);
   const items = await getRegistryIndex({ country: normalizedCountry });
   const name = countryName(normalizedCountry, supportedLocale);
-  const verifiedDocuments = items.filter((item) => item.can_cite);
-  const needsReviewDocuments = items.filter((item) => !item.can_cite);
-  const categories = [...new Set(items.map((item) => item.type || "uncategorized"))].sort();
+  const questStats = buildCountryQuestStats(normalizedCountry, items);
+  const overallProgress = percent(questStats.verifiedClaims, questStats.targetClaims);
   const recentFacts = collectCountryClaims(normalizedCountry).slice(0, 8);
   const staleFacts = items.filter((item) => item.freshness === "stale").slice(0, 8);
   const popularQuestions = popularQuestionsFor(items);
@@ -134,20 +230,65 @@ export default async function CountryRegistryPage({
           Supabase-backed rows can be included when the optional index connection is configured.
         </p>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
-          <span className="badge badge-verified">Verified documents: {verifiedDocuments.length}</span>
-          <span className="badge badge-review">Needs review: {needsReviewDocuments.length}</span>
-          <span className="badge">Categories: {categories.length}</span>
+          <span className="badge badge-verified">Verified facts: {questStats.verifiedClaims}</span>
+          <span className="badge badge-review">Needs review facts: {questStats.needsReviewClaims}</span>
+          <span className="badge">Stale facts: {questStats.staleClaims}</span>
+          <span className="badge">Target facts: {questStats.targetClaims}</span>
         </div>
       </header>
 
+      <section className="registry-panel" aria-labelledby="country-progress">
+        <p className="eyebrow">Quest progress</p>
+        <h2 id="country-progress">{overallProgress}% to the current country target</h2>
+        <p className="meta-label">Progress = verified claims / target claims. It is a participation signal only; it never replaces source quality, confidence, freshness, or human verification.</p>
+        <div aria-label={`Overall progress ${overallProgress}%`} style={{ background: "#e5e7eb", borderRadius: 999, height: 12, overflow: "hidden", marginTop: 12 }}>
+          <div style={{ width: `${overallProgress}%`, background: "#2563eb", height: "100%" }} />
+        </div>
+      </section>
+
       <section className="registry-panel" aria-labelledby="country-categories">
-        <h2 id="country-categories">Categories</h2>
-        {categories.length === 0 ? (
+        <h2 id="country-categories">Category progress</h2>
+        {questStats.categoryProgress.length === 0 ? (
           <p>{unknownLabel}</p>
         ) : (
-          <ul className="link-list" style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            {categories.map((category) => (
-              <li key={category}><span className="badge">{category}</span></li>
+          <ul className="link-list">
+            {questStats.categoryProgress.map((category) => {
+              const categoryPercent = percent(category.verified, category.target);
+              return (
+                <li key={category.category}>
+                  <strong>{category.category}</strong>: {category.verified}/{category.target} verified ({categoryPercent}%)
+                  {category.stale > 0 ? <span className="meta-label"> · {category.stale} stale</span> : null}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+
+      <section className="registry-panel" aria-labelledby="needed-sources">
+        <h2 id="needed-sources">Top needed sources</h2>
+        {questStats.neededSources.length === 0 ? (
+          <p>No missing source needs detected in this country index.</p>
+        ) : (
+          <ul className="link-list">
+            {questStats.neededSources.map((source) => (
+              <li key={source.label}>{source.label}<span className="meta-label"> · {source.count} claim(s)</span></li>
+            ))}
+          </ul>
+        )}
+      </section>
+
+      <section className="registry-panel" aria-labelledby="recent-contributors">
+        <h2 id="recent-contributors">Recent contributors</h2>
+        {questStats.contributors.length === 0 ? (
+          <p>Contributor hashes are not yet available for this country. Raw IP addresses are never stored.</p>
+        ) : (
+          <ul className="link-list">
+            {questStats.contributors.map((contributor) => (
+              <li key={contributor.hash}>
+                <code>{displayContributorHash(contributor.hash)}</code>
+                <span className="meta-label"> · {contributor.count} contribution(s) · last seen {dateLabel(contributor.lastSeenAt)}</span>
+              </li>
             ))}
           </ul>
         )}
@@ -217,10 +358,10 @@ export default async function CountryRegistryPage({
       </section>
 
       <section className="registry-panel" style={{ background: "#f8fafc", borderInlineStart: "3px solid #2563eb" }}>
-        <p className="eyebrow">Submit topic CTA</p>
-        <h2>Know a source-backed fact that AI often gets wrong?</h2>
-        <p>Submit a topic for {name}. Public submissions start as needs-review candidates and must be human verified before citation.</p>
-        <Link className="button" href={submitTopicHref}>Submit a topic</Link>
+        <p className="eyebrow">Submit source CTA</p>
+        <h2>Know an official source for a needed {name} fact?</h2>
+        <p>Submit a source or topic for {name}. Public submissions start as needs-review candidates and must be human verified before citation.</p>
+        <Link className="button" href={submitTopicHref}>Submit a source</Link>
       </section>
     </article>
   );
