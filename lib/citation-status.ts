@@ -121,6 +121,18 @@ export type ClaimCitationStatus = {
   verificationLevel: VerificationLevelInfo;
 };
 
+export type CitationSafetyBlock = {
+  citation_ready: boolean;
+  verified_claim_count: number;
+  total_claim_count: number;
+  stale_claim_ids: string[];
+  do_not_cite_claim_ids: string[];
+  last_verified_at: string | null;
+  freshness_ttl_days: number;
+  canonical_url: string;
+  alternate_locale_urls: Record<string, string>;
+};
+
 export type DocumentCitationStatus = {
   verifiedClaims: number;
   unverifiedClaims: number;
@@ -470,6 +482,41 @@ export function getDocumentCitationStatus(
       .map(({ claim }) => ({ claimId: claim.id, fieldPath: claim.field_path, lastVerifiedAt: claim.last_verified_at ?? null })),
     freshnessPolicy,
     verificationLevel: documentLevel,
+  };
+}
+
+export function getCitationSafetyBlock(
+  bundle: RegistryDocumentBundle,
+  locale: string = bundle.document.lang || "en",
+  now: Date = new Date(),
+): CitationSafetyBlock {
+  const citationStatus = getDocumentCitationStatus(bundle, undefined, now);
+  const claimStatuses = bundle.claims.map((claim) => ({
+    claim,
+    status: getClaimCitationStatus(claim, citationStatus.freshnessWindowDays, now),
+  }));
+  const staleClaimIds = claimStatuses
+    .filter(({ status }) => status.isCitationReady && status.freshness === "stale")
+    .map(({ claim }) => claim.id);
+  const doNotCiteClaimIds = claimStatuses
+    .filter(({ status }) => !status.isCitationReady)
+    .map(({ claim }) => claim.id);
+  const alternateLocaleUrls = Object.fromEntries(
+    SUPPORTED_LOCALES
+      .filter((supportedLocale) => supportedLocale !== locale)
+      .map((supportedLocale) => [supportedLocale, documentPageUrl(bundle.document.slug, supportedLocale)]),
+  );
+
+  return {
+    citation_ready: citationStatus.isVerifiedDocument && staleClaimIds.length === 0 && doNotCiteClaimIds.length === 0,
+    verified_claim_count: citationStatus.verifiedClaims,
+    total_claim_count: citationStatus.totalClaims,
+    stale_claim_ids: staleClaimIds,
+    do_not_cite_claim_ids: doNotCiteClaimIds,
+    last_verified_at: citationStatus.oldestVerifiedAt,
+    freshness_ttl_days: citationStatus.freshnessWindowDays,
+    canonical_url: documentPageUrl(bundle.document.slug, locale),
+    alternate_locale_urls: alternateLocaleUrls,
   };
 }
 
