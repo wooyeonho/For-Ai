@@ -124,7 +124,7 @@ export default function AdminDashboardPage() {
     setLoading(true);
     setMessage(null);
     try {
-      const res = await fetch("/api/admin/review", { headers: { "x-admin-secret": secret } });
+      const res = await fetch("/api/admin/review");
       const payload = await res.json();
       setData(res.ok ? payload : null);
       setMessage({ ok: res.ok, text: res.ok ? "관리 대시보드 집계를 불러왔습니다." : payload.error ?? "대시보드 조회 실패" });

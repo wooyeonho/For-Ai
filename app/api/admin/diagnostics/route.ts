@@ -30,7 +30,7 @@ async function checkTableAccess(sb: SupabaseAdminClient, table: string): Promise
 }
 
 export async function GET(request: Request) {
-  const adminError = requireAdmin(request, "admin.diagnostics");
+  const adminError = await requireAdmin(request, "admin.diagnostics");
   if (adminError) return adminError;
 
   const aiProviders = Object.fromEntries(

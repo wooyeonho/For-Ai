@@ -91,8 +91,7 @@ export default function AdminGeneratePage() {
   useEffect(() => {
     async function loadProviders() {
       try {
-        if (!adminSecret) { setProvidersLoading(false); return; }
-        const res = await fetch("/api/admin/generate-candidates", { headers: { "x-admin-secret": adminSecret } });
+        const res = await fetch("/api/admin/generate-candidates");
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
         const providers = (data.available_providers ?? []) as ProviderOption[];
@@ -125,7 +124,6 @@ export default function AdminGeneratePage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-admin-secret": adminSecret,
           "x-admin-csrf": "1",
         },
         body: JSON.stringify({

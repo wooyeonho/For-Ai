@@ -40,7 +40,7 @@ export default function AdminDiagnosticsPage() {
   const load = useCallback(async () => {
     setLoading(true);
     setMessage(null);
-    const res = await fetch("/api/admin/diagnostics", { headers: { "x-admin-secret": secret } });
+    const res = await fetch("/api/admin/diagnostics");
     const payload = await res.json();
     setLoading(false);
     if (res.ok) {

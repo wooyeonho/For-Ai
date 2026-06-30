@@ -29,24 +29,22 @@ export default function CandidatesPage(){
   const load=useCallback(async()=>{
     setLoading(true);
     const params=new URLSearchParams({status:filter,source_hints:sourceHintFilter});
-    const r=await fetch(`/api/admin/candidates?${params.toString()}`,{headers:{"x-admin-secret":adminSecret}});
+    const r=await fetch(`/api/admin/candidates?${params.toString()}`);
     const d=await r.json();setItems(Array.isArray(d.candidates)?d.candidates:[]);setLoading(false);
     if(!r.ok) flash(`❌ ${d.error??"후보 조회 실패"}`,false);
-  },[filter,sourceHintFilter,adminSecret]);
+  },[filter,sourceHintFilter]);
   useEffect(()=>{load();},[load]);
   function flash(text:string,ok=true){setMsg({text,ok});setTimeout(()=>setMsg(null),4000);}
   async function act(id:string,st:string){
-    if(!adminSecret){flash("❌ admin secret을 입력하세요",false);return;}
-    const r=await fetch("/api/admin/candidates",{method:"PATCH",headers:{"Content-Type":"application/json","x-admin-secret":adminSecret,"x-admin-csrf":"1"},body:JSON.stringify({id,status:st})});
+    const r=await fetch("/api/admin/candidates",{method:"PATCH",headers:{"Content-Type":"application/json","x-admin-csrf":"1"},body:JSON.stringify({id,status:st})});
     const d=await r.json();
     if(r.ok){flash(`✅ ${st}`);setSelected(null);load();}
-    else flash(`❌ ${d.error??"권한 오류 — admin secret 확인"}`,false);
+    else flash(`❌ ${d.error??"권한 오류 — 로그인 상태 확인"}`,false);
   }
   async function promote(id:string){
-    if(!adminSecret){flash("❌ admin secret을 입력하세요",false);return;}
     setPromoting(id);
     try{
-      const r=await fetch("/api/admin/promote-candidate",{method:"POST",headers:{"Content-Type":"application/json","x-admin-secret":adminSecret,"x-admin-csrf":"1"},body:JSON.stringify({candidateId:id})});
+      const r=await fetch("/api/admin/promote-candidate",{method:"POST",headers:{"Content-Type":"application/json","x-admin-csrf":"1"},body:JSON.stringify({candidateId:id})});
       const d=await r.json();
       if(r.ok&&d.success){flash(`🚀 공개 등록 완료 → 이제 ${d.claims_created??0}개 claim을 검증하세요 (검증하기 버튼)`);setSelected(null);load();}
       else flash(`❌ ${d.error??"등록 실패"}`,false);
