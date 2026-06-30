@@ -53,8 +53,8 @@ function countryName(country: string, locale: SupportedLocale): string {
   }
 }
 
-function dateLabel(value: string | null): string {
-  if (!value) return "Needs verification";
+function dateLabel(value: string | null, fallback = "Needs verification"): string {
+  if (!value) return fallback;
   return value.slice(0, 10);
 }
 
@@ -259,11 +259,11 @@ export default async function CountryRegistryPage({
       <section className="registry-panel" aria-labelledby="needed-sources">
         <h2 id="needed-sources">{t.country.topNeededSources}</h2>
         {questStats.neededSources.length === 0 ? (
-          <p>No missing source needs detected in this country index.</p>
+          <p>{t.country.noMissingSources}</p>
         ) : (
           <ul className="link-list">
             {questStats.neededSources.map((source) => (
-              <li key={source.label}>{source.label}<span className="meta-label"> · {source.count} claim(s)</span></li>
+              <li key={source.label}>{source.label}<span className="meta-label"> · {source.count} {t.country.claimCount}</span></li>
             ))}
           </ul>
         )}
@@ -272,13 +272,13 @@ export default async function CountryRegistryPage({
       <section className="registry-panel" aria-labelledby="recent-contributors">
         <h2 id="recent-contributors">{t.country.recentContributors}</h2>
         {questStats.contributors.length === 0 ? (
-          <p>Contributor hashes are not yet available for this country. Raw IP addresses are never stored.</p>
+          <p>{t.country.noContributors}</p>
         ) : (
           <ul className="link-list">
             {questStats.contributors.map((contributor) => (
               <li key={contributor.hash}>
                 <code>{displayContributorHash(contributor.hash)}</code>
-                <span className="meta-label"> · {contributor.count} contribution(s) · last seen {dateLabel(contributor.lastSeenAt)}</span>
+                <span className="meta-label"> · {contributor.count} {t.country.contributions} · {t.country.lastSeen} {dateLabel(contributor.lastSeenAt, unknownLabel)}</span>
               </li>
             ))}
           </ul>
@@ -294,7 +294,7 @@ export default async function CountryRegistryPage({
             {recentFacts.map((fact) => (
               <li key={fact.id}>
                 <Link href={`/${locale}/wiki/${fact.documentSlug}`}>{fact.documentTitle}</Link>: {fact.value}
-                <span className="meta-label"> · {dateLabel(fact.lastVerifiedAt)} · {fact.category}</span>
+                <span className="meta-label"> · {dateLabel(fact.lastVerifiedAt, unknownLabel)} · {fact.category}</span>
               </li>
             ))}
           </ul>
@@ -302,15 +302,15 @@ export default async function CountryRegistryPage({
       </section>
 
       <section className="registry-panel" aria-labelledby="stale-facts">
-        <h2 id="stale-facts">Stale facts</h2>
+        <h2 id="stale-facts">{t.country.staleFacts}</h2>
         {staleFacts.length === 0 ? (
-          <p>No stale facts in this country index.</p>
+          <p>{t.country.noStaleFacts}</p>
         ) : (
           <ul className="link-list">
             {staleFacts.map((item) => (
               <li key={item.slug}>
                 <Link href={`/${locale}/wiki/${item.slug}`}>{item.title}</Link>
-                <span className="meta-label"> · oldest verified: {dateLabel(item.oldest_verified_at)} · {item.type}</span>
+                <span className="meta-label"> · {t.country.oldestVerified}: {dateLabel(item.oldest_verified_at, unknownLabel)} · {item.type}</span>
               </li>
             ))}
           </ul>
@@ -340,7 +340,7 @@ export default async function CountryRegistryPage({
               <li key={`${item.source}-${item.slug}`}>
                 <Link href={`/${locale}/wiki/${item.slug}`}>{item.title}</Link>{" "}
                 <span className={item.can_cite ? "badge badge-verified" : "badge badge-review"}>
-                  {item.can_cite ? "verified" : "needs review"}
+                  {item.can_cite ? t.country.verified : t.country.needsReview}
                 </span>
               </li>
             ))}
