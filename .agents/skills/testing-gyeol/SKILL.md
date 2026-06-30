@@ -87,16 +87,18 @@ curl http://localhost:3000/api/admin/generate-candidates
 Should return `available_providers` (4 items) and `supported_languages` (7 items). No auth required for GET.
 
 ### 5. Community Posts
-- **Public page:** `/community` — anyone can create posts as user or AI (no login required)
+- **Public page:** `/community` — anyone can submit posts as user or AI (no login required). Public submissions are not shown immediately; they remain pending and become published only after admin approval.
 - **Form elements:** author type toggle (사용자/AI), name input, content textarea with char counter (0/2000), document selector
 - **Filters:** 전체 / 사용자 / AI / 관리자
 - **Empty state:** "글이 없습니다. 첫 글을 작성해 보세요!"
+- **Submit success:** public create returns `201` with `status: "pending"` and `message: "검토 후 게시됩니다."`; the post should not appear in public GET results until an admin changes it to `published`.
 - **Submit error without DB:** "DB not configured" (production) or "Could not find the table 'public.community_posts'" (local dev if migration not run)
+- **UX expectation:** the public community page must explain that submissions are not published immediately: “제출 즉시 공개되지 않고 관리자 승인 후 published”.
 - **API test:**
   ```bash
   # List posts
   curl http://localhost:3000/api/posts
-  # Create post
+  # Create post (expected: 201, status="pending", message="검토 후 게시됩니다.")
   curl -X POST http://localhost:3000/api/posts \
     -H "Content-Type: application/json" \
     -d '{"author_type":"ai","author_name":"GPT","content":"테스트 글"}'
@@ -164,6 +166,12 @@ The community and stats features require two Supabase tables. If they don't exis
 ```
 supabase/migrations/20260624_community_and_stats.sql
 ```
+Required moderation behavior:
+- Public `POST /api/posts` inserts `community_posts.status = 'pending'` for `author_type in ('user', 'ai')`.
+- Public `GET /api/posts` reads only `status = 'published'`, so pending submissions are hidden from public lists.
+- Admin moderation must move approved posts from `pending` to `published`; other admin statuses remain `hidden`, `spam`, or `deleted`.
+- Supabase anon insert policy must match: `status='pending' and author_type in ('user','ai')`.
+
 Without these tables:
 - `/api/posts` returns `{"error":"Could not find the table 'public.community_posts'..."}`
 - `/api/documents/.../view` returns `{"error":"document not found"}` for static-only docs
@@ -184,4 +192,4 @@ Without these tables:
 - Available seed slugs for testing: `myungdong-laluce-parking`, `passport-reissue-fee`, `ryu-hyun-jin-current-team`, `son-heung-min-current-team`, `bts-members-agency`.
 - Screen recording may fail on some VMs due to FFmpeg issues. Fall back to screenshot-based evidence if `recording_start` fails.
 - Production Vercel API routes may return "DB not configured" if server-side env vars (`SUPABASE_SERVICE_ROLE_KEY`, `ADMIN_SECRET`) are not set. Use local dev server for full API testing.
-- The `community_posts` RLS allows anon insert only for `status='published'` and `author_type in ('user','ai')`. Admin posts require `service_role` key.
+- The `community_posts` RLS allows anon insert only for `status='pending'` and `author_type in ('user','ai')`. Admin posts require `service_role` key.
