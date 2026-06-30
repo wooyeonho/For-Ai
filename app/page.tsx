@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
 import { getAllRegistryBundles, isVerifiedDocumentBundle, partitionRegistryBundles } from "../lib/data";
+import { DEFAULT_LOCALE } from "../lib/i18n";
 import type { RegistryDocumentBundle } from "../lib/types";
 import HomeSearch from "./components/HomeSearch";
 
@@ -321,6 +322,44 @@ export default async function HomePage() {
         <p className="stat-note">
           These figures are calculated from the current registry bundles. <Link href="/goal#coverage">Open the public coverage dashboard</Link>. We mark what we don&apos;t know.
         </p>
+      </section>
+
+
+      <section className="section explore-section" aria-labelledby="explore-for-ai">
+        <div>
+          <p className="section-eyebrow">Explore</p>
+          <h2 className="section-title" id="explore-for-ai">Explore For-Ai</h2>
+          <p className="section-lede">
+            Enter the registry through source gaps, community challenges, daily missions, country coverage, or contributor progress — all scoped to the current language path.
+          </p>
+        </div>
+        <div className="explore-card-grid">
+          <Link href={`/${DEFAULT_LOCALE}/bounties`} className="explore-card">
+            <span className="explore-card-kicker">Source gaps</span>
+            <strong>Bounties</strong>
+            <small>Claim-level facts that need traceable sources before verification.</small>
+          </Link>
+          <Link href={`/${DEFAULT_LOCALE}/challenges`} className="explore-card">
+            <span className="explore-card-kicker">Community goals</span>
+            <strong>Challenges</strong>
+            <small>Structured intake campaigns that never shortcut human approval.</small>
+          </Link>
+          <Link href={`/${DEFAULT_LOCALE}/missions`} className="explore-card">
+            <span className="explore-card-kicker">Daily tasks</span>
+            <strong>Missions</strong>
+            <small>Small source-backed contribution prompts for growing the registry.</small>
+          </Link>
+          <Link href={`/${DEFAULT_LOCALE}/quests`} className="explore-card">
+            <span className="explore-card-kicker">Country coverage</span>
+            <strong>Country Quests</strong>
+            <small>Track verified claim targets by jurisdiction without inventing facts.</small>
+          </Link>
+          <Link href={`/${DEFAULT_LOCALE}/leaderboard`} className="explore-card">
+            <span className="explore-card-kicker">Contributors</span>
+            <strong>Leaderboard</strong>
+            <small>Anonymous progress signals based on accepted contribution events.</small>
+          </Link>
+        </div>
       </section>
 
       {/* 3 audience entry points */}
