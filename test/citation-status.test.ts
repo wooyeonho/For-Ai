@@ -181,16 +181,35 @@ test("getClaimVerificationLevel explains UI-only verification progress without c
 });
 
 test("getClaimCitationStatus marks fully sourced verified claims as citation-ready", () => {
-  const status = getClaimCitationStatus(claim());
+  const status = getClaimCitationStatus(claim(), 180, NOW);
   assert.equal(status.isCitationReady, true);
   assert.equal(status.label, "verified");
 });
 
-test("getClaimCitationStatus rejects placeholders, low confidence, missing sources, and missing last_verified_at", () => {
-  assertUnverified(getClaimCitationStatus(claim({ claim_value: UNKNOWN_FACT_TEXT })));
-  assertUnverified(getClaimCitationStatus(claim({ confidence: "low" })));
-  assertUnverified(getClaimCitationStatus(claim({ sources: [] })));
-  assertUnverified(getClaimCitationStatus(claim({ last_verified_at: null })));
+test("getClaimCitationStatus keeps claims without sources out of citation-ready", () => {
+  const status = getClaimCitationStatus(claim({ sources: [] }), 180, NOW);
+
+  assertUnverified(status);
+  assert.equal(status.reason, "requires verified status, non-low confidence, source, verification event, and last_verified_at");
+  assert.equal(status.verificationLevel.level, 1);
+});
+
+test("getClaimCitationStatus keeps low confidence claims out of citation-ready", () => {
+  const status = getClaimCitationStatus(claim({ confidence: "low" }), 180, NOW);
+
+  assertUnverified(status);
+  assert.equal(status.verificationLevel.level, 2);
+});
+
+test("getClaimCitationStatus keeps unknown placeholder values out of citation-ready", () => {
+  const status = getClaimCitationStatus(claim({ claim_value: UNKNOWN_FACT_TEXT }), 180, NOW);
+
+  assertUnverified(status);
+  assert.equal(status.verificationLevel.level, 2);
+});
+
+test("getClaimCitationStatus rejects missing last_verified_at", () => {
+  assertUnverified(getClaimCitationStatus(claim({ last_verified_at: null }), 180, NOW));
 });
 
 test("getClaimCitationStatus requires an explicit verification event", () => {
@@ -222,19 +241,44 @@ test("getVerifiedClaimViolations reports every verified transition requirement",
 });
 
 test("getDocumentCitationStatus requires verified document status and every claim to be ready", () => {
-  const approved = getDocumentCitationStatus(bundle([claim()]), 180);
+  const approved = getDocumentCitationStatus(bundle([claim()]), 180, NOW);
   assert.equal(approved.isVerifiedDocument, true);
   assert.equal(approved.verifiedClaims, 1);
   assert.equal(approved.unverifiedClaims, 0);
+  assert.equal(approved.label, "citation ready");
 
-  const draft = getDocumentCitationStatus(bundle([claim()], { document: document({ status: "needs_review" }) }), 180);
+  const draft = getDocumentCitationStatus(bundle([claim()], { document: document({ status: "needs_review" }) }), 180, NOW);
   assert.equal(draft.isVerifiedDocument, false);
   assert.equal(draft.label, "do not cite");
 
-  const mixed = getDocumentCitationStatus(bundle([claim(), claim({ id: "claim-2", claim_value: UNKNOWN_FACT_TEXT })]), 180);
+  const mixed = getDocumentCitationStatus(bundle([claim(), claim({ id: "claim-2", claim_value: UNKNOWN_FACT_TEXT })]), 180, NOW);
   assert.equal(mixed.isVerifiedDocument, false);
   assert.equal(mixed.verifiedClaims, 1);
   assert.equal(mixed.unverifiedClaims, 1);
+  assert.equal(mixed.label, "do not cite");
+});
+
+test("getDocumentCitationStatus is citation-ready only when all claims are verified and source-backed", () => {
+  const noSource = claim({ id: "claim-no-source", field_path: "fare.no_source", sources: [] });
+  const lowConfidence = claim({ id: "claim-low-confidence", field_path: "fare.low_confidence", confidence: "low" });
+  const unknownValue = claim({ id: "claim-unknown", field_path: "fare.unknown", claim_value: UNKNOWN_FACT_TEXT });
+
+  const blocked = getDocumentCitationStatus(bundle([claim(), noSource, lowConfidence, unknownValue]), 180, NOW);
+
+  assert.equal(blocked.isVerifiedDocument, false);
+  assert.equal(blocked.label, "do not cite");
+  assert.equal(blocked.verifiedClaims, 1);
+  assert.equal(blocked.unverifiedClaims, 3);
+
+  const approved = getDocumentCitationStatus(bundle([
+    claim({ id: "claim-1", field_path: "fare.base_adult" }),
+    claim({ id: "claim-2", field_path: "fare.base_youth", claim_value: "800원" }),
+  ]), 180, NOW);
+
+  assert.equal(approved.isVerifiedDocument, true);
+  assert.equal(approved.label, "citation ready");
+  assert.equal(approved.verifiedClaims, 2);
+  assert.equal(approved.unverifiedClaims, 0);
 });
 
 test("getDocumentCitationStatus reports freshness from the oldest ready claim", () => {
