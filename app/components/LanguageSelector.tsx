@@ -1,39 +1,59 @@
 "use client";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { SUPPORTED_LOCALES, DEFAULT_LOCALE, LOCALE_CONFIG, isValidLocale } from "../../lib/i18n";
 
-const DOCUMENT_ACTION_ROUTES = new Set(["report", "hallucination", "diagnostics"]);
+const LOCALE_AWARE_ROUTES = new Set([
+  "wiki",
+  "entity",
+  "topics",
+  "country",
+  "bounties",
+  "challenges",
+  "missions",
+  "leaderboard",
+]);
 
-export function getLocalePath(pathname: string, locale: string): string {
+const LANGUAGE_PARAM_ROUTES = new Set(["community", "suggest-topic", "report", "hallucination"]);
+
+export function getLocalePath(pathname: string, locale: string, search = ""): string {
   const segments = pathname.split("/").filter(Boolean);
+  const hasLocalePrefix = Boolean(segments[0] && isValidLocale(segments[0]));
+  const route = hasLocalePrefix ? segments[1] : segments[0];
 
-  if (segments[0] && isValidLocale(segments[0])) {
-    const [, route, identifier] = segments;
-    if ((route === "wiki" || route === "entity") && identifier) {
-      return "/" + [locale, ...segments.slice(1)].join("/");
-    }
+  if (route && LANGUAGE_PARAM_ROUTES.has(route)) {
+    const canonicalSegments = hasLocalePrefix ? segments.slice(1) : segments;
+    const params = new URLSearchParams(search);
+    params.set("lang", locale);
+    const query = params.toString();
+    return `/${canonicalSegments.join("/")}${query ? `?${query}` : ""}`;
   }
 
-  const [route, identifier] = segments;
-  if (route && DOCUMENT_ACTION_ROUTES.has(route) && identifier) {
-    return `/${locale}/wiki/${identifier}`;
+  if (hasLocalePrefix) {
+    return "/" + [locale, ...segments.slice(1)].join("/");
   }
 
-  // Non-locale pages (homepage, api-docs, community, etc.) stay as-is
+  if (route && LOCALE_AWARE_ROUTES.has(route)) {
+    return "/" + [locale, ...segments].join("/");
+  }
+
+  // Non-locale pages (homepage, api-docs, tools, etc.) stay as-is.
   return pathname;
 }
 
 export function LanguageSelector() {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
 
-  // Extract current locale from path
+  // Extract current locale from path or ?lang= for global language-param pages.
   const segments = pathname.split("/").filter(Boolean);
-  const currentLocale = segments[0] && isValidLocale(segments[0]) ? segments[0] : DEFAULT_LOCALE;
+  const pathLocale = segments[0] && isValidLocale(segments[0]) ? segments[0] : null;
+  const queryLocale = searchParams.get("lang");
+  const currentLocale = pathLocale ?? (queryLocale && isValidLocale(queryLocale) ? queryLocale : DEFAULT_LOCALE);
 
-  // Build path for other locales
+  // Build path for other locales.
   function getPathForLocale(locale: string): string {
-    return getLocalePath(pathname, locale);
+    return getLocalePath(pathname, locale, searchParams.toString());
   }
 
   return (

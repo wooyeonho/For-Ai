@@ -8,51 +8,93 @@ const SUPPORTED_LOCALES = ["ko", "en", "hi", "ar", "es", "ja", "zh"];
 const ENV_DEFAULT = process.env.NEXT_PUBLIC_DEFAULT_LOCALE;
 const DEFAULT_LOCALE = ENV_DEFAULT && SUPPORTED_LOCALES.includes(ENV_DEFAULT) ? ENV_DEFAULT : "en";
 
+const LOCALE_AWARE_ROUTES = new Set([
+  "wiki",
+  "entity",
+  "topics",
+  "country",
+  "bounties",
+  "challenges",
+  "missions",
+  "leaderboard",
+]);
+
+const LANGUAGE_PARAM_ROUTES = new Set([
+  "community",
+  "suggest-topic",
+  "report",
+  "hallucination",
+]);
+
+const MACHINE_ROUTE_PREFIXES = [
+  "/api",
+  "/raw",
+  "/llms.txt",
+  "/robots",
+  "/sitemap",
+];
+
 export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-
-  // Skip non-page routes for locale handling
-  if (
-    pathname.startsWith("/api/") ||
-    pathname.startsWith("/_next/") ||
-    pathname.startsWith("/admin/") ||
-    pathname.startsWith("/raw/") ||
-    pathname.startsWith("/diagnostics/") ||
-    pathname.startsWith("/report/") ||
-    pathname.startsWith("/hallucination/") ||
-    pathname.startsWith("/suggest-topic") ||
-    pathname.startsWith("/community") ||
-    pathname.startsWith("/llms.txt") ||
-    pathname.includes(".") // static files
-  ) {
-    return NextResponse.next();
-  }
-
-  // Check if path already has a locale prefix
+  const { pathname, searchParams } = request.nextUrl;
   const segments = pathname.split("/").filter(Boolean);
   const firstSegment = segments[0];
+  const hasLocalePrefix = Boolean(firstSegment && SUPPORTED_LOCALES.includes(firstSegment));
+  const routeSegment = hasLocalePrefix ? segments[1] : firstSegment;
 
-  if (firstSegment && SUPPORTED_LOCALES.includes(firstSegment)) {
+  // Skip machine/API routes and static assets for locale handling.
+  if (isMachineOrAssetPath(pathname)) {
     return NextResponse.next();
   }
 
-  // Detect locale from Accept-Language header
-  const acceptLang = request.headers.get("accept-language") ?? "";
-  const detected = detectLocaleFromHeader(acceptLang);
+  // Admin and diagnostics are internal tools with their own routing policies.
+  if (pathname.startsWith("/admin/") || pathname.startsWith("/diagnostics/")) {
+    return NextResponse.next();
+  }
 
-  // Don't redirect root — homepage handles all languages
+  // Language-param pages are global pages. If a locale route is used, normalize
+  // it to the canonical global URL and carry the locale in ?lang=.
+  if (hasLocalePrefix && routeSegment && LANGUAGE_PARAM_ROUTES.has(routeSegment)) {
+    const url = request.nextUrl.clone();
+    url.pathname = `/${segments.slice(1).join("/")}`;
+    url.searchParams.set("lang", firstSegment!);
+    return NextResponse.redirect(url, 308);
+  }
+
+  if (hasLocalePrefix) {
+    return NextResponse.next();
+  }
+
+  const detected = detectLocaleFromHeader(request.headers.get("accept-language") ?? "");
+
+  // Don't redirect root — homepage handles all languages.
   if (pathname === "/") {
     return NextResponse.next();
   }
 
-  // For wiki paths without locale, redirect to locale version
-  if (firstSegment === "wiki" || (segments.length >= 2 && segments[0] === "wiki")) {
+  // Locale-aware registry pages must have a locale prefix.
+  if (routeSegment && LOCALE_AWARE_ROUTES.has(routeSegment)) {
     const url = request.nextUrl.clone();
     url.pathname = `/${detected}${pathname}`;
     return NextResponse.redirect(url, 308);
   }
 
+  // Global language-param pages stay unprefixed but should carry an explicit
+  // language selection for consistent rendering/linking.
+  if (routeSegment && LANGUAGE_PARAM_ROUTES.has(routeSegment) && !searchParams.get("lang")) {
+    const url = request.nextUrl.clone();
+    url.searchParams.set("lang", detected);
+    return NextResponse.redirect(url, 308);
+  }
+
   return NextResponse.next();
+}
+
+function isMachineOrAssetPath(pathname: string): boolean {
+  return (
+    MACHINE_ROUTE_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`)) ||
+    pathname.startsWith("/_next/") ||
+    pathname.includes(".")
+  );
 }
 
 function detectLocaleFromHeader(header: string): string {
