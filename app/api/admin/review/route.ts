@@ -2,6 +2,7 @@ import { logAdminAuditEvent, requireAdmin, supabaseAdmin } from "@/lib/admin-api
 import { DEFAULT_LOCALE } from "@/lib/i18n";
 import { NextResponse } from "next/server";
 import { documentPageUrl } from "../../../../lib/urls";
+import { calculateDocumentQuality } from "../../../../lib/document-quality";
 
 type SupabaseAdminClient = NonNullable<ReturnType<typeof supabaseAdmin>>;
 
@@ -199,7 +200,7 @@ export async function GET(request: Request) {
 
     const { data: verifiedDocuments, error: docsError } = await sb
       .from("documents")
-      .select("id, title, slug, lang, status, category, last_verified_at")
+      .select("id, title, slug, lang, status, category, confidence, localized_title, translation_status, last_verified_at, updated_at, freshness_ttl_days, claims(*, claim_sources(*))")
       .eq("status", "verified")
       .order("last_verified_at", { ascending: false, nullsFirst: false })
       .limit(30);
@@ -350,6 +351,7 @@ export async function GET(request: Request) {
       })),
       verified_documents: (verifiedDocuments ?? []).map((doc) => ({
         ...doc,
+        quality: calculateDocumentQuality(doc, doc.claims ?? []),
         public_url: publicDocumentLink(doc),
         verify_url: verifyClaimLink(doc.slug),
       })),

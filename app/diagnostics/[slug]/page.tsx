@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { getRegistryBundleBySlug } from "../../../lib/data";
 import { getRegistryDocumentPaths } from "../../../lib/seo";
 import { getRegistryBundleFromSupabase } from "../../../lib/supabase-documents";
+import { calculateDocumentQuality } from "../../../lib/document-quality";
 
 export const metadata: Metadata = {
   title: "AI-readiness 진단",
@@ -25,6 +26,7 @@ export default async function DiagnosticsPage({ params }: { params: Promise<{ sl
   const verifiedClaims = claims.filter((claim) => claim.status === "verified").length;
   const needsReviewClaims = claims.filter((claim) => claim.status === "needs_review").length;
   const sourceCount = claims.reduce((total, claim) => total + claim.sources.length, 0);
+  const quality = calculateDocumentQuality(document, claims);
   const unknownFactsCheck = (() => {
     if (document.status === "verified") {
       return {
@@ -75,8 +77,23 @@ export default async function DiagnosticsPage({ params }: { params: Promise<{ sl
           <div><span className="meta-label">verified_claims</span><br />{verifiedClaims}</div>
           <div><span className="meta-label">needs_review_claims</span><br />{needsReviewClaims}</div>
           <div><span className="meta-label">source_count</span><br />{sourceCount}</div>
+          <div><span className="meta-label">quality_score</span><br />{quality.percentage}/100 · {quality.grade}</div>
         </div>
       </header>
+
+      <section className="registry-panel" aria-labelledby="quality-summary">
+        <h2 id="quality-summary">Public-safe document quality summary</h2>
+        <p><strong>{quality.summary}</strong></p>
+        <ul className="diagnostics-list">
+          {quality.publicFactors.map((factor) => (
+            <li key={factor.key}>
+              <span className={factor.score === factor.max ? "badge badge-pass" : "badge badge-review"}>{factor.score}/{factor.max}</span>{" "}
+              <strong>{factor.label}</strong><br />
+              <span className="meta-label">{factor.summary}</span>
+            </li>
+          ))}
+        </ul>
+      </section>
 
       <section className="registry-panel" aria-labelledby="diagnostics-checklist">
         <h2 id="diagnostics-checklist">Diagnostics checklist</h2>

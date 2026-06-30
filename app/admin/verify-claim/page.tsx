@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { calculateDocumentQuality, type DocumentQualityScore } from "../../../lib/document-quality";
 
 type SourceRow = { id: string; title?: string | null; url?: string | null; source_type?: string | null; citation?: string | null; observed_at?: string | null };
 type VerificationEventRow = { id: string; note?: string | null; created_at?: string | null; new_status?: string | null };
@@ -36,6 +37,12 @@ type DocumentRow = {
   ai_provider?: string | null;
   ai_model?: string | null;
   claims?: ClaimRow[];
+  localized_title?: Record<string, string> | null;
+  translation_status?: string | null;
+  last_verified_at?: string | null;
+  updated_at?: string | null;
+  freshness_ttl_days?: number | null;
+  quality?: DocumentQualityScore;
 };
 type ClaimListMeta = { count: number; limit: number; offset: number; has_more: boolean };
 type Pagination = { page: number; limit: number; total: number; total_pages: number };
@@ -468,6 +475,7 @@ export default function VerifyClaimPage() {
       {documents.filter((doc) => visibleDocIds.has(doc.id) || localFilters.country === "all" && localFilters.domain === "all" && localFilters.source === "all" && localFilters.confidence === "all" && localFilters.status === "all" && localFilters.stale === "all").map((doc) => {
         if (!visibleDocIds.has(doc.id) && !(localFilters.country === "all" && localFilters.domain === "all" && localFilters.source === "all" && localFilters.confidence === "all" && localFilters.status === "all" && localFilters.stale === "all")) return null;
         const unverifiedCount = (doc.claims ?? []).filter((c) => c.status === "needs_review").length;
+        const quality = doc.quality ?? calculateDocumentQuality(doc, doc.claims ?? []);
         return (
           <section className="registry-panel" key={doc.id} id={`doc-${doc.slug}`}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 8 }}>
@@ -481,6 +489,12 @@ export default function VerifyClaimPage() {
                   {doc.slug} · {doc.country ?? "?"} · {doc.lang ?? "?"} · {doc.category ?? "?"} · <span className="badge">{doc.status}</span> · <span className="badge">confidence: {doc.confidence}</span>
                 </p>
                 <p className="meta-label">entity_id: {doc.entity_id ?? "-"}</p>
+                <p style={{ margin: "8px 0 0" }}>
+                  <span className={quality.percentage >= 70 ? "badge badge-verified" : "badge badge-review"}>
+                    quality: {quality.percentage}/100 · {quality.grade}
+                  </span>{" "}
+                  <span className="meta-label">{quality.summary}</span>
+                </p>
               </div>
               {unverifiedCount > 0 && (
                 <span className="badge badge-review" style={{ whiteSpace: "nowrap" }}>
@@ -491,6 +505,19 @@ export default function VerifyClaimPage() {
                 <span className="badge badge-verified">✓ 전체 검증 완료</span>
               )}
             </div>
+
+            <details style={{ marginTop: 12 }}>
+              <summary style={{ cursor: "pointer", fontWeight: 700 }}>품질 요소 보기</summary>
+              <ul className="diagnostics-list" style={{ marginTop: 8 }}>
+                {quality.factors.map((factor) => (
+                  <li key={factor.key}>
+                    <span className={factor.score === factor.max ? "badge badge-pass" : "badge badge-review"}>{factor.score}/{factor.max}</span>{" "}
+                    <strong>{factor.label}</strong><br />
+                    <span className="meta-label">{factor.summary}</span>
+                  </li>
+                ))}
+              </ul>
+            </details>
 
             {(doc.claims ?? []).map((claim) => (
               <div className="claim-card" key={claim.id} style={{ borderLeft: claim.status === "verified" ? "3px solid #86efac" : "3px solid #fca5a5" }}>
