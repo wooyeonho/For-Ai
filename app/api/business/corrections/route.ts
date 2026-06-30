@@ -11,6 +11,7 @@ export async function GET(request: Request) {
   const url = new URL(request.url);
   const status = url.searchParams.get("status") ?? "new";
   const priority = url.searchParams.get("priority");
+  const includeSubmittedClaims = url.searchParams.get("include_submitted_claims") === "1";
 
   let query = sb
     .from("business_corrections")
@@ -23,7 +24,19 @@ export async function GET(request: Request) {
 
   const { data, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ corrections: data ?? [] });
+
+  if (!includeSubmittedClaims) return NextResponse.json({ corrections: data ?? [] });
+
+  const { data: submittedClaims, error: submittedClaimsError } = await sb
+    .from("business_submitted_claims")
+    .select("*, verified_business_profiles(business_name, tier)")
+    .eq("status", "pending_verification")
+    .eq("citation_ready", false)
+    .order("created_at", { ascending: false })
+    .limit(50);
+
+  if (submittedClaimsError) return NextResponse.json({ error: submittedClaimsError.message }, { status: 500 });
+  return NextResponse.json({ corrections: data ?? [], submitted_claims: submittedClaims ?? [] });
 }
 
 // POST: Submit a business correction (requires valid profile_id via API key or admin)
@@ -168,12 +181,39 @@ export async function PATCH(request: Request) {
 
   const body = await request.json();
   const correctionId = String(body.correction_id ?? "").trim();
-  const newStatus = String(body.status ?? "").trim();
+  const submittedClaimId = String(body.submitted_claim_id ?? "").trim();
+  const action = String(body.action ?? "").trim();
+  const requestedStatus = String(body.status ?? "").trim();
+  const newStatus = action === "approve" ? "accepted" : action === "reject" ? "rejected" : action === "request_source" ? "reviewing" : requestedStatus;
   const reviewerNote = body.reviewer_note ? String(body.reviewer_note).trim() : null;
 
-  if (!correctionId || !["accepted", "rejected"].includes(newStatus)) {
+  if (submittedClaimId) {
+    if (!["accepted", "rejected", "reviewing"].includes(newStatus)) {
+      return NextResponse.json({ error: "valid action (approve/reject/request_source) or status required" }, { status: 400 });
+    }
+    const now = new Date().toISOString();
+    const { data, error } = await sb
+      .from("business_submitted_claims")
+      .update({
+        status: newStatus === "reviewing" ? "pending_verification" : newStatus,
+        citation_ready: false,
+        reviewed_at: newStatus === "reviewing" ? null : now,
+        reviewer_note: reviewerNote ?? (newStatus === "accepted" ? "Accepted for independent verification; not citation-ready." : null),
+        updated_at: now,
+      })
+      .eq("id", submittedClaimId)
+      .select("*")
+      .single();
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    await logAdminAuditEvent(sb, request, "admin.business_submitted_claim.review", {
+      submitted_claim_id: submittedClaimId, action: action || "status_update", new_status: newStatus, entity_id: data.entity_id, citation_ready: false,
+    });
+    return NextResponse.json({ submitted_claim: data });
+  }
+
+  if (!correctionId || !["accepted", "rejected", "reviewing"].includes(newStatus)) {
     return NextResponse.json(
-      { error: "correction_id and valid status (accepted/rejected) required" },
+      { error: "correction_id and valid action (approve/reject/request_source) or status required" },
       { status: 400 },
     );
   }
@@ -183,7 +223,7 @@ export async function PATCH(request: Request) {
     .from("business_corrections")
     .update({
       status: newStatus,
-      reviewed_at: now,
+      reviewed_at: newStatus === "reviewing" ? null : now,
       reviewer_note: reviewerNote,
       updated_at: now,
     })
@@ -195,6 +235,7 @@ export async function PATCH(request: Request) {
 
   await logAdminAuditEvent(sb, request, "admin.business_correction.review", {
     correction_id: correctionId,
+    action: action || "status_update",
     new_status: newStatus,
     entity_id: data.entity_id,
   });

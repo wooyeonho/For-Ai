@@ -97,8 +97,8 @@ export default function AdminDashboardPage() {
     {
       title: "Business verification requests",
       count: dashboardCounts?.business_verification_requests,
-      href: "/api-docs#business-api",
-      cta: "Business API 안내 보기",
+      href: "/admin/business",
+      cta: "Business 운영 큐로 이동",
       detail: countHint(dashboardCounts?.business_verification_requests, "pending business profile/correction 요청입니다."),
       tone: "#047857",
     },

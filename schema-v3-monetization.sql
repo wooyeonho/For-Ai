@@ -346,6 +346,9 @@ comment on column webhook_subscriptions.secret is 'HMAC-SHA256 signing secret fo
 -- ─────────────────────────────────────────────────────────────────────────────
 create type claim_source_of_claim as enum ('independent', 'business_submitted', 'sponsored');
 create type business_submitted_claim_status as enum ('pending_verification', 'accepted', 'rejected');
+-- Admin approve/reject/request-source decisions apply to this intake queue only.
+-- accepted business submissions remain citation_ready=false until a separate
+-- independent human verification promotes a canonical claim with sources.
 
 alter table claims
   add column if not exists source_of_claim claim_source_of_claim not null default 'independent';
@@ -377,7 +380,7 @@ create index business_submitted_claims_pending_idx on business_submitted_claims(
 alter table business_submitted_claims enable row level security;
 
 comment on column claims.source_of_claim is 'Origin of a canonical claim. independent is default; sponsored/business values require visible labeling.';
-comment on table business_submitted_claims is 'Business-submitted facts waiting for human verification. They are displayed as pending and citation_ready=false; they never overwrite canonical verified claims directly.';
+comment on table business_submitted_claims is 'Business-submitted facts waiting for human verification. Admin approve/reject/request-source decisions manage intake only. They are displayed as pending and citation_ready=false; they never overwrite canonical verified claims directly.';
 
 -- Privacy/retention policy notes:
 -- - Public contributors are identified only by contributor_hash derived with a secret salt; raw IP addresses are never persisted.

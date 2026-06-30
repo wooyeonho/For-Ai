@@ -3,16 +3,24 @@ import { supabaseAdmin, requireAdmin, logAdminAuditEvent } from "@/lib/admin-api
 import { makeContributorHashForRequest } from "@/lib/contributor-hash";
 import { calculateBusinessProfileCompletenessScore, getEntityProfile } from "@/lib/entity-profile";
 
-// GET: List verified business profiles (public — only verified ones)
-export async function GET() {
+// GET: Public lists verified profiles; admins can list operational queues by status.
+export async function GET(request: Request) {
   const sb = supabaseAdmin();
   if (!sb) return NextResponse.json({ error: "Database not configured" }, { status: 500 });
 
+  const url = new URL(request.url);
+  const requestedStatus = url.searchParams.get("status") ?? "verified";
+  const isPublicVerifiedList = requestedStatus === "verified";
+  if (!isPublicVerifiedList) {
+    const adminError = await requireAdmin(request, "business_profiles.read");
+    if (adminError) return adminError;
+  }
+
   const { data, error } = await sb
     .from("verified_business_profiles")
-    .select("id, entity_id, business_name, business_url, country, industry, tier, status, verification_method, verified_at")
-    .eq("status", "verified")
-    .order("verified_at", { ascending: false })
+    .select("id, entity_id, business_name, business_url, country, industry, tier, status, verification_method, verification_review_url, verified_at, created_at, metadata")
+    .eq("status", requestedStatus)
+    .order(isPublicVerifiedList ? "verified_at" : "created_at", { ascending: false })
     .limit(100);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -139,12 +147,15 @@ export async function PATCH(request: Request) {
 
   const body = await request.json();
   const profileId = String(body.profile_id ?? "").trim();
-  const newStatus = String(body.status ?? "").trim();
+  const action = String(body.action ?? "").trim();
+  const requestedStatus = String(body.status ?? "").trim();
+  const newStatus = action === "approve" ? "verified" : action === "reject" ? "rejected" : action === "request_source" ? "pending" : requestedStatus;
   const tier = String(body.tier ?? "").trim() || undefined;
+  const reviewerNote = body.reviewer_note ? String(body.reviewer_note).trim() : null;
 
-  if (!profileId || !["verified", "rejected", "suspended"].includes(newStatus)) {
+  if (!profileId || !["verified", "rejected", "suspended", "pending"].includes(newStatus)) {
     return NextResponse.json(
-      { error: "profile_id and valid status (verified/rejected/suspended) required" },
+      { error: "profile_id and valid action (approve/reject/request_source) or status required" },
       { status: 400 },
     );
   }
@@ -154,6 +165,9 @@ export async function PATCH(request: Request) {
     updated_at: new Date().toISOString(),
   };
   if (newStatus === "verified") update.verified_at = new Date().toISOString();
+  if (action === "request_source") {
+    update.metadata = { admin_requested_source_at: new Date().toISOString(), reviewer_note: reviewerNote };
+  }
   if (tier && ["free", "pro", "enterprise"].includes(tier)) update.tier = tier;
 
   const { data, error } = await sb
@@ -167,6 +181,7 @@ export async function PATCH(request: Request) {
 
   await logAdminAuditEvent(sb, request, "admin.business_profile.update", {
     profile_id: profileId,
+    action: action || "status_update",
     new_status: newStatus,
     tier: tier ?? data.tier,
   });
