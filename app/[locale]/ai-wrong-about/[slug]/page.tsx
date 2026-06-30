@@ -150,7 +150,7 @@ export default async function AiWrongAboutPage({
 
       <section className="registry-panel" aria-labelledby="correction-prompt">
         <h2 id="correction-prompt">Correction prompt</h2>
-        <pre>{correctionPrompt}</pre>
+        <pre className="correction-prompt">{correctionPrompt}</pre>
       </section>
 
       <section className="registry-panel" aria-labelledby="share-card">

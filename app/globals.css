@@ -43,6 +43,35 @@ a {
   text-underline-offset: 3px;
 }
 
+pre,
+code {
+  font-family: var(--font-mono);
+}
+
+pre {
+  max-width: 100%;
+  overflow-x: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+code,
+.meta-item dd,
+.claim-value,
+.source-url {
+  overflow-wrap: anywhere;
+}
+
+.correction-prompt {
+  margin: 12px 0 0;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--soft);
+  line-height: 1.65;
+}
+
 /* Layout */
 .page-shell {
   width: min(100%, 960px);
@@ -125,8 +154,8 @@ h2 {
 .meta-item dd {
   margin: 0;
   font-size: 0.9rem;
-  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace;
-  word-break: break-all;
+  font-family: var(--font-mono);
+  word-break: break-word;
 }
 
 /* Badges */
