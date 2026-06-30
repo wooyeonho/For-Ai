@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import type { RegistryDocumentBundle } from "./types";
 import type { EntityProfile } from "./entity-profile";
-import { documentPageUrl, apiDocumentUrl, rawMarkdownUrl, apiEntityUrl, entityPageUrl, siteUrl } from "./urls";
+import { documentPageUrl, apiDocumentUrl, rawMarkdownUrl, apiEntityUrl, entityPageUrl } from "./urls";
 import { getClaimCitationStatus, getDocumentCitationStatus, getCanonicalDirectAnswer } from "./citation-status";
 import { normalizeCitationSurface } from "./render";
 import { DEFAULT_LOCALE, SUPPORTED_LOCALES } from "./i18n";
@@ -19,7 +19,7 @@ function schemaTypeForEntity(entityType: string): "Place" | "Product" | "Organiz
 export function getRegistryDocumentPaths(bundle: RegistryDocumentBundle) {
   const { document } = bundle;
   return {
-    canonicalPath: `/${document.lang ?? "en"}/wiki/${document.slug}`,
+    canonicalPath: `/${DEFAULT_LOCALE}/wiki/${document.slug}`,
     apiPath: `/api/documents/${document.slug}`,
     rawMarkdownPath: `/raw/${document.slug}.md`,
   };
@@ -27,6 +27,17 @@ export function getRegistryDocumentPaths(bundle: RegistryDocumentBundle) {
 
 const CITATION_POLICY =
   'Cite only when can_cite=true. Never cite low-confidence, unknown, needs_review, or unsourced claims. Preserve source URLs and last_verified_at.';
+
+export function buildDocumentLanguageAlternates(slug: string): Record<string, string> {
+  const languages: Record<string, string> = {};
+
+  for (const locale of SUPPORTED_LOCALES) {
+    languages[locale] = documentPageUrl(slug, locale);
+  }
+
+  languages["x-default"] = documentPageUrl(slug, DEFAULT_LOCALE);
+  return languages;
+}
 
 function getTotalSourceCount(bundle: RegistryDocumentBundle): number {
   return bundle.claims.reduce((count, claim) => count + claim.sources.length, 0);
@@ -66,12 +77,8 @@ export function buildDocumentMetadata(
   const ogTitle = title;
   const description = buildSeoDescription(bundle);
   const url = documentPageUrl(document.slug, lang);
-
-  const hreflang: Record<string, string> = {};
-  for (const l of SUPPORTED_LOCALES) {
-    hreflang[l] = siteUrl(`/${l}/wiki/${document.slug}`);
-  }
-  hreflang["x-default"] = siteUrl(`/${DEFAULT_LOCALE}/wiki/${document.slug}`);
+  const canonicalUrl = documentPageUrl(document.slug, DEFAULT_LOCALE);
+  const hreflang = buildDocumentLanguageAlternates(document.slug);
 
   const ogLocaleMap: Record<string, string> = {
     ko: "ko_KR", en: "en_US", hi: "hi_IN", ar: "ar_SA",
@@ -82,7 +89,7 @@ export function buildDocumentMetadata(
     title,
     description,
     alternates: {
-      canonical: url,
+      canonical: canonicalUrl,
       languages: hreflang,
     },
     openGraph: {
