@@ -2849,3 +2849,308 @@ body {
   border-radius: inherit;
   background: var(--success);
 }
+
+/* Shared component primitives */
+:root {
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --space-page-mobile: 16px;
+  --space-page-desktop: 24px;
+  --bp-mobile: 720px;
+  --status-verified: #166534;
+  --status-verified-bg: #dcfce7;
+  --status-verified-border: #86efac;
+  --status-needs-review: #92400e;
+  --status-needs-review-bg: #fef3c7;
+  --status-needs-review-border: #fcd34d;
+  --status-stale: #c2410c;
+  --status-stale-bg: #ffedd5;
+  --status-stale-border: #fdba74;
+  --status-danger: #991b1b;
+  --status-danger-bg: #fee2e2;
+  --status-danger-border: #fca5a5;
+  --status-draft: #4b5563;
+  --status-draft-bg: #f3f4f6;
+  --status-draft-border: #d1d5db;
+}
+
+.btn {
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  gap: 6px;
+  justify-content: center;
+  min-height: 36px;
+  padding: 8px 14px;
+  text-decoration: none;
+  transition: background 0.15s, border-color 0.15s, color 0.15s, opacity 0.15s;
+}
+
+.btn:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-glow);
+}
+
+.btn:disabled,
+.btn[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.btn-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+
+.btn-secondary {
+  background: var(--soft);
+  border-color: var(--line);
+  color: var(--text);
+}
+
+.btn-danger {
+  background: var(--status-danger);
+  border-color: var(--status-danger);
+  color: #fff;
+}
+
+.panel,
+.admin-card {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow, 0 1px 2px rgba(16, 24, 40, 0.04));
+  color: var(--text);
+  padding: 20px;
+}
+
+.admin-card {
+  display: block;
+}
+
+.status-badge {
+  border: 1px solid var(--status-draft-border);
+  border-radius: 999px;
+  background: var(--status-draft-bg);
+  color: var(--status-draft);
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1.4;
+  padding: 2px 8px;
+  text-transform: uppercase;
+}
+
+.status-badge--verified,
+.badge-verified,
+.badge-pass,
+.badge-high,
+.status-badge--published {
+  background: var(--status-verified-bg);
+  border-color: var(--status-verified-border);
+  color: var(--status-verified);
+}
+
+.status-badge--needs-review,
+.status-badge--review,
+.status-badge--pending,
+.badge-review,
+.badge-medium,
+.badge-warning,
+.badge-low {
+  background: var(--status-needs-review-bg);
+  border-color: var(--status-needs-review-border);
+  color: var(--status-needs-review);
+}
+
+.status-badge--stale {
+  background: var(--status-stale-bg);
+  border-color: var(--status-stale-border);
+  color: var(--status-stale);
+}
+
+.status-badge--danger,
+.status-badge--spam,
+.status-badge--disputed,
+.status-badge--rejected,
+.badge-danger,
+.badge-disputed {
+  background: var(--status-danger-bg);
+  border-color: var(--status-danger-border);
+  color: var(--status-danger);
+}
+
+.status-badge--draft,
+.status-badge--unknown,
+.status-badge--archived,
+.status-badge--ai-draft {
+  background: var(--status-draft-bg);
+  border-color: var(--status-draft-border);
+  color: var(--status-draft);
+}
+
+.form-field input,
+.form-field textarea,
+.form-field select {
+  width: 100%;
+}
+
+.ui-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.ui-row-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.ui-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.data-table th,
+.data-table td {
+  border-bottom: 1px solid var(--line);
+  padding: 8px;
+  text-align: start;
+  vertical-align: top;
+}
+
+.admin-shell {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 40px 20px;
+}
+
+.notice-amber {
+  background: var(--status-needs-review-bg);
+  border-inline-start: 3px solid var(--status-needs-review-border);
+}
+
+.muted-text { color: var(--muted); }
+.success-text { color: var(--status-verified); }
+.danger-text { color: var(--status-danger); }
+.warning-text { color: var(--status-needs-review); }
+.stale-text { color: var(--status-stale); }
+
+@media (max-width: 719px) {
+  .admin-shell {
+    padding: 24px var(--space-page-mobile);
+  }
+
+  .panel,
+  .admin-card,
+  .registry-panel,
+  .claim-card {
+    padding: 16px;
+  }
+
+  .btn {
+    width: 100%;
+  }
+
+  .ui-row-between {
+    align-items: stretch;
+  }
+}
+
+.copy-citation {
+  align-items: flex-start;
+  display: inline-flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.copy-citation__button {
+  font-size: 0.8rem;
+  min-height: 32px;
+  padding: 4px 10px;
+}
+
+.copy-citation__button--copied {
+  background: var(--status-verified-bg);
+  color: var(--status-verified);
+}
+
+.copy-citation__note {
+  max-width: 320px;
+}
+
+.document-stats-bar {
+  color: var(--muted);
+  display: flex;
+  font-size: 13px;
+  gap: 16px;
+  padding: 8px 0;
+}
+
+.lang-selector,
+.lang-selector__details {
+  display: inline-block;
+  position: relative;
+}
+
+.lang-selector__summary {
+  background: var(--soft);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 13px;
+  list-style: none;
+  padding: 4px 10px;
+}
+
+.lang-selector__menu {
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  inset-inline-end: 0;
+  list-style: none;
+  margin-top: 4px;
+  min-width: 140px;
+  padding: 4px 0;
+  position: absolute;
+  top: 100%;
+  z-index: 100;
+}
+
+.lang-selector__link {
+  color: var(--text);
+  display: block;
+  font-size: 13px;
+  font-weight: 400;
+  padding: 6px 14px;
+  text-decoration: none;
+}
+
+.lang-selector__link--active {
+  color: #2563eb;
+  font-weight: 600;
+}

@@ -117,7 +117,7 @@ export default async function ComparePage({
             return (
               <li key={bundle.entity.id}>
                 <Link href={`/${locale}/wiki/${bundle.document.slug}`}>{bundle.document.title}</Link>{" "}
-                <span className={status.isVerifiedDocument ? "badge badge-verified" : "badge badge-review"}>
+                <span className={status.isVerifiedDocument ? "status-badge status-badge--verified" : "status-badge status-badge--needs-review"}>
                   {status.verifiedClaims}/{status.totalClaims} verified claims
                 </span>{" "}
                 <span className="meta-label">entity_id: {bundle.entity.id}</span>
@@ -129,30 +129,30 @@ export default async function ComparePage({
 
       <section className="registry-panel" aria-labelledby="claim-comparison-table">
         <h2 id="claim-comparison-table">Claim table</h2>
-        <div style={{ overflowX: "auto" }}>
-          <table style={{ width: "100%", borderCollapse: "collapse" }}>
+        <div className="table-wrap">
+          <table className="data-table">
             <thead>
               <tr>
-                <th style={{ textAlign: "start", borderBottom: "1px solid #e5e7eb", padding: 8 }}>Claim</th>
+                <th>Claim</th>
                 {bundles.map((bundle) => (
-                  <th key={bundle.entity.id} style={{ textAlign: "start", borderBottom: "1px solid #e5e7eb", padding: 8 }}>
+                  <th key={bundle.entity.id}>
                     {bundle.document.title}
                   </th>
                 ))}
-                <th style={{ textAlign: "start", borderBottom: "1px solid #e5e7eb", padding: 8 }}>Difference summary</th>
+                <th>Difference summary</th>
               </tr>
             </thead>
             <tbody>
               {fieldPaths.map((fieldPath) => (
                 <tr key={fieldPath}>
-                  <th scope="row" style={{ verticalAlign: "top", textAlign: "start", borderBottom: "1px solid #f3f4f6", padding: 8 }}>
+                  <th scope="row">
                     {fieldPath}
                   </th>
                   {bundles.map((bundle) => {
                     const claim = bundle.claims.find((candidate) => candidate.field_path === fieldPath);
                     const sources = getClaimSources(claim);
                     return (
-                      <td key={bundle.entity.id} style={{ verticalAlign: "top", borderBottom: "1px solid #f3f4f6", padding: 8 }}>
+                      <td key={bundle.entity.id}>
                         <p><strong>{getClaimValue(claim, locale)}</strong></p>
                         <p className="meta-label">Last verified: {getLastVerified(claim, locale)}</p>
                         <p className="meta-label">Source per claim:</p>
@@ -170,7 +170,7 @@ export default async function ComparePage({
                       </td>
                     );
                   })}
-                  <td style={{ verticalAlign: "top", borderBottom: "1px solid #f3f4f6", padding: 8 }}>
+                  <td>
                     {summarizeDifference(fieldPath, bundles, locale)}
                   </td>
                 </tr>

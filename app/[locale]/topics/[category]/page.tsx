@@ -145,7 +145,7 @@ export default async function TopicCategoryPage({
         )}
       </section>
 
-      <section className="registry-panel" aria-labelledby="submit-missing-fact" style={{ background: "#fffbeb", borderInlineStart: "3px solid #f59e0b" }}>
+      <section className="registry-panel notice-amber" aria-labelledby="submit-missing-fact">
         <p className="eyebrow">Missing fact?</p>
         <h2 id="submit-missing-fact">Submit missing fact</h2>
         <p>

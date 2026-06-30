@@ -37,50 +37,18 @@ export function LanguageSelector() {
   }
 
   return (
-    <div className="lang-selector" style={{ position: "relative", display: "inline-block" }}>
-      <details style={{ position: "relative" }}>
-        <summary
-          style={{
-            cursor: "pointer",
-            fontSize: 13,
-            padding: "4px 10px",
-            border: "1px solid #e5e7eb",
-            borderRadius: 6,
-            background: "#f9fafb",
-            listStyle: "none",
-          }}
-        >
+    <div className="lang-selector">
+      <details className="lang-selector__details">
+        <summary className="lang-selector__summary">
           {LOCALE_CONFIG[currentLocale as keyof typeof LOCALE_CONFIG]?.flag ?? ""}{" "}
           {LOCALE_CONFIG[currentLocale as keyof typeof LOCALE_CONFIG]?.nativeName ?? currentLocale}
         </summary>
-        <ul
-          style={{
-            position: "absolute",
-            insetInlineEnd: 0,
-            top: "100%",
-            marginTop: 4,
-            padding: "4px 0",
-            background: "#fff",
-            border: "1px solid #e5e7eb",
-            borderRadius: 8,
-            boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-            listStyle: "none",
-            zIndex: 100,
-            minWidth: 140,
-          }}
-        >
+        <ul className="lang-selector__menu">
           {SUPPORTED_LOCALES.map((locale) => (
             <li key={locale}>
               <Link
                 href={getPathForLocale(locale)}
-                style={{
-                  display: "block",
-                  padding: "6px 14px",
-                  fontSize: 13,
-                  color: locale === currentLocale ? "#2563eb" : "#374151",
-                  fontWeight: locale === currentLocale ? 600 : 400,
-                  textDecoration: "none",
-                }}
+                className={`lang-selector__link${locale === currentLocale ? " lang-selector__link--active" : ""}`}
               >
                 {LOCALE_CONFIG[locale].flag} {LOCALE_CONFIG[locale].nativeName}
               </Link>

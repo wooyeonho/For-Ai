@@ -22,7 +22,7 @@ export async function DocumentStatsBar({ documentId }: { documentId: string }) {
   if (!stats) return null;
 
   return (
-    <div style={{ display: "flex", gap: 16, padding: "8px 0", fontSize: 13, color: "#6b7280" }}>
+    <div className="document-stats-bar">
       <span title="조회수">👁 조회 {stats.view_count.toLocaleString()}</span>
       <span title="AI 인용 횟수">✦ AI 인용 {stats.ai_citation_count.toLocaleString()}</span>
     </div>

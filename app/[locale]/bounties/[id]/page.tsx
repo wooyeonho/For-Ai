@@ -36,7 +36,7 @@ export default async function BountyDetailPage({ params }: { params: Promise<Par
         <h1>{bounty.title}</h1>
         <p>{bounty.description}</p>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 12 }}>
-          <span className={bounty.status === "open" ? "badge badge-verified" : "badge badge-review"}>{bounty.status}</span>
+          <span className={bounty.status === "open" ? "status-badge status-badge--verified" : "status-badge status-badge--needs-review"}>{bounty.status}</span>
           <span className="badge">{bounty.reward_points} reward points</span>
           {isSponsoredBounty(bounty) ? <span className="badge badge-warning">Sponsored: {bounty.sponsor_label}</span> : <span className="badge">not sponsored</span>}
         </div>
@@ -65,7 +65,7 @@ export default async function BountyDetailPage({ params }: { params: Promise<Par
         </ul>
       </section>
 
-      <section className="registry-panel" aria-labelledby="verification-independence" style={{ background: "#fffbeb", borderInlineStart: "3px solid #f59e0b" }}>
+      <section className="registry-panel notice-amber" aria-labelledby="verification-independence">
         <p className="eyebrow">Verification firewall</p>
         <h2 id="verification-independence">Sponsored bounty ≠ verified fact</h2>
         <p>{CLAIM_BOUNTY_POLICY.sponsorVerificationIndependence}</p>

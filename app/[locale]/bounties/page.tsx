@@ -72,7 +72,7 @@ export default async function BountiesPage({ params }: { params: Promise<{ local
                 )}
               </div>
               <div className="registry-row-meta">
-                <span className={bounty.status === "open" ? "badge badge-verified" : "badge badge-review"}>{bounty.status}</span>
+                <span className={bounty.status === "open" ? "status-badge status-badge--verified" : "status-badge status-badge--needs-review"}>{bounty.status}</span>
                 <span className="badge">{bounty.reward_points} pts</span>
               </div>
             </li>

@@ -5,9 +5,12 @@ import type { VerificationLevelInfo } from "../../lib/citation-status";
 import type { ClaimStatus, DocumentStatus } from "../../lib/types";
 
 function statusClass(status: string): string {
-  if (status === "verified" || status === "published") return "badge badge-verified";
-  if (status === "disputed") return "badge badge-disputed";
-  return "badge badge-review";
+  const normalized = status.replace(/_/g, "-");
+  if (status === "verified" || status === "published") return `status-badge status-badge--${normalized}`;
+  if (status === "needs_review") return "status-badge status-badge--needs-review";
+  if (status === "disputed") return "status-badge status-badge--danger";
+  if (status === "ai_draft") return "status-badge status-badge--ai-draft";
+  return `status-badge status-badge--${normalized}`;
 }
 
 export function ClaimStatusBadge({ status, locale }: { status: ClaimStatus; locale?: string }) {
@@ -35,7 +38,7 @@ export function DocumentStatusBadge({ status, locale }: { status: DocumentStatus
 
 
 export function VerificationLevelBadge({ level }: { level: VerificationLevelInfo }) {
-  const tone = level.level >= 3 ? "badge badge-verified" : level.level >= 1 ? "badge badge-review" : "badge";
+  const tone = level.level >= 3 ? "status-badge status-badge--verified" : level.level >= 1 ? "status-badge status-badge--needs-review" : "status-badge status-badge--draft";
   return (
     <span className={tone} title={`${level.label}: ${level.description}. UI explanation only; citation readiness still follows citation_ready/can_cite policy.`}>
       {level.label}: {level.description}

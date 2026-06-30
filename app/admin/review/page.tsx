@@ -126,8 +126,8 @@ const EMPTY_COUNTS: Counts = {
   documents_verified: 0,
 };
 
-const primaryButtonStyle = { padding: "8px 12px", borderRadius: 8, background: "#111827", color: "#fff", textDecoration: "none", display: "inline-block", fontWeight: 700 };
-const secondaryButtonStyle = { padding: "8px 12px", borderRadius: 8, background: "#f3f4f6", color: "#111827", textDecoration: "none", display: "inline-block", fontWeight: 700 };
+const primaryButtonClass = "btn btn-primary";
+const secondaryButtonClass = "btn btn-secondary";
 
 const RISK_COLOR: Record<string, string> = {
   low: "#166534",
@@ -179,8 +179,8 @@ export default function AdminReviewPage() {
   const staleDocCount = (data?.verified_documents ?? []).filter((doc) => isStale(doc.last_verified_at)).length;
 
   return (
-    <div style={{ maxWidth: 1120, margin: "0 auto", padding: "40px 20px" }}>
-      <header className="registry-panel">
+    <div className="admin-shell">
+      <header className="panel">
         <p className="eyebrow">Unified admin operations</p>
         <h1>For-Ai 통합 운영 콘솔</h1>
         <p>
@@ -188,7 +188,7 @@ export default function AdminReviewPage() {
           high-risk categories를 한 화면에서 확인하고 오늘 처리 순서대로 이동합니다.
           후보 생성부터 verified 문서 공유까지 claim-level 운영 상태를 admin API count로 확인합니다.
         </p>
-        <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+        <div className="ui-row" style={{ marginTop: 16 }}>
           <input
             aria-label="Admin secret"
             type="password"
@@ -214,11 +214,11 @@ export default function AdminReviewPage() {
         </div>
       )}
 
-      <section className="registry-panel" aria-labelledby="priority-title">
+      <section className="panel" aria-labelledby="priority-title">
         <h2 id="priority-title">오늘 무엇부터 처리할까요?</h2>
         {(data?.priority_ordering.length ?? 0) === 0 && <p>운영 데이터를 불러오면 priority ordering이 표시됩니다.</p>}
         {data?.priority_ordering.map((item) => (
-          <div className="claim-card" key={item.key} style={{ display: "grid", gridTemplateColumns: "72px 1fr auto", gap: 16, alignItems: "center" }}>
+          <div className="admin-card" key={item.key} style={{ display: "grid", gridTemplateColumns: "72px 1fr auto", gap: 16, alignItems: "center" }}>
             <strong style={{ fontSize: 24 }}>#{item.rank}</strong>
             <div>
               <p className="eyebrow">{item.label}</p>
@@ -226,19 +226,19 @@ export default function AdminReviewPage() {
             </div>
             <div style={{ textAlign: "right" }}>
               <p style={{ fontSize: 28, fontWeight: 800, margin: "0 0 8px" }}>{item.count}</p>
-              <Link href={item.href} style={primaryButtonStyle}>바로 처리</Link>
+              <Link href={item.href} className={primaryButtonClass}>바로 처리</Link>
             </div>
           </div>
         ))}
       </section>
 
       {/* Workflow checklist */}
-      <section className="registry-panel" aria-labelledby="checklist-title">
+      <section className="panel" aria-labelledby="checklist-title">
         <h2 id="checklist-title">운영 체크리스트</h2>
         <div className="meta-grid">
           {checklist.map((item) => (
             <Link key={item.label} href={item.href} style={{ textDecoration: "none", color: "inherit" }}>
-              <div className="claim-card" style={{ height: "100%", borderLeft: item.urgent ? "3px solid #ef4444" : "3px solid #e5e7eb" }}>
+              <div className="admin-card" style={{ height: "100%", borderLeft: item.urgent ? "3px solid #ef4444" : "3px solid #e5e7eb" }}>
                 <p className="eyebrow">{item.hint}</p>
                 <h3 style={{ margin: "4px 0" }}>{item.label}</h3>
                 <p style={{ fontSize: 32, fontWeight: 800, margin: 0, color: item.urgent ? "#991b1b" : undefined }}>{item.count}</p>
@@ -249,8 +249,8 @@ export default function AdminReviewPage() {
       </section>
 
       {/* Today's priority queue */}
-      <section className="registry-panel" aria-labelledby="today-title">
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+      <section className="panel" aria-labelledby="today-title">
+        <div className="ui-row-between" style={{ marginBottom: 16 }}>
           <h2 id="today-title" style={{ margin: 0 }}>오늘 해야 할 일</h2>
           <Link href="/admin/verify-claim?claim_status=needs_review" style={{ fontSize: 13 }}>검증 큐 전체 보기 →</Link>
         </div>
@@ -271,7 +271,7 @@ export default function AdminReviewPage() {
         </div>
 
         {/* Priority 1: needs_review claims */}
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+        <div className="ui-row-between">
           <h3 style={{ margin: "0 0 12px" }}>1순위 · needs_review claim 검증</h3>
         </div>
         {(data?.priorities.needs_review_claims.length ?? 0) === 0 && (
@@ -281,7 +281,7 @@ export default function AdminReviewPage() {
           const doc = Array.isArray(claim.documents) ? claim.documents[0] : claim.documents;
           const slug = doc?.slug;
           return (
-            <div className="claim-card" key={claim.id} style={{ borderLeft: "3px solid #fca5a5" }}>
+            <div className="admin-card" key={claim.id} style={{ borderLeft: "3px solid #fca5a5" }}>
               <p className="eyebrow">
                 {doc?.title ?? slug ?? claim.id} · <code style={{ fontSize: 11 }}>{claim.field_path}</code>
               </p>
@@ -289,19 +289,19 @@ export default function AdminReviewPage() {
               <p style={{ margin: "4px 0" }}><strong>{claim.claim_value}</strong></p>
               <p style={{ fontSize: 13, color: "#6b7280", margin: "0 0 8px" }}>{claim.claim_text}</p>
               <p style={{ margin: "0 0 8px" }}>
-                <span className="badge badge-review">{claim.status}</span>{" "}
+                <span className="status-badge status-badge--needs-review">{claim.status}</span>{" "}
                 <span className="badge">confidence: {claim.confidence}</span>{" "}
                 <span className="badge">last_verified_at: {claim.last_verified_at ?? "확인 필요"}</span>
               </p>
               <p className="meta-label">contributor_hash: {claim.contributor_hash ?? "-"} · AI: {[claim.ai_provider, claim.ai_model].filter(Boolean).join(" / ") || "-"}</p>
               {(claim.source_candidates?.length ?? 0) > 0 && <p className="meta-label">source 후보: {claim.source_candidates?.map((s: {title?: string; url?: string; source_type?: string}) => s.title ?? s.url ?? s.source_type).join(", ")}</p>}
               {(claim.source_trust_scores?.length ?? 0) > 0 && <p className="meta-label">trust scores: {claim.source_trust_scores?.map((s: {id?: string; score?: number}) => `${s.id}:${s.score}`).join(", ")}</p>}
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                <Link href={claim.verify_url ?? `/admin/verify-claim${slug ? `?slug=${slug}` : ""}`} style={primaryButtonStyle}>
+              <div className="ui-row">
+                <Link href={claim.verify_url ?? `/admin/verify-claim${slug ? `?slug=${slug}` : ""}`} className={primaryButtonClass}>
                   → 출처 추가 + verified 승격
                 </Link>
                 {claim.document_url && (
-                  <a href={claim.document_url} target="_blank" rel="noopener noreferrer" style={secondaryButtonStyle}>
+                  <a href={claim.document_url} target="_blank" rel="noopener noreferrer" className={secondaryButtonClass}>
                     문서 보기 ↗
                   </a>
                 )}
@@ -316,7 +316,7 @@ export default function AdminReviewPage() {
           <p style={{ color: "#6b7280" }}>✓ 공개 등록 대기 중인 approved candidate가 없습니다.</p>
         )}
         {data?.priorities.approved_candidates.map((candidate) => (
-          <div className="claim-card" key={candidate.id} style={{ borderLeft: "3px solid #fde68a" }}>
+          <div className="admin-card" key={candidate.id} style={{ borderLeft: "3px solid #fde68a" }}>
             <p className="eyebrow">
               {candidate.category} ·{" "}
               <span style={{ color: RISK_COLOR[candidate.risk_tier] ?? "#374151" }}>
@@ -327,7 +327,7 @@ export default function AdminReviewPage() {
             <p style={{ fontSize: 13, color: "#6b7280", margin: "0 0 8px" }}>
               {candidate.lang}/wiki/{candidate.slug}
             </p>
-            <p style={{ margin: "0 0 8px" }}><span className="badge badge-review">{candidate.status}</span></p>
+            <p style={{ margin: "0 0 8px" }}><span className="status-badge status-badge--needs-review">{candidate.status}</span></p>
             <Link href="/admin/candidates" style={{ fontSize: 13, fontWeight: 600, color: "#2563eb" }}>
               → 공개 등록하러 가기
             </Link>
@@ -337,57 +337,57 @@ export default function AdminReviewPage() {
         <h3>Generated candidates · 공개 등록 대기</h3>
         {(data?.priorities.generated_candidates.length ?? 0) === 0 && <p>공개 등록 대기 중인 generated candidate가 없습니다.</p>}
         {data?.priorities.generated_candidates.map((candidate) => (
-          <div className="claim-card" key={candidate.id}>
+          <div className="admin-card" key={candidate.id}>
             <p className="eyebrow">{candidate.category} · risk: <span style={{ color: RISK_COLOR[candidate.risk_tier] ?? "#374151" }}>{candidate.risk_tier}</span></p>
             <p><strong>{candidate.title}</strong></p>
             <p>{candidate.lang}/wiki/{candidate.slug}</p>
-            <p><span className="badge badge-review">{candidate.status}</span></p>
-            <Link href="/admin/candidates" style={primaryButtonStyle}>공개 등록하러 가기</Link>
+            <p><span className="status-badge status-badge--needs-review">{candidate.status}</span></p>
+            <Link href="/admin/candidates" className={primaryButtonClass}>공개 등록하러 가기</Link>
           </div>
         ))}
       </section>
 
-      <section className="registry-panel" aria-labelledby="posts-title">
+      <section className="panel" aria-labelledby="posts-title">
         <h2 id="posts-title">Pending community posts</h2>
-        <p><Link href="/admin/posts?status=pending" style={primaryButtonStyle}>글 관리</Link></p>
+        <p><Link href="/admin/posts?status=pending" className={primaryButtonClass}>글 관리</Link></p>
         {(data?.community_posts.pending.length ?? 0) === 0 && <p>검토 대기 중인 커뮤니티 글이 없습니다.</p>}
         {data?.community_posts.pending.map((post) => (
-          <div className="claim-card" key={post.id}>
+          <div className="admin-card" key={post.id}>
             <p className="eyebrow">{post.author_type} · {post.author_name ?? "anonymous"} · {post.created_at ?? "created_at 없음"}</p>
             <p>{post.content}</p>
           </div>
         ))}
       </section>
 
-      <section className="registry-panel" aria-labelledby="candidates-title">
+      <section className="panel" aria-labelledby="candidates-title">
         <h2 id="candidates-title">New / approved topic candidates</h2>
         <div className="stat-strip">
           <div className="stat"><span className="stat-num">{counts.candidates_new}</span><span className="stat-label">new candidates</span></div>
           <div className="stat"><span className="stat-num">{counts.candidates_generated}</span><span className="stat-label">generated candidates</span></div>
         </div>
         <h3>New candidates</h3>
-        <p><Link href="/admin/candidates?status=new" style={primaryButtonStyle}>후보 검토</Link></p>
+        <p><Link href="/admin/candidates?status=new" className={primaryButtonClass}>후보 검토</Link></p>
         {(data?.priorities.new_candidates.length ?? 0) === 0 && <p>신규 후보가 없습니다.</p>}
         {data?.priorities.new_candidates.map((candidate) => <CandidateCard candidate={candidate} key={candidate.id} />)}
       </section>
 
-      <section className="registry-panel" aria-labelledby="promoted-title">
+      <section className="panel" aria-labelledby="promoted-title">
         <h2 id="promoted-title">Recently promoted documents</h2>
         {(data?.promoted_documents.length ?? 0) === 0 && <p>최근 promoted candidate가 없습니다.</p>}
         {data?.promoted_documents.map((doc) => (
-          <div className="claim-card" key={doc.id}>
+          <div className="admin-card" key={doc.id}>
             <p className="eyebrow">{doc.category} · risk: <span style={{ color: RISK_COLOR[doc.risk_tier] ?? "#374151" }}>{doc.risk_tier}</span> · {doc.promoted_at ?? "promoted_at 없음"}</p>
             <p><strong>{doc.title}</strong></p>
-            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-              <Link href={doc.verify_url ?? `/admin/verify-claim?slug=${encodeURIComponent(doc.slug)}`} style={primaryButtonStyle}>claim 검증</Link>
-              {doc.public_url && <a href={doc.public_url} target="_blank" rel="noopener noreferrer" style={secondaryButtonStyle}>문서 보기</a>}
+            <div className="ui-row">
+              <Link href={doc.verify_url ?? `/admin/verify-claim?slug=${encodeURIComponent(doc.slug)}`} className={primaryButtonClass}>claim 검증</Link>
+              {doc.public_url && <a href={doc.public_url} target="_blank" rel="noopener noreferrer" className={secondaryButtonClass}>문서 보기</a>}
             </div>
           </div>
         ))}
       </section>
 
       {/* Engagement metrics */}
-      <section className="registry-panel" aria-labelledby="engagement-title">
+      <section className="panel" aria-labelledby="engagement-title">
         <h2 id="engagement-title">인용 현황 (AI 픽업 계측)</h2>
         <div className="stat-strip">
           <div className="stat"><span className="stat-num">{data?.engagement?.total_human_views ?? 0}</span><span className="stat-label">human views</span></div>
@@ -403,10 +403,10 @@ export default function AdminReviewPage() {
           <p style={{ color: "#6b7280" }}>아직 집계된 AI 인용이 없습니다. 인용은 POST /api/documents/&lt;slug&gt;/cite로 증가합니다.</p>
         )}
         {data?.engagement?.top_cited.map((doc) => (
-          <div className="claim-card" key={doc.document_id}>
+          <div className="admin-card" key={doc.document_id}>
             <p><strong>{doc.title}</strong></p>
             <p>
-              <span className="badge badge-verified">✦ AI 인용 {doc.ai_citation_count}</span>{" "}
+              <span className="status-badge status-badge--verified">✦ AI 인용 {doc.ai_citation_count}</span>{" "}
               <span className="badge">👤 human {doc.human_view_count}</span>{" "}
               <span className="badge">🤖 bot {doc.bot_view_count}</span>{" "}
               <span className="badge">✦ AI crawler {doc.ai_crawler_view_count}</span>{" "}
@@ -420,11 +420,11 @@ export default function AdminReviewPage() {
       </section>
 
       {/* Verified documents + staleness alerts */}
-      <section className="registry-panel" id="verified-documents" aria-labelledby="verified-title">
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+      <section className="panel" id="verified-documents" aria-labelledby="verified-title">
+        <div className="ui-row-between" style={{ marginBottom: 12 }}>
           <h2 id="verified-title" style={{ margin: 0 }}>Recently verified documents</h2>
           {staleDocCount > 0 && (
-            <span className="badge badge-review">⏳ 재검증 필요 {staleDocCount}건</span>
+            <span className="status-badge status-badge--needs-review">⏳ 재검증 필요 {staleDocCount}건</span>
           )}
         </div>
         {staleDocCount > 0 && (
@@ -472,22 +472,22 @@ export default function AdminReviewPage() {
         </ul>
       </section>
 
-      <section className="registry-panel" aria-labelledby="high-risk-title">
+      <section className="panel" aria-labelledby="high-risk-title">
         <h2 id="high-risk-title">High-risk categories: finance · healthcare · legal · realtime</h2>
         <p>고위험 항목은 verified 전까지 AI가 사실로 인용하지 않도록 우선 검증합니다.</p>
         {(data?.high_risk.candidates.length ?? 0) === 0 && (data?.high_risk.documents.length ?? 0) === 0 && <p>현재 고위험 운영 큐가 비어 있습니다.</p>}
         {data?.high_risk.candidates.map((candidate) => <CandidateCard candidate={candidate} key={candidate.id} />)}
         {data?.high_risk.documents.map((doc) => (
-          <div className="claim-card" key={doc.claim_id ?? doc.slug}>
+          <div className="admin-card" key={doc.claim_id ?? doc.slug}>
             <p className="eyebrow">{doc.category} · {doc.field_path}</p>
             <p><strong>{doc.title ?? doc.slug}</strong></p>
-            {doc.slug && <Link href={`/admin/verify-claim?slug=${encodeURIComponent(doc.slug)}`} style={primaryButtonStyle}>claim 검증</Link>}
+            {doc.slug && <Link href={`/admin/verify-claim?slug=${encodeURIComponent(doc.slug)}`} className={primaryButtonClass}>claim 검증</Link>}
           </div>
         ))}
       </section>
 
       {/* Admin tools nav */}
-      <nav className="registry-panel" aria-labelledby="admin-tools">
+      <nav className="panel" aria-labelledby="admin-tools">
         <h2 id="admin-tools">Admin 도구 바로가기</h2>
         <div className="meta-grid">
           {[
@@ -501,7 +501,7 @@ export default function AdminReviewPage() {
             { label: "공개 현황", href: "/goal", desc: "Mission Control 메트릭" },
           ].map((tool) => (
             <Link key={tool.label} href={tool.href} style={{ textDecoration: "none", color: "inherit" }}>
-              <div className="claim-card" style={{ height: "100%" }}>
+              <div className="admin-card" style={{ height: "100%" }}>
                 <p style={{ fontWeight: 700, margin: "0 0 4px" }}>{tool.label}</p>
                 <p className="eyebrow" style={{ margin: 0 }}>{tool.desc}</p>
               </div>
@@ -515,13 +515,13 @@ export default function AdminReviewPage() {
 
 function CandidateCard({ candidate }: { candidate: Candidate }) {
   return (
-    <div className="claim-card">
+    <div className="admin-card">
       <p className="eyebrow">{candidate.category} · risk: <span style={{ color: RISK_COLOR[candidate.risk_tier] ?? "#374151" }}>{candidate.risk_tier}</span> · {candidate.status}</p>
       <p><strong>{candidate.title}</strong></p>
       <p>{candidate.lang}/wiki/{candidate.slug}</p>
-      <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-        <Link href="/admin/candidates?status=new" style={primaryButtonStyle}>후보 검토</Link>
-        <Link href={`/admin/verify-claim?slug=${encodeURIComponent(candidate.slug)}`} style={secondaryButtonStyle}>claim 검증</Link>
+      <div className="ui-row">
+        <Link href="/admin/candidates?status=new" className={primaryButtonClass}>후보 검토</Link>
+        <Link href={`/admin/verify-claim?slug=${encodeURIComponent(candidate.slug)}`} className={secondaryButtonClass}>claim 검증</Link>
       </div>
     </div>
   );
