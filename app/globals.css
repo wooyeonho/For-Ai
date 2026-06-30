@@ -2849,3 +2849,19 @@ body {
   border-radius: inherit;
   background: var(--success);
 }
+
+.claim-card-section + .claim-card-section {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.registry-panel > summary {
+  cursor: pointer;
+  font-weight: 800;
+  color: var(--text);
+}
+
+.registry-panel > summary + * {
+  margin-top: 12px;
+}
