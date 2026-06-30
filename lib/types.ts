@@ -54,7 +54,7 @@ export type TranslationStatus = "source_language" | "human_translated" | "human_
 
 export type LocalizedTitle = Record<string, string>;
 
-export type SubmissionStatus = "new" | "reviewing" | "accepted" | "rejected" | "spam";
+export type SubmissionStatus = "new" | "reviewing" | "accepted" | "rejected" | "spam" | "spam_suspected";
 export type VerificationEventType =
   | "created"
   | "reviewed"
