@@ -1,9 +1,7 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 import { getRegistryBundleBySlug } from "../../../lib/data";
 import { getRegistryBundleFromSupabase } from "../../../lib/supabase-documents";
-import { createReportSubmissionStub } from "../../../lib/submission-stubs";
-import { REPORT_MESSAGE_MAX_LENGTH } from "../../../lib/submission-limits";
+import { ReportForm } from "./ReportForm";
 
 export const metadata: Metadata = {
   title: "정정 제보",
@@ -44,27 +42,7 @@ export default async function ReportPage({
     : isNotifyIntent
       ? "Leave a note that you want updates for this claim. The current MVP stores this as a queued correction request, not as a verified fact."
       : "확인이 필요한 claim에 대해 정정 요청을 남겨주세요. 로그인은 필요하지 않습니다.";
-  const messagePlaceholder = isSourceIntent
-    ? "Official source URL, issuing organization, and which claim it supports."
-    : isNotifyIntent
-      ? "Which claim should we notify you about when it is verified? Do not include sensitive personal information."
-      : "어떤 claim이 정정되어야 하는지 적어주세요.";
 
-  async function submitReport(formData: FormData) {
-    "use server";
-
-    const fieldPath = String(formData.get("field_path") ?? "").trim() || null;
-    const message = String(formData.get("message") ?? "").trim();
-
-    createReportSubmissionStub({
-      document_id: document.id,
-      entity_id: entity.id,
-      field_path: fieldPath,
-      message,
-    });
-
-    redirect(`/report/${document.slug}?submitted=1`);
-  }
 
   return (
     <article>
@@ -92,23 +70,13 @@ export default async function ReportPage({
         {isSourceIntent ? (
           <p className="meta-label">Official sources are reviewed by humans before any claim status changes to verified.</p>
         ) : null}
-        <form action={submitReport} className="registry-form">
-          <label>
-            Field path 선택 또는 입력
-            <select name="field_path" defaultValue="">
-              <option value="">전체 문서 또는 직접 설명</option>
-              {claims.map((claim) => (
-                <option value={claim.field_path} key={claim.id}>{claim.field_path}</option>
-              ))}
-            </select>
-          </label>
-          <label>
-            {isSourceIntent ? "Official source details" : isNotifyIntent ? "Notification request" : "정정 요청 내용"}
-            <textarea name="message" required minLength={5} maxLength={REPORT_MESSAGE_MAX_LENGTH} placeholder={messagePlaceholder} />
-          </label>
-          <input type="hidden" name="contributor_hash" value="local-stub-contributor-hash" />
-          <button type="submit">{isSourceIntent ? "Submit official source" : isNotifyIntent ? "Request notification" : "정정 요청 제출"}</button>
-        </form>
+        <ReportForm
+          documentId={document.id}
+          entityId={entity.id}
+          slug={document.slug}
+          intent={isSourceIntent ? "source" : isNotifyIntent ? "notify" : "correction"}
+          claims={claims.map((claim) => ({ id: claim.id, field_path: claim.field_path, claim_text: claim.claim_text }))}
+        />
       </section>
 
       <section className="notice-box" aria-labelledby="privacy-notice">
