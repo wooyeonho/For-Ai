@@ -158,7 +158,7 @@ function urgencyBand(claims_needs_review: number, candidates_approved: number) {
 }
 
 export default function AdminReviewPage() {
-  const { adminSecret, setAdminSecret, resetAdminSecret } = useAdminSecret();
+  const { adminSecret, setAdminSecret, resetAdminSecret, loginAdmin, authMessage } = useAdminSecret();
   const [data, setData] = useState<ReviewPayload | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);

@@ -97,7 +97,7 @@ function serializeClaims(rows: ClaimRow[]) {
 }
 
 export default function NewDocumentPage() {
-  const { adminSecret, setAdminSecret, resetAdminSecret } = useAdminSecret();
+  const { adminSecret, setAdminSecret, resetAdminSecret, loginAdmin, authMessage } = useAdminSecret();
   const [entityId, setEntityId] = useState("");
   const [slug, setSlug] = useState("");
   const [lang, setLang] = useState("ko");

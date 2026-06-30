@@ -5,7 +5,7 @@ import { AdminSecretField, useAdminSecret } from "../AdminSecretProvider";
 import { AdminDbDetails, adminLabel } from "../admin-labels";
 
 export default function NewEntityPage() {
-  const { adminSecret, setAdminSecret, resetAdminSecret } = useAdminSecret();
+  const { adminSecret, setAdminSecret, resetAdminSecret, loginAdmin, authMessage } = useAdminSecret();
   const [id, setId] = useState("");
   const [type, setType] = useState("");
   const [canonicalName, setCanonicalName] = useState("");
@@ -130,6 +130,8 @@ export default function NewEntityPage() {
             adminSecret={adminSecret}
             setAdminSecret={setAdminSecret}
             resetAdminSecret={resetAdminSecret}
+            loginAdmin={loginAdmin}
+            authMessage={authMessage}
             label="Admin Secret *"
             placeholder="관리자 비밀키"
           />
