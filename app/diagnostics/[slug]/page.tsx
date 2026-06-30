@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getRegistryBundleBySlug } from "../../../lib/data";
 import { getRegistryDocumentPaths } from "../../../lib/seo";
+import { calculateDocumentQuality } from "../../../lib/document-quality";
 import { getRegistryBundleFromSupabase } from "../../../lib/supabase-documents";
 
 export const metadata: Metadata = {
@@ -25,6 +26,7 @@ export default async function DiagnosticsPage({ params }: { params: Promise<{ sl
   const verifiedClaims = claims.filter((claim) => claim.status === "verified").length;
   const needsReviewClaims = claims.filter((claim) => claim.status === "needs_review").length;
   const sourceCount = claims.reduce((total, claim) => total + claim.sources.length, 0);
+  const qualityScore = calculateDocumentQuality({ document, claims });
   const unknownFactsCheck = (() => {
     if (document.status === "verified") {
       return {
@@ -75,8 +77,20 @@ export default async function DiagnosticsPage({ params }: { params: Promise<{ sl
           <div><span className="meta-label">verified_claims</span><br />{verifiedClaims}</div>
           <div><span className="meta-label">needs_review_claims</span><br />{needsReviewClaims}</div>
           <div><span className="meta-label">source_count</span><br />{sourceCount}</div>
+          <div><span className="meta-label">quality_score</span><br />{qualityScore.score}/100 · {qualityScore.grade}</div>
         </div>
       </header>
+
+      <section className="registry-panel" aria-labelledby="quality-score-panel">
+        <h2 id="quality-score-panel">Public quality score</h2>
+        <p>{qualityScore.summary}</p>
+        <div className="meta-grid">
+          <div><span className="meta-label">claim coverage</span><br />{qualityScore.components.claimCoverage.score}/100</div>
+          <div><span className="meta-label">source coverage</span><br />{qualityScore.components.sourceCoverage.score}/100</div>
+          <div><span className="meta-label">verification</span><br />{qualityScore.components.verificationStatus.score}/100</div>
+          <div><span className="meta-label">freshness</span><br />{qualityScore.components.freshness.score}/100</div>
+        </div>
+      </section>
 
       <section className="registry-panel" aria-labelledby="diagnostics-checklist">
         <h2 id="diagnostics-checklist">Diagnostics checklist</h2>

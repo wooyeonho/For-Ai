@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 
 import { logAdminAuditEvent, requireAdmin, supabaseAdmin } from "@/lib/admin-api";
 import { recordContributionEvent } from "@/lib/contributions";
+import { calculateDocumentQuality } from "@/lib/document-quality";
+import type { QualityClaim } from "@/lib/document-quality";
 import { scoreSourceTrust } from "@/lib/source-trust";
 import { awardPoints, checkAndAwardBadges, POINT_VALUES } from "@/lib/gamification";
 
@@ -248,6 +250,11 @@ export async function GET(request: Request) {
       claims: ((doc.claims ?? []) as ClaimWithDocument[]).filter((c) => c.status === status),
     })).filter((doc) => (doc.claims ?? []).length > 0);
   }
+
+  documents = documents.map((doc) => ({
+    ...doc,
+    quality_score: calculateDocumentQuality({ document: doc, claims: (doc.claims ?? []) as QualityClaim[] }),
+  }));
 
   // Sort documents so high-risk categories come first (HEAD's approach)
   if (sort === "high_risk") {

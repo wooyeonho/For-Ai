@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
 import { ageInDays, isStale } from "../../../lib/citation-status";
+import type { DocumentQualityScore } from "../../../lib/document-quality";
 import { AdminSecretField, useAdminSecret } from "../AdminSecretProvider";
 
 type Counts = {
@@ -72,6 +73,7 @@ type VerifiedDocument = {
   last_verified_at?: string | null;
   public_url?: string | null;
   verify_url?: string | null;
+  quality_score?: DocumentQualityScore;
 };
 
 type TopCited = {
@@ -451,6 +453,12 @@ export default function AdminReviewPage() {
                   )}
                 </div>
                 <div style={{ textAlign: "right", flexShrink: 0 }}>
+                  {doc.quality_score && (
+                    <div style={{ marginBottom: 4 }}>
+                      <span className="badge badge-verified">Quality {doc.quality_score.score}/100 · {doc.quality_score.grade}</span>
+                      <div className="meta-label" style={{ maxWidth: 280 }}>{doc.quality_score.summary}</div>
+                    </div>
+                  )}
                   {age !== null ? (
                     <span className={stale ? "badge badge-review" : "badge badge-verified"}>
                       {stale ? `⏳ ${age}일 경과 · 재검증` : `✓ ${age}일 전`}

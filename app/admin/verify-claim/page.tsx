@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import type { DocumentQualityScore } from "@/lib/document-quality";
 
 type SourceRow = { id: string; title?: string | null; url?: string | null; source_type?: string | null; citation?: string | null; observed_at?: string | null };
 type VerificationEventRow = { id: string; note?: string | null; created_at?: string | null; new_status?: string | null };
@@ -36,6 +37,7 @@ type DocumentRow = {
   ai_provider?: string | null;
   ai_model?: string | null;
   claims?: ClaimRow[];
+  quality_score?: DocumentQualityScore;
 };
 type ClaimListMeta = { count: number; limit: number; offset: number; has_more: boolean };
 type Pagination = { page: number; limit: number; total: number; total_pages: number };
@@ -481,6 +483,12 @@ export default function VerifyClaimPage() {
                   {doc.slug} · {doc.country ?? "?"} · {doc.lang ?? "?"} · {doc.category ?? "?"} · <span className="badge">{doc.status}</span> · <span className="badge">confidence: {doc.confidence}</span>
                 </p>
                 <p className="meta-label">entity_id: {doc.entity_id ?? "-"}</p>
+                {doc.quality_score && (
+                  <div style={{ marginTop: 8 }}>
+                    <span className="badge badge-verified">Quality {doc.quality_score.score}/100 · {doc.quality_score.grade}</span>
+                    <p className="meta-label" style={{ margin: "4px 0 0" }}>{doc.quality_score.summary}</p>
+                  </div>
+                )}
               </div>
               {unverifiedCount > 0 && (
                 <span className="badge badge-review" style={{ whiteSpace: "nowrap" }}>
