@@ -171,9 +171,9 @@ export async function PATCH(request: Request) {
   const newStatus = String(body.status ?? "").trim();
   const reviewerNote = body.reviewer_note ? String(body.reviewer_note).trim() : null;
 
-  if (!correctionId || !["accepted", "rejected"].includes(newStatus)) {
+  if (!correctionId || !["accepted", "rejected", "reviewing", "spam_suspected"].includes(newStatus)) {
     return NextResponse.json(
-      { error: "correction_id and valid status (accepted/rejected) required" },
+      { error: "correction_id and valid status (accepted/rejected/reviewing/spam_suspected) required" },
       { status: 400 },
     );
   }

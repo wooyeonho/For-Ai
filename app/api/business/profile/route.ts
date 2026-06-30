@@ -3,17 +3,26 @@ import { supabaseAdmin, requireAdmin, logAdminAuditEvent } from "@/lib/admin-api
 import { makeContributorHashForRequest } from "@/lib/contributor-hash";
 import { calculateBusinessProfileCompletenessScore, getEntityProfile } from "@/lib/entity-profile";
 
-// GET: List verified business profiles (public — only verified ones)
-export async function GET() {
+// GET: Public lists verified profiles; admin can filter all profile statuses.
+export async function GET(request: Request) {
+  const adminSecret = request.headers.get("x-admin-secret");
+  if (adminSecret) {
+    const adminError = await requireAdmin(request, "business_profiles.read");
+    if (adminError) return adminError;
+  }
   const sb = supabaseAdmin();
   if (!sb) return NextResponse.json({ error: "Database not configured" }, { status: 500 });
 
-  const { data, error } = await sb
+  const url = new URL(request.url);
+  const status = adminSecret ? (url.searchParams.get("status") ?? "pending") : "verified";
+  const query = sb
     .from("verified_business_profiles")
-    .select("id, entity_id, business_name, business_url, country, industry, tier, status, verification_method, verified_at")
-    .eq("status", "verified")
-    .order("verified_at", { ascending: false })
+    .select("id, entity_id, business_name, business_email, business_url, country, industry, tier, status, verification_method, verification_review_url, verified_at, created_at")
+    .eq("status", status)
+    .order(status === "verified" ? "verified_at" : "created_at", { ascending: false })
     .limit(100);
+
+  const { data, error } = await query;
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   const profiles = await Promise.all((data ?? []).map(async (profile) => {

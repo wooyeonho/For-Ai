@@ -23,7 +23,35 @@ export async function GET(request: Request) {
 
   const { data, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ keys: data ?? [] });
+
+  const keys = data ?? [];
+  const keyIds = keys.map((key) => key.id);
+  const since = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const usageByKey: Record<string, { requests_30d: number; last_status: number | null; last_seen_at: string | null }> = {};
+
+  if (keyIds.length > 0) {
+    const { data: usageRows, error: usageError } = await sb
+      .from("api_usage_log")
+      .select("api_key_id, response_status, created_at")
+      .in("api_key_id", keyIds)
+      .gte("created_at", since)
+      .order("created_at", { ascending: false })
+      .limit(1000);
+
+    if (usageError) return NextResponse.json({ error: usageError.message }, { status: 500 });
+    for (const row of usageRows ?? []) {
+      const keyId = String(row.api_key_id ?? "");
+      if (!keyId) continue;
+      usageByKey[keyId] ??= { requests_30d: 0, last_status: null, last_seen_at: null };
+      usageByKey[keyId].requests_30d += 1;
+      if (!usageByKey[keyId].last_seen_at) {
+        usageByKey[keyId].last_seen_at = String(row.created_at ?? "");
+        usageByKey[keyId].last_status = typeof row.response_status === "number" ? row.response_status : null;
+      }
+    }
+  }
+
+  return NextResponse.json({ keys: keys.map((key) => ({ ...key, usage: usageByKey[key.id] ?? { requests_30d: 0, last_status: null, last_seen_at: null } })) });
 }
 
 // POST: Admin — create a new API key for a profile
