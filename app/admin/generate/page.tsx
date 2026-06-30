@@ -6,12 +6,14 @@ import { AdminSecretField, useAdminSecret } from "../AdminSecretProvider";
 const PROVIDER_ICONS: Record<string, string> = {
   perplexity: "🔍",
   gemini: "✦",
+  nvidia: "▣",
   gpt: "◎",
   grok: "⚡",
 };
 
 const FALLBACK_PROVIDERS = [
   { key: "perplexity", label: "Perplexity (웹 검색)", icon: "🔍" },
+  { key: "nvidia", label: "NVIDIA", icon: "▣" },
   { key: "gemini", label: "Gemini 2.0", icon: "✦" },
   { key: "gpt", label: "OpenAI GPT-4o", icon: "◎" },
   { key: "grok", label: "xAI Grok", icon: "⚡" },
@@ -59,7 +61,7 @@ interface GenerateResult {
   total_generated: number;
   saved: number;
   preview: (Record<string, unknown> & ConsensusInfo)[];
-  provider_results?: Record<string, { generated: number; error?: string; parse_error?: string }>;
+  provider_results?: Record<string, { generated: number; error?: string; parse_error?: string; fallback_for?: string }>;
   skipped_duplicates?: number;
   consensus_summary?: {
     total_unique: number;
@@ -140,6 +142,7 @@ export default function AdminGeneratePage() {
       if (!res.ok) {
         const msg = data.error || `HTTP ${res.status}`;
         setError(msg);
+        if (data.provider_results || data.providers_used) setResult(data);
         if (res.status === 401) {
           setAdminSecret("");
         }
@@ -270,7 +273,7 @@ export default function AdminGeneratePage() {
           {providersLoading && <p style={{ marginTop: 8, fontSize: 12, color: "#6b7280" }}>사용 가능한 provider 확인 중...</p>}
           {!providersLoading && availableProviders.length === 0 && (
             <p style={{ marginTop: 8, fontSize: 12, color: "#b45309" }}>
-              사용 가능한 provider가 없습니다. 배포 환경변수에 PERPLEXITY_API_KEY, GOOGLE_GEMINI_API_KEY, OPENAI_API_KEY, XAI_API_KEY 중 최소 1개를 설정해야 합니다.
+              사용 가능한 provider가 없습니다. 배포 환경변수에 PERPLEXITY_API_KEY, NVIDIA_API_KEY, GOOGLE_GEMINI_API_KEY, OPENAI_API_KEY, XAI_API_KEY 중 최소 1개를 설정해야 합니다.
               {providersError && ` (${providersError})`}
             </p>
           )}
@@ -364,6 +367,7 @@ export default function AdminGeneratePage() {
               {Object.entries(result.provider_results).map(([provider, r]) => (
                 <div key={provider} style={{ padding: "4px 0" }}>
                   <strong>{provider}</strong>: {r.generated}개 생성
+                  {r.fallback_for && <span style={{ color: "#2563eb" }}> — {r.fallback_for} 실패 후 NVIDIA fallback</span>}
                   {r.error && <span style={{ color: "#dc2626" }}> — {r.error}</span>}
                   {r.parse_error && <span style={{ color: "#b45309" }}> — 파싱 실패: {r.parse_error}</span>}
                 </div>

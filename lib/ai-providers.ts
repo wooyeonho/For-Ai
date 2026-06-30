@@ -1,8 +1,8 @@
 // lib/ai-providers.ts
 // Multi-AI provider abstraction for For-Ai fact registry
-// Supports provider keys: perplexity, gemini, gpt, grok (Perplexity, Gemini, OpenAI GPT, xAI Grok)
+// Supports provider keys: perplexity, nvidia, gemini, gpt, grok (Perplexity, NVIDIA, Gemini, OpenAI GPT, xAI Grok)
 
-export type AIProviderKey = "perplexity" | "gemini" | "gpt" | "grok";
+export type AIProviderKey = "perplexity" | "nvidia" | "gemini" | "gpt" | "grok";
 
 export interface AIProviderConfig {
   key: AIProviderKey;
@@ -21,6 +21,14 @@ export const AI_PROVIDERS: Record<AIProviderKey, AIProviderConfig> = {
     endpoint: "https://api.perplexity.ai/chat/completions",
     envKey: "PERPLEXITY_API_KEY",
     supportsWebSearch: true,
+  },
+  nvidia: {
+    key: "nvidia",
+    label: "NVIDIA Llama 3.1 70B",
+    model: "meta/llama-3.1-70b-instruct",
+    endpoint: "https://integrate.api.nvidia.com/v1/chat/completions",
+    envKey: "NVIDIA_API_KEY",
+    supportsWebSearch: false,
   },
   gemini: {
     key: "gemini",
@@ -188,6 +196,8 @@ export async function generateWithProvider(
   switch (provider) {
     case "perplexity":
       return callPerplexity(config, req);
+    case "nvidia":
+      return callOpenAI(config, req); // NVIDIA NIM uses an OpenAI-compatible API
     case "gemini":
       return callGemini(config, req);
     case "gpt":

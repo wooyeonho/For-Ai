@@ -84,6 +84,32 @@ function buildSystemPrompt(lang: string): string {
 const UNKNOWN_VALUE = "확인 필요";
 const GENERATED_CLAIM_STATUS = "needs_review" as const;
 const GENERATED_CONFIDENCE = "low" as const;
+const DEFAULT_PROVIDER_PRIORITY: AIProviderKey[] = ["perplexity", "nvidia", "gemini", "gpt", "grok"];
+
+function chooseDefaultProvider(available: AIProviderKey[]): AIProviderKey {
+  return DEFAULT_PROVIDER_PRIORITY.find((provider) => available.includes(provider)) ?? available[0];
+}
+
+function shouldFallbackToNvidia(primaryProvider: AIProviderKey, response: AIGenerateResponse): boolean {
+  return Boolean(response.error && primaryProvider !== "nvidia" && process.env.NVIDIA_API_KEY);
+}
+
+async function safeGenerateWithProvider(
+  provider: AIProviderKey,
+  aiRequest: Parameters<typeof generateWithProvider>[1]
+): Promise<AIGenerateResponse> {
+  try {
+    return await generateWithProvider(provider, aiRequest);
+  } catch (err) {
+    const reason = err instanceof Error ? err.message : String(err);
+    return {
+      provider,
+      model: AI_PROVIDERS[provider].model,
+      content: "",
+      error: reason,
+    };
+  }
+}
 
 type ParsedCandidates = { candidates: Record<string, unknown>[]; parseError?: string };
 
@@ -303,8 +329,8 @@ export async function POST(request: Request) {
       }, { status: 400 });
     }
   } else {
-    // Default: use first available (prefer perplexity for web search)
-    providers = available.includes("perplexity") ? ["perplexity"] : [available[0]];
+    // Default policy: prefer Perplexity for web search, then NVIDIA, then other configured providers.
+    providers = [chooseDefaultProvider(available)];
   }
 
   const systemPrompt = buildSystemPrompt(lang);
@@ -312,7 +338,7 @@ export async function POST(request: Request) {
   const aiRequest = { systemPrompt, userPrompt, temperature: 0.3 };
 
   let allCandidates: Record<string, unknown>[] = [];
-  const providerResults: Record<string, { generated: number; error?: string; parse_error?: string }> = {};
+  const providerResults: Record<string, { generated: number; error?: string; parse_error?: string; fallback_for?: string }> = {};
   let consensusResults: ConsensusCandidate[] | null = null;
 
   let consensusSummary: Record<string, unknown> | null = null;
@@ -348,16 +374,31 @@ export async function POST(request: Request) {
     allCandidates = consensus.candidates;
     consensusSummary = consensus.summary;
   } else {
-    // Single provider (or sequential)
+    // Single provider with one NVIDIA fallback retry on primary API-call failure.
     const primaryProvider = providers[0];
-    const response = await generateWithProvider(primaryProvider, aiRequest);
-    const { candidates, parseError } = parseCandidatesFromResponse(response, lang);
+    const primaryResponse = await safeGenerateWithProvider(primaryProvider, aiRequest);
+    const primaryParsed = parseCandidatesFromResponse(primaryResponse, lang);
     providerResults[primaryProvider] = {
-      generated: candidates.length,
-      error: response.error || undefined,
-      parse_error: parseError,
+      generated: primaryParsed.candidates.length,
+      error: primaryResponse.error || undefined,
+      parse_error: primaryParsed.parseError,
     };
-    allCandidates = candidates;
+    allCandidates = primaryParsed.candidates;
+
+    if (shouldFallbackToNvidia(primaryProvider, primaryResponse)) {
+      const fallbackResponse = await safeGenerateWithProvider("nvidia", aiRequest);
+      const fallbackParsed = parseCandidatesFromResponse(fallbackResponse, lang);
+      providerResults.nvidia = {
+        generated: fallbackParsed.candidates.length,
+        error: fallbackResponse.error || undefined,
+        parse_error: fallbackParsed.parseError,
+        fallback_for: primaryProvider,
+      };
+
+      if (fallbackParsed.candidates.length > 0) {
+        allCandidates = fallbackParsed.candidates;
+      }
+    }
   }
 
   if (allCandidates.length === 0) {
@@ -374,7 +415,15 @@ export async function POST(request: Request) {
         : "AI가 후보를 생성하지 못했습니다 (다른 토픽으로 다시 시도해 보세요)";
     return NextResponse.json({
       error: reason,
+      topic,
+      lang,
+      providers_used: Object.keys(providerResults),
+      available_providers: available.map((p) => ({ key: p, label: AI_PROVIDERS[p].label })),
+      cross_verify: crossVerify,
       provider_results: providerResults,
+      total_generated: 0,
+      saved: 0,
+      preview: [],
     }, { status: 502 });
   }
 
