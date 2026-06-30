@@ -15,7 +15,7 @@ interface ImportResult {
 }
 
 export default function AdminImportPage() {
-  const { adminSecret, setAdminSecret, resetAdminSecret } = useAdminSecret();
+  const { adminSecret, setAdminSecret, resetAdminSecret, login, status, message: loginMessage } = useAdminSecret();
   const [jsonlText, setJsonlText] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<ImportResult | null>(null);
@@ -49,7 +49,6 @@ export default function AdminImportPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-admin-secret": adminSecret,
           "x-admin-csrf": "1",
         },
         body: JSON.stringify({ rows }),
@@ -128,6 +127,9 @@ export default function AdminImportPage() {
             adminSecret={adminSecret}
             setAdminSecret={setAdminSecret}
             resetAdminSecret={resetAdminSecret}
+            login={login}
+            status={status}
+            message={loginMessage}
             label="Admin Secret *"
             placeholder="관리자 비밀키"
           />

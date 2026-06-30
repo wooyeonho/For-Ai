@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useState } from "react";
+import { AdminSecretField, useAdminSecret } from "../AdminSecretProvider";
 
 type TableCheck = {
   accessible: boolean;
@@ -32,7 +33,7 @@ function StatusBadge({ ok }: { ok: boolean }) {
 }
 
 export default function AdminDiagnosticsPage() {
-  const [secret, setSecret] = useState("");
+  const { adminSecret, setAdminSecret, resetAdminSecret, login, status, message: loginMessage } = useAdminSecret();
   const [data, setData] = useState<DiagnosticsPayload | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
@@ -40,7 +41,7 @@ export default function AdminDiagnosticsPage() {
   const load = useCallback(async () => {
     setLoading(true);
     setMessage(null);
-    const res = await fetch("/api/admin/diagnostics", { headers: { "x-admin-secret": secret } });
+    const res = await fetch("/api/admin/diagnostics", {});
     const payload = await res.json();
     setLoading(false);
     if (res.ok) {
@@ -49,7 +50,7 @@ export default function AdminDiagnosticsPage() {
     } else {
       setMessage({ ok: false, text: payload.error ?? "Diagnostics failed" });
     }
-  }, [secret]);
+  }, []);
 
   return (
     <div style={{ maxWidth: 960, margin: "0 auto", padding: "40px 20px" }}>
@@ -65,14 +66,7 @@ export default function AdminDiagnosticsPage() {
           Actual secret values are never returned by the diagnostics API.
         </p>
         <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-          <input
-            aria-label="Admin secret"
-            type="password"
-            value={secret}
-            onChange={(event) => setSecret(event.target.value)}
-            placeholder="ADMIN_SECRET"
-            style={{ flex: 1, padding: 10 }}
-          />
+          <AdminSecretField adminSecret={adminSecret} setAdminSecret={setAdminSecret} resetAdminSecret={resetAdminSecret} login={login} status={status} message={loginMessage} inputStyle={{ flex: 1, padding: 10 }} />
           <button onClick={load} disabled={loading}>{loading ? "Checking..." : "Run diagnostics"}</button>
         </div>
         {message && <p style={{ color: message.ok ? "#166534" : "#991b1b" }}>{message.text}</p>}

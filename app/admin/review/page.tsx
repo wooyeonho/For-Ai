@@ -9,6 +9,7 @@ type Counts = {
   pending_community_posts: number;
   candidates_new: number;
   candidates_generated: number;
+  candidates_approved?: number;
   documents_published: number;
   claim_sources: number;
   claims_needs_review: number;
@@ -144,7 +145,7 @@ function urgencyBand(claims_needs_review: number, candidates_approved: number) {
 }
 
 export default function AdminReviewPage() {
-  const { adminSecret, setAdminSecret, resetAdminSecret } = useAdminSecret();
+  const { adminSecret, setAdminSecret, resetAdminSecret, login, status, message: loginMessage } = useAdminSecret();
   const [data, setData] = useState<ReviewPayload | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
@@ -164,7 +165,7 @@ export default function AdminReviewPage() {
   const load = useCallback(async () => {
     setLoading(true);
     setMessage(null);
-    const res = await fetch("/api/admin/review", { headers: { "x-admin-secret": adminSecret } });
+    const res = await fetch("/api/admin/review", {});
     const payload = await res.json();
     setLoading(false);
     if (res.ok) {
@@ -173,7 +174,7 @@ export default function AdminReviewPage() {
     } else {
       setMessage({ ok: false, text: payload.error ?? "Admin workflow 조회 실패" });
     }
-  }, [adminSecret]);
+  }, []);
 
   const urgency = urgencyBand(counts.claims_needs_review, counts.candidates_approved ?? 0);
   const staleDocCount = (data?.verified_documents ?? []).filter((doc) => isStale(doc.last_verified_at)).length;
@@ -189,15 +190,7 @@ export default function AdminReviewPage() {
           후보 생성부터 verified 문서 공유까지 claim-level 운영 상태를 admin API count로 확인합니다.
         </p>
         <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
-          <input
-            aria-label="Admin secret"
-            type="password"
-            value={adminSecret}
-            onChange={(event) => setAdminSecret(event.target.value)}
-            placeholder="ADMIN_SECRET"
-            style={{ flex: 1, padding: 10 }}
-            onKeyDown={(e) => e.key === "Enter" && load()}
-          />
+          <AdminSecretField adminSecret={adminSecret} setAdminSecret={setAdminSecret} resetAdminSecret={resetAdminSecret} login={login} status={status} message={loginMessage} inputStyle={{ flex: 1, padding: 10 }} />
           <button onClick={load} disabled={loading}>{loading ? "불러오는 중..." : "운영 현황 불러오기"}</button>
         </div>
         {message && <p style={{ marginTop: 8, color: message.ok ? "#166534" : "#991b1b" }}>{message.text}</p>}

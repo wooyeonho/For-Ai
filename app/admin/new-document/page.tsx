@@ -1,5 +1,6 @@
 "use client";
 import { useMemo, useState } from "react";
+import { AdminSecretField, useAdminSecret } from "../AdminSecretProvider";
 
 type ClaimRow = {
   id: string;
@@ -95,7 +96,7 @@ function serializeClaims(rows: ClaimRow[]) {
 }
 
 export default function NewDocumentPage() {
-  const { adminSecret, setAdminSecret, resetAdminSecret } = useAdminSecret();
+  const { adminSecret, setAdminSecret, resetAdminSecret, login, status, message: loginMessage } = useAdminSecret();
   const [entityId, setEntityId] = useState("");
   const [slug, setSlug] = useState("");
   const [lang, setLang] = useState("ko");
@@ -153,7 +154,6 @@ export default function NewDocumentPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-admin-secret": adminSecret,
           "x-admin-csrf": "1",
         },
         body: JSON.stringify({
@@ -265,7 +265,7 @@ export default function NewDocumentPage() {
             </div>
           </section>
 
-          <label>Admin Secret <span aria-label="필수">*</span><input type="password" value={adminSecret} onChange={e => setAdminSecret(e.target.value)} required placeholder="관리자 비밀키" /></label>
+          <AdminSecretField adminSecret={adminSecret} setAdminSecret={setAdminSecret} resetAdminSecret={resetAdminSecret} login={login} status={status} message={loginMessage} label="Admin Session *" placeholder="관리자 비밀키" />
           <button type="submit" disabled={loading}>{loading ? "생성 중..." : "Document 생성"}</button>
         </form>
       </section>

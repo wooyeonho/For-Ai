@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { AdminSecretField, useAdminSecret } from "../AdminSecretProvider";
 
 type SourceRow = { id: string; title?: string | null; url?: string | null; source_type?: string | null; citation?: string | null; observed_at?: string | null };
 type VerificationEventRow = { id: string; note?: string | null; created_at?: string | null; new_status?: string | null };
@@ -60,7 +61,7 @@ const POLICY_ITEMS = [
 ];
 
 export default function VerifyClaimPage() {
-  const [secret, setSecret] = useState("");
+  const { adminSecret, setAdminSecret, resetAdminSecret, login, status, message: loginMessage } = useAdminSecret();
   const [adminActor, setAdminActor] = useState("");
   const [documents, setDocuments] = useState<DocumentRow[]>([]);
   const [pagination, setPagination] = useState<Pagination>({ page: 1, limit: 20, total: 0, total_pages: 0 });
@@ -130,10 +131,9 @@ export default function VerifyClaimPage() {
   }, [search, claimStatusFilter, docStatusFilter, page, filters]);
 
   const load = useCallback(async (overridePage?: number) => {
-    if (!secret) return;
     setLoading(true);
     const res = await fetch(`/api/admin/verify-claim?${buildQuery(overridePage)}`, {
-      headers: { "x-admin-secret": secret, ...(adminActor.trim() ? { "x-admin-actor": adminActor.trim() } : {}) },
+      headers: { ...(adminActor.trim() ? { "x-admin-actor": adminActor.trim() } : {}) },
     });
     const data = await res.json();
     setLoading(false);
@@ -150,7 +150,7 @@ export default function VerifyClaimPage() {
     } else {
       setMessage({ ok: false, text: data.error ?? "claim 목록 조회 실패" });
     }
-  }, [secret, adminActor, buildQuery, filters.limit]);
+  }, [adminActor, buildQuery, filters.limit]);
 
   useEffect(() => {
     const slug = new URLSearchParams(window.location.search).get("slug");
@@ -191,7 +191,7 @@ export default function VerifyClaimPage() {
     try {
       const res = await fetch("/api/admin/check-source", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "x-admin-secret": secret, "x-admin-csrf": "1", ...(adminActor.trim() ? { "x-admin-actor": adminActor.trim() } : {}) },
+        headers: { "Content-Type": "application/json", "x-admin-csrf": "1", ...(adminActor.trim() ? { "x-admin-actor": adminActor.trim() } : {}) },
         body: JSON.stringify({
           url: url.trim(),
           match: claimValue.trim(),
@@ -213,7 +213,7 @@ export default function VerifyClaimPage() {
     if (!selectedClaim) return;
     const res = await fetch("/api/admin/verify-claim", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-admin-secret": secret, "x-admin-csrf": "1", ...(adminActor.trim() ? { "x-admin-actor": adminActor.trim() } : {}) },
+      headers: { "Content-Type": "application/json", "x-admin-csrf": "1", ...(adminActor.trim() ? { "x-admin-actor": adminActor.trim() } : {}) },
       body: JSON.stringify({
         action,
         claim_id: selectedClaim.id,
@@ -243,7 +243,7 @@ export default function VerifyClaimPage() {
     if (!actionReason?.trim()) return;
     const res = await fetch("/api/admin/verify-claim", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-admin-secret": secret, "x-admin-csrf": "1", ...(adminActor.trim() ? { "x-admin-actor": adminActor.trim() } : {}) },
+      headers: { "Content-Type": "application/json", "x-admin-csrf": "1", ...(adminActor.trim() ? { "x-admin-actor": adminActor.trim() } : {}) },
       body: JSON.stringify({ action, claim_id: claim.id, reason: actionReason.trim() }),
     });
     const data = await res.json();
@@ -264,7 +264,7 @@ export default function VerifyClaimPage() {
     }
     const res = await fetch("/api/admin/verify-claim", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-admin-secret": secret, "x-admin-csrf": "1", ...(adminActor.trim() ? { "x-admin-actor": adminActor.trim() } : {}) },
+      headers: { "Content-Type": "application/json", "x-admin-csrf": "1", ...(adminActor.trim() ? { "x-admin-actor": adminActor.trim() } : {}) },
       body: JSON.stringify({ action: "bulk_needs_verification", claim_ids: selectedClaimIds, reason: reason.trim() }),
     });
     const data = await res.json();
@@ -338,16 +338,8 @@ export default function VerifyClaimPage() {
           <input value={adminActor} onChange={(e) => setAdminActor(e.target.value)} placeholder="admin actor (email/name; hashed in audit log)" style={{ width: "100%", padding: 8 }} />
         </div>
         <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
-          <input
-            aria-label="Admin secret"
-            type="password"
-            value={secret}
-            onChange={(e) => setSecret(e.target.value)}
-            placeholder="ADMIN_SECRET"
-            style={{ flex: 1, padding: 10 }}
-            onKeyDown={(e) => e.key === "Enter" && load(1)}
-          />
-          <button onClick={() => { setPage(1); load(1); }} disabled={!secret || loading}>
+          <AdminSecretField adminSecret={adminSecret} setAdminSecret={setAdminSecret} resetAdminSecret={resetAdminSecret} login={login} status={status} message={loginMessage} inputStyle={{ flex: 1, padding: 10 }} />
+          <button onClick={() => { setPage(1); load(1); }} disabled={loading}>
             {loading ? "불러오는 중..." : "불러오기"}
           </button>
         </div>
@@ -378,7 +370,7 @@ export default function VerifyClaimPage() {
           <label>limit<input type="number" min="1" max="200" value={filters.limit} onChange={(e) => setFilters({ ...filters, limit: e.target.value, offset: "0" })} /></label>
         </div>
         <div style={{ display: "flex", gap: 8, marginTop: 12, flexWrap: "wrap" }}>
-          <button onClick={() => { setPage(1); load(1); }} disabled={!secret || loading}>{loading ? "적용 중..." : "필터 적용"}</button>
+          <button onClick={() => { setPage(1); load(1); }} disabled={loading}>{loading ? "적용 중..." : "필터 적용"}</button>
           <button type="button" onClick={() => setFilters({ status: "needs_review", country: "", lang: "", category: "", slug: "", sort: "high_risk", limit: "50", offset: "0" })}>초기화</button>
         </div>
       </section>
@@ -434,7 +426,7 @@ export default function VerifyClaimPage() {
             <option value="needs_review">needs_review</option>
           </select>
         </div>
-        <button type="submit" disabled={!secret || loading} style={{ alignSelf: "flex-end", padding: "8px 16px" }}>
+        <button type="submit" disabled={loading} style={{ alignSelf: "flex-end", padding: "8px 16px" }}>
           필터 적용
         </button>
       </form>

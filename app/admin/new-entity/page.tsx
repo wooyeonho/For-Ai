@@ -4,7 +4,7 @@ import { useState } from "react";
 import { AdminSecretField, useAdminSecret } from "../AdminSecretProvider";
 
 export default function NewEntityPage() {
-  const { adminSecret, setAdminSecret, resetAdminSecret } = useAdminSecret();
+  const { adminSecret, setAdminSecret, resetAdminSecret, login, status, message: loginMessage } = useAdminSecret();
   const [id, setId] = useState("");
   const [type, setType] = useState("");
   const [canonicalName, setCanonicalName] = useState("");
@@ -23,7 +23,6 @@ export default function NewEntityPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-admin-secret": adminSecret,
           "x-admin-csrf": "1",
         },
         body: JSON.stringify({
@@ -127,6 +126,9 @@ export default function NewEntityPage() {
             adminSecret={adminSecret}
             setAdminSecret={setAdminSecret}
             resetAdminSecret={resetAdminSecret}
+            login={login}
+            status={status}
+            message={loginMessage}
             label="Admin Secret *"
             placeholder="관리자 비밀키"
           />
