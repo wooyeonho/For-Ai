@@ -1,6 +1,7 @@
 "use client";
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
 
 interface Post {
   id: string;
@@ -38,6 +39,14 @@ export default function CommunityClient({ documents }: { documents: { id: string
   const [claimId, setClaimId] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const currentLocale = useMemo(() => {
+    const lang = searchParams.get("lang");
+    if (lang && SUPPORTED_COMMUNITY_LOCALES.has(lang)) return lang;
+    const firstPathSegment = pathname.split("/").filter(Boolean)[0];
+    return SUPPORTED_COMMUNITY_LOCALES.has(firstPathSegment) ? firstPathSegment : "en";
+  }, [pathname, searchParams]);
 
   const loadPosts = useCallback(async () => {
     setLoading(true);
@@ -260,7 +269,7 @@ export default function CommunityClient({ documents }: { documents: { id: string
                   {p.document_id && (
                     <div className="community-related-doc">
                       관련 문서: {p.document_slug ? (
-                        <Link href={`/en/wiki/${p.document_slug}`} className="community-related-link">{p.document_title ?? p.document_slug}</Link>
+                        <Link href={`/${currentLocale}/wiki/${p.document_slug}`} className="community-related-link">{p.document_title ?? p.document_slug}</Link>
                       ) : (
                         <span>{p.document_id}</span>
                       )}

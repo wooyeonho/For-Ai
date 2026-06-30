@@ -288,7 +288,7 @@ export default async function WikiDocumentPage({
       )}
 
       {!citationStatus.isVerifiedDocument && (
-        <CorrectionCTA slug={document.slug} unverified />
+        <CorrectionCTA slug={document.slug} locale={locale} unverified />
       )}
 
       {isGovernmentFeeTemplate && (
