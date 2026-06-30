@@ -172,103 +172,95 @@ function parseCandidatesFromResponse(
   }
 }
 
-function normalizeForMatch(value: unknown): string {
-  return String(value ?? "")
-    .toLowerCase()
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9가-힣ぁ-んァ-ン一-龥]+/g, " ")
-    .trim();
-}
+type TopicCandidateRow = {
+  status?: unknown;
+  source?: unknown;
+  lang?: unknown;
+  country?: unknown;
+  title?: unknown;
+  slug?: unknown;
+  category?: unknown;
+  subcategory?: unknown;
+  region?: unknown;
+  city?: unknown;
+  canonical_slug?: unknown;
+  localized_title?: unknown;
+  jurisdiction?: unknown;
+  source_authority?: unknown;
+  translation_status?: unknown;
+  risk_tier?: unknown;
+  update_frequency?: unknown;
+  disclaimer_type?: unknown;
+  why_people_ask_ai?: unknown;
+  why_ai_gets_wrong?: unknown;
+  claims?: unknown;
+  source_hints?: unknown;
+  contributor_hash?: unknown;
+  generation_model?: unknown;
+  consensus_score?: unknown;
+  consensus_level?: unknown;
+  agreed_providers?: unknown;
+};
 
-function tokenize(value: unknown): Set<string> {
-  return new Set(normalizeForMatch(value).split(/\s+/).filter(Boolean));
-}
+const TOPIC_CANDIDATE_COLUMNS = [
+  "status",
+  "source",
+  "lang",
+  "country",
+  "title",
+  "slug",
+  "category",
+  "subcategory",
+  "region",
+  "city",
+  "canonical_slug",
+  "localized_title",
+  "jurisdiction",
+  "source_authority",
+  "translation_status",
+  "risk_tier",
+  "update_frequency",
+  "disclaimer_type",
+  "why_people_ask_ai",
+  "why_ai_gets_wrong",
+  "claims",
+  "source_hints",
+  "contributor_hash",
+  "generation_model",
+  "consensus_score",
+  "consensus_level",
+  "agreed_providers",
+] as const satisfies readonly (keyof TopicCandidateRow)[];
 
-function jaccard(a: Set<string>, b: Set<string>): number {
-  if (a.size === 0 || b.size === 0) return 0;
-  const intersection = [...a].filter((v) => b.has(v)).length;
-  const union = new Set([...a, ...b]).size;
-  return union === 0 ? 0 : intersection / union;
-}
+function toTopicCandidateRow(candidate: Record<string, unknown>): TopicCandidateRow {
+  const source = { ...candidate } as Record<string, unknown>;
 
-function candidateSimilarity(a: Record<string, unknown>, b: Record<string, unknown>): number {
-  const slugA = normalizeForMatch(a.slug).replace(/\s+/g, "-");
-  const slugB = normalizeForMatch(b.slug).replace(/\s+/g, "-");
-  const slugScore = slugA && slugA === slugB ? 1 : jaccard(tokenize(slugA.replace(/-/g, " ")), tokenize(slugB.replace(/-/g, " ")));
-  const titleScore = jaccard(tokenize(a.title), tokenize(b.title));
-  return Math.max(slugScore, titleScore * 0.92);
-}
+  if (Array.isArray(source.merged_claims)) {
+    source.claims = source.merged_claims;
+  }
+  if (Array.isArray(source.merged_source_hints)) {
+    source.source_hints = source.merged_source_hints;
+  }
 
-function consensusLevel(score: number): "unanimous" | "majority" | "minority" | "single" {
-  if (score >= 0.9) return "unanimous";
-  if (score >= 0.55) return "majority";
-  if (score > 0) return "minority";
-  return "single";
-}
-
-function mergeSourceHints(candidates: Record<string, unknown>[]): Record<string, string>[] {
-  const merged = new Map<string, Record<string, string>>();
-  for (const candidate of candidates) {
-    for (const hint of (candidate.source_hints as Record<string, string>[] | undefined) ?? []) {
-      const url = String(hint.url ?? "").trim();
-      if (!url || merged.has(url)) continue;
-      merged.set(url, { url, title: String(hint.title ?? url) });
+  const row: TopicCandidateRow = {};
+  for (const column of TOPIC_CANDIDATE_COLUMNS) {
+    if (source[column] !== undefined) {
+      row[column] = source[column];
     }
   }
-  return [...merged.values()];
+  return row;
 }
 
-function applyConsensus(
-  candidates: Record<string, unknown>[],
-  providerCount: number
-): { candidates: Record<string, unknown>[]; summary: Record<string, unknown> } {
-  const groups: Record<string, unknown>[][] = [];
-
-  for (const candidate of candidates) {
-    const best = groups
-      .map((group, index) => ({ index, score: Math.max(...group.map((existing) => candidateSimilarity(candidate, existing))) }))
-      .sort((a, b) => b.score - a.score)[0];
-
-    if (best && best.score >= 0.5) groups[best.index].push(candidate);
-    else groups.push([candidate]);
-  }
-
-  const enriched = groups.flatMap((group) => {
-    const providers = [...new Set(group.map((c) => String(c.generation_model ?? "").split("/")[0]).filter(Boolean))];
-    const supportRatio = providerCount > 0 ? providers.length / providerCount : 0;
-    const similarity = group.length > 1
-      ? group.reduce((sum, current, index) => sum + (index === 0 ? 1 : candidateSimilarity(group[0], current)), 0) / group.length
-      : 0;
-    const score = Math.min(1, Math.round((supportRatio * 0.7 + similarity * 0.3) * 100) / 100);
-    const level = consensusLevel(score);
-    const sourceHints = mergeSourceHints(group);
-
-    return group.map((candidate) => ({
-      ...candidate,
-      consensus_score: score,
-      consensus_level: level,
-      consensus_sources: providers,
-      source_hints: sourceHints,
-    }));
-  });
-
-  const levels = enriched.reduce<Record<string, number>>((acc, candidate) => {
-    const level = String(candidate.consensus_level ?? "low");
-    acc[level] = (acc[level] ?? 0) + 1;
-    return acc;
-  }, {});
-
+function summarizeConsensus(consensusResults: ConsensusCandidate[]): Record<string, unknown> {
   return {
-    candidates: enriched,
-    summary: {
-      provider_count: providerCount,
-      candidate_count: candidates.length,
-      consensus_group_count: groups.length,
-      levels,
-    },
+    total_unique: consensusResults.length,
+    unanimous: consensusResults.filter((c) => c.consensus_level === "unanimous").length,
+    majority: consensusResults.filter((c) => c.consensus_level === "majority").length,
+    minority: consensusResults.filter((c) => c.consensus_level === "minority").length,
+    single: consensusResults.filter((c) => c.consensus_level === "single").length,
   };
 }
+
 
 export async function POST(request: Request) {
   const adminError = await requireAdmin(request, "candidates.generate");
@@ -344,9 +336,9 @@ export async function POST(request: Request) {
       }
     }
 
-    const consensus = applyConsensus(allCandidates, providers.length);
-    allCandidates = consensus.candidates;
-    consensusSummary = consensus.summary;
+    if (consensusResults) {
+      consensusSummary = summarizeConsensus(consensusResults);
+    }
   } else {
     // Single provider (or sequential)
     const primaryProvider = providers[0];
@@ -396,16 +388,11 @@ export async function POST(request: Request) {
     const deduped = allCandidates.filter((c) => !existingSlugs.has(String(c.slug ?? "")));
     skippedDuplicates = allCandidates.length - deduped.length;
 
-    // Strip non-DB fields; keep only schema-compatible columns including consensus
-    const dbRows = deduped.map((c) => {
-      const row = { ...c } as Record<string, unknown>;
-      delete row.merged_source_hints;
-      delete row.merged_claims;
-      delete row.total_providers;
-      delete row.consensus_sources;
-      delete row.agreed_providers;
-      return row;
-    });
+    // Keep only schema-v3 topic_candidates columns. buildConsensus() adds
+    // response-only fields (merged_claims, merged_source_hints, total_providers);
+    // persist the merged JSON payloads via claims/source_hints and the actual
+    // consensus columns: consensus_score, consensus_level, agreed_providers.
+    const dbRows = deduped.map(toTopicCandidateRow);
 
     if (dbRows.length === 0) {
       saved = [];
@@ -480,15 +467,7 @@ export async function POST(request: Request) {
       : "skipped",
     ...(saveError ? { save_error: saveError } : {}),
     ...(saveErrorDetails ? { save_error_details: saveErrorDetails } : {}),
-    ...(consensusResults ? {
-      consensus_summary: {
-        total_unique: consensusResults.length,
-        unanimous: consensusResults.filter((c) => c.consensus_level === "unanimous").length,
-        majority: consensusResults.filter((c) => c.consensus_level === "majority").length,
-        minority: consensusResults.filter((c) => c.consensus_level === "minority").length,
-        single: consensusResults.filter((c) => c.consensus_level === "single").length,
-      },
-    } : {}),
+
     preview: allCandidates.slice(0, 5).map((c) => {
       const consensus = c as Record<string, unknown>;
       return {
