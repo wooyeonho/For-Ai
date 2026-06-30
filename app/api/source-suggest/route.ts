@@ -1,0 +1,129 @@
+import { NextResponse } from 'next/server';
+import { createServerClient, isSupabaseConfigured } from '../../../lib/supabase-server';
+import { makeContributorHashForRequest } from '../../../lib/contributor-hash';
+import {
+  awardPoints,
+  checkAndAwardBadges,
+  isOfficialDomain,
+  extractDomain,
+  POINT_VALUES,
+} from '../../../lib/gamification';
+
+export async function POST(request: Request) {
+  let body: Record<string, unknown>;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  }
+
+  const claimId = String(body.claim_id ?? '').trim();
+  const url = String(body.url ?? '').trim() || null;
+  const title = String(body.title ?? '').trim() || null;
+  const citation = String(body.citation ?? '').trim() || null;
+  const sourceType = String(body.source_type ?? 'web').trim();
+  const country = String(body.country ?? '').trim() || null;
+
+  if (!claimId) {
+    return NextResponse.json({ error: 'claim_id is required' }, { status: 400 });
+  }
+  if (!url && !citation && !title) {
+    return NextResponse.json({ error: 'At least one of url, title, or citation is required' }, { status: 400 });
+  }
+
+  const allowedTypes = new Set(['official', 'platform', 'review', 'document', 'web', 'other']);
+  if (!allowedTypes.has(sourceType)) {
+    return NextResponse.json({ error: 'Invalid source_type' }, { status: 400 });
+  }
+
+  let contributorHash: string;
+  try {
+    contributorHash = makeContributorHashForRequest(request);
+  } catch (err) {
+    console.error('[source-suggest] salt missing:', err);
+    return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
+  }
+
+  if (!isSupabaseConfigured()) {
+    return NextResponse.json({ error: 'submission_storage_unavailable' }, { status: 503 });
+  }
+
+  const sb = createServerClient();
+
+  // Verify claim exists
+  const { data: claim, error: claimErr } = await sb
+    .from('claims')
+    .select('id, entity_id, document_id')
+    .eq('id', claimId)
+    .single();
+
+  if (claimErr || !claim) {
+    return NextResponse.json({ error: 'Claim not found' }, { status: 404 });
+  }
+
+  const domain = url ? extractDomain(url) : null;
+  const official = url ? isOfficialDomain(url) : false;
+
+  // Rate-limit: max 20 suggestions per contributor per day per claim
+  const oneDayAgo = new Date(Date.now() - 86400000).toISOString();
+  const { count: recentCount } = await sb
+    .from('source_suggestions')
+    .select('id', { count: 'exact', head: true })
+    .eq('contributor_hash', contributorHash)
+    .eq('claim_id', claimId)
+    .gte('created_at', oneDayAgo);
+
+  if ((recentCount ?? 0) >= 20) {
+    return NextResponse.json({ error: 'Daily suggestion limit reached for this claim' }, { status: 429 });
+  }
+
+  // Insert suggestion
+  const { data: suggestion, error: insertErr } = await sb
+    .from('source_suggestions')
+    .insert({
+      claim_id: claimId,
+      contributor_hash: contributorHash,
+      source_type: official ? 'official' : sourceType,
+      url,
+      title,
+      citation,
+      domain,
+      status: 'pending',
+    })
+    .select('id')
+    .single();
+
+  if (insertErr || !suggestion) {
+    console.error('[source-suggest] insert error:', insertErr?.message);
+    return NextResponse.json({ error: 'Failed to save suggestion' }, { status: 500 });
+  }
+
+  // Award base points
+  let pointsAwarded = POINT_VALUES.source_submitted;
+  await awardPoints(sb, contributorHash, 'source_submitted', POINT_VALUES.source_submitted, {
+    referenceId: suggestion.id,
+    referenceType: 'source_suggestion',
+    metadata: { claim_id: claimId, country },
+  });
+
+  // Bonus for official domain
+  if (official) {
+    await awardPoints(sb, contributorHash, 'official_source_bonus', POINT_VALUES.official_source_bonus, {
+      referenceId: suggestion.id,
+      referenceType: 'source_suggestion',
+      metadata: { domain, claim_id: claimId, country },
+    });
+    pointsAwarded += POINT_VALUES.official_source_bonus;
+  }
+
+  // Check and award any newly earned badges
+  const newBadges = await checkAndAwardBadges(sb, contributorHash);
+
+  return NextResponse.json({
+    success: true,
+    suggestion_id: suggestion.id,
+    points_awarded: pointsAwarded,
+    is_official_source: official,
+    new_badges: newBadges,
+  });
+}
