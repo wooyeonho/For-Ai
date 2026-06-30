@@ -2549,7 +2549,48 @@ body {
 
 .claim-readiness-ready { color: #166534; background: #dcfce7; border: 1px solid #86efac; }
 .claim-readiness-review { color: #92400e; background: #fef3c7; border: 1px solid #fbbf24; }
-.badge-source-count { white-space: nowrap; }
+.claim-badges,
+.claim-secondary-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.claim-badges .badge,
+.claim-secondary-row .badge {
+  align-items: center;
+  display: inline-flex;
+  max-width: 100%;
+  min-width: 0;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+.badge-source-count { white-space: normal; }
+
+.claim-secondary-details {
+  margin: 8px 0 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.42);
+}
+
+.claim-secondary-details summary {
+  cursor: pointer;
+  padding: 8px 10px;
+  color: var(--muted);
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.claim-secondary-row {
+  padding: 0 10px 10px;
+}
 
 .verification-meta {
   display: grid;
@@ -2586,10 +2627,33 @@ body {
   font-weight: 700;
 }
 
+.claim-citation-cta--caution {
+  border-color: #f59e0b;
+  background: #fffbeb;
+  color: #92400e;
+  opacity: 0.88;
+}
+
+.claim-citation-cta--caution button {
+  border-color: #ebd9ae !important;
+  background: #fbf3e2 !important;
+  color: #8a5a14 !important;
+}
+
 @media (max-width: 760px) {
   .document-citation-status { width: 100%; }
-  .claim-badges { display: grid; grid-template-columns: 1fr; width: 100%; }
-  .claim-badges .badge { width: 100%; justify-content: flex-start; }
+  .claim-badges,
+  .claim-secondary-row {
+    align-items: flex-start;
+    flex-direction: column;
+    width: 100%;
+  }
+  .claim-badges .badge,
+  .claim-secondary-row .badge {
+    justify-content: flex-start;
+    width: fit-content;
+    max-width: 100%;
+  }
   .verification-meta { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .claim-citation-cta { align-items: stretch; }
   .claim-citation-cta button { width: 100%; }
