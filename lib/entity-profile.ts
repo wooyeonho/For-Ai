@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { getAllRegistryBundles } from "./data";
 import { getRegistryBundleFromSupabase } from "./supabase-documents";
-import { getDocumentCitationStatus, isStale, type FreshnessLabel } from "./citation-status";
+import { FRESHNESS_TTL_DAYS, getDocumentCitationStatus, isStale, type FreshnessLabel } from "./citation-status";
 import { DEFAULT_LOCALE } from "./i18n/locales";
 import type { Entity, RegistryDocumentBundle } from "./types";
 
@@ -16,6 +16,7 @@ export type EntityProfileSummary = {
   verified_claims: number;
   total_claims: number;
   freshness: FreshnessLabel;
+  completeness: BusinessProfileCompletenessScore;
 };
 
 export type EntityProfile = {
@@ -23,6 +24,154 @@ export type EntityProfile = {
   documents: RegistryDocumentBundle[];
   summary: EntityProfileSummary;
 };
+
+export type BusinessProfileClaimCompletenessKey =
+  | "opening_hours_claim"
+  | "address_claim"
+  | "phone_contact_claim"
+  | "parking_claim"
+  | "reservation_claim"
+  | "refund_cancellation_claim"
+  | "accessibility_claim";
+
+export type BusinessProfileCompletenessItemKey =
+  | "official_website_verified"
+  | BusinessProfileClaimCompletenessKey
+  | "last_verified_date_freshness";
+
+export type BusinessProfileCompletenessItem = {
+  key: BusinessProfileCompletenessItemKey;
+  label: string;
+  complete: boolean;
+  evidence: string | null;
+};
+
+export type BusinessProfileCompletenessScore = {
+  score: number;
+  completed: number;
+  total: number;
+  items: BusinessProfileCompletenessItem[];
+  missing: BusinessProfileCompletenessItemKey[];
+  latest_verified_at: string | null;
+  freshness: FreshnessLabel;
+  note: string;
+  paid_plan_note: string;
+};
+
+export type BusinessProfileCompletenessInput = {
+  business_url?: string | null;
+  verification_method?: string | null;
+  status?: string | null;
+  verified_at?: string | null;
+};
+
+const COMPLETENESS_NOTE =
+  "Completeness score is an information-coverage metric only. It does not replace fact accuracy, claim-level confidence, source review, or verified status.";
+
+const PAID_PLAN_COMPLETENESS_NOTE =
+  "Paid plans may provide completeness improvement suggestions and monitoring, but they do not bypass human verification or change fact accuracy requirements.";
+
+const CLAIM_COMPLETENESS_PATTERNS: Record<BusinessProfileClaimCompletenessKey, RegExp> = {
+  opening_hours_claim: /(^|\.)(hours|opening_hours|business_hours|operating_hours)(\.|$)|opening.*hours|operating.*hours/i,
+  address_claim: /(^|\.)(address|location|street_address|postal_address)(\.|$)|\baddress\b/i,
+  phone_contact_claim: /(^|\.)(phone|telephone|contact|email|customer_service)(\.|$)|\b(phone|telephone|contact)\b/i,
+  parking_claim: /(^|\.)parking(\.|$)|\bparking\b/i,
+  reservation_claim: /(^|\.)(reservation|booking|appointment)(\.|$)|\b(reservation|booking|appointment)\b/i,
+  refund_cancellation_claim: /(^|\.)(refund|cancellation|cancel|return)(\.|$)|\b(refund|cancellation|cancel)\b/i,
+  accessibility_claim: /(^|\.)(accessibility|wheelchair|accessible|ada)(\.|$)|\b(accessibility|wheelchair|accessible)\b/i,
+};
+
+const CLAIM_COMPLETENESS_LABELS: Record<BusinessProfileClaimCompletenessKey, string> = {
+  opening_hours_claim: "Opening hours claim",
+  address_claim: "Address claim",
+  phone_contact_claim: "Phone/contact claim",
+  parking_claim: "Parking claim",
+  reservation_claim: "Reservation claim",
+  refund_cancellation_claim: "Refund/cancellation claim",
+  accessibility_claim: "Accessibility claim",
+};
+
+function getLatestIsoDate(values: Array<string | null | undefined>): string | null {
+  const valid = values.filter((value): value is string => Boolean(value) && !Number.isNaN(Date.parse(value as string)));
+  if (valid.length === 0) return null;
+  return valid.reduce((latest, current) => (Date.parse(current) > Date.parse(latest) ? current : latest));
+}
+
+function hasOfficialWebsiteVerified(profile?: BusinessProfileCompletenessInput | null): boolean {
+  if (!profile?.business_url || profile.status !== "verified") return false;
+  return profile.verification_method === "domain";
+}
+
+function claimEvidenceForPattern(
+  documents: RegistryDocumentBundle[],
+  pattern: RegExp,
+): string | null {
+  for (const bundle of documents) {
+    const claim = bundle.claims.find((item) => {
+      const haystack = `${item.field_path} ${item.claim_text}`.trim();
+      return pattern.test(haystack);
+    });
+    if (claim) return `${claim.field_path} (${bundle.document.slug})`;
+  }
+  return null;
+}
+
+export function calculateBusinessProfileCompletenessScore(
+  documents: RegistryDocumentBundle[],
+  businessProfile?: BusinessProfileCompletenessInput | null,
+  now: Date = new Date(),
+): BusinessProfileCompletenessScore {
+  const latestVerifiedAt = getLatestIsoDate([
+    businessProfile?.verified_at,
+    ...documents.map((bundle) => bundle.document.last_verified_at),
+    ...documents.flatMap((bundle) => bundle.claims.map((claim) => claim.last_verified_at)),
+  ]);
+  const freshness: FreshnessLabel = !latestVerifiedAt
+    ? "unknown"
+    : isStale(latestVerifiedAt, FRESHNESS_TTL_DAYS, now)
+      ? "stale"
+      : "fresh";
+
+  const items: BusinessProfileCompletenessItem[] = [
+    {
+      key: "official_website_verified",
+      label: "Official website verified",
+      complete: hasOfficialWebsiteVerified(businessProfile),
+      evidence: businessProfile?.business_url ?? null,
+    },
+    ...Object.entries(CLAIM_COMPLETENESS_PATTERNS).map(([key, pattern]) => {
+      const typedKey = key as BusinessProfileClaimCompletenessKey;
+      const evidence = claimEvidenceForPattern(documents, pattern);
+      return {
+        key: typedKey,
+        label: CLAIM_COMPLETENESS_LABELS[typedKey],
+        complete: evidence !== null,
+        evidence,
+      };
+    }),
+    {
+      key: "last_verified_date_freshness",
+      label: "Last verified date freshness",
+      complete: freshness === "fresh",
+      evidence: latestVerifiedAt,
+    },
+  ];
+
+  const completed = items.filter((item) => item.complete).length;
+  const total = items.length;
+
+  return {
+    score: Math.round((completed / total) * 100),
+    completed,
+    total,
+    items,
+    missing: items.filter((item) => !item.complete).map((item) => item.key),
+    latest_verified_at: latestVerifiedAt,
+    freshness,
+    note: COMPLETENESS_NOTE,
+    paid_plan_note: PAID_PLAN_COMPLETENESS_NOTE,
+  };
+}
 
 async function getSupabaseEntityBundles(
   entityId: string,
@@ -64,7 +213,7 @@ function summarize(documents: RegistryDocumentBundle[]): EntityProfileSummary {
     totalClaims += status.totalClaims;
     if (status.isVerifiedDocument) {
       citable += 1;
-      if (isStale(status.oldestVerifiedAt, status.freshnessTtlDays)) anyStale = true;
+      if (isStale(status.oldestVerifiedAt, status.freshnessWindowDays)) anyStale = true;
     }
   }
 
@@ -76,6 +225,7 @@ function summarize(documents: RegistryDocumentBundle[]): EntityProfileSummary {
     verified_claims: verifiedClaims,
     total_claims: totalClaims,
     freshness,
+    completeness: calculateBusinessProfileCompletenessScore(documents),
   };
 }
 

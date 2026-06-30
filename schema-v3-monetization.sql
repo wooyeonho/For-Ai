@@ -63,6 +63,8 @@ comment on column verified_business_profiles.contact_email_consent is 'Explicit 
 comment on column verified_business_profiles.contact_email_purpose is 'Specific purpose for storing business_email, e.g. business_profile_verification/account_notices.';
 comment on column verified_business_profiles.verification_review_url is 'External storage or manual review link for verification evidence. Do not store uploaded verification document contents in this database.';
 comment on column verified_business_profiles.metadata is 'Safe metadata only. Raw IP addresses, raw user agents, and verification document blobs are forbidden.';
+comment on column verified_business_profiles.business_url is 'Official website candidate for the business profile. Completeness scoring treats it as verified only when the profile is verified through domain verification; this is information coverage, not a substitute for claim accuracy.';
+comment on column verified_business_profiles.tier is 'Paid tiers may provide completeness improvement suggestions and monitoring, but must not bypass claim-level source verification or human approval.';
 
 -- ─────────────────────────────────────────────────────────────────────────────
 -- API Keys
