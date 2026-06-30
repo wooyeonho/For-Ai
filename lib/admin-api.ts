@@ -54,7 +54,7 @@ const ROLE_RANK: Record<AdminRole, number> = {
 const ACTION_REQUIRED_ROLES: Array<[RegExp, AdminRole]> = [
   [/^admin\.import$|^api_keys\.|^webhooks\.|^business_profiles\./, "admin"],
   [/^posts\.|^business_corrections\.|^reputation_alerts\./, "moderator"],
-  [/^claims\.verify$|^candidates\.promote$|^admin\.review\./, "verifier"],
+  [/^claims\.verify$|^candidates\.promote$|^source_suggestions\.review$|^admin\.review\./, "verifier"],
   [/^candidates\.(generate|bulk_import|update)$|^document\.create$|^entity\.create$|^claims\.check_source$/, "editor"],
   [/\.read$|\.list$|read_for_review$|generate_metadata$/, "viewer"],
 ];
