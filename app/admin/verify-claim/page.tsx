@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { recommendForClaim, recommendationBadgeColor, type AdminRecommendation } from "../../../lib/admin-recommendations";
 
 type SourceRow = { id: string; title?: string | null; url?: string | null; source_type?: string | null; citation?: string | null; observed_at?: string | null };
 type VerificationEventRow = { id: string; note?: string | null; created_at?: string | null; new_status?: string | null };
@@ -46,6 +47,16 @@ const SOURCE_TRUST: Record<string, number> = { official: 95, platform: 85, docum
 function trustScore(sourceType?: string | null, url?: string | null, citation?: string | null) {
   const base = SOURCE_TRUST[sourceType ?? "unknown"] ?? 0;
   return Math.min(100, base + (url ? 3 : 0) + (citation ? 2 : 0));
+}
+
+function RecommendationCallout({ recommendation }: { recommendation: AdminRecommendation }) {
+  const color = recommendationBadgeColor(recommendation.tone);
+  return (
+    <div style={{ margin: "8px 0", padding: "10px 12px", borderRadius: 8, background: color.background, border: `1px solid ${color.border}`, color: color.color }}>
+      <strong>추천 action: {recommendation.action}</strong> · {recommendation.label}
+      <p style={{ margin: "4px 0 0", fontSize: 13 }}>{recommendation.reason}</p>
+    </div>
+  );
 }
 
 const POLICY_ITEMS = [
@@ -510,6 +521,7 @@ export default function VerifyClaimPage() {
                   {isStale(claim) && <span className="badge" style={{ marginLeft: 4 }}>stale</span>}
                 </p>
                 <p className="meta-label">submitter: {claim.submitter ?? claim.contributor_hash ?? "-"} · AI: {[claim.ai_provider, claim.ai_model].filter(Boolean).join(" / ") || "-"}</p>
+                <RecommendationCallout recommendation={recommendForClaim(claim)} />
                 {(claim.source_candidates?.length ?? 0) > 0 && (
                   <div><strong>source 후보</strong><ul>{claim.source_candidates?.map((source, i) => <li key={`${source.url ?? source.title ?? i}`}>{source.source_type ?? "web"} · trust {trustScore(source.source_type, source.url, source.citation)} · {source.url ? <a href={source.url}>{source.title ?? source.url}</a> : (source.title ?? source.citation)}</li>)}</ul></div>
                 )}
@@ -579,6 +591,7 @@ export default function VerifyClaimPage() {
             <p className="eyebrow">현재 값</p>
             <p><strong>{selectedClaim.claim_value}</strong></p>
             <p style={{ fontSize: 13, color: "#6b7280" }}>{selectedClaim.claim_text}</p>
+            <RecommendationCallout recommendation={recommendForClaim(selectedClaim)} />
           </div>
 
           <label style={{ display: "block", marginBottom: 12 }}>

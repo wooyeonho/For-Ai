@@ -3,12 +3,14 @@
 import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
 import { ageInDays, isStale } from "../../../lib/citation-status";
-import { AdminSecretField, useAdminSecret } from "../AdminSecretProvider";
+import { recommendForCandidate, recommendForClaim, recommendForInboxItem, recommendationBadgeColor, type AdminRecommendation } from "../../../lib/admin-recommendations";
+import { useAdminSecret } from "../AdminSecretProvider";
 
 type Counts = {
   pending_community_posts: number;
   candidates_new: number;
   candidates_generated: number;
+  candidates_approved?: number;
   documents_published: number;
   claim_sources: number;
   claims_needs_review: number;
@@ -129,6 +131,16 @@ const EMPTY_COUNTS: Counts = {
 const primaryButtonStyle = { padding: "8px 12px", borderRadius: 8, background: "#111827", color: "#fff", textDecoration: "none", display: "inline-block", fontWeight: 700 };
 const secondaryButtonStyle = { padding: "8px 12px", borderRadius: 8, background: "#f3f4f6", color: "#111827", textDecoration: "none", display: "inline-block", fontWeight: 700 };
 
+function RecommendationCallout({ recommendation }: { recommendation: AdminRecommendation }) {
+  const color = recommendationBadgeColor(recommendation.tone);
+  return (
+    <div style={{ margin: "8px 0", padding: "10px 12px", borderRadius: 8, background: color.background, border: `1px solid ${color.border}`, color: color.color }}>
+      <strong>추천 action: {recommendation.action}</strong> · {recommendation.label}
+      <p style={{ margin: "4px 0 0", fontSize: 13 }}>{recommendation.reason}</p>
+    </div>
+  );
+}
+
 const RISK_COLOR: Record<string, string> = {
   low: "#166534",
   medium: "#92400e",
@@ -144,7 +156,7 @@ function urgencyBand(claims_needs_review: number, candidates_approved: number) {
 }
 
 export default function AdminReviewPage() {
-  const { adminSecret, setAdminSecret, resetAdminSecret } = useAdminSecret();
+  const { adminSecret, setAdminSecret } = useAdminSecret();
   const [data, setData] = useState<ReviewPayload | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
@@ -280,6 +292,7 @@ export default function AdminReviewPage() {
         {data?.priorities.needs_review_claims.map((claim) => {
           const doc = Array.isArray(claim.documents) ? claim.documents[0] : claim.documents;
           const slug = doc?.slug;
+          const recommendation = recommendForClaim(claim);
           return (
             <div className="claim-card" key={claim.id} style={{ borderLeft: "3px solid #fca5a5" }}>
               <p className="eyebrow">
@@ -294,6 +307,7 @@ export default function AdminReviewPage() {
                 <span className="badge">last_verified_at: {claim.last_verified_at ?? "확인 필요"}</span>
               </p>
               <p className="meta-label">contributor_hash: {claim.contributor_hash ?? "-"} · AI: {[claim.ai_provider, claim.ai_model].filter(Boolean).join(" / ") || "-"}</p>
+              <RecommendationCallout recommendation={recommendation} />
               {(claim.source_candidates?.length ?? 0) > 0 && <p className="meta-label">source 후보: {claim.source_candidates?.map((s: {title?: string; url?: string; source_type?: string}) => s.title ?? s.url ?? s.source_type).join(", ")}</p>}
               {(claim.source_trust_scores?.length ?? 0) > 0 && <p className="meta-label">trust scores: {claim.source_trust_scores?.map((s: {id?: string; score?: number}) => `${s.id}:${s.score}`).join(", ")}</p>}
               <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
@@ -315,7 +329,9 @@ export default function AdminReviewPage() {
         {(data?.priorities.approved_candidates.length ?? 0) === 0 && (
           <p style={{ color: "#6b7280" }}>✓ 공개 등록 대기 중인 approved candidate가 없습니다.</p>
         )}
-        {data?.priorities.approved_candidates.map((candidate) => (
+        {data?.priorities.approved_candidates.map((candidate) => {
+          const recommendation = recommendForCandidate(candidate);
+          return (
           <div className="claim-card" key={candidate.id} style={{ borderLeft: "3px solid #fde68a" }}>
             <p className="eyebrow">
               {candidate.category} ·{" "}
@@ -328,11 +344,13 @@ export default function AdminReviewPage() {
               {candidate.lang}/wiki/{candidate.slug}
             </p>
             <p style={{ margin: "0 0 8px" }}><span className="badge badge-review">{candidate.status}</span></p>
+            <RecommendationCallout recommendation={recommendation} />
             <Link href="/admin/candidates" style={{ fontSize: 13, fontWeight: 600, color: "#2563eb" }}>
               → 공개 등록하러 가기
             </Link>
           </div>
-        ))}
+          );
+        })}
 
         <h3>Generated candidates · 공개 등록 대기</h3>
         {(data?.priorities.generated_candidates.length ?? 0) === 0 && <p>공개 등록 대기 중인 generated candidate가 없습니다.</p>}
@@ -342,6 +360,7 @@ export default function AdminReviewPage() {
             <p><strong>{candidate.title}</strong></p>
             <p>{candidate.lang}/wiki/{candidate.slug}</p>
             <p><span className="badge badge-review">{candidate.status}</span></p>
+            <RecommendationCallout recommendation={recommendForCandidate(candidate)} />
             <Link href="/admin/candidates" style={primaryButtonStyle}>공개 등록하러 가기</Link>
           </div>
         ))}
@@ -355,6 +374,7 @@ export default function AdminReviewPage() {
           <div className="claim-card" key={post.id}>
             <p className="eyebrow">{post.author_type} · {post.author_name ?? "anonymous"} · {post.created_at ?? "created_at 없음"}</p>
             <p>{post.content}</p>
+            <RecommendationCallout recommendation={recommendForInboxItem(post)} />
           </div>
         ))}
       </section>
