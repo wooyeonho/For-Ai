@@ -284,6 +284,12 @@ export default async function HomePage() {
           <Link href="/#registry" className="btn btn-primary">
             Browse Registry
           </Link>
+          <Link href="/en/topics" className="btn btn-secondary">
+            Topics
+          </Link>
+          <Link href="/en/countries" className="btn btn-secondary">
+            Countries
+          </Link>
           <Link href="/api-docs" className="btn btn-secondary">
             API Docs
           </Link>
@@ -364,6 +370,12 @@ export default async function HomePage() {
             <div className="audience-links">
               <Link href="/#registry" className="text-link">
                 Browse Registry
+              </Link>
+              <Link href="/en/topics" className="text-link">
+                Browse Topics
+              </Link>
+              <Link href="/en/countries" className="text-link">
+                Browse Countries
               </Link>
               <Link href="/suggest-topic" className="text-link">
                 Suggest a Topic

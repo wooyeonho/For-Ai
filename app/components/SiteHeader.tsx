@@ -16,6 +16,8 @@ export function SiteHeader() {
         </Link>
         <nav className="site-nav" aria-label="Main menu">
           <Link href="/#registry">Registry</Link>
+          <Link href="/en/topics">Topics</Link>
+          <Link href="/en/countries">Countries</Link>
           <Link href="/api-docs">API</Link>
           <Link href="/community">Community</Link>
           <Link href="/contribute">Contribute</Link>
@@ -37,6 +39,8 @@ export function SiteHeader() {
       {open && (
         <nav className="site-nav-mobile" aria-label="Mobile menu">
           <Link href="/#registry" onClick={close}>Registry</Link>
+          <Link href="/en/topics" onClick={close}>Topics</Link>
+          <Link href="/en/countries" onClick={close}>Countries</Link>
           <Link href="/api-docs" onClick={close}>API</Link>
           <Link href="/community" onClick={close}>Community</Link>
           <Link href="/contribute" onClick={close}>Contribute</Link>
