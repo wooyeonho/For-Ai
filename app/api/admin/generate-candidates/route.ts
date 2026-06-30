@@ -270,6 +270,16 @@ function applyConsensus(
   };
 }
 
+function summarizeProviderConsensus(consensusResults: ConsensusCandidate[]) {
+  return {
+    total_unique: consensusResults.length,
+    unanimous: consensusResults.filter((c) => c.consensus_level === "unanimous").length,
+    majority: consensusResults.filter((c) => c.consensus_level === "majority").length,
+    minority: consensusResults.filter((c) => c.consensus_level === "minority").length,
+    single: consensusResults.filter((c) => c.consensus_level === "single").length,
+  };
+}
+
 export async function POST(request: Request) {
   const adminError = await requireAdmin(request, "candidates.generate");
   if (adminError) return adminError;
@@ -314,8 +324,7 @@ export async function POST(request: Request) {
   let allCandidates: Record<string, unknown>[] = [];
   const providerResults: Record<string, { generated: number; error?: string; parse_error?: string }> = {};
   let consensusResults: ConsensusCandidate[] | null = null;
-
-  let consensusSummary: Record<string, unknown> | null = null;
+  let consensusSummary: ReturnType<typeof applyConsensus>["summary"] | null = null;
 
   if (crossVerify && providers.length >= 2) {
     // Cross-verification: run all providers, build consensus
@@ -423,6 +432,8 @@ export async function POST(request: Request) {
         saved: 0,
         skipped_duplicates: skippedDuplicates,
         save_status: "skipped_all_duplicates",
+        ...(consensusSummary ? { consensus_summary: consensusSummary } : {}),
+        ...(consensusResults ? { provider_consensus_summary: summarizeProviderConsensus(consensusResults) } : {}),
         preview: [],
       });
     }
@@ -472,6 +483,7 @@ export async function POST(request: Request) {
     cross_verify: crossVerify,
     provider_results: providerResults,
     ...(consensusSummary ? { consensus_summary: consensusSummary } : {}),
+    ...(consensusResults ? { provider_consensus_summary: summarizeProviderConsensus(consensusResults) } : {}),
     total_generated: allCandidates.length,
     saved: saved.length,
     ...(saveToDb ? { skipped_duplicates: skippedDuplicates } : {}),
@@ -480,15 +492,6 @@ export async function POST(request: Request) {
       : "skipped",
     ...(saveError ? { save_error: saveError } : {}),
     ...(saveErrorDetails ? { save_error_details: saveErrorDetails } : {}),
-    ...(consensusResults ? {
-      consensus_summary: {
-        total_unique: consensusResults.length,
-        unanimous: consensusResults.filter((c) => c.consensus_level === "unanimous").length,
-        majority: consensusResults.filter((c) => c.consensus_level === "majority").length,
-        minority: consensusResults.filter((c) => c.consensus_level === "minority").length,
-        single: consensusResults.filter((c) => c.consensus_level === "single").length,
-      },
-    } : {}),
     preview: allCandidates.slice(0, 5).map((c) => {
       const consensus = c as Record<string, unknown>;
       return {

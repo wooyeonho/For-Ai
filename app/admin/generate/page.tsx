@@ -62,6 +62,12 @@ interface GenerateResult {
   provider_results?: Record<string, { generated: number; error?: string; parse_error?: string }>;
   skipped_duplicates?: number;
   consensus_summary?: {
+    provider_count: number;
+    candidate_count: number;
+    consensus_group_count: number;
+    levels: Partial<Record<"unanimous" | "majority" | "minority" | "single", number>>;
+  };
+  provider_consensus_summary?: {
     total_unique: number;
     unanimous: number;
     majority: number;
@@ -376,24 +382,25 @@ export default function AdminGeneratePage() {
               <h3 style={{ fontSize: 14, fontWeight: 600, marginBottom: 8 }}>교차검증 합의 결과</h3>
               <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(100px, 1fr))", gap: 8, fontSize: 13 }}>
                 <div style={{ textAlign: "center", padding: 8, background: "#dcfce7", borderRadius: 6 }}>
-                  <div style={{ fontSize: 20, fontWeight: 700 }}>{result.consensus_summary.unanimous}</div>
+                  <div style={{ fontSize: 20, fontWeight: 700 }}>{result.consensus_summary.levels.unanimous ?? 0}</div>
                   <div style={{ color: "#15803d" }}>만장일치</div>
                 </div>
                 <div style={{ textAlign: "center", padding: 8, background: "#dbeafe", borderRadius: 6 }}>
-                  <div style={{ fontSize: 20, fontWeight: 700 }}>{result.consensus_summary.majority}</div>
+                  <div style={{ fontSize: 20, fontWeight: 700 }}>{result.consensus_summary.levels.majority ?? 0}</div>
                   <div style={{ color: "#1d4ed8" }}>다수 동의</div>
                 </div>
                 <div style={{ textAlign: "center", padding: 8, background: "#fef9c3", borderRadius: 6 }}>
-                  <div style={{ fontSize: 20, fontWeight: 700 }}>{result.consensus_summary.minority}</div>
+                  <div style={{ fontSize: 20, fontWeight: 700 }}>{result.consensus_summary.levels.minority ?? 0}</div>
                   <div style={{ color: "#a16207" }}>소수 동의</div>
                 </div>
                 <div style={{ textAlign: "center", padding: 8, background: "#f3f4f6", borderRadius: 6 }}>
-                  <div style={{ fontSize: 20, fontWeight: 700 }}>{result.consensus_summary.single}</div>
+                  <div style={{ fontSize: 20, fontWeight: 700 }}>{result.consensus_summary.levels.single ?? 0}</div>
                   <div style={{ color: "#6b7280" }}>단독 생성</div>
                 </div>
               </div>
               <p style={{ fontSize: 12, color: "#6b7280", marginTop: 8 }}>
-                중복 제거 후 고유 토픽: {result.consensus_summary.total_unique}개
+                합의 그룹: {result.consensus_summary.consensus_group_count}개 · 합의 적용 후보: {result.consensus_summary.candidate_count}개 · provider: {result.consensus_summary.provider_count}개
+                {result.provider_consensus_summary && ` · provider 기준 고유 토픽: ${result.provider_consensus_summary.total_unique}개`}
               </p>
             </div>
           )}
