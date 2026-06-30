@@ -5,6 +5,7 @@ import { AdminSecretField, useAdminSecret } from "../AdminSecretProvider";
 
 const PROVIDER_ICONS: Record<string, string> = {
   perplexity: "🔍",
+  nvidia: "🟩",
   gemini: "✦",
   gpt: "◎",
   grok: "⚡",
@@ -15,6 +16,7 @@ const PROVIDER_ICONS: Record<string, string> = {
 
 const FALLBACK_PROVIDERS = [
   { key: "perplexity", label: "Perplexity (웹 검색)", icon: "🔍" },
+  { key: "nvidia", label: "NVIDIA NIM", icon: "🟩" },
   { key: "gemini", label: "Gemini 2.0", icon: "✦" },
   { key: "gpt", label: "OpenAI GPT-4o", icon: "◎" },
   { key: "grok", label: "xAI Grok", icon: "⚡" },
@@ -72,7 +74,8 @@ interface GenerateResult {
   total_generated: number;
   saved: number;
   preview: (Record<string, unknown> & ConsensusInfo)[];
-  provider_results?: Record<string, { generated: number; error?: string; parse_error?: string }>;
+  provider_results?: Record<string, { generated: number; error?: string; parse_error?: string; role?: "primary" | "cross_verify" | "fallback" }>;
+  fallback_used?: boolean;
   skipped_duplicates?: number;
   consensus_summary?: {
     total_unique: number;
@@ -364,6 +367,12 @@ export default function AdminGeneratePage() {
             </div>
           </div>
 
+          {result.fallback_used && (
+            <div style={{ padding: 12, background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 8, marginBottom: 16, fontSize: 13, color: "#92400e" }}>
+              <strong>NVIDIA fallback 사용:</strong> primary provider 호출 실패 후 NVIDIA로 한 번 재시도했습니다. 아래 provider 결과에서 primary 오류와 fallback 결과를 함께 확인할 수 있습니다.
+            </div>
+          )}
+
           {result.save_error && (
             <div style={{ padding: 12, background: "#fef2f2", border: "1px solid #fecaca", borderRadius: 8, marginBottom: 16, fontSize: 13, color: "#b91c1c" }}>
               <strong>DB 저장 실패:</strong> {result.save_error}
@@ -379,7 +388,7 @@ export default function AdminGeneratePage() {
             <div style={{ marginBottom: 20, fontSize: 13 }}>
               {Object.entries(result.provider_results).map(([provider, r]) => (
                 <div key={provider} style={{ padding: "4px 0" }}>
-                  <strong>{provider}</strong>: {r.generated}개 생성
+                  <strong>{provider}</strong>{r.role && <span style={{ color: "#6b7280" }}> ({r.role})</span>}: {r.generated}개 생성
                   {r.error && <span style={{ color: "#dc2626" }}> — {r.error}</span>}
                   {r.parse_error && <span style={{ color: "#b45309" }}> — 파싱 실패: {r.parse_error}</span>}
                 </div>
