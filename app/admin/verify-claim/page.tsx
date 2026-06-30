@@ -518,6 +518,7 @@ export default function VerifyClaimPage() {
       {documents.filter((doc) => visibleDocIds.has(doc.id) || localFilters.country === "all" && localFilters.domain === "all" && localFilters.source === "all" && localFilters.confidence === "all" && localFilters.status === "all" && localFilters.stale === "all").map((doc) => {
         if (!visibleDocIds.has(doc.id) && !(localFilters.country === "all" && localFilters.domain === "all" && localFilters.source === "all" && localFilters.confidence === "all" && localFilters.status === "all" && localFilters.stale === "all")) return null;
         const unverifiedCount = (doc.claims ?? []).filter((c) => c.status === "needs_review").length;
+        const quality = calculateDocumentQuality({ document: doc, claims: doc.claims ?? [] });
         return (
           <section className="registry-panel" key={doc.id} id={`doc-${doc.slug}`}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 8 }}>

@@ -63,6 +63,8 @@ type Candidate = {
   verify_url?: string | null;
 };
 
+type QualitySummary = { score: number; maxScore: number; percent: number; label: string; nextTasks: string[] };
+
 type VerifiedDocument = {
   id: string;
   title: string;
@@ -73,6 +75,8 @@ type VerifiedDocument = {
   last_verified_at?: string | null;
   public_url?: string | null;
   verify_url?: string | null;
+  diagnostics_url?: string | null;
+  quality?: QualitySummary | null;
 };
 
 type TopCited = {
@@ -455,6 +459,11 @@ export default function AdminReviewPage() {
                   )}
                 </div>
                 <div style={{ textAlign: "right", flexShrink: 0 }}>
+                  {doc.quality && (
+                    <div style={{ marginBottom: 4 }}>
+                      <span className={doc.quality.percent >= 75 ? "badge badge-verified" : "badge badge-review"}>Quality {doc.quality.score}/{doc.quality.maxScore} · {doc.quality.label}</span>
+                    </div>
+                  )}
                   {age !== null ? (
                     <span className={stale ? "badge badge-review" : "badge badge-verified"}>
                       {stale ? `⏳ ${age}일 경과 · 재검증` : `✓ ${age}일 전`}
@@ -462,13 +471,15 @@ export default function AdminReviewPage() {
                   ) : (
                     <span className="badge">last_verified_at 없음</span>
                   )}
-                  {stale && (
-                    <div style={{ marginTop: 4 }}>
+                  <div style={{ marginTop: 4, display: "grid", gap: 2 }}>
+                    {stale && (
                       <Link href={doc.verify_url ?? `/admin/verify-claim?slug=${encodeURIComponent(doc.slug)}`} style={{ fontSize: 12, color: "#991b1b" }}>
                         재검증하기 →
                       </Link>
-                    </div>
-                  )}
+                    )}
+                    {doc.diagnostics_url && <Link href={doc.diagnostics_url} style={{ fontSize: 12 }}>quality diagnostics →</Link>}
+                    {doc.quality?.nextTasks?.[0] && <span className="meta-label">다음 작업: {doc.quality.nextTasks[0]}</span>}
+                  </div>
                 </div>
               </li>
             );
