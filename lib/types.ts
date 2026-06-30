@@ -39,7 +39,7 @@ export type SourceType =
   | "other"
   | "unknown";
 export type RiskTier = "low" | "medium" | "high" | "forbidden";
-export type UpdateFrequency = "realtime" | "daily" | "weekly" | "monthly" | "quarterly" | "annual" | "event_based" | "static";
+export type UpdateFrequency = "realtime" | "daily" | "weekly" | "monthly" | "quarterly" | "annual" | "event_based" | "static" | "unknown";
 export type DisclaimerType =
   | "none"
   | "check_official_source"
@@ -50,7 +50,7 @@ export type DisclaimerType =
   | "public_profile_only"
   | "realtime_data_required";
 export type SourceAuthority = "primary" | "official" | "regulator" | "legal" | "platform" | "secondary" | "community" | "unknown";
-export type TranslationStatus = "source_language" | "human_translated" | "machine_translated" | "needs_translation_review";
+export type TranslationStatus = "source_language" | "human_translated" | "human_reviewed" | "machine_translated" | "needs_translation_review";
 
 export type LocalizedTitle = Record<string, string>;
 
@@ -62,7 +62,8 @@ export type VerificationEventType =
   | "source_removed"
   | "source_verified"
   | "status_changed"
-  | "confidence_changed";
+  | "confidence_changed"
+  | "source_verified";
 
 export type Entity = {
   id: string;
@@ -128,6 +129,7 @@ export type Claim = {
   source_of_claim?: ClaimSourceOfClaim;
   business_submission_status?: "pending_verification" | "accepted" | "rejected" | null;
   submitted_by_business_name?: string | null;
+  contributor_hash?: string | null;
 };
 
 export type ClaimSource = {
