@@ -1,0 +1,46 @@
+"use client";
+
+import Link from "next/link";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { AdminSecretField, useAdminSecret } from "../AdminSecretProvider";
+
+type InboxItem = { id: string; type: string; status: string; risk: string; linked_document: string | null; linked_claim: string | null; created_at: string; title: string; summary: string; actions: string[] };
+const TYPE_LABEL: Record<string, string> = { community_posts: "커뮤니티 글", source_suggestions: "출처 제안", hallucination_reports: "AI 오답 신고", reports: "일반 신고", topic_suggestions: "토픽 제안", topic_candidates: "토픽 후보" };
+const ACTION_LABEL: Record<string, string> = { approve: "approve", reject: "reject", spam: "spam", link_to_claim: "link to claim", promote_to_source: "promote to source", create_document: "create document" };
+const ACTION_STYLE: Record<string, { background: string; color: string }> = { approve: { background: "#16a34a", color: "#fff" }, reject: { background: "#f59e0b", color: "#111827" }, spam: { background: "#dc2626", color: "#fff" }, link_to_claim: { background: "#2563eb", color: "#fff" }, promote_to_source: { background: "#7c3aed", color: "#fff" }, create_document: { background: "#111827", color: "#fff" } };
+function badgeColor(value: string) { if (["high", "critical", "hallucination", "correction"].includes(value)) return { background: "#fee2e2", color: "#991b1b" }; if (["medium", "pending", "new", "generated", "triaged"].includes(value)) return { background: "#fef3c7", color: "#92400e" }; if (["accepted", "published", "low"].includes(value)) return { background: "#dcfce7", color: "#166534" }; return { background: "#f3f4f6", color: "#374151" }; }
+
+export default function AdminInboxPage() {
+  const { adminSecret, setAdminSecret, resetAdminSecret } = useAdminSecret();
+  const [items, setItems] = useState<InboxItem[]>([]), [loading, setLoading] = useState(false), [statusFilter, setStatusFilter] = useState("open"), [typeFilter, setTypeFilter] = useState("all"), [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null), [errors, setErrors] = useState<string[]>([]);
+  const load = useCallback(async () => {
+    if (!adminSecret) return;
+    setLoading(true); setErrors([]);
+    try {
+      const params = new URLSearchParams({ status: statusFilter, type: typeFilter, limit: "100" });
+      const response = await fetch(`/api/admin/inbox?${params.toString()}`, { headers: { "x-admin-secret": adminSecret } });
+      const data = await response.json();
+      setItems(Array.isArray(data.items) ? data.items : []); setErrors(Array.isArray(data.errors) ? data.errors : []);
+      if (!response.ok) flash(data.error ?? "통합 inbox 조회 실패", false);
+    } catch { flash("네트워크 오류", false); } finally { setLoading(false); }
+  }, [adminSecret, statusFilter, typeFilter]);
+  useEffect(() => { load(); }, [load]);
+  const counts = useMemo(() => items.reduce<Record<string, number>>((acc, item) => { acc[item.type] = (acc[item.type] ?? 0) + 1; return acc; }, {}), [items]);
+  function flash(text: string, ok = true) { setMessage({ text, ok }); setTimeout(() => setMessage(null), 4500); }
+  async function runAction(item: InboxItem, action: string) {
+    if (!adminSecret) return flash("admin secret을 입력하세요", false);
+    const body: Record<string, string> = { type: item.type, id: item.id, action };
+    if (action === "link_to_claim") { const claimId = window.prompt("연결할 claim_id를 입력하세요", item.linked_claim ?? ""); if (!claimId) return; body.claim_id = claimId; }
+    const response = await fetch("/api/admin/inbox", { method: "PATCH", headers: { "Content-Type": "application/json", "x-admin-secret": adminSecret, "x-admin-csrf": "1" }, body: JSON.stringify(body) });
+    const data = await response.json();
+    if (response.ok) { flash(`${ACTION_LABEL[action] ?? action} 완료`); load(); } else flash(data.error ?? "action 실패", false);
+  }
+  return <div style={{ minHeight: "100vh", background: "#f8fafc", padding: 24, fontFamily: "sans-serif" }}><main style={{ maxWidth: 1180, margin: "0 auto" }}>
+    <header style={{ display: "flex", justifyContent: "space-between", gap: 16, alignItems: "flex-start", marginBottom: 22 }}><div><p style={{ margin: "0 0 6px", color: "#2563eb", fontWeight: 700, fontSize: 12 }}>Admin unified queue</p><h1 style={{ margin: 0, fontSize: 28 }}>Public submission inbox</h1><p style={{ margin: "8px 0 0", color: "#64748b", maxWidth: 720 }}>community_posts, source_suggestions, hallucination_reports, reports, topic_suggestions, topic_candidates를 한 화면에서 검토합니다.</p></div><div style={{ display: "grid", gap: 10, minWidth: 260 }}><AdminSecretField adminSecret={adminSecret} setAdminSecret={setAdminSecret} resetAdminSecret={resetAdminSecret} label="관리자 인증키" placeholder="admin secret" /><div style={{ display: "flex", gap: 10, justifyContent: "flex-end", fontSize: 13 }}><Link href="/admin/review">Review dashboard</Link><Link href="/admin/posts">Posts</Link><Link href="/admin/candidates">Candidates</Link></div></div></header>
+    {message && <div style={{ padding: 12, marginBottom: 14, borderRadius: 10, border: `1px solid ${message.ok ? "#bbf7d0" : "#fecaca"}`, background: message.ok ? "#f0fdf4" : "#fef2f2" }}>{message.text}</div>}
+    {errors.length > 0 && <div style={{ padding: 12, marginBottom: 14, borderRadius: 10, border: "1px solid #fde68a", background: "#fffbeb", color: "#92400e", fontSize: 13 }}>일부 테이블 조회 실패: {errors.join(" · ")}</div>}
+    <section style={{ display: "flex", gap: 10, flexWrap: "wrap", alignItems: "center", marginBottom: 16 }}><button onClick={load} disabled={!adminSecret || loading} style={{ padding: "9px 16px", borderRadius: 8, border: "none", background: "#111827", color: "#fff", fontWeight: 700, cursor: adminSecret ? "pointer" : "not-allowed" }}>{loading ? "Loading..." : "Refresh"}</button><select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)} style={{ padding: 9, borderRadius: 8, border: "1px solid #cbd5e1" }}>{["open", "all", "new", "pending", "accepted", "rejected", "spam", "published", "hidden", "generated", "triaged"].map((status) => <option key={status} value={status}>{status}</option>)}</select><select value={typeFilter} onChange={(event) => setTypeFilter(event.target.value)} style={{ padding: 9, borderRadius: 8, border: "1px solid #cbd5e1" }}><option value="all">all types</option>{Object.keys(TYPE_LABEL).map((type) => <option key={type} value={type}>{type}</option>)}</select><span style={{ color: "#64748b", fontSize: 13 }}>총 {items.length}개</span></section>
+    <section style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))", gap: 10, marginBottom: 18 }}>{Object.entries(TYPE_LABEL).map(([type, label]) => <div key={type} style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 12, padding: 12 }}><strong>{counts[type] ?? 0}</strong><br /><span style={{ color: "#64748b", fontSize: 12 }}>{label}</span></div>)}</section>
+    {!adminSecret ? <div style={{ textAlign: "center", padding: 60, background: "#fff", borderRadius: 16, border: "1px dashed #cbd5e1", color: "#64748b" }}>관리자 인증키를 입력하면 통합 inbox를 조회합니다.</div> : loading ? <div style={{ textAlign: "center", padding: 60, color: "#94a3b8" }}>로딩 중...</div> : items.length === 0 ? <div style={{ textAlign: "center", padding: 60, background: "#fff", borderRadius: 16, border: "1px solid #e2e8f0", color: "#94a3b8" }}>처리할 public submission이 없습니다.</div> : <div style={{ display: "grid", gap: 12 }}>{items.map((item) => { const riskStyle = badgeColor(item.risk), statusStyle = badgeColor(item.status); return <article key={`${item.type}:${item.id}`} style={{ background: "#fff", border: "1px solid #e2e8f0", borderRadius: 14, padding: 16 }}><div style={{ display: "flex", justifyContent: "space-between", gap: 14, alignItems: "flex-start" }}><div style={{ minWidth: 0 }}><div style={{ display: "flex", gap: 7, flexWrap: "wrap", alignItems: "center", marginBottom: 8 }}><span style={{ fontSize: 12, fontWeight: 800, color: "#2563eb" }}>{TYPE_LABEL[item.type] ?? item.type}</span><span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 999, fontWeight: 700, ...statusStyle }}>{item.status}</span><span style={{ fontSize: 11, padding: "2px 8px", borderRadius: 999, fontWeight: 700, ...riskStyle }}>risk: {item.risk}</span></div><h2 style={{ margin: "0 0 7px", fontSize: 17 }}>{item.title || item.id}</h2><p style={{ margin: 0, color: "#475569", lineHeight: 1.55, whiteSpace: "pre-wrap" }}>{item.summary}</p><p style={{ margin: "10px 0 0", color: "#94a3b8", fontSize: 12 }}>linked document: {item.linked_document ?? "Needs verification"} · claim: {item.linked_claim ?? "Needs verification"} · created_at: {item.created_at ? new Date(item.created_at).toLocaleString("ko-KR") : "Needs verification"}</p></div><code style={{ color: "#94a3b8", fontSize: 11 }}>{item.id.slice(0, 8)}</code></div><div style={{ display: "flex", gap: 7, flexWrap: "wrap", marginTop: 14 }}>{item.actions.map((action) => <button key={action} onClick={() => runAction(item, action)} style={{ border: "none", borderRadius: 8, padding: "7px 11px", fontSize: 12, fontWeight: 700, cursor: "pointer", ...(ACTION_STYLE[action] ?? { background: "#e5e7eb", color: "#111827" }) }}>{ACTION_LABEL[action] ?? action}</button>)}</div></article>; })}</div>}
+  </main></div>;
+}
