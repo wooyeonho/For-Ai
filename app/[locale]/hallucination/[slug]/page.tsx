@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
-import { getRegistryBundleBySlug } from "../../../lib/data";
-import { getRegistryBundleFromSupabase } from "../../../lib/supabase-documents";
-import { createHallucinationReportStub } from "../../../lib/submission-stubs";
-import { HALLUCINATION_FIELD_MAX_LENGTHS } from "../../../lib/submission-limits";
-import { getTranslations } from "../../../lib/i18n/translations";
-import { DEFAULT_LOCALE } from "../../../lib/i18n/locales";
+import { notFound, redirect } from "next/navigation";
+import { getRegistryBundleBySlug } from "../../../../lib/data";
+import { getRegistryBundleFromSupabase } from "../../../../lib/supabase-documents";
+import { createHallucinationReportStub } from "../../../../lib/submission-stubs";
+import { HALLUCINATION_FIELD_MAX_LENGTHS } from "../../../../lib/submission-limits";
+import { getTranslations } from "../../../../lib/i18n/translations";
+import { isValidLocale } from "../../../../lib/i18n/locales";
 
 export const metadata: Metadata = {
   title: "AI 오답 신고",
@@ -16,12 +16,16 @@ export default async function HallucinationPage({
   params,
   searchParams,
 }: {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ locale: string; slug: string }>;
   searchParams: Promise<{ submitted?: string }>;
 }) {
-  const { slug } = await params;
+  const { locale: localeParam, slug } = await params;
+  if (!isValidLocale(localeParam)) {
+    notFound();
+  }
+  const locale = localeParam;
   const { submitted } = await searchParams;
-  const t = getTranslations(DEFAULT_LOCALE);
+  const t = getTranslations(locale);
   const bundle = getRegistryBundleBySlug(slug) ?? await getRegistryBundleFromSupabase(slug);
 
   if (!bundle) {
@@ -48,7 +52,7 @@ export default async function HallucinationPage({
       expected_correction: String(formData.get("expected_correction") ?? "").trim() || null,
     });
 
-    redirect(`/${DEFAULT_LOCALE}/hallucination/${document.slug}?submitted=1`);
+    redirect(`/${locale}/hallucination/${document.slug}?submitted=1`);
   }
 
   return (

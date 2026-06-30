@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
-import { getRegistryBundleBySlug } from "../../../lib/data";
-import { getRegistryBundleFromSupabase } from "../../../lib/supabase-documents";
-import { ReportForm } from "./ReportForm";
-import { getTranslations } from "../../../lib/i18n/translations";
-import { DEFAULT_LOCALE } from "../../../lib/i18n/locales";
+import { getRegistryBundleBySlug } from "../../../../lib/data";
+import { getRegistryBundleFromSupabase } from "../../../../lib/supabase-documents";
+import { notFound } from "next/navigation";
+import { ReportForm } from "../../../report/[slug]/ReportForm";
+import { getTranslations } from "../../../../lib/i18n/translations";
+import { isValidLocale } from "../../../../lib/i18n/locales";
 
 export const metadata: Metadata = {
   title: "정정 제보",
@@ -14,12 +15,16 @@ export default async function ReportPage({
   params,
   searchParams,
 }: {
-  params: Promise<{ slug: string }>;
+  params: Promise<{ locale: string; slug: string }>;
   searchParams: Promise<{ intent?: string; submitted?: string }>;
 }) {
-  const { slug } = await params;
+  const { locale: localeParam, slug } = await params;
+  if (!isValidLocale(localeParam)) {
+    notFound();
+  }
+  const locale = localeParam;
   const { intent, submitted } = await searchParams;
-  const t = getTranslations(DEFAULT_LOCALE);
+  const t = getTranslations(locale);
   const bundle = getRegistryBundleBySlug(slug) ?? await getRegistryBundleFromSupabase(slug);
 
   if (!bundle) {
@@ -78,7 +83,7 @@ export default async function ReportPage({
           entityId={entity.id}
           slug={document.slug}
           intent={isSourceIntent ? "source" : isNotifyIntent ? "notify" : "correction"}
-          locale={DEFAULT_LOCALE}
+          locale={locale}
           translations={t.actionForms}
           claims={claims.map((claim) => ({ id: claim.id, field_path: claim.field_path, claim_text: claim.claim_text }))}
         />

@@ -281,9 +281,9 @@ export default async function WikiDocumentPage({
         <ul className="link-list">
           <li><Link href={apiUrl}>JSON API ({apiUrl})</Link></li>
           <li><Link href={rawUrl}>Raw Markdown ({rawUrl})</Link></li>
-          <li><Link href={`/report/${document.slug}`}>{t.wiki.correctionReport}</Link></li>
-          <li><Link href={`/hallucination/${document.slug}`}>{t.wiki.hallucinationReport}</Link></li>
-          <li><Link href={`/diagnostics/${document.slug}`}>{t.wiki.diagnostics}</Link></li>
+          <li><Link href={`/${locale}/report/${document.slug}`}>{t.wiki.correctionReport}</Link></li>
+          <li><Link href={`/${locale}/hallucination/${document.slug}`}>{t.wiki.hallucinationReport}</Link></li>
+          <li><Link href={`/${locale}/diagnostics/${document.slug}`}>{t.wiki.diagnostics}</Link></li>
         </ul>
       </nav>
 

@@ -1,20 +1,24 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getRegistryBundleBySlug } from "../../../lib/data";
-import { getRegistryDocumentPaths } from "../../../lib/seo";
-import { getRegistryBundleFromSupabase } from "../../../lib/supabase-documents";
-import { getTranslations } from "../../../lib/i18n/translations";
-import { DEFAULT_LOCALE } from "../../../lib/i18n/locales";
+import { getRegistryBundleBySlug } from "../../../../lib/data";
+import { getRegistryDocumentPaths } from "../../../../lib/seo";
+import { getRegistryBundleFromSupabase } from "../../../../lib/supabase-documents";
+import { getTranslations } from "../../../../lib/i18n/translations";
+import { isValidLocale } from "../../../../lib/i18n/locales";
 
 export const metadata: Metadata = {
   title: "AI-readiness 진단",
   description: "문서의 정적 라우트·구조화 데이터·인용 준비 상태를 점검합니다.",
 };
 
-export default async function DiagnosticsPage({ params }: { params: Promise<{ slug: string }> }) {
-  const { slug } = await params;
-  const t = getTranslations(DEFAULT_LOCALE);
+export default async function DiagnosticsPage({ params }: { params: Promise<{ locale: string; slug: string }> }) {
+  const { locale: localeParam, slug } = await params;
+  if (!isValidLocale(localeParam)) {
+    notFound();
+  }
+  const locale = localeParam;
+  const t = getTranslations(locale);
   const bundle = getRegistryBundleBySlug(slug) ?? await getRegistryBundleFromSupabase(slug);
 
   if (!bundle) {
@@ -61,8 +65,8 @@ export default async function DiagnosticsPage({ params }: { params: Promise<{ sl
     { label: "Unknown facts visible", detail: unknownFactsCheck.detail, pass: unknownFactsCheck.pass },
     { label: "Low-confidence unknowns", detail: `${lowConfidenceClaims} low confidence claims`, pass: document.status === "verified" ? lowConfidenceClaims === 0 : lowConfidenceClaims === claimsWithUnknownValues },
     { label: "Source transparency", detail: `${sourceCount} sources attached`, pass: document.status !== "verified" || sourceCount > 0 },
-    { label: "Correction URL", detail: `/${DEFAULT_LOCALE}/report/${document.slug}`, pass: true },
-    { label: "Hallucination URL", detail: `/${DEFAULT_LOCALE}/hallucination/${document.slug}`, pass: true },
+    { label: "Correction URL", detail: `/${locale}/report/${document.slug}`, pass: true },
+    { label: "Hallucination URL", detail: `/${locale}/hallucination/${document.slug}`, pass: true },
   ];
 
   return (

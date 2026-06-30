@@ -2,6 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { REPORT_MESSAGE_MAX_LENGTH } from "@/lib/submission-limits";
+import type { SupportedLocale } from "@/lib/i18n/locales";
+import type { UITranslations } from "@/lib/i18n/translations";
 
 type ClaimOption = {
   id: string;
@@ -16,6 +18,8 @@ export function ReportForm({
   entityId,
   slug,
   claims,
+  locale,
+  translations,
   intent = "correction",
 }: {
   documentId: string;
@@ -23,6 +27,8 @@ export function ReportForm({
   slug: string;
   claims: ClaimOption[];
   intent?: ReportIntent;
+  locale: SupportedLocale;
+  translations: UITranslations["actionForms"];
 }) {
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -32,33 +38,33 @@ export function ReportForm({
   const copy = useMemo(() => {
     if (intent === "source") {
       return {
-        typeLabel: "Source contribution",
-        messageLabel: "Source notes",
-        sourceLabel: "Official source URL or citation",
-        placeholder: "Explain which claim this source supports. Unknown facts remain Needs verification until human review.",
-        button: "Submit source candidate",
-        success: "출처 후보가 접수되었습니다. 낮은 기본 점수만 기록되며, claim truth는 관리자 검증으로만 결정됩니다.",
+        typeLabel: translations.sourceContribution,
+        messageLabel: translations.sourceNotes,
+        sourceLabel: translations.officialSource,
+        placeholder: translations.sourcePlaceholder,
+        button: translations.submitSourceCandidate,
+        success: translations.sourceSuccess,
       };
     }
     if (intent === "notify") {
       return {
-        typeLabel: "Notification request",
-        messageLabel: "Notification request",
-        sourceLabel: "Optional related source URL",
-        placeholder: "Which claim should we notify you about when it is verified? Do not include sensitive personal information.",
-        button: "Request notification",
-        success: "알림 요청이 접수되었습니다. 검토 큐에 안전하게 기록됩니다.",
+        typeLabel: translations.notificationRequest,
+        messageLabel: translations.notificationRequest,
+        sourceLabel: translations.optionalRelatedSource,
+        placeholder: translations.notifyPlaceholder,
+        button: translations.requestNotification,
+        success: translations.notifySuccess,
       };
     }
     return {
-      typeLabel: "Correction report",
-      messageLabel: "정정 요청 내용",
-      sourceLabel: "Optional source URL or citation",
-      placeholder: "어떤 claim이 정정되어야 하는지, 근거가 있다면 함께 알려주세요.",
-      button: "정정 요청 제출",
-      success: "신고가 접수되었습니다. 검토 후 반영됩니다.",
+      typeLabel: translations.correctionReport,
+      messageLabel: translations.correctionMessage,
+      sourceLabel: translations.optionalSource,
+      placeholder: translations.correctionPlaceholder,
+      button: translations.submitCorrection,
+      success: translations.correctionSuccess,
     };
-  }, [intent]);
+  }, [intent, translations]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -92,10 +98,10 @@ export function ReportForm({
         setPointsAwarded(typeof data?.points_awarded === "number" ? data.points_awarded : null);
         form.reset();
       } else {
-        setError("제출 실패: " + (data?.error ?? response.status));
+        setError(`${translations.submitFailed}: ${data?.error ?? response.status}`);
       }
     } catch {
-      setError("네트워크 오류. 잠시 후 다시 시도해 주세요.");
+      setError(translations.networkError);
     } finally {
       setLoading(false);
     }
@@ -106,8 +112,8 @@ export function ReportForm({
       <div className="submission-success">
         <p>{copy.success}</p>
         {pointsAwarded !== null ? <p className="meta-label">points awarded: {pointsAwarded}</p> : null}
-        <a href={`/en/wiki/${slug}`} className="cta-link">
-          문서로 돌아가기
+        <a href={`/${locale}/wiki/${slug}`} className="cta-link">
+          {translations.backToDocument}
         </a>
       </div>
     );
@@ -122,9 +128,9 @@ export function ReportForm({
       </label>
 
       <div className="form-field">
-        <label htmlFor="claim_id">Claim 선택</label>
+        <label htmlFor="claim_id">{translations.claimSelect}</label>
         <select id="claim_id" name="claim_id" defaultValue="">
-          <option value="">전체 문서 또는 직접 설명</option>
+          <option value="">{translations.wholeDocument}</option>
           {claims.map((claim) => (
             <option value={claim.id} key={claim.id}>{claim.field_path}</option>
           ))}
@@ -142,12 +148,12 @@ export function ReportForm({
       </div>
 
       <div className="form-field">
-        <label htmlFor="source_title">Source title / publisher</label>
+        <label htmlFor="source_title">{translations.sourceTitle}</label>
         <input id="source_title" name="source_title" placeholder="Issuing organization or page title" />
       </div>
 
       <div className="form-field">
-        <label htmlFor="citation">Citation text</label>
+        <label htmlFor="citation">{translations.citationText}</label>
         <input id="citation" name="citation" placeholder="Optional short citation or document section" />
       </div>
 
@@ -164,14 +170,14 @@ export function ReportForm({
         />
       </div>
 
-      <p className="meta-label">점수는 기여 활동 보상일 뿐이며 claim truth, confidence, verified status를 결정하지 않습니다.</p>
+      <p className="meta-label">{translations.contributionPointsNotice}</p>
 
       {error && (
         <div className="semantic-alert semantic-alert-danger">{error}</div>
       )}
 
       <button type="submit" className="form-submit" disabled={loading}>
-        {loading ? "제출 중..." : copy.button}
+        {loading ? translations.submitting : copy.button}
       </button>
     </form>
   );
