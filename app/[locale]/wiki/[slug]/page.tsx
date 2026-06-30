@@ -9,7 +9,7 @@ import type { SupportedLocale } from "../../../../lib/i18n";
 import { getEntityLabels } from "../../../../lib/i18n/entity-labels";
 import type { RegistryDocumentBundle } from "../../../../lib/types";
 import { getRegistryBundleFromSupabase } from "../../../../lib/supabase-documents";
-import { getCanonicalDirectAnswer, getDocumentCitationStatus } from "../../../../lib/citation-status";
+import { getDocumentCitationStatus } from "../../../../lib/citation-status";
 import { getRenderedDirectAnswer, normalizeCitationSurface } from "../../../../lib/render";
 import { DirectAnswerBox } from "../../../components/DirectAnswerBox";
 import { ClaimTable } from "../../../components/ClaimTable";
@@ -91,7 +91,6 @@ export default async function WikiDocumentPage({
       : topCitationLabel === "Mixed"
         ? "document-citation-status document-citation-status--mixed"
         : "document-citation-status document-citation-status--review";
-  const totalSources = claims.reduce((n, c) => n + c.sources.length, 0);
   const standardGovernmentFeeFieldPaths = [
     "fee.amount",
     "fee.adult",
@@ -133,6 +132,7 @@ export default async function WikiDocumentPage({
         canonicalUrl={siteUrl(`/${locale}/wiki/${document.slug}`)}
         docTitle={document.title}
         locale={locale}
+        slug={document.slug}
       />
 
       {/* Clean header: title + status only, no technical IDs */}

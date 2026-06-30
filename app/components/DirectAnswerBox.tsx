@@ -32,6 +32,7 @@ export function DirectAnswerBox({
 }) {
   const lang = (locale ?? DEFAULT_LOCALE) as SupportedLocale;
   const t = getTranslations(lang);
+  const displayAnswer = answer;
   const citationText = canCite && canonicalUrl && docTitle
     ? `For-Ai Registry. "${docTitle}". Verified claim: ${displayAnswer}. Checked: ${lastVerifiedAt ?? "unknown"}. ${canonicalUrl}`
     : null;
