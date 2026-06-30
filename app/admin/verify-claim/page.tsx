@@ -112,6 +112,7 @@ export default function VerifyClaimPage() {
   } | null>(null);
   const [showPolicy, setShowPolicy] = useState(false);
   const [targetSlug, setTargetSlug] = useState<string | null>(null);
+  const [activeStep, setActiveStep] = useState(1);
 
   const buildQuery = useCallback((overridePage?: number) => {
     const params = new URLSearchParams();
@@ -181,6 +182,7 @@ export default function VerifyClaimPage() {
     setConfidence("high");
     setSourceCheck(null);
     setMessage(null);
+    setActiveStep(1);
     setTimeout(() => document.getElementById("verify-form")?.scrollIntoView({ behavior: "smooth", block: "start" }), 50);
   }
 
@@ -305,7 +307,26 @@ export default function VerifyClaimPage() {
   const visibleDocIds = new Set(filteredClaims.map(({ doc }) => doc.id));
   const reviewCount = allClaims.filter(({ claim }) => claim.status !== "verified").length;
   const verifiedCount = allClaims.filter(({ claim }) => claim.status === "verified").length;
-  const needsReviewCount = documents.reduce((sum, doc) => sum + (doc.claims ?? []).filter((c) => c.status === "needs_review").length, 0);
+  const selectedDocument = selectedClaim ? documents.find((doc) => (doc.claims ?? []).some((claim) => claim.id === selectedClaim.id)) ?? null : null;
+  const sourceReady = Boolean(title.trim() || url.trim() || citation.trim() || (selectedClaim?.claim_sources?.length ?? 0) > 0);
+  const valueReady = Boolean(claimValue.trim() && claimValue.trim() !== "확인 필요");
+  const confidenceReady = ["medium", "high"].includes(confidence);
+  const canVerifySelectedClaim = Boolean(selectedClaim && sourceReady && valueReady && confidenceReady);
+  const selectedDocumentClaims = selectedDocument?.claims ?? [];
+  const canPromoteSelectedDocument = selectedDocumentClaims.length > 0 && selectedDocumentClaims.every((claim) => (
+    claim.status === "verified"
+    && (claim.claim_sources?.length ?? 0) > 0
+    && ["medium", "high"].includes(claim.confidence)
+  ));
+  const wizardSteps = [
+    "문서/대상 확인",
+    "claim 목록 확인",
+    "출처 추가",
+    "값 수정",
+    "confidence 선택",
+    "verified 처리",
+    "공개 페이지 확인",
+  ];
 
   return (
     <div style={{ maxWidth: 960, margin: "0 auto", padding: "40px 20px" }}>
@@ -574,12 +595,54 @@ export default function VerifyClaimPage() {
       {/* Verification form */}
       {selectedClaim && (
         <section id="verify-form" className="registry-panel" style={{ borderColor: "#2563eb", borderWidth: 2 }}>
-          <h2>Claim 검증 · {selectedClaim.field_path}</h2>
-          <div className="claim-card" style={{ marginBottom: 16, background: "#f0f9ff" }}>
-            <p className="eyebrow">현재 값</p>
-            <p><strong>{selectedClaim.claim_value}</strong></p>
-            <p style={{ fontSize: 13, color: "#6b7280" }}>{selectedClaim.claim_text}</p>
-          </div>
+          <h2>Claim 검증 Wizard · {selectedClaim.field_path}</h2>
+          <p style={{ color: "#6b7280" }}>비개발자 운영자가 7단계로 대상 확인 → 출처 추가 → 값/신뢰도 조정 → verified 처리 → 공개 페이지 확인을 순서대로 진행합니다.</p>
+          <ol style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(120px, 1fr))", gap: 8, padding: 0, listStyle: "none" }}>
+            {wizardSteps.map((step, index) => (
+              <li key={step}>
+                <button
+                  type="button"
+                  onClick={() => setActiveStep(index + 1)}
+                  style={{ width: "100%", padding: 8, borderRadius: 8, border: activeStep === index + 1 ? "2px solid #2563eb" : "1px solid #d1d5db", background: activeStep === index + 1 ? "#eff6ff" : "#fff", textAlign: "left" }}
+                >
+                  <strong>Step {index + 1}</strong><br />{step}
+                </button>
+              </li>
+            ))}
+          </ol>
+
+          {activeStep === 1 && (
+            <div className="claim-card" style={{ marginBottom: 16, background: "#f0f9ff" }}>
+              <p className="eyebrow">이 단계에서 해야 할 일</p>
+              <p>문서 제목, slug, entity_id, 공개 URL이 실제 검증 대상과 일치하는지 확인하세요. 대상이 틀리면 claim을 검증하지 말고 needs verification/reject로 돌립니다.</p>
+              <p><strong>문서:</strong> {selectedDocument?.title ?? "-"}</p>
+              <p className="meta-label">document_id: {selectedDocument?.id ?? "-"} · entity_id: {selectedDocument?.entity_id ?? selectedClaim.id} · slug: {selectedDocument?.slug ?? "-"}</p>
+            </div>
+          )}
+
+          {activeStep === 2 && (
+            <div className="claim-card" style={{ marginBottom: 16, background: "#f8fafc" }}>
+              <p className="eyebrow">이 단계에서 해야 할 일</p>
+              <p>문서에 속한 claim 목록을 훑고, 현재 claim의 값·상태·출처 수를 확인하세요. claim별 사실 단위가 맞지 않으면 값을 먼저 수정합니다.</p>
+              <p><strong>현재 값:</strong> {selectedClaim.claim_value}</p>
+              <p style={{ fontSize: 13, color: "#6b7280" }}>{selectedClaim.claim_text}</p>
+              <p><span className="badge">status: {selectedClaim.status}</span> <span className="badge">confidence: {selectedClaim.confidence}</span> <span className="badge">sources: {selectedClaim.claim_sources?.length ?? 0}</span></p>
+            </div>
+          )}
+
+          {activeStep === 3 && (
+            <div style={{ padding: 12, background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 8, marginBottom: 16 }}>
+              <strong>이 단계에서 해야 할 일</strong>
+              <p style={{ marginBottom: 0 }}>공개 접근 가능한 출처를 추가하고, citation에는 운영자가 실제로 확인한 문구나 수치를 적습니다. 출처가 없으면 verified 버튼은 비활성화됩니다.</p>
+            </div>
+          )}
+
+          {activeStep === 4 && (
+            <div style={{ padding: 12, background: "#f0fdf4", border: "1px solid #bbf7d0", borderRadius: 8, marginBottom: 16 }}>
+              <strong>이 단계에서 해야 할 일</strong>
+              <p style={{ marginBottom: 0 }}>출처와 대조해 claim_value를 수정합니다. 모르면 “확인 필요”로 두고 verified 처리하지 않습니다.</p>
+            </div>
+          )}
 
           <label style={{ display: "block", marginBottom: 12 }}>
             <span style={{ fontWeight: 600 }}>검증된 값 *</span>
@@ -668,6 +731,13 @@ export default function VerifyClaimPage() {
             />
           </label>
 
+          {activeStep === 5 && (
+            <div style={{ padding: 12, background: "#eef2ff", border: "1px solid #c7d2fe", borderRadius: 8, marginBottom: 16 }}>
+              <strong>이 단계에서 해야 할 일</strong>
+              <p style={{ marginBottom: 0 }}>출처 품질에 맞춰 confidence를 선택합니다. 문서 verified 승격은 모든 claim이 출처를 갖고 confidence가 medium/high일 때만 가능합니다.</p>
+            </div>
+          )}
+
           <label style={{ display: "block", marginBottom: 16 }}>
             <span style={{ fontWeight: 600 }}>confidence</span>
             <select
@@ -680,13 +750,33 @@ export default function VerifyClaimPage() {
             </select>
           </label>
 
+          {activeStep === 6 && (
+            <div style={{ padding: 12, background: canVerifySelectedClaim ? "#f0fdf4" : "#fef2f2", border: `1px solid ${canVerifySelectedClaim ? "#bbf7d0" : "#fecaca"}`, borderRadius: 8, marginBottom: 16 }}>
+              <strong>이 단계에서 해야 할 일</strong>
+              <p>값, 출처, confidence 조건을 모두 만족하는지 확인한 뒤 claim을 verified 처리합니다.</p>
+              <ul style={{ margin: 0, paddingLeft: 18 }}>
+                <li>값 입력: {valueReady ? "충족" : "미충족"}</li>
+                <li>출처 1개 이상: {sourceReady ? "충족" : "미충족"}</li>
+                <li>confidence medium/high: {confidenceReady ? "충족" : "미충족"}</li>
+              </ul>
+            </div>
+          )}
+
+          {activeStep === 7 && (
+            <div style={{ padding: 12, background: "#f8fafc", border: "1px solid #e5e7eb", borderRadius: 8, marginBottom: 16 }}>
+              <strong>이 단계에서 해야 할 일</strong>
+              <p>저장 후 공개 페이지를 새 탭에서 열어 claim 값과 출처가 정적으로 읽히는지 확인합니다.</p>
+              {selectedDocument && <Link href={`/${selectedDocument.lang ?? "en"}/wiki/${selectedDocument.slug}`} target="_blank" rel="noopener noreferrer">공개 페이지 열기</Link>}
+            </div>
+          )}
+
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-            <button onClick={submitVerify} disabled={!claimValue.trim()}>1. verify claim (저장 + verified 승격)</button>
+            <button onClick={submitVerify} disabled={!canVerifySelectedClaim} title={canVerifySelectedClaim ? "" : "값, 출처, confidence 조건을 먼저 충족하세요"}>1. verify claim (저장 + verified 승격)</button>
             <button onClick={() => runClaimAction("reject")} type="button">2. reject claim</button>
             <button onClick={() => runClaimAction("mark_unknown")} type="button">3. mark as unknown</button>
             <button onClick={() => runClaimAction("edit_value")} type="button">4. edit claim value</button>
             <button onClick={() => runClaimAction("attach_source")} type="button">5. attach source</button>
-            <button onClick={() => runClaimAction("promote_document")} type="button">6. promote document if all required claims are verified</button>
+            <button onClick={() => runClaimAction("promote_document")} type="button" disabled={!canPromoteSelectedDocument} title={canPromoteSelectedDocument ? "" : "모든 claim에 출처가 있고 confidence가 medium/high이며 verified 상태여야 합니다"}>6. promote document if all claims have sources + medium/high confidence</button>
             <button onClick={() => setSelectedClaim(null)} type="button" style={{ background: "none", border: "1px solid #d1d5db" }}>취소</button>
           </div>
         </section>

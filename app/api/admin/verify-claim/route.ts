@@ -53,19 +53,11 @@ function boundedInt(value: string | null, fallback: number, max?: number) {
   return typeof max === "number" ? Math.min(parsed, max) : parsed;
 }
 
-function firstDocument(row: ClaimWithDocument) {
-  return Array.isArray(row.documents) ? row.documents[0] : row.documents;
-}
-
 function riskRank(category?: string | null) {
   return HIGH_RISK_CATEGORIES.has(String(category ?? "").toLowerCase()) ? 0 : 1;
 }
 
-function claimDate(row: ClaimWithDocument) {
-  return new Date(row.created_at ?? row.updated_at ?? 0).getTime();
-}
-
-type ClaimAction = "verify" | "reject" | "mark_unknown" | "edit_value" | "attach_source" | "promote_document";
+type ClaimAction = "verify" | "reject" | "mark_unknown" | "edit_value" | "attach_source" | "promote_document" | "bulk_verify" | "bulk_needs_verification";
 
 type SourceInput = {
   source_type?: string;
@@ -164,18 +156,29 @@ async function writeVerificationEvent(
 }
 
 async function maybePromoteDocument(sb: NonNullable<ReturnType<typeof supabaseAdmin>>, documentId: string, observedAt: string) {
-  const { data: siblingClaims, error } = await sb.from("claims").select("status").eq("document_id", documentId);
+  const { data: siblingClaims, error } = await sb
+    .from("claims")
+    .select("id,status,confidence,claim_sources(id)")
+    .eq("document_id", documentId);
   if (error) throw new Error(`sibling claims query failed: ${error.message}`);
-  const allVerified = (siblingClaims ?? []).length > 0 && (siblingClaims ?? []).every((claim) => claim.status === "verified");
+
+  const claims = siblingClaims ?? [];
+  const allClaimsReady = claims.length > 0 && claims.every((claim) => {
+    const sourceCount = Array.isArray(claim.claim_sources) ? claim.claim_sources.length : 0;
+    return claim.status === "verified" && ["medium", "high"].includes(claim.confidence) && sourceCount > 0;
+  });
+
+  if (!allClaimsReady) return false;
+
   const now = new Date().toISOString();
   const { error: docError } = await sb.from("documents").update({
-    status: allVerified ? "verified" : "published",
-    confidence: allVerified ? "high" : "low",
-    last_verified_at: allVerified ? observedAt : null,
+    status: "verified",
+    confidence: "high",
+    last_verified_at: observedAt,
     updated_at: now,
   }).eq("id", documentId);
   if (docError) throw new Error(`document update failed: ${docError.message}`);
-  return allVerified;
+  return true;
 }
 
 export async function GET(request: Request) {
@@ -318,7 +321,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "bulk verify is disabled; review each claim with a source manually" }, { status: 403 });
   }
 
-  if (action === ("bulk_needs_verification" as ClaimAction)) {
+  if (action === "bulk_needs_verification") {
     const reason = String(body.reason ?? "").trim();
     if (claimIds.length === 0) return NextResponse.json({ error: "claim_ids are required" }, { status: 400 });
     if (!reason) return NextResponse.json({ error: "reason is required for needs-verification actions" }, { status: 400 });
@@ -383,13 +386,19 @@ export async function POST(request: Request) {
   if (!ALLOWED_CONFIDENCE.has(confidence)) return NextResponse.json({ error: "invalid confidence" }, { status: 400 });
   if (shouldAttachSource && (!ALLOWED_SOURCES.has(sourceType) || (!title && !url && !citation))) return NextResponse.json({ error: "valid source_type and at least one source title, url, or citation are required" }, { status: 400 });
   if (["verify", "edit_value"].includes(action) && (!claimValue || claimValue === "확인 필요")) return NextResponse.json({ error: "verified/edited claim_value is required" }, { status: 400 });
+  if (action === "verify" && !["medium", "high"].includes(confidence)) return NextResponse.json({ error: "verified claims require medium or high confidence" }, { status: 400 });
 
   const { data: existingClaim, error: fetchError } = await sb
     .from("claims")
-    .select("id, document_id, entity_id, status, confidence, claim_value")
+    .select("id, document_id, entity_id, status, confidence, claim_value, claim_sources(id)")
     .eq("id", claimId)
     .single();
   if (fetchError || !existingClaim) return NextResponse.json({ error: "claim not found", detail: fetchError?.message }, { status: 404 });
+
+  const existingSourceCount = Array.isArray(existingClaim.claim_sources) ? existingClaim.claim_sources.length : 0;
+  if (action === "verify" && existingSourceCount === 0 && !shouldAttachSource) {
+    return NextResponse.json({ error: "verified claims require at least one traceable source" }, { status: 400 });
+  }
 
   const now = new Date().toISOString();
   let sourceId: string | null = null;
