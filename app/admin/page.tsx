@@ -71,6 +71,14 @@ export default function AdminDashboardPage() {
 
   const cards = useMemo(() => [
     {
+      title: "통합 Inbox",
+      count: dashboardCounts?.new_hallucination_reports ?? fallbackCounts?.candidates_new,
+      href: "/admin/inbox",
+      cta: "Inbox에서 처리",
+      detail: "제보·신고·출처·커뮤니티 글을 한 화면에서 승인·거절·스팸 처리합니다.",
+      tone: "#111827",
+    },
+    {
       title: "검토할 사실",
       count: dashboardCounts?.pending_claim_reviews ?? fallbackCounts?.claims_needs_review,
       href: "/admin/review",
@@ -158,8 +166,8 @@ export default function AdminDashboardPage() {
           <p style={{ margin: "0 0 6px", color: "#6b7280", fontSize: 12, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase" }}>For-Ai admin</p>
           <h1 style={{ margin: 0, fontSize: 30 }}>오늘의 운영 센터</h1>
           <p style={{ color: "#4b5563", lineHeight: 1.6, maxWidth: 760 }}>
-            오늘 먼저 처리할 일을 한눈에 보여줍니다. 위험도가 높은 신고와 오래된 사실, AI가 많이 보는 문서부터
-            확인해 잘못된 정보가 퍼지지 않도록 관리합니다.
+            통합 Inbox에서 제보/신고/출처/커뮤니티 글을 먼저 처리하고, 위험도가 높은 신고와 오래된 사실, AI가 많이 보는 문서를
+            확인해 잘못된 정보가 퍼지지 않도록 관리합니다. verified 승격은 반드시 출처와 사람 검토를 거칩니다.
           </p>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <input aria-label="Admin secret" type="password" value={secret} onChange={(event) => setSecret(event.target.value)} placeholder="ADMIN_SECRET" style={{ flex: "1 1 260px", padding: "10px 12px", border: "1px solid #d1d5db", borderRadius: 10 }} />

@@ -188,7 +188,8 @@ export default function AdminReviewPage() {
           high-risk categories를 한 화면에서 확인하고 오늘 처리 순서대로 이동합니다.
           후보 생성부터 verified 문서 공유까지 claim-level 운영 상태를 admin API count로 확인합니다.
         </p>
-        <div style={{ display: "flex", gap: 8, marginTop: 16 }}>
+        <div style={{ display: "flex", gap: 8, marginTop: 16, flexWrap: "wrap" }}>
+          <Link href="/admin/inbox" style={primaryButtonStyle}>통합 Inbox 열기</Link>
           <input
             aria-label="Admin secret"
             type="password"
