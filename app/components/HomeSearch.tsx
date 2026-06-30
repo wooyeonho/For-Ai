@@ -1,7 +1,7 @@
 "use client";
 import Link from "next/link";
 import { useState } from "react";
-import { getTranslations } from "../../lib/i18n";
+import { DEFAULT_LOCALE, getTranslations } from "../../lib/i18n";
 import type { SupportedLocale } from "../../lib/i18n";
 
 interface DocItem {
@@ -13,7 +13,7 @@ interface DocItem {
   lang?: string;
 }
 
-export default function HomeSearch({ docs, locale = "ko" }: { docs: DocItem[]; locale?: string }) {
+export default function HomeSearch({ docs, locale = DEFAULT_LOCALE }: { docs: DocItem[]; locale?: string }) {
   const [query, setQuery] = useState("");
   const t = getTranslations(locale as SupportedLocale);
   const q = query.trim().toLowerCase();
