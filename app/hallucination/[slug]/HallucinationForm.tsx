@@ -18,7 +18,6 @@ export function HallucinationForm({
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const searchParams = useSearchParams();
   const lang = searchParams.get("lang") || "en";
   const returnParam = searchParams.get("return");
   const returnHref = returnParam && returnParam.startsWith("/") && !returnParam.startsWith("//")

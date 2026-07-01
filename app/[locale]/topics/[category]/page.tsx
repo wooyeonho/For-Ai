@@ -60,7 +60,6 @@ export default async function TopicCategoryPage({
   const countries = groupByCountry(matchingBundles);
   const t = getTranslations(locale as SupportedLocale);
   const title = formatCategoryTitle(category);
-  const t = getTranslations(locale);
 
   return (
     <article>
