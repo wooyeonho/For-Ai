@@ -51,7 +51,7 @@ export async function GET(request: Request) {
     if (lang) docQuery = docQuery.eq("lang", lang);
     const { data: docResults } = await docQuery;
 
-    let claimQuery = sb
+    const claimQuery = sb
       .from("claims")
       .select("id, document_id, claim_value, field_path, documents!inner(id, slug, title, category, lang, status)")
       .ilike("claim_value", `%${q}%`)
