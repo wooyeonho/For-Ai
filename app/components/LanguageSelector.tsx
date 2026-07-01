@@ -80,10 +80,6 @@ export function LanguageSelector() {
     return getLocalePath(pathname, locale, searchParams);
   }
 
-  function isSameDestination(href: string): boolean {
-    return href === `${pathname}${currentSearch}` || href === pathname;
-  }
-
   return (
     <div className="lang-selector" style={{ position: "relative", display: "inline-block" }}>
       <details style={{ position: "relative" }}>

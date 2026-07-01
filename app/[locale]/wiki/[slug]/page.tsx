@@ -9,8 +9,10 @@ import type { SupportedLocale } from "../../../../lib/i18n";
 import { getEntityLabels } from "../../../../lib/i18n/entity-labels";
 import type { RegistryDocumentBundle } from "../../../../lib/types";
 import { getRegistryBundleFromSupabase } from "../../../../lib/supabase-documents";
-import { getDocumentCitationStatus } from "../../../../lib/citation-status";
-import { getRenderedDirectAnswer, normalizeCitationSurface } from "../../../../lib/render";
+import { getDocumentCitationStatus, getCitationSafetyBlock } from "../../../../lib/citation-status";
+import { getRenderedDirectAnswer, normalizeCitationSurface, getCitationPolicyBlock } from "../../../../lib/render";
+import { getActiveSponsoredPlacementsForEntity } from "../../../../lib/sponsored-placements";
+import { SponsoredPlacement } from "../../../components/SponsoredPlacement";
 import { DirectAnswerBox } from "../../../components/DirectAnswerBox";
 import { ClaimTable } from "../../../components/ClaimTable";
 import { ViewTracker } from "../../../components/ViewTracker";
@@ -117,6 +119,7 @@ export default async function WikiDocumentPage({
       document.category.toLowerCase().includes("administration"));
   const hasBusinessSubmittedClaims = claims.some((claim) => claim.source_of_claim === "business_submitted");
   const hasSponsoredClaims = claims.some((claim) => claim.source_of_claim === "sponsored");
+  const totalSources = claims.reduce((sum, c) => sum + (c.sources?.length ?? 0), 0);
 
   return (
     <article>
@@ -194,7 +197,7 @@ export default async function WikiDocumentPage({
           <div><dt>Category</dt><dd>{document.category || "uncategorized"}</dd></div>
         </dl>
         <DocumentStatsBar documentId={document.id} />
-      </section>
+      </header>
 
       {citationStatus.isVerifiedDocument && citationStatus.freshness === "stale" && (
         <section

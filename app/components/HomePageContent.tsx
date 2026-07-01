@@ -2,7 +2,9 @@ import Link from "next/link";
 import { createClient } from "@supabase/supabase-js";
 import { getAllRegistryBundles, isVerifiedDocumentBundle, partitionRegistryBundles } from "../../lib/data";
 import type { RegistryDocumentBundle } from "../../lib/types";
+import type { SupportedLocale } from "../../lib/i18n";
 import HomeSearch from "./HomeSearch";
+import { TrendingWidget } from "./TrendingWidget";
 
 interface DocItem {
   slug: string;
@@ -312,6 +314,9 @@ export default async function HomePageContent({ locale = "en" }: { locale?: stri
           These figures are calculated from the current registry bundles. <Link href="/goal#coverage">Open the public coverage dashboard</Link>. We mark what we don&apos;t know.
         </p>
       </section>
+
+      {/* Trending */}
+      <TrendingWidget locale={locale as SupportedLocale} />
 
       {/* 3 audience entry points */}
       <section className="section">

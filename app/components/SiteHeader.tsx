@@ -58,14 +58,6 @@ export function SiteHeader() {
   const localize = (href: string) => withLocaleLink(pathname, href);
 
   const navLinks = [
-    { href: "/#registry", label: t.nav.registry },
-    { href: "/api-docs", label: t.footer.apiDocs },
-    { href: "/community", label: t.footer.community },
-    { href: "/contribute", label: t.footer.contribute },
-    { href: "/suggest-topic", label: t.nav.suggestTopic },
-  ];
-
-  const navLinks = [
     { href: localeHref(locale, "/#registry"), label: t.nav.registry },
     { href: localeHref(locale, "/api-docs"), label: t.nav.api },
     { href: localeHref(locale, "/community"), label: t.nav.community },
