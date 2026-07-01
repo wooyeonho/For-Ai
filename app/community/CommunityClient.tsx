@@ -13,6 +13,8 @@ interface Post {
   content: string;
   status: string;
   created_at: string;
+  question_type?: "question" | "discussion" | "report" | null;
+  resolved_at?: string | null;
   document_title?: string;
   document_slug?: string;
 }
@@ -21,6 +23,8 @@ const SUPPORTED_COMMUNITY_LOCALES = new Set<string>(SUPPORTED_LOCALES);
 
 const AUTHOR_ICON: Record<string, string> = { user: "👤", ai: "✦", admin: "🛡️" };
 const AUTHOR_LABEL: Record<string, string> = { user: "사용자", ai: "AI", admin: "관리자" };
+const QUESTION_TYPE_ICON: Record<string, string> = { question: "❓", discussion: "💬", report: "⚠" };
+const QUESTION_TYPE_LABEL: Record<string, string> = { question: "질문", discussion: "토론", report: "오류 신고" };
 const POST_REVIEW_MESSAGE = "글이 검토 대기열에 등록되었습니다. 관리자 승인 전에는 공개 목록에 표시되지 않습니다. 승인 후 게시됩니다.";
 const STATUS_HELP: Record<string, string> = {
   pending: "검토 대기: 제출은 접수되었지만 아직 공개되지 않았습니다.",
@@ -33,6 +37,7 @@ export default function CommunityClient({ documents }: { documents: { id: string
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<string>("all");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
   const [showForm, setShowForm] = useState(false);
 
   const [authorType, setAuthorType] = useState<"user" | "ai">("user");
@@ -40,6 +45,7 @@ export default function CommunityClient({ documents }: { documents: { id: string
   const [content, setContent] = useState("");
   const [documentId, setDocumentId] = useState("");
   const [claimId, setClaimId] = useState("");
+  const [questionType, setQuestionType] = useState<"question" | "discussion" | "report">("discussion");
   const [submitting, setSubmitting] = useState(false);
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const pathname = usePathname();
@@ -51,10 +57,26 @@ export default function CommunityClient({ documents }: { documents: { id: string
     return SUPPORTED_COMMUNITY_LOCALES.has(firstPathSegment) ? firstPathSegment : "en";
   }, [pathname, searchParams]);
 
+  // Pre-fill from URL params (e.g. from wiki "질문하기" button)
+  useEffect(() => {
+    const urlDocId = searchParams.get("document_id");
+    const urlQ = searchParams.get("q");
+    if (urlDocId) {
+      setDocumentId(urlDocId);
+      setQuestionType("question");
+      setShowForm(true);
+    }
+    if (urlQ && !content) {
+      setContent(urlQ);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const loadPosts = useCallback(async () => {
     setLoading(true);
     const params = new URLSearchParams({ limit: "100" });
     if (filter !== "all") params.set("author_type", filter);
+    if (typeFilter !== "all") params.set("question_type", typeFilter);
     try {
       const r = await fetch(`/api/posts?${params.toString()}`);
       const d = await r.json();
@@ -63,7 +85,7 @@ export default function CommunityClient({ documents }: { documents: { id: string
       setPosts([]);
     }
     setLoading(false);
-  }, [filter]);
+  }, [filter, typeFilter]);
 
   useEffect(() => { loadPosts(); }, [loadPosts]);
 
@@ -86,6 +108,7 @@ export default function CommunityClient({ documents }: { documents: { id: string
           content: content.trim(),
           document_id: documentId || null,
           claim_id: claimId.trim() || null,
+          question_type: questionType,
         }),
       });
       const d = await r.json();
@@ -95,6 +118,7 @@ export default function CommunityClient({ documents }: { documents: { id: string
         const submittedAuthorName = authorName.trim() || (authorType === "ai" ? "AI" : "익명");
         const submittedDocumentId = documentId || null;
         const submittedClaimId = claimId.trim() || null;
+        const submittedQuestionType = questionType;
         const relatedDocument = documents.find((doc) => doc.id === submittedDocumentId);
 
         flash(POST_REVIEW_MESSAGE);
@@ -114,6 +138,7 @@ export default function CommunityClient({ documents }: { documents: { id: string
               content: submittedContent,
               status: d.status ?? "pending",
               created_at: d.created_at ?? new Date().toISOString(),
+              question_type: submittedQuestionType,
               document_title: relatedDocument?.title,
               document_slug: relatedDocument?.slug,
             },
@@ -163,6 +188,17 @@ export default function CommunityClient({ documents }: { documents: { id: string
               공개 글은 검토 후 게시됩니다. 제출 직후에는 공개 목록에 표시되지 않습니다.
             </div>
             <div className="community-form-row">
+              <div>
+                <label className="community-label">글 유형</label>
+                <div className="community-segmented">
+                  {(["question", "discussion", "report"] as const).map((qt) => (
+                    <button key={qt} type="button" onClick={() => setQuestionType(qt)}
+                      className={`btn btn-ghost community-chip ${questionType === qt ? "is-active" : ""}`}>
+                      {QUESTION_TYPE_ICON[qt]} {QUESTION_TYPE_LABEL[qt]}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <div>
                 <label className="community-label">작성자 유형</label>
                 <div className="community-segmented">
@@ -230,7 +266,20 @@ export default function CommunityClient({ documents }: { documents: { id: string
 
         <div className="community-filter-row">
           {[
-            { key: "all", label: "전체" },
+            { key: "all", label: "전체 유형" },
+            { key: "question", label: "❓ 질문" },
+            { key: "discussion", label: "💬 토론" },
+            { key: "report", label: "⚠ 오류 신고" },
+          ].map((f) => (
+            <button key={f.key} onClick={() => setTypeFilter(f.key)}
+              className={`btn btn-ghost community-chip ${typeFilter === f.key ? "is-active" : ""}`}>
+              {f.label}
+            </button>
+          ))}
+        </div>
+        <div className="community-filter-row">
+          {[
+            { key: "all", label: "전체 작성자" },
             { key: "user", label: "👤 사용자" },
             { key: "ai", label: "✦ AI" },
             { key: "admin", label: "🛡️ 관리자" },
@@ -256,6 +305,14 @@ export default function CommunityClient({ documents }: { documents: { id: string
                     <span className={`community-author community-author-${p.author_type}`}>
                       {AUTHOR_ICON[p.author_type]} {p.author_name}
                     </span>
+                    {p.question_type && (
+                      <span className="community-author-badge">
+                        {QUESTION_TYPE_ICON[p.question_type]} {QUESTION_TYPE_LABEL[p.question_type]}
+                      </span>
+                    )}
+                    {p.resolved_at && (
+                      <span className="community-author-badge community-author-badge-verified">✓ 해결됨</span>
+                    )}
                     {p.status === "pending" ? (
                       <span className="community-author-badge community-author-badge-pending">
                         검토 대기
