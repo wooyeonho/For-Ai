@@ -1,5 +1,6 @@
 import { logAdminAuditEvent, requireAdmin, supabaseAdmin } from "@/lib/admin-api";
 import { calculateDocumentQuality } from "@/lib/document-quality";
+import { ageInDays, getFreshnessTtlDays, isStale } from "@/lib/citation-status";
 import { DEFAULT_LOCALE } from "@/lib/i18n";
 import { NextResponse } from "next/server";
 import { documentPageUrl } from "../../../../lib/urls";

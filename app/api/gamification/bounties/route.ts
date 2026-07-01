@@ -33,7 +33,7 @@ export async function GET(request: Request) {
 
 // Admin-only: create a new bounty
 export async function POST(request: Request) {
-  const adminError = requireAdmin(request, 'bounties.create');
+  const adminError = await requireAdmin(request, 'bounties.create');
   if (adminError) return adminError;
   const sb = supabaseAdmin();
   if (!sb) return NextResponse.json({ error: 'SUPABASE_SERVICE_ROLE_KEY not configured' }, { status: 500 });

@@ -6,6 +6,7 @@ import { ConfidenceBadge } from "./ConfidenceBadge";
 import { CopyCitationButton } from "./CopyCitationButton";
 import { ClaimStatusBadge, VerificationLevelBadge } from "./StatusBadge";
 import { SourcePill } from "./SourcePill";
+import { VerificationMeta } from "./VerificationMeta";
 
 function claimCitationText(claim: ClaimWithSources): string {
   return claim.claim_text?.trim() || `${claim.field_path}: ${claim.claim_value}`;

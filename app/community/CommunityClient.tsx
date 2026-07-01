@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
+import { SUPPORTED_LOCALES } from "@/lib/i18n/locales";
 
 interface Post {
   id: string;
@@ -15,6 +16,8 @@ interface Post {
   document_title?: string;
   document_slug?: string;
 }
+
+const SUPPORTED_COMMUNITY_LOCALES = new Set<string>(SUPPORTED_LOCALES);
 
 const AUTHOR_ICON: Record<string, string> = { user: "👤", ai: "✦", admin: "🛡️" };
 const AUTHOR_LABEL: Record<string, string> = { user: "사용자", ai: "AI", admin: "관리자" };

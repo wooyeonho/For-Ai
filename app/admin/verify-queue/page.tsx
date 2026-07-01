@@ -19,10 +19,15 @@ function CodeBlock({ children }: { children: string }) {
   );
 }
 
-export default function VerifyQueuePage({ searchParams }: { searchParams?: Record<string, string | string[] | undefined> }) {
+export default async function VerifyQueuePage({
+  searchParams,
+}: {
+  searchParams?: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const resolvedSearchParams = await searchParams;
   const { progress, inProgress, backlog, claims } = getVerificationQueue();
   const param = (key: string) => {
-    const value = searchParams?.[key];
+    const value = resolvedSearchParams?.[key];
     return Array.isArray(value) ? value[0] : value;
   };
   const filters = {

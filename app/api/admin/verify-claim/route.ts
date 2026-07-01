@@ -5,6 +5,7 @@ import { recordContributionEvent } from "@/lib/contributions";
 import { scoreSourceTrust } from "@/lib/source-trust";
 import { awardPoints, checkAndAwardBadges, POINT_VALUES } from "@/lib/gamification";
 import { hasOfficialOrRegulatorSource, HIGH_RISK_CATEGORIES, isHighRiskCategory } from "@/lib/risk-policy";
+import { ageInDays, getFreshnessTtlDays, isStale } from "@/lib/citation-status";
 
 const DEFAULT_STATUS = "needs_review";
 const DEFAULT_LIMIT = 50;
@@ -112,7 +113,7 @@ function sourceIsOfficialOrRegulator(source: ClaimSourceForGuardrail) {
 function isHighRiskClaim(claim: { risk_tier?: string | null; documents?: { category?: string | null; risk_tier?: string | null } | { category?: string | null; risk_tier?: string | null }[] | null }) {
   const document = Array.isArray(claim.documents) ? claim.documents[0] : claim.documents;
   const category = String(document?.category ?? "").toLowerCase();
-  return claim.risk_tier === "high" || document?.risk_tier === "high" || HIGH_RISK_CATEGORIES.has(category);
+  return claim.risk_tier === "high" || document?.risk_tier === "high" || HIGH_RISK_CATEGORIES.includes(category as typeof HIGH_RISK_CATEGORIES[number]);
 }
 
 function verifyGuardrailReasons(input: {
@@ -120,6 +121,7 @@ function verifyGuardrailReasons(input: {
   confidence: string;
   sources: ClaimSourceForGuardrail[];
   highRisk: boolean;
+  highRiskConfirmed?: boolean;
 }) {
   const reasons: string[] = [];
   if (!input.claimValue) reasons.push("claim value is empty; enter a factual value before verification");
@@ -613,7 +615,7 @@ export async function POST(request: Request) {
       source_id: sourceId,
       source_type: shouldAttachSource ? sourceType : null,
       source_authority: shouldAttachSource ? sourceAuthority : null,
-      high_risk_second_confirmation: isHighRiskClaim ? secondConfirmation : null,
+      high_risk_second_confirmation: isHighRiskClaim(existingClaim) ? Boolean(body.high_risk_second_confirmation ?? body.high_risk_confirmed) : null,
       source_check_status: shouldAttachSource ? String(body.source_check_status ?? sourceTrust.source_check_status) : null,
       source_trust_score: shouldAttachSource ? Number(body.source_trust_score ?? sourceTrust.source_trust_score) : null,
       previous_status: existingClaim.status,
@@ -631,13 +633,15 @@ export async function POST(request: Request) {
       await checkAndAwardBadges(sb, contributorHash);
     }
 
+    const responseDocument = Array.isArray(existingClaim.documents) ? existingClaim.documents[0] : existingClaim.documents;
+
     return NextResponse.json({
       claim: updatedClaim,
       source_id: sourceId,
       source_trust_score: sourceId ? sourceTrust.source_trust_score : null,
       document_all_verified: documentAllVerified,
-      public_url: documentRow?.slug ? `/${documentRow.lang ?? "en"}/wiki/${documentRow.slug}` : null,
-      api_url: documentRow?.slug ? `/api/documents/${documentRow.slug}` : null,
+      public_url: responseDocument?.slug ? `/${responseDocument.lang ?? "en"}/wiki/${responseDocument.slug}` : null,
+      api_url: responseDocument?.slug ? `/api/documents/${responseDocument.slug}` : null,
     });
   } catch (error) {
     if (sourceId) await sb.from("claim_sources").delete().eq("id", sourceId);

@@ -30,14 +30,6 @@ export interface UITranslations {
     noDocs: string;
     suggestFirst: string;
   };
-  topics: Record<string, string>;
-  country: Record<string, string>;
-  bounties: Record<string, string>;
-  challenges: Record<string, string>;
-  leaderboard: Record<string, string>;
-  quests: Record<string, string>;
-  compare: Record<string, string>;
-  aiWrongAbout: Record<string, string>;
   claims: {
     needsReview: string;
     unknownLabel: string;
@@ -92,23 +84,28 @@ governmentFeeDisclaimer: string;
   };
 
   topics: {
+    [key: string]: string;
     claimLevelTopicRegistry: string; factsSuffix: string; documents: string; verified: string; needsReview: string; stale: string; countryIndex: string; popularFactsByCountry: string; noCountryFacts: string; citableClaims: string; verifiedFacts: string; noVerifiedFacts: string; verificationQueue: string; needsReviewTopics: string; noNeedsReviewTopics: string; freshnessMonitoring: string; staleFacts: string; noStaleFacts: string; missingFact: string; submitMissingFact: string; submitMissingFactDescription: string; submitMissingFactButton: string; otherLanguages: string; oldest: string; verificationDateNeeded: string; topicNotFound: string;
   };
   country: {
+    [key: string]: string;
     countryRegistry: string; dashboardDescription: string; verifiedFacts: string; needsReviewFacts: string; staleFacts: string; targetFacts: string; questProgress: string; currentCountryTarget: string; progressNote: string; categoryProgress: string; verified: string; stale: string; topNeededSources: string; noMissingSources: string; recentContributors: string; noContributors: string; contribution: string; contributions: string; lastSeen: string; recentlyVerifiedFacts: string; noStaleFacts: string; oldestVerified: string; popularQuestions: string; documents: string; verifiedStatus: string; needsReviewStatus: string; submitSourceCta: string; knowOfficialSource: string; submitSourceDescription: string; submitSource: string; global: string; needsVerification: string;
   };
   bounties: {
+    [key: string]: string;
     notFound: string; metadataTitle: string; metadataDescription: string; eyebrow: string; title: string; description: string; open: string; sponsoredLabeled: string; contributorsSubmitSourcesOnly: string; policyEyebrow: string; policyTitle: string; availableTasks: string; bountyQueue: string; target: string; sponsoredBounty: string; unsponsoredTask: string; points: string; otherLanguages: string;
   };
   challenges: {
+    [key: string]: string;
     metadataTitle: string; metadataDescription: string; eyebrow: string; title: string; directAnswer: string; description: string; rulesTitle: string; ruleAcceptedOnly: string; ruleNoAutoVerification: string; ruleSponsoredLabeled: string; listLabel: string; sponsored: string; challengeId: string; category: string; country: string; window: string; completeSuffix: string; viewDetails: string;
   };
   leaderboard: {
+    [key: string]: string;
     notFound: string; metadataTitle: string; metadataDescription: string; eyebrow: string; title: string; description: string; acceptedSources: string; verifiedClaims: string; staleFixes: string; countryCoverage: string; rankingEyebrow: string; currentRanking: string; liveDataNotice: string; noEligibleActivity: string; countries: string; categories: string; abuseAdjustedScore: string; acceptedHallucinationReports: string; points: string; moderationPenalties: string; duplicateUrlCap: string; scoringEyebrow: string; criteriaTitle: string; acceptedSourcesRule: string; verifiedClaimsRule: string; staleFixesRule: string; hallucinationReportsRule: string; countryCoverageRule: string; categoryContributionsRule: string; abuseEyebrow: string; spamTitle: string; spamRuleNoRawCount: string; spamRuleRejected: string; spamRuleDuplicate: string; spamRuleHashOnly: string; spamRulePublicPseudonym: string; rewardRules: string; sourceSubmitted: string; sourceAccepted: string; claimVerified: string; hallucinationAccepted: string; viewQuests: string; actionsTitle: string; actionsDescription: string; submitMissingFact: string;
   };
-  quests: { title: string; };
-  compare: { title: string; };
-  aiWrongAbout: { title: string; };
+  quests: { [key: string]: string; title: string; };
+  compare: { [key: string]: string; title: string; };
+  aiWrongAbout: { [key: string]: string; title: string; };
   footer: {
     tagline: string;
     forHumans: string;

@@ -3,6 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 import { getAllRegistryBundles, isVerifiedDocumentBundle, partitionRegistryBundles } from "../../lib/data";
 import type { RegistryDocumentBundle } from "../../lib/types";
 import HomeSearch from "./HomeSearch";
+import type { SupportedLocale } from "@/lib/i18n/locales";
 
 interface DocItem {
   slug: string;
@@ -496,7 +497,7 @@ export default async function HomePageContent({ locale = "en" }: { locale?: stri
 
       {/* Search */}
       <section className="section">
-        <HomeSearch docs={docs} locale={locale} />
+        <HomeSearch docs={docs} locale={locale as SupportedLocale} />
       </section>
 
       <section className="section" aria-labelledby="ai-wrong-questions">
