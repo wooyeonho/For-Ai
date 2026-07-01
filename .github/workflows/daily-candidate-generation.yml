@@ -1,0 +1,89 @@
+name: Daily AI Candidate Generation
+
+on:
+  workflow_dispatch: {}
+  schedule:
+    # Every day at 19:00 UTC (04:00 KST). GitHub may delay scheduled workflows.
+    - cron: "0 19 * * *"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: daily-candidate-generation
+  cancel-in-progress: false
+
+jobs:
+  generate-candidates:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Pick today's topic and call generate-candidates API
+        env:
+          SITE_URL: ${{ secrets.PRODUCTION_SITE_URL }}
+          ADMIN_SECRET: ${{ secrets.ADMIN_SECRET }}
+          ADMIN_CSRF_SECRET: ${{ secrets.ADMIN_CSRF_SECRET }}
+        run: |
+          set -euo pipefail
+
+          SITE_URL="${SITE_URL:-https://for-ai-e4mm.vercel.app}"
+
+          if [ -z "${ADMIN_SECRET:-}" ]; then
+            echo "::error::ADMIN_SECRET repository secret is not set. Add it in repo Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+
+          # Reuses the same real-life fee/deadline topics curated for the manual
+          # /admin/generate UI (app/admin/generate/page.tsx CATEGORY_PRESETS),
+          # rotated deterministically by day-of-year so no extra state is needed.
+          TOPICS=(
+            "서울 지하철 환승 요금과 심야버스 요금"
+            "여권 재발급 수수료와 온라인 민원 발급 수수료"
+            "전입신고 기한과 지연 과태료"
+            "인천공항 장기주차 요금과 할인 조건"
+            "도서산간 택배 추가 요금과 대형 화물 할증"
+            "타행 ATM 출금 수수료와 해외송금 수수료"
+            "5G 요금제 선택약정 할인 조건과 위약금"
+            "온라인 공연 예매 취소 수수료와 환불 기한"
+            "근로장려금 신청 기한과 추가 신청 기간"
+          )
+          DAY_INDEX=$(( 10#$(date -u +%j) % ${#TOPICS[@]} ))
+          TOPIC="${TOPICS[$DAY_INDEX]}"
+          echo "Topic for today: $TOPIC"
+
+          # count=1 is a deliberate hard cap: with cross-provider consensus,
+          # near-duplicate topics from different providers collapse into one
+          # saved row, but in the worst case (zero overlap) this still bounds
+          # saved rows to at most the number of configured providers (<=8),
+          # comfortably inside the requested 5-10/day ceiling.
+          REQUEST_BODY=$(jq -n \
+            --arg topic "$TOPIC" \
+            '{
+              topic: $topic,
+              count: 1,
+              lang: "ko",
+              providers: ["perplexity","nvidia","nvidia_llama_70b","nvidia_nemotron_70b","nvidia_llama_8b","gemini","gpt","grok"],
+              cross_verify: true,
+              save: true
+            }')
+
+          HTTP_CODE=$(curl -sS -o /tmp/generate-response.json -w "%{http_code}" \
+            -X POST "$SITE_URL/api/admin/generate-candidates" \
+            -H "content-type: application/json" \
+            -H "x-admin-secret: $ADMIN_SECRET" \
+            -H "x-admin-csrf: ${ADMIN_CSRF_SECRET:-daily-cron}" \
+            -d "$REQUEST_BODY")
+
+          echo "HTTP status: $HTTP_CODE"
+          cat /tmp/generate-response.json
+          echo
+
+          if [ "$HTTP_CODE" -ge 400 ]; then
+            echo "::error::generate-candidates request failed with status $HTTP_CODE"
+            exit 1
+          fi
+
+          SAVED=$(jq -r '.saved // 0' /tmp/generate-response.json)
+          echo "Saved $SAVED new topic_candidates row(s) with status=new — pending human review at /admin/candidates."
+          if [ "$SAVED" -gt 10 ]; then
+            echo "::warning::Saved $SAVED candidates in one run, above the expected 5-10/day ceiling. Review provider config."
+          fi
