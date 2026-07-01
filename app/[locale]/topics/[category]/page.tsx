@@ -6,6 +6,13 @@ import { getDocumentCitationStatus, isStale } from "../../../../lib/citation-sta
 import { LOCALE_CONFIG, SUPPORTED_LOCALES, getTranslations, isValidLocale } from "../../../../lib/i18n";
 import type { SupportedLocale } from "../../../../lib/i18n";
 import type { RegistryDocumentBundle } from "../../../../lib/types";
+import {
+  CATEGORY_DESCRIPTIONS,
+  formatCategoryTitle,
+  getAllTopicCategorySlugs,
+  getBundlesForCategory,
+  isKnownCategory,
+} from "../../../../lib/topic-categories";
 
 export const revalidate = 60;
 
@@ -60,7 +67,6 @@ export default async function TopicCategoryPage({
   const countries = groupByCountry(matchingBundles);
   const t = getTranslations(locale as SupportedLocale);
   const title = formatCategoryTitle(category);
-  const t = getTranslations(locale);
 
   return (
     <article>

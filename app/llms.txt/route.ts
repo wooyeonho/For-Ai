@@ -60,8 +60,8 @@ export async function GET() {
     const d = b.document;
     const status = getDocumentCitationStatus(b);
     const freshness = status.oldestVerifiedAt
-      ? `, freshness: ${status.freshness} (verified ${status.oldestVerifiedAt}, TTL ${status.freshnessTtlDays} days)`
-      : `, freshness: ${status.freshness} (TTL ${status.freshnessTtlDays} days)`;
+      ? `, freshness: ${status.freshness} (verified ${status.oldestVerifiedAt}, TTL ${status.freshnessWindowDays} days)`
+      : `, freshness: ${status.freshness} (TTL ${status.freshnessWindowDays} days)`;
     lines.push(
       `- [${d.title}](${documentPageUrl(d.slug, d.lang)}) — citation: ${status.label}, claims: ${status.verifiedClaims}/${status.totalClaims}, confidence: ${d.confidence}${freshness} ` +
         `· JSON: ${apiDocumentUrl(d.slug)} · Markdown: ${rawMarkdownUrl(d.slug)}`,

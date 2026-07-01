@@ -7,6 +7,7 @@ export type AIProviderKey =
   | "gemini"
   | "gpt"
   | "grok"
+  | "nvidia"
   | "nvidia_llama_70b"
   | "nvidia_nemotron_70b"
   | "nvidia_llama_8b";

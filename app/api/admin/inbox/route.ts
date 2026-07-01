@@ -47,7 +47,7 @@ function mapItem(type: InboxType, row: Record<string, unknown>): InboxItem {
 }
 
 async function selectOptional(sb: SupabaseAdminClient, type: InboxType, query: string, limit: number) {
-  try { const { data, error } = await sb.from(TYPE_TO_TABLE[type]).select(query).order(type === "topic_suggestion" ? "submitted_at" : "created_at", { ascending: false }).limit(limit); if (error) throw error; return { items: (data ?? []).map((row) => mapItem(type, row as Record<string, unknown>)), error: null as string | null }; }
+  try { const { data, error } = await sb.from(TYPE_TO_TABLE[type]).select(query).order(type === "topic_suggestion" ? "submitted_at" : "created_at", { ascending: false }).limit(limit); if (error) throw error; return { items: (data ?? []).map((row) => mapItem(type, row as unknown as Record<string, unknown>)), error: null as string | null }; }
   catch (error) { return { items: [] as InboxItem[], error: error instanceof Error ? error.message : String(error) }; }
 }
 

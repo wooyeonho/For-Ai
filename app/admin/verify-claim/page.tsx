@@ -4,6 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { AdminDbDetails, adminLabel } from "../admin-labels";
 import { isHighRiskCategory } from "@/lib/risk-policy";
+import type { AdminRecommendation } from "@/lib/admin-recommendations";
+import { calculateDocumentQuality } from "@/lib/document-quality";
 
 type SourceRow = { id: string; title?: string | null; url?: string | null; source_type?: string | null; source_authority?: string | null; citation?: string | null; observed_at?: string | null };
 type VerificationEventRow = { id: string; note?: string | null; created_at?: string | null; new_status?: string | null };
@@ -14,6 +16,7 @@ type ClaimRow = {
   claim_text: string;
   claim_value: string;
   신뢰도: string;
+  confidence?: string;
   status: string;
   last_verified_at?: string | null;
   contributor_hash?: string | null;
@@ -35,6 +38,7 @@ type DocumentRow = {
   category?: string;
   status: string;
   신뢰도: string;
+  confidence?: string;
   lang?: string;
   entity_id?: string;
   source_hints?: SourceCandidate[];
@@ -203,6 +207,7 @@ export default function VerifyClaimPage() {
     const params = new URLSearchParams(window.location.search);
     const slug = params.get("slug");
     const claimId = params.get("claim_id");
+    const stale = params.get("stale") === "true";
     if (slug) {
       setTargetSlug(slug);
       setFilters((current) => ({ ...current, slug, offset: "0", ...(stale ? { stale: "true", status: "verified", sort: "oldest" } : {}) }));

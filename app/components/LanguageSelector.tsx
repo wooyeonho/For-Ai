@@ -81,7 +81,7 @@ export function LanguageSelector() {
   }
 
   function isSameDestination(href: string): boolean {
-    return href === `${pathname}${currentSearch}` || href === pathname;
+    return href === currentUrl || href === pathname;
   }
 
   return (

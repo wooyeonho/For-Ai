@@ -9,15 +9,17 @@ import type { SupportedLocale } from "../../../../lib/i18n";
 import { getEntityLabels } from "../../../../lib/i18n/entity-labels";
 import type { RegistryDocumentBundle } from "../../../../lib/types";
 import { getRegistryBundleFromSupabase } from "../../../../lib/supabase-documents";
-import { getDocumentCitationStatus } from "../../../../lib/citation-status";
-import { getRenderedDirectAnswer, normalizeCitationSurface } from "../../../../lib/render";
+import { getCitationSafetyBlock, getDocumentCitationStatus } from "../../../../lib/citation-status";
+import { getCitationPolicyBlock, getRenderedDirectAnswer, normalizeCitationSurface } from "../../../../lib/render";
 import { DirectAnswerBox } from "../../../components/DirectAnswerBox";
 import { ClaimTable } from "../../../components/ClaimTable";
 import { ViewTracker } from "../../../components/ViewTracker";
 import { DocumentStatsBar } from "../../../components/DocumentStatsBar";
 import { WikiPostSection } from "../../../components/WikiPostSection";
 import { CorrectionCTA } from "../../../components/CorrectionCTA";
+import { SponsoredPlacement } from "../../../components/SponsoredPlacement";
 import { getBundleRiskDisclaimer } from "../../../../lib/risk-policy";
+import { getActiveSponsoredPlacementsForEntity } from "../../../../lib/sponsored-placements";
 
 export const revalidate = 60;
 
@@ -76,7 +78,7 @@ export default async function WikiDocumentPage({
   const citationSafety = getCitationSafetyBlock(bundle, locale);
   const normalizedCitation = normalizeCitationSurface(bundle);
   const citationPolicyBlock = getCitationPolicyBlock(bundle, locale);
-  const freshnessTtlDays = typeof document.freshness_ttl_days === "number"
+  const freshnessWindowDays = typeof document.freshness_ttl_days === "number"
     ? document.freshness_ttl_days
     : typeof docData.freshness_ttl_days === "number"
       ? docData.freshness_ttl_days
@@ -115,6 +117,7 @@ export default async function WikiDocumentPage({
     claims.some((claim) => standardGovernmentFeeFieldPaths.includes(claim.field_path)) &&
     (document.category.toLowerCase().includes("government") ||
       document.category.toLowerCase().includes("administration"));
+  const totalSources = claims.reduce((sum, claim) => sum + claim.sources.length, 0);
   const hasBusinessSubmittedClaims = claims.some((claim) => claim.source_of_claim === "business_submitted");
   const hasSponsoredClaims = claims.some((claim) => claim.source_of_claim === "sponsored");
 
@@ -194,7 +197,7 @@ export default async function WikiDocumentPage({
           <div><dt>Category</dt><dd>{document.category || "uncategorized"}</dd></div>
         </dl>
         <DocumentStatsBar documentId={document.id} />
-      </section>
+      </header>
 
       {citationStatus.isVerifiedDocument && citationStatus.freshness === "stale" && (
         <section
@@ -276,7 +279,7 @@ export default async function WikiDocumentPage({
           <ul className="link-list">
             <li>country: <strong>{document.country || entity.country}</strong></li>
             <li>jurisdiction: <strong>{claims.find((claim) => claim.jurisdiction)?.jurisdiction ?? entity.country}</strong></li>
-            {freshnessTtlDays && <li>{tw("freshnessTtl", "freshness TTL")}: <strong>{freshnessTtlDays} days</strong></li>}
+            {freshnessWindowDays && <li>{tw("freshnessTtl", "freshness TTL")}: <strong>{freshnessWindowDays} days</strong></li>}
           </ul>
         </details>
       )}

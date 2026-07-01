@@ -1,5 +1,7 @@
 import type { ClaimWithSources, RegistryDocumentBundle, UpdateFrequency as RegistryUpdateFrequency } from "./types";
 import { hasOfficialOrRegulatorSource, isHighRiskCategory } from "./risk-policy";
+import { SUPPORTED_LOCALES } from "./i18n/locales";
+import { documentPageUrl } from "./urls";
 
 export const UNKNOWN_FACT_TEXT = "확인 필요";
 

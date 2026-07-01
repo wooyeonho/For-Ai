@@ -63,6 +63,13 @@ ${count}개를 JSON 배열로만. 설명 없이 JSON만.
 `.trim();
 }
 
+
+function selectDefaultProvider(available: AIProviderKey[]): AIProviderKey {
+  return available.find((provider) => provider === "perplexity")
+    ?? available.find((provider) => provider.startsWith("nvidia_"))
+    ?? available[0];
+}
+
 function defaultCountryForLang(lang: string): string {
   return isValidLocale(lang) ? LOCALE_CONFIG[lang].country : "global";
 }
@@ -466,7 +473,7 @@ export async function POST(request: Request) {
       error: reason,
       provider_results: providerResults,
       providers_used: Object.keys(providerResults),
-      fallback_used: fallbackUsed,
+      fallback_used: false,
     }, { status: 502 });
   }
 
@@ -496,7 +503,7 @@ export async function POST(request: Request) {
         available_providers: available.map((p) => ({ key: p, label: AI_PROVIDERS[p].label })),
         cross_verify: crossVerify,
         provider_results: providerResults,
-        fallback_used: fallbackUsed,
+        fallback_used: false,
         total_generated: allCandidates.length,
         saved: 0,
         skipped_duplicates: skippedDuplicates,
@@ -549,7 +556,7 @@ export async function POST(request: Request) {
     available_providers: available.map((p) => ({ key: p, label: AI_PROVIDERS[p].label })),
     cross_verify: crossVerify,
     provider_results: providerResults,
-    fallback_used: fallbackUsed,
+    fallback_used: false,
     ...(consensusSummary ? { consensus_summary: consensusSummary } : {}),
     total_generated: allCandidates.length,
     saved: saved.length,

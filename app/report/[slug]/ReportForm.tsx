@@ -31,13 +31,6 @@ export function ReportForm({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [pointsAwarded, setPointsAwarded] = useState<number | null>(null);
-  const searchParams = useSearchParams();
-  const lang = searchParams.get("lang") || "en";
-  const returnParam = searchParams.get("return");
-  const returnHref = returnParam && returnParam.startsWith("/") && !returnParam.startsWith("//")
-    ? returnParam
-    : `/${lang}/wiki/${slug}`;
-
   const copy = useMemo(() => {
     if (intent === "source") {
       return {

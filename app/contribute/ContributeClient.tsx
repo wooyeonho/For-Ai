@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { BADGES } from "../../lib/gamification";
+import { BADGES } from "../../lib/badges";
 
 function getLocalHash(): string | null {
   if (typeof window === "undefined") return null;

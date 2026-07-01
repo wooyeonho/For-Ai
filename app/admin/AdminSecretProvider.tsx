@@ -10,6 +10,10 @@ export function useAdminSecret() {
     setAdminSecret("");
   }, []);
 
+  const loginAdmin = useCallback(async () => false, []);
+  const authenticated = false;
+  const authMessage: string | null = null;
+
   return { adminSecret, setAdminSecret, resetAdminSecret, loginAdmin, authenticated, authMessage };
 }
 
@@ -17,24 +21,42 @@ export function AdminSecretField({
   adminSecret,
   setAdminSecret,
   resetAdminSecret,
+  value,
+  onChange,
+  onReset,
+  onSubmit,
+  loading: externalLoading,
+  buttonLabel,
+  loginAdmin,
+  authMessage,
   label = "Admin Login",
   placeholder = "ADMIN_SECRET",
   inputStyle,
 }: {
-  adminSecret: string;
-  setAdminSecret: (value: string) => void;
-  resetAdminSecret: () => void;
+  adminSecret?: string;
+  setAdminSecret?: (value: string) => void;
+  resetAdminSecret?: () => void;
+  value?: string;
+  onChange?: (value: string) => void;
+  onReset?: () => void;
+  onSubmit?: () => Promise<void> | void;
+  loading?: boolean;
+  buttonLabel?: string;
   loginAdmin?: () => Promise<boolean>;
   authMessage?: string | null;
   label?: string;
   placeholder?: string;
   inputStyle?: CSSProperties;
 }) {
+  const currentSecret = adminSecret ?? value ?? "";
+  const updateSecret = setAdminSecret ?? onChange ?? (() => undefined);
+  const resetSecret = resetAdminSecret ?? onReset ?? (() => undefined);
   const [status, setStatus] = useState<{ ok: boolean; text: string } | null>(null);
   const [loading, setLoading] = useState(false);
+  const isLoading = externalLoading ?? loading;
 
   const login = useCallback(async () => {
-    if (!adminSecret) {
+    if (!currentSecret) {
       setStatus({ ok: false, text: "관리자 키를 입력하세요." });
       return;
     }
@@ -44,21 +66,21 @@ export function AdminSecretField({
       const response = await fetch("/api/admin/login", {
         method: "POST",
         headers: { "Content-Type": "application/json", "x-admin-csrf": "1" },
-        body: JSON.stringify({ password: adminSecret }),
+        body: JSON.stringify({ password: currentSecret }),
       });
       const payload = await response.json().catch(() => ({}));
       if (!response.ok) {
         setStatus({ ok: false, text: payload.error ?? "관리자 로그인 실패" });
         return;
       }
-      resetAdminSecret();
+      resetSecret();
       setStatus({ ok: true, text: "로그인되었습니다. 이후 요청은 httpOnly cookie로 인증됩니다." });
     } catch {
       setStatus({ ok: false, text: "네트워크 오류" });
     } finally {
       setLoading(false);
     }
-  }, [adminSecret, resetAdminSecret]);
+  }, [currentSecret, resetSecret]);
 
   return (
     <div style={{ display: "grid", gap: 6 }}>
@@ -66,16 +88,16 @@ export function AdminSecretField({
       <div style={{ display: "flex", gap: 8, alignItems: "center" }}>
         <input
           type="password"
-          value={adminSecret}
-          onChange={(event) => setAdminSecret(event.target.value)}
+          value={currentSecret}
+          onChange={(event) => updateSecret(event.target.value)}
           onKeyDown={(event) => {
-            if (event.key === "Enter") void loginAdmin?.();
+            if (event.key === "Enter") void (onSubmit ?? loginAdmin ?? login)();
           }}
           placeholder={placeholder}
           style={inputStyle ?? { flex: 1, padding: 8 }}
         />
-        <button type="button" onClick={login} disabled={loading || !adminSecret} style={{ padding: "8px 12px", border: 0, borderRadius: 6, background: "#111827", color: "#fff", fontSize: 12, cursor: loading || !adminSecret ? "not-allowed" : "pointer" }}>
-          {loading ? "로그인 중" : "로그인"}
+        <button type="button" onClick={() => void (onSubmit ?? login)()} disabled={isLoading || !currentSecret} style={{ padding: "8px 12px", border: 0, borderRadius: 6, background: "#111827", color: "#fff", fontSize: 12, cursor: isLoading || !currentSecret ? "not-allowed" : "pointer" }}>
+          {isLoading ? "로그인 중" : (buttonLabel ?? "로그인")}
         </button>
       </div>
       {status && <p style={{ margin: 0, fontSize: 11, color: status.ok ? "#166534" : "#991b1b" }}>{status.text}</p>}
