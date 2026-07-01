@@ -26,6 +26,7 @@ export async function GET(request: Request) {
   const documentId = url.searchParams.get("document_id");
   const claimId = url.searchParams.get("claim_id");
   const authorType = url.searchParams.get("author_type");
+  const questionType = url.searchParams.get("question_type");
   const limit = Math.min(parseInt(url.searchParams.get("limit") ?? "50"), 200);
   const offset = parseInt(url.searchParams.get("offset") ?? "0");
 
@@ -40,6 +41,9 @@ export async function GET(request: Request) {
   if (claimId) query = query.eq("claim_id", claimId);
   if (authorType && ["user", "ai", "admin"].includes(authorType)) {
     query = query.eq("author_type", authorType);
+  }
+  if (questionType && ["question", "discussion", "report"].includes(questionType)) {
+    query = query.eq("question_type", questionType);
   }
 
   const { data, error } = await query;
@@ -81,6 +85,8 @@ export async function POST(request: Request) {
   const authorName = String(body.author_name ?? (authorType === "ai" ? "AI" : "익명")).trim().slice(0, 50);
   const documentId = body.document_id ? String(body.document_id).trim() : null;
   const claimId = body.claim_id ? String(body.claim_id).trim() : null;
+  const rawQuestionType = body.question_type ? String(body.question_type).trim() : null;
+  const questionType = rawQuestionType && ["question", "discussion", "report"].includes(rawQuestionType) ? rawQuestionType : null;
 
   if (claimId) {
     const { data: claim, error: claimError } = await sb
@@ -114,6 +120,7 @@ export async function POST(request: Request) {
     content,
     contributor_hash: contributorHash,
     status: "pending",
+    ...(questionType ? { question_type: questionType } : {}),
   }).select("id, created_at").single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
