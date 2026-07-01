@@ -19,6 +19,7 @@ import { ViewTracker } from "../../../components/ViewTracker";
 import { DocumentStatsBar } from "../../../components/DocumentStatsBar";
 import { WikiPostSection } from "../../../components/WikiPostSection";
 import { CorrectionCTA } from "../../../components/CorrectionCTA";
+import { VerificationLevelBadge } from "../../../components/StatusBadge";
 import { getBundleRiskDisclaimer } from "../../../../lib/risk-policy";
 
 export const revalidate = 60;
@@ -190,6 +191,9 @@ export default async function WikiDocumentPage({
           <strong>{topCitationLabel}</strong>
           <span>{citationStatus.verifiedClaims}/{citationStatus.totalClaims} {tw("citationReadyLower", "citation-ready")} · {tw("freshness", "freshness")}: {citationStatus.freshness}</span>
         </div>
+        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 8 }}>
+          <VerificationLevelBadge level={citationStatus.verificationLevel} />
+        </div>
         <dl className="direct-answer-meta" aria-label="Top citation metadata">
           <div><dt>{t.claims.lastVerified}</dt><dd>{citationStatus.oldestVerifiedAt ?? directAnswer.last_verified_at ?? "Needs verification"}</dd></div>
           <div><dt>{t.claims.sourceCount}</dt><dd>{totalSources}</dd></div>
@@ -197,6 +201,14 @@ export default async function WikiDocumentPage({
           <div><dt>Category</dt><dd>{document.category || "uncategorized"}</dd></div>
         </dl>
         <DocumentStatsBar documentId={document.id} />
+        <div style={{ marginTop: 12 }}>
+          <Link
+            href={`/community?document_id=${encodeURIComponent(document.id)}&q=${encodeURIComponent(document.title)}`}
+            style={{ fontSize: "0.82rem", color: "var(--muted)", textDecoration: "none" }}
+          >
+            💬 이 팩트에 대해 질문하기 →
+          </Link>
+        </div>
       </header>
 
       {citationStatus.isVerifiedDocument && citationStatus.freshness === "stale" && (

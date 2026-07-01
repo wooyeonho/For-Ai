@@ -16,15 +16,18 @@ export type TrendingItem = {
   view_count: number;
   api_cite_count: number;
   citation_copy_count: number;
+  hallucination_count: number;
   page_url: string;
 };
 
 export type TrendingResponse = {
   ai_trending: TrendingItem[];
   human_trending: TrendingItem[];
+  hallucination_trending: TrendingItem[];
   total_ai_citations: number;
   total_human_views: number;
   total_views: number;
+  total_hallucinations: number;
   generated_at: string;
 };
 
@@ -49,7 +52,7 @@ export async function GET(request: Request) {
 
     if (!stats || stats.length === 0) {
       return NextResponse.json(
-        { ai_trending: [], human_trending: [], total_ai_citations: 0, total_human_views: 0, total_views: 0, generated_at: new Date().toISOString() },
+        { ai_trending: [], human_trending: [], hallucination_trending: [], total_ai_citations: 0, total_human_views: 0, total_views: 0, total_hallucinations: 0, generated_at: new Date().toISOString() },
         { headers: { "Cache-Control": "public, s-maxage=300, stale-while-revalidate=600", ...rateLimitHeaders(rateLimit) } }
       );
     }
@@ -60,6 +63,18 @@ export async function GET(request: Request) {
     const { data: docs } = await docsQuery;
 
     const docMap = new Map((docs ?? []).map((d) => [d.id, d]));
+
+    const { data: hallucinationRows } = await sb
+      .from("hallucination_reports")
+      .select("document_id")
+      .eq("status", "accepted");
+
+    const hallucinationCounts = new Map<string, number>();
+    for (const row of hallucinationRows ?? []) {
+      if (row.document_id) {
+        hallucinationCounts.set(row.document_id, (hallucinationCounts.get(row.document_id) ?? 0) + 1);
+      }
+    }
 
     const enriched: TrendingItem[] = stats
       .filter((s) => docMap.has(s.document_id))
@@ -76,6 +91,7 @@ export async function GET(request: Request) {
           view_count: Number(s.view_count ?? 0),
           api_cite_count: Number(s.api_cite_count ?? 0),
           citation_copy_count: Number(s.citation_copy_count ?? 0),
+          hallucination_count: hallucinationCounts.get(s.document_id) ?? 0,
           page_url: documentPageUrl(doc.slug, doc.lang),
         };
       });
@@ -93,16 +109,24 @@ export async function GET(request: Request) {
       .filter((d) => d.human_view_count > 0)
       .slice(0, limit);
 
+    const hallucinationTrending = [...enriched]
+      .sort((a, b) => b.hallucination_count - a.hallucination_count)
+      .filter((d) => d.hallucination_count > 0)
+      .slice(0, limit);
+
     const totalAiCitations = enriched.reduce((sum, d) => sum + d.ai_citation_count, 0);
     const totalHumanViews = enriched.reduce((sum, d) => sum + d.human_view_count, 0);
     const totalViews = enriched.reduce((sum, d) => sum + d.view_count, 0);
+    const totalHallucinations = enriched.reduce((sum, d) => sum + d.hallucination_count, 0);
 
     const body: TrendingResponse = {
       ai_trending: aiTrending,
       human_trending: humanTrending,
+      hallucination_trending: hallucinationTrending,
       total_ai_citations: totalAiCitations,
       total_human_views: totalHumanViews,
       total_views: totalViews,
+      total_hallucinations: totalHallucinations,
       generated_at: new Date().toISOString(),
     };
 

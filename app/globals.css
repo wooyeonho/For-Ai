@@ -45,9 +45,17 @@ a {
 .claim-text-primary,
 .source-pill,
 .meta-item dd,
+.registry-row-title,
+.community-post-content,
 pre,
 code {
-  overflow-wrap: anywhere;
+  overflow-wrap: break-word;
+  word-break: keep-all;
+}
+
+pre,
+code {
+  word-break: break-all;
 }
 
 pre {
