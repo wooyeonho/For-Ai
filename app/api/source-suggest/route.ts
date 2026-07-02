@@ -145,5 +145,7 @@ export async function POST(request: Request) {
       'Accepted sources may be attached to claim_sources for human verification.',
       'Additional contribution credit may be awarded when the source is accepted or used for verification.',
     ],
+    contributor_hash: contributorHash,
+    receipt_url: `/contribute/receipt/${contributorHash}`,
   });
 }

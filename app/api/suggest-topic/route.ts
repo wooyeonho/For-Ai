@@ -173,5 +173,7 @@ export async function POST(request: Request) {
     status: spamCheck.status === "spam_suspected" ? "spam_suspected" : "candidate",
     admin_queue: "topic_candidates.status=new",
     raw_ip_stored: false,
+    contributor_hash: contributorHash,
+    receipt_url: `/contribute/receipt/${contributorHash}`,
   });
 }

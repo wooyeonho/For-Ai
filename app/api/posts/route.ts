@@ -143,5 +143,8 @@ export async function POST(request: Request) {
     created_at: data.created_at,
     status: "pending",
     message: "검토 후 게시됩니다.",
+    contributor_hash: contributorHash,
+    receipt_url: `/contribute/receipt/${contributorHash}`,
+    raw_ip_stored: false,
   }, { status: 201 });
 }
