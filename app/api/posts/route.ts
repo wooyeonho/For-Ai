@@ -28,6 +28,7 @@ export async function GET(request: Request) {
   const documentId = url.searchParams.get("document_id");
   const claimId = url.searchParams.get("claim_id");
   const authorType = url.searchParams.get("author_type");
+  const includeAi = url.searchParams.get("include_ai") === "true";
   const questionType = url.searchParams.get("question_type");
   const limit = Math.min(parseInt(url.searchParams.get("limit") ?? "50"), 200);
   const offset = parseInt(url.searchParams.get("offset") ?? "0");
@@ -43,6 +44,8 @@ export async function GET(request: Request) {
   if (claimId) query = query.eq("claim_id", claimId);
   if (authorType && ["user", "ai", "admin"].includes(authorType)) {
     query = query.eq("author_type", authorType);
+  } else if (!includeAi) {
+    query = query.neq("author_type", "ai");
   }
   if (questionType && ["question", "discussion", "report"].includes(questionType)) {
     query = query.eq("question_type", questionType);
@@ -79,8 +82,8 @@ export async function POST(request: Request) {
   }
 
   const authorType = String(body.author_type ?? "user");
-  if (!["user", "ai"].includes(authorType)) {
-    return NextResponse.json({ error: "author_type must be 'user' or 'ai'" }, { status: 400 });
+  if (authorType !== "user") {
+    return NextResponse.json({ error: "public submissions must use author_type='user'; AI suggestions require the admin/internal route" }, { status: 400 });
   }
 
   const content = String(body.content ?? "").trim();
@@ -91,7 +94,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "content too long (max 2000 chars)" }, { status: 400 });
   }
 
-  const authorName = String(body.author_name ?? (authorType === "ai" ? "AI" : "익명")).trim().slice(0, 50);
+  const authorName = String(body.author_name ?? "익명").trim().slice(0, 50);
   const documentId = body.document_id ? String(body.document_id).trim() : null;
   const claimId = body.claim_id ? String(body.claim_id).trim() : null;
   const rawQuestionType = body.question_type ? String(body.question_type).trim() : null;
@@ -118,9 +121,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
   }
 
-  // Public submissions land as 'pending' and require admin approval in
-  // /admin/posts before they become visible. Admin/AI posts created through the
-  // service-role /api/admin/posts route publish directly.
+  // Public submissions land as 'pending' user posts and require admin approval in
+  // /admin/posts before they become visible. AI posts are reserved for the
+  // service-role /api/admin/posts route or internal generation flows.
   const { data, error } = await sb.from("community_posts").insert({
     document_id: documentId,
     claim_id: claimId,
