@@ -15,7 +15,8 @@
  *   schema-types - fail if schema-v3.sql enum/check values diverge from TypeScript unions.
  *   diff-size  - fail if a PR changes an unexpected number of files (full-repo-rewrite guard).
  *   secrets    - fail if Supabase service-role secrets leak into client or non-route mutation code.
- *   all        - run route + api-docs + mojibake + artifacts + claims + secrets + surfaces + schema-types (and diff-size when a base SHA is available).
+ *   no-stub-storage - fail if public production routes can return stub storage responses.
+ *   all        - run route + api-docs + mojibake + artifacts + claims + secrets + no-stub-storage + surfaces + schema-types (and diff-size when a base SHA is available).
  *
  * Exit code 0 = pass, 1 = a guard failed, 2 = usage/internal error.
  */
@@ -448,6 +449,39 @@ function guardSecrets() {
   console.log("secret exposure guard: ok");
 }
 
+function guardNoStubStorage() {
+  const hits = [];
+  for (const rawFile of walk(API_ROUTES_ROOT)) {
+    const file = normalizePath(rawFile);
+    if (!isApiRoute(file)) continue;
+    const publicRoute = !file.startsWith("app/api/admin/");
+    if (!publicRoute) continue;
+
+    const text = readFileSync(rawFile, "utf-8");
+    const modules = importedModules(text);
+    const importsStubStorage = modules.some((m) =>
+      /(^|\/)admin-stubs$|(^|\/)submission-stubs$|(^|\/)topic-suggestion-stubs$/.test(m),
+    );
+    const hasInlineStubStorage = /storage\s*:\s*["']stub["']|storage\s*:\s*DataSourceKind\.Stub/.test(text);
+
+    if (importsStubStorage || hasInlineStubStorage) {
+      const flagGuarded = /FORAI_ENABLE_STUB_STORAGE|isStubStorageFeatureEnabled|assertPublicProductionDataSource/.test(text);
+      if (!flagGuarded) {
+        hits.push(`  ${file}: public route references stub storage without an explicit feature-flag guard`);
+      }
+    }
+  }
+
+  if (hits.length) {
+    fail([
+      `no-stub-storage guard FAILED: public production routes must not return non-durable stub storage responses.`,
+      `Remove the stub path or guard it with FORAI_ENABLE_STUB_STORAGE via lib/data-source.ts.`,
+      ...hits,
+    ]);
+  }
+  console.log("no-stub-storage guard: ok");
+}
+
 // --- main ------------------------------------------------------------------
 
 const guard = process.argv[2];
@@ -461,6 +495,7 @@ const guards = {
   surfaces: guardSurfaces,
   "schema-types": guardSchemaTypes,
   "diff-size": guardDiffSize,
+  "no-stub-storage": guardNoStubStorage,
   all() {
     guardRoute();
     guardApiDocsRoutes();
@@ -468,6 +503,7 @@ const guards = {
     guardArtifacts();
     guardClaims();
     guardSecrets();
+    guardNoStubStorage();
     guardSurfaces();
     guardSchemaTypes();
     guardDiffSize();
@@ -475,7 +511,7 @@ const guards = {
 };
 
 if (!guard || !guards[guard]) {
-  console.error(`Usage: node scripts/ci-guards.mjs <route|api-docs|mojibake|artifacts|claims|secrets|surfaces|schema-types|diff-size|all>`);
+  console.error(`Usage: node scripts/ci-guards.mjs <route|api-docs|mojibake|artifacts|claims|secrets|no-stub-storage|surfaces|schema-types|diff-size|all>`);
   process.exit(2);
 }
 

@@ -1,10 +1,11 @@
+import { DataSourceKind } from "./data-source";
 import { seedEntity } from "./seed-data";
 import type { ClaimWithSources, Document, Entity } from "./types";
 
 export type AdminStubResult = {
   accepted: true;
   stub_status: "draft";
-  storage: "stub";
+  storage: DataSourceKind.Stub;
   note: string;
 };
 
@@ -27,7 +28,7 @@ export function createEntityDraftStub(input: {
     updated_at: null,
     accepted: true,
     stub_status: "draft",
-    storage: "stub",
+    storage: DataSourceKind.Stub,
     note: "Goal 9 admin creation stub. No database write is performed in the MVP.",
   };
 }
@@ -71,7 +72,7 @@ export function createDocumentDraftStub(input: {
     updated_at: null,
     accepted: true,
     stub_status: "draft",
-    storage: "stub",
+    storage: DataSourceKind.Stub,
     note: "Goal 9 admin document stub. Core facts must still be added as claims.",
   };
 }
@@ -112,7 +113,7 @@ export function createBulkImportStub(rows: number): AdminStubResult & { rows_rec
   return {
     accepted: true,
     stub_status: "draft",
-    storage: "stub",
+    storage: DataSourceKind.Stub,
     rows_received: rows,
     note: "Goal 9 bulk import stub. Review generated entities/documents before any future persistence.",
   };
