@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { experimentalGamificationEnabled } from "@/lib/feature-flags";
 import { SUPPORTED_LOCALES, getTranslations, isValidLocale } from "../../../lib/i18n";
 import type { SupportedLocale } from "../../../lib/i18n";
 import { createServiceRoleClient, isServiceRoleConfigured } from "../../../lib/supabase-server";
@@ -110,6 +111,7 @@ export async function generateMetadata({ params }: { params: Promise<Leaderboard
 
 export default async function LeaderboardPage({ params }: { params: Promise<LeaderboardParams> }) {
   const { locale } = await params;
+  if (!experimentalGamificationEnabled()) notFound();
   if (!isValidLocale(locale)) notFound();
 
   const t = getTranslations(locale as SupportedLocale);

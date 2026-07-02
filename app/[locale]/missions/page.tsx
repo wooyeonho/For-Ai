@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import { experimentalGamificationEnabled } from "@/lib/feature-flags";
 import Link from "next/link";
 import { getDailyMissionPlan, getMissionRewardForStatus } from "@/lib/gamification";
 
@@ -16,6 +18,7 @@ export default async function MissionsPage({
   params: Promise<{ locale: string }>;
 }) {
   const { locale } = await params;
+  if (!experimentalGamificationEnabled()) notFound();
   const plan = getDailyMissionPlan();
 
   return (

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
+import { ensureAdminSession } from "@/lib/admin-client";
 
 type DashboardCounts = {
   pending_claim_reviews?: number;
@@ -149,12 +150,18 @@ export default function AdminDashboardPage() {
     setLoading(true);
     setMessage(null);
     try {
+      // If a secret was entered, exchange it for the httpOnly admin session
+      // (this also mints the CSRF token cookie); otherwise rely on an existing
+      // session. Subsequent requests authenticate via the cookie.
+      if (secret.trim()) {
+        await ensureAdminSession(secret.trim());
+      }
       const res = await fetch("/api/admin/review");
       const payload = await res.json();
       setData(res.ok ? payload : null);
       setMessage({ ok: res.ok, text: res.ok ? "관리 대시보드 집계를 불러왔습니다." : payload.error ?? "대시보드 조회 실패" });
-    } catch {
-      setMessage({ ok: false, text: "네트워크 오류" });
+    } catch (error) {
+      setMessage({ ok: false, text: error instanceof Error ? error.message : "네트워크 오류" });
     } finally {
       setLoading(false);
     }

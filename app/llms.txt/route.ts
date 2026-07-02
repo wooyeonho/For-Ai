@@ -68,8 +68,13 @@ export async function GET() {
     );
   }
   for (const d of verifiedSupabaseDocs) {
+    // Emit the same freshness/TTL signal as the static bundles so RAG agents do
+    // not treat a stale Supabase-backed document as fresh.
+    const freshness = d.last_verified_at
+      ? `, freshness: ${d.freshness} (verified ${d.last_verified_at}, TTL ${d.freshness_ttl_days} days)`
+      : `, freshness: ${d.freshness} (TTL ${d.freshness_ttl_days} days)`;
     lines.push(
-      `- [${d.title}](${documentPageUrl(d.slug, d.lang)}) — status: ${d.doc_status}, confidence: ${d.confidence} ` +
+      `- [${d.title}](${documentPageUrl(d.slug, d.lang)}) — status: ${d.doc_status}, confidence: ${d.confidence}${freshness} ` +
         `· JSON: ${apiDocumentUrl(d.slug)} · Markdown: ${rawMarkdownUrl(d.slug)}`,
     );
   }
