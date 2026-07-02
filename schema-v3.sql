@@ -170,6 +170,9 @@ create table hallucination_reports (
   prompt text,
   ai_answer text,
   expected_correction text,
+  review_priority_score integer not null default 0 check (review_priority_score >= 0 and review_priority_score <= 100),
+  review_priority_reason text,
+  model_version text not null default 'rule-based-v1',
   claim_id text references claims(id) on delete set null,
   wrong_answer_type text,
   correction_prompt text,
@@ -195,6 +198,7 @@ create table verification_events (
 
 create index hallucination_reports_claim_id_idx on hallucination_reports (claim_id);
 create index hallucination_reports_status_idx on hallucination_reports (status);
+create index hallucination_reports_review_priority_idx on hallucination_reports (review_priority_score desc, created_at asc);
 
 create index verification_events_claim_id_idx on verification_events (claim_id);
 
@@ -338,6 +342,9 @@ create table topic_candidates (
   consensus_score  numeric(3,2),
   consensus_level  text check (consensus_level in ('unanimous','majority','minority','single')),
   agreed_providers text[],
+  review_priority_score integer not null default 0 check (review_priority_score >= 0 and review_priority_score <= 100),
+  review_priority_reason text,
+  model_version text not null default 'rule-based-v1',
   created_at     timestamptz default now(),
   reviewed_at    timestamptz,
   promoted_at    timestamptz
@@ -348,6 +355,7 @@ create index topic_candidates_status_idx   on topic_candidates(status);
 create index topic_candidates_category_idx on topic_candidates(category);
 create index topic_candidates_created_idx  on topic_candidates(created_at desc);
 create index topic_candidates_generation_run_idx on topic_candidates(generation_run_id);
+create index topic_candidates_review_priority_idx on topic_candidates(review_priority_score desc, created_at asc);
 
 
 -- candidate_generation_runs: admin-only AI generation run records for reuse,
@@ -653,6 +661,9 @@ create table if not exists source_candidates (
   status submission_status not null default 'new',
   review_status text not null default 'pending' check (review_status in ('pending','accepted','rejected','linked_to_claim','spam')),
   points_awarded integer not null default 0 check (points_awarded >= 0),
+  review_priority_score integer not null default 0 check (review_priority_score >= 0 and review_priority_score <= 100),
+  review_priority_reason text,
+  model_version text not null default 'rule-based-v1',
   created_at timestamptz not null default now(),
   reviewed_at timestamptz,
   reviewed_by text,
@@ -662,6 +673,21 @@ create table if not exists source_candidates (
 
 comment on table source_candidates is 'Unverified public source candidates. Human review is required before attaching to claim_sources or changing claim verification status.';
 comment on column source_candidates.points_awarded is 'Contribution reward only; must not be used to decide claim truth, confidence, or verified status.';
+
+-- Review priority scores are queue-management signals only. They are not
+-- canonical truth and must never directly change claims.confidence,
+-- claims.status, documents.confidence, documents.status, claim_sources, or
+-- verification_events. Only human-approved verification workflows may change
+-- canonical claim confidence or verification status.
+comment on column hallucination_reports.review_priority_score is 'Auxiliary review-queue score from source presence, risk tier, domain volatility, consensus level, and user demand only. Not canonical truth; must not change claim confidence or verification status directly.';
+comment on column hallucination_reports.review_priority_reason is 'Human-readable explanation for the auxiliary review priority score; not verification evidence.';
+comment on column hallucination_reports.model_version is 'Scoring model identifier for review priority, starting with rule-based-v1 and replaceable by future ML models.';
+comment on column topic_candidates.review_priority_score is 'Auxiliary review-queue score from source presence, risk tier, domain volatility, consensus level, and user demand only. Not canonical truth; must not change claim confidence or verification status directly.';
+comment on column topic_candidates.review_priority_reason is 'Human-readable explanation for the auxiliary review priority score; not verification evidence.';
+comment on column topic_candidates.model_version is 'Scoring model identifier for review priority, starting with rule-based-v1 and replaceable by future ML models.';
+comment on column source_candidates.review_priority_score is 'Auxiliary review-queue score from source presence, risk tier, domain volatility, consensus level, and user demand only. Not canonical truth; must not change claim confidence or verification status directly.';
+comment on column source_candidates.review_priority_reason is 'Human-readable explanation for the auxiliary review priority score; not verification evidence.';
+comment on column source_candidates.model_version is 'Scoring model identifier for review priority, starting with rule-based-v1 and replaceable by future ML models.';
 
 -- contribution_events: single canonical reward/audit ledger for anonymous public
 -- contributions. Rewards are derived only from these events. Verified claim and
@@ -721,6 +747,7 @@ create index if not exists source_candidates_claim_idx on source_candidates(clai
 create index if not exists source_candidates_document_idx on source_candidates(document_id, created_at desc);
 create index if not exists source_candidates_normalized_url_idx on source_candidates(normalized_url);
 create index if not exists source_candidates_status_idx on source_candidates(status, review_status, created_at desc);
+create index if not exists source_candidates_review_priority_idx on source_candidates(review_priority_score desc, created_at asc);
 create index if not exists contribution_events_contributor_idx on contribution_events(contributor_hash, created_at desc);
 create index if not exists contribution_events_contributor_type_created_idx on contribution_events(contributor_hash, event_type, created_at desc);
 create index if not exists contribution_events_type_created_idx on contribution_events(event_type, created_at desc);
