@@ -1,4 +1,5 @@
 "use client";
+import { readAdminCsrfToken } from "@/lib/admin-client";
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
@@ -283,7 +284,7 @@ export default function VerifyClaimPage() {
     try {
       const res = await fetch("/api/admin/check-source", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "x-admin-csrf": "1", ...(adminActor.trim() ? { "x-admin-actor": adminActor.trim() } : {}) },
+        headers: { "Content-Type": "application/json", "x-admin-csrf": readAdminCsrfToken(), ...(adminActor.trim() ? { "x-admin-actor": adminActor.trim() } : {}) },
         body: JSON.stringify({
           url: url.trim(),
           match: claimValue.trim(),
@@ -309,7 +310,7 @@ export default function VerifyClaimPage() {
     }
     const res = await fetch("/api/admin/verify-claim", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-admin-csrf": "1", ...(adminActor.trim() ? { "x-admin-actor": adminActor.trim() } : {}) },
+      headers: { "Content-Type": "application/json", "x-admin-csrf": readAdminCsrfToken(), ...(adminActor.trim() ? { "x-admin-actor": adminActor.trim() } : {}) },
       body: JSON.stringify({
         action,
         claim_id: selectedClaim.id,
@@ -347,7 +348,7 @@ export default function VerifyClaimPage() {
     if (!actionReason?.trim()) return;
     const res = await fetch("/api/admin/verify-claim", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-admin-csrf": "1", ...(adminActor.trim() ? { "x-admin-actor": adminActor.trim() } : {}) },
+      headers: { "Content-Type": "application/json", "x-admin-csrf": readAdminCsrfToken(), ...(adminActor.trim() ? { "x-admin-actor": adminActor.trim() } : {}) },
       body: JSON.stringify({ action, claim_id: claim.id, reason: actionReason.trim() }),
     });
     const data = await res.json();
@@ -368,7 +369,7 @@ export default function VerifyClaimPage() {
     }
     const res = await fetch("/api/admin/verify-claim", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-admin-csrf": "1", ...(adminActor.trim() ? { "x-admin-actor": adminActor.trim() } : {}) },
+      headers: { "Content-Type": "application/json", "x-admin-csrf": readAdminCsrfToken(), ...(adminActor.trim() ? { "x-admin-actor": adminActor.trim() } : {}) },
       body: JSON.stringify({ action: "bulk_needs_verification", claim_ids: selectedClaimIds, reason: reason.trim() }),
     });
     const data = await res.json();
