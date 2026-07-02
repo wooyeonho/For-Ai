@@ -172,10 +172,10 @@ export default function AdminDashboardPage() {
       <main style={WRAP}>
         <header style={{ ...PANEL, marginBottom: 18 }}>
           <p style={{ margin: "0 0 6px", color: "#6b7280", fontSize: 12, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase" }}>For-Ai admin</p>
-          <h1 style={{ margin: 0, fontSize: 30 }}>오늘의 운영 센터</h1>
+          <h1 style={{ margin: 0, fontSize: 30 }}>Business operating facts 운영 센터</h1>
           <p style={{ color: "#4b5563", lineHeight: 1.6, maxWidth: 760 }}>
-            통합 Inbox에서 제보/신고/출처/커뮤니티 글을 먼저 처리하고, 위험도가 높은 신고와 오래된 사실, AI가 많이 보는 문서를
-            확인해 잘못된 정보가 퍼지지 않도록 관리합니다. verified 승격은 반드시 출처와 사람 검토를 거칩니다.
+            초기 commercial wedge는 business operating facts / reputation correction입니다. verified claims, stale claims, source coverage,
+            API usage, business correction requests를 한 화면에서 보고, 사업자 요청은 intake signal로만 처리하며 verified 승격은 반드시 출처와 사람 검토를 거칩니다.
           </p>
           <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
             <input aria-label="Admin secret" type="password" value={secret} onChange={(event) => setSecret(event.target.value)} placeholder="ADMIN_SECRET" style={{ flex: "1 1 260px", padding: "10px 12px", border: "1px solid #d1d5db", borderRadius: 10 }} />
@@ -208,6 +208,41 @@ export default function AdminDashboardPage() {
               ))}
             </div>
           )}
+        </section>
+
+        <section aria-labelledby="business-wedge-metrics" style={{ ...PANEL, marginBottom: 18 }}>
+          <p style={{ margin: "0 0 6px", color: "#6b7280", fontSize: 12, fontWeight: 700, letterSpacing: ".08em", textTransform: "uppercase" }}>Initial commercial wedge</p>
+          <h2 id="business-wedge-metrics" style={{ margin: 0, fontSize: 22 }}>Business fact integrity dashboard</h2>
+          <p style={{ color: "#4b5563", lineHeight: 1.6 }}>
+            선택 vertical의 핵심 지표를 하나의 운영 묶음으로 봅니다. 선택하지 않은 civic/transport/travel/health/finance vertical은 future coverage이며 seed generation 우선순위에서 제외됩니다.
+          </p>
+          <div style={GRID}>
+            <Link href="/admin/review" style={{ ...PANEL, display: "block", textDecoration: "none", color: "inherit", borderTop: "5px solid #16a34a" }}>
+              <p style={{ margin: 0, color: "#6b7280", fontSize: 12, fontWeight: 700 }}>Verified claims</p>
+              <div style={{ margin: "10px 0", fontSize: 34, fontWeight: 800, color: "#16a34a" }}>{displayCount((fallbackCounts?.claims_needs_review ?? 0) === 0 && data ? 0 : null)}</div>
+              <p style={{ margin: 0, color: "#4b5563", fontSize: 13 }}>Citation-ready business facts after independent source-backed review.</p>
+            </Link>
+            <Link href="/admin/review#verified-documents" style={{ ...PANEL, display: "block", textDecoration: "none", color: "inherit", borderTop: "5px solid #d97706" }}>
+              <p style={{ margin: 0, color: "#6b7280", fontSize: 12, fontWeight: 700 }}>Stale claims</p>
+              <div style={{ margin: "10px 0", fontSize: 34, fontWeight: 800, color: "#d97706" }}>{displayCount(dashboardCounts?.stale_claims)}</div>
+              <p style={{ margin: 0, color: "#4b5563", fontSize: 13 }}>{countHint(dashboardCounts?.stale_claims, "Verified business facts due for freshness review.")}</p>
+            </Link>
+            <Link href="/admin/verify-claim" style={{ ...PANEL, display: "block", textDecoration: "none", color: "inherit", borderTop: "5px solid #b91c1c" }}>
+              <p style={{ margin: 0, color: "#6b7280", fontSize: 12, fontWeight: 700 }}>Source coverage gaps</p>
+              <div style={{ margin: "10px 0", fontSize: 34, fontWeight: 800, color: "#b91c1c" }}>{displayCount(dashboardCounts?.source_check_failures)}</div>
+              <p style={{ margin: 0, color: "#4b5563", fontSize: 13 }}>{countHint(dashboardCounts?.source_check_failures, "Business claims missing acceptable source evidence.")}</p>
+            </Link>
+            <Link href="/api-docs#business-dashboard-metrics" style={{ ...PANEL, display: "block", textDecoration: "none", color: "inherit", borderTop: "5px solid #9333ea" }}>
+              <p style={{ margin: 0, color: "#6b7280", fontSize: 12, fontWeight: 700 }}>API usage</p>
+              <div style={{ margin: "10px 0", fontSize: 34, fontWeight: 800, color: "#9333ea" }}>{displayCount(dashboardCounts?.api_abuse_warnings)}</div>
+              <p style={{ margin: 0, color: "#4b5563", fontSize: 13 }}>{countHint(dashboardCounts?.api_abuse_warnings, "Usage telemetry tables are not fully connected yet.")}</p>
+            </Link>
+            <Link href="/admin/business" style={{ ...PANEL, display: "block", textDecoration: "none", color: "inherit", borderTop: "5px solid #047857" }}>
+              <p style={{ margin: 0, color: "#6b7280", fontSize: 12, fontWeight: 700 }}>Business correction requests</p>
+              <div style={{ margin: "10px 0", fontSize: 34, fontWeight: 800, color: "#047857" }}>{displayCount(dashboardCounts?.business_verification_requests)}</div>
+              <p style={{ margin: 0, color: "#4b5563", fontSize: 13 }}>{countHint(dashboardCounts?.business_verification_requests, "Owner-submitted corrections awaiting independent verification.")}</p>
+            </Link>
+          </div>
         </section>
 
         <section aria-label="운영 현황 카드" style={GRID}>

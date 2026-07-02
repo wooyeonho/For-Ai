@@ -26,10 +26,10 @@ interface PopularDoc {
 
 const VERTICAL_GROUPS = [
   {
-    key: "public-civic",
-    title: "Public fees / civic processing",
-    description: "Fees, filing periods, deadlines, and civil-service requirements that should cite official public sources.",
-    matches: ["administration", "tax", "government", "civic", "passport", "resident", "move-in"],
+    key: "business-policy",
+    title: "Business operating facts / reputation correction",
+    description: "The initial commercial wedge: hours, availability, policies, owner corrections, and AI reputation fixes that require independent source verification.",
+    matches: ["commerce", "business", "venue", "policy", "refund", "hours", "service", "parking", "restaurant", "hotel", "store"],
   },
   {
     key: "urban-transport",
@@ -44,10 +44,10 @@ const VERTICAL_GROUPS = [
     matches: ["travel", "visa", "passport"],
   },
   {
-    key: "business-policy",
-    title: "Business policies / operating info",
-    description: "Refunds, hours, availability, and venue or service policies that businesses can later maintain with labels.",
-    matches: ["commerce", "business", "venue", "policy", "refund", "hours", "service"],
+    key: "public-civic",
+    title: "Future coverage: public fees / civic processing",
+    description: "Fees, filing periods, deadlines, and civil-service requirements remain valid future coverage, but are not in the seed-generation priority lane.",
+    matches: ["administration", "tax", "government", "civic", "passport", "resident", "move-in"],
   },
 ];
 
@@ -268,7 +268,7 @@ export default async function HomePageContent({ locale = "en" }: { locale?: stri
   });
   const { verified: verifiedDocuments } = partitionRegistryBundles(sorted);
   const groupedDocuments = groupedRegistryBundles(sorted);
-  const primaryVerticalDocuments = verifiedDocuments.filter((bundle) => verticalForBundle(bundle)?.key === "public-civic");
+  const primaryVerticalDocuments = verifiedDocuments.filter((bundle) => verticalForBundle(bundle)?.key === "business-policy");
 
   return (
     <div className="home">
@@ -426,10 +426,10 @@ export default async function HomePageContent({ locale = "en" }: { locale?: stri
       </section>
 
       <section className="section">
-        <p className="section-eyebrow">Daily Verified Intelligence · Initial Vertical</p>
-        <h2 className="section-title">Recently available verified civic documents</h2>
+        <p className="section-eyebrow">Business Integrity Dashboard · Initial Vertical</p>
+        <h2 className="section-title">Verified operating facts and correction signals</h2>
         <p className="section-lede">
-          The first concentrated vertical is public fees and civic processing periods, because these answers are practical, frequently searched, and can be checked against official sources.
+          The first concentrated vertical is business operating facts and reputation correction. We track verified claims, stale claims, source coverage, API usage, and business correction requests as one operating dashboard before expanding seed generation to other domains.
         </p>
         <ul className="registry-index">
           {(primaryVerticalDocuments.length > 0 ? primaryVerticalDocuments : verifiedDocuments).slice(0, 5).map((b) => {
@@ -497,7 +497,7 @@ export default async function HomePageContent({ locale = "en" }: { locale?: stri
         <p className="section-eyebrow">Registry</p>
         <h2 className="section-title">Registered Documents by Vertical ({bundles.length})</h2>
         <p className="section-lede">
-          Documents are grouped by the post-MVP verticals instead of a flat list, so users and AI systems can enter through the domain where stale answers are most likely.
+          Documents are grouped with the business operating-facts wedge first. Other domains remain future coverage until the business correction workflow proves repeatable.
         </p>
 
         <div className="vertical-group-list">

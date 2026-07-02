@@ -49,6 +49,39 @@ The MVP seed data intentionally does not invent venue facts.
 - Claim status remains `needs_review` until source-backed verification exists.
 - Sources remain empty until verification work adds real citations.
 
+
+## Post-MVP Commercial Wedge Decision
+
+The first post-MVP commercial wedge is **business operating facts / reputation correction**. This means the initial runtime and seed-generation priority should concentrate on business facts that AI frequently misstates and that owners have a clear incentive to correct, while still requiring independent source-backed verification before any claim becomes citation-ready.
+
+Primary claim types:
+
+- operating hours, holiday closures, and service availability;
+- pricing, parking, booking, refund, delivery, and accessibility policies;
+- AI reputation corrections such as “closed/open”, “service unavailable”, outdated prices, or incorrect policy summaries;
+- owner-submitted facts that remain labeled and non-citable until human verification attaches acceptable sources.
+
+Why this wedge comes first:
+
+1. Commercial pain is immediate when AI, search, or crawlers cite stale operating facts.
+2. Businesses can supply correction requests and source leads without being allowed to self-verify canonical truth.
+3. The dashboard can connect monetization signals to fact integrity: verified claims, stale claims, source coverage, API usage, and business correction requests.
+4. The workflow reuses the canonical chain `entities -> documents -> claims -> claim_sources -> verification_events` instead of creating a separate business-owned truth store.
+
+Non-selected verticals — government fee/deadline citation API, transport, travel/visa, healthcare, genomics, finance, education, and other domains — remain **future coverage**. They should not receive seed-generation priority until the business correction workflow has stable intake, verification, and monitoring metrics.
+
+## Business Wedge Dashboard Metrics
+
+The home page, API docs, and admin dashboard should present the initial vertical through one metric bundle:
+
+| Metric | Purpose | Operational interpretation |
+| --- | --- | --- |
+| Verified claims | Measures business facts that passed source-backed human review and can be cited. | Increase by verifying canonical claims, not by accepting owner submissions directly. |
+| Stale claims | Flags verified business facts that need re-checking after their freshness window. | Prioritize facts that AI systems cite or that businesses dispute. |
+| Source coverage | Shows how many business claims have acceptable sources attached. | Low coverage means the document must remain “Needs verification”. |
+| API usage | Tracks AI/search/developer demand for business fact endpoints. | High usage moves stale or disputed claims up the review queue. |
+| Business correction requests | Captures owner-submitted corrections and reputation fixes. | Requests are intake signals only; they do not become citation-ready without independent verification. |
+
 ## Phase 1: Persistence Design
 
 Design persistence before wiring runtime database calls.
@@ -144,7 +177,7 @@ Out of scope:
 
 Do not start new runtime features immediately.
 
-Recommended next PR after this planning document:
+Recommended next PR after this planning document and commercial-wedge alignment:
 
 1. Persistence design document only.
 2. No Supabase runtime integration yet.
