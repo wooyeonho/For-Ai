@@ -83,7 +83,8 @@ interface GenerateResult {
   total_generated: number;
   saved: number;
   preview: (Record<string, unknown> & ConsensusInfo)[];
-  provider_results?: Record<string, { generated: number; error?: string; parse_error?: string; role?: "primary" | "cross_verify" | "fallback" }>;
+  provider_results?: Record<string, { generated: number; error?: string; parse_error?: string; role?: "primary" | "cross_verify" | "fallback" | "escalation" | "consensus"; estimated_cost_usd?: number; success?: boolean }>;
+  generation_run?: { id: string | null; cost_usd: number; provider_count: number; accepted_count: number; promoted_count: number; accepted_promoted_ratio: number };
   fallback_used?: boolean;
   skipped_duplicates?: number;
   consensus_summary?: {
@@ -336,7 +337,7 @@ export default function AdminGeneratePage() {
                 onChange={(e) => setCrossVerify(e.target.checked)}
                 style={{ marginRight: 6 }}
               />
-              교차검증 (선택된 AI 전부 동시 호출)
+              교차검증 (cheap-first로 필요한 provider까지만 순차 호출)
             </label>
           </div>
         </div>
@@ -381,10 +382,24 @@ export default function AdminGeneratePage() {
               <div style={{ fontSize: 12, color: "#6b7280" }}>DB 저장</div>
             </div>
             <div style={{ padding: 12, background: "#faf5ff", borderRadius: 8, textAlign: "center" }}>
-              <div style={{ fontSize: 24, fontWeight: 700 }}>{result.providers_used?.length ?? 0}</div>
+              <div style={{ fontSize: 24, fontWeight: 700 }}>{result.generation_run?.provider_count ?? result.providers_used?.length ?? 0}</div>
               <div style={{ fontSize: 12, color: "#6b7280" }}>AI 사용</div>
             </div>
+            <div style={{ padding: 12, background: "#fff7ed", borderRadius: 8, textAlign: "center" }}>
+              <div style={{ fontSize: 24, fontWeight: 700 }}>${(result.generation_run?.cost_usd ?? 0).toFixed(4)}</div>
+              <div style={{ fontSize: 12, color: "#6b7280" }}>예상 비용</div>
+            </div>
+            <div style={{ padding: 12, background: "#f0fdfa", borderRadius: 8, textAlign: "center" }}>
+              <div style={{ fontSize: 24, fontWeight: 700 }}>{Math.round((result.generation_run?.accepted_promoted_ratio ?? 0) * 100)}%</div>
+              <div style={{ fontSize: 12, color: "#6b7280" }}>accepted/promoted</div>
+            </div>
           </div>
+
+          {result.generation_run && (
+            <div style={{ padding: 12, background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 8, marginBottom: 16, fontSize: 13, color: "#374151" }}>
+              <strong>Generation run:</strong> {result.generation_run.id ?? "DB 미저장"} · cost ${result.generation_run.cost_usd.toFixed(6)} · providers {result.generation_run.provider_count} · accepted {result.generation_run.accepted_count} · promoted {result.generation_run.promoted_count}
+            </div>
+          )}
 
           {result.fallback_used && (
             <div style={{ padding: 12, background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 8, marginBottom: 16, fontSize: 13, color: "#92400e" }}>
@@ -408,6 +423,7 @@ export default function AdminGeneratePage() {
               {Object.entries(result.provider_results).map(([provider, r]) => (
                 <div key={provider} style={{ padding: "4px 0" }}>
                   <strong>{provider}</strong>{r.role && <span style={{ color: "#6b7280" }}> ({r.role})</span>}: {r.generated}개 생성
+                  {r.estimated_cost_usd !== undefined && <span style={{ color: "#6b7280" }}> · ${r.estimated_cost_usd.toFixed(6)} · {r.success ? "success" : "failed"}</span>}
                   {r.error && <span style={{ color: "#dc2626" }}> — {r.error}</span>}
                   {r.parse_error && <span style={{ color: "#b45309" }}> — 파싱 실패: {r.parse_error}</span>}
                 </div>
