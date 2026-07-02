@@ -33,6 +33,10 @@ export async function GET(request: Request) {
     return NextResponse.json({ results: [], query: q, total: 0 }, { headers: rateLimitHeaders(rateLimit) });
   }
 
+  // Escape LIKE wildcards so user-supplied % / _ / \ are matched literally
+  // instead of turning every query into a broad wildcard scan.
+  const likePattern = `%${q.replace(/[\\%_]/g, (m) => `\\${m}`)}%`;
+
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!supabaseUrl || !supabaseKey) {
@@ -45,7 +49,7 @@ export async function GET(request: Request) {
     let docQuery = sb
       .from("documents")
       .select("id, slug, title, category, lang")
-      .ilike("title", `%${q}%`)
+      .ilike("title", likePattern)
       .in("status", ["published", "verified"])
       .limit(limit);
     if (lang) docQuery = docQuery.eq("lang", lang);
@@ -54,7 +58,7 @@ export async function GET(request: Request) {
     const claimQuery = sb
       .from("claims")
       .select("id, document_id, claim_value, field_path, documents!inner(id, slug, title, category, lang, status)")
-      .ilike("claim_value", `%${q}%`)
+      .ilike("claim_value", likePattern)
       .eq("status", "verified")
       .limit(limit);
     const { data: claimResults } = await claimQuery;

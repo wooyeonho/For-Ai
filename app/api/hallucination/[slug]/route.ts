@@ -147,11 +147,15 @@ export async function POST(
         );
       }
 
-      // Award points for reporting a hallucination
-      await awardPoints(supabase, contributorHash, 'hallucination_reported', POINT_VALUES.hallucination_reported, {
-        referenceType: 'hallucination_report',
-        metadata: { slug, ai_service: aiService },
-      });
+      // Award points for reporting a hallucination — but never reward
+      // spam-suspected submissions, so mission/point farming can't pay out on
+      // fabricated reports.
+      if (spamCheck.status !== 'spam_suspected') {
+        await awardPoints(supabase, contributorHash, 'hallucination_reported', POINT_VALUES.hallucination_reported, {
+          referenceType: 'hallucination_report',
+          metadata: { slug, ai_service: aiService },
+        });
+      }
     } catch (err) {
       console.error('[hallucination] Unexpected error:', err);
       return NextResponse.json({ error: 'Server error' }, { status: 500 });

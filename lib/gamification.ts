@@ -28,14 +28,31 @@ export async function awardPoints(
     metadata?: Record<string, unknown>;
   }
 ): Promise<void> {
-  await sb.from('contributor_point_events').insert({
-    contributor_hash: contributorHash,
-    event_type: eventType,
-    points,
-    reference_id: opts?.referenceId ?? null,
-    reference_type: opts?.referenceType ?? null,
-    metadata: opts?.metadata ?? {},
-  });
+  // Idempotent award: the unique index (contributor_hash, event_type,
+  // reference_id) collapses duplicate submissions of the same action so a
+  // macro-script replaying one request cannot multiply points. Reference-less
+  // events (NULL reference_id) stay distinct and rely on route rate limits.
+  const { error } = await sb
+    .from('contributor_point_events')
+    .upsert(
+      {
+        contributor_hash: contributorHash,
+        event_type: eventType,
+        points,
+        reference_id: opts?.referenceId ?? null,
+        reference_type: opts?.referenceType ?? null,
+        metadata: opts?.metadata ?? {},
+      },
+      { onConflict: 'contributor_hash,event_type,reference_id', ignoreDuplicates: true }
+    );
+
+  if (error) {
+    console.error('[gamification] awardPoints insert failed', {
+      event_type: eventType,
+      message: error.message,
+      code: (error as { code?: string }).code ?? null,
+    });
+  }
 }
 
 export async function awardBadgeIfNew(

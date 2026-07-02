@@ -42,13 +42,26 @@ export async function GET(request: Request) {
   try {
     const sb = createServerClient();
 
-    const { data: stats, error } = await sb
-      .from("document_stats")
-      .select("document_id, view_count, ai_citation_count, human_view_count, bot_view_count, api_cite_count, citation_copy_count")
-      .order("view_count", { ascending: false })
-      .limit(200);
+    const STATS_COLUMNS =
+      "document_id, view_count, ai_citation_count, human_view_count, bot_view_count, api_cite_count, citation_copy_count";
 
-    if (error) throw error;
+    // Pull two bounded candidate pools — one ranked by human views, one by AI
+    // citations — and merge them. A single "order by view_count" pool dropped
+    // documents with heavy AI citation but modest human traffic from ai_trending.
+    const [{ data: statsByViews, error: viewsError }, { data: statsByAi, error: aiError }] =
+      await Promise.all([
+        sb.from("document_stats").select(STATS_COLUMNS).order("view_count", { ascending: false }).limit(200),
+        sb.from("document_stats").select(STATS_COLUMNS).order("ai_citation_count", { ascending: false }).limit(200),
+      ]);
+
+    if (viewsError) throw viewsError;
+    if (aiError) throw aiError;
+
+    const statsById = new Map<string, NonNullable<typeof statsByViews>[number]>();
+    for (const row of [...(statsByViews ?? []), ...(statsByAi ?? [])]) {
+      statsById.set(row.document_id, row);
+    }
+    const stats = Array.from(statsById.values());
 
     if (!stats || stats.length === 0) {
       return NextResponse.json(
@@ -64,10 +77,17 @@ export async function GET(request: Request) {
 
     const docMap = new Map((docs ?? []).map((d) => [d.id, d]));
 
-    const { data: hallucinationRows } = await sb
-      .from("hallucination_reports")
-      .select("document_id")
-      .eq("status", "accepted");
+    // Only aggregate hallucination counts for the documents we actually render.
+    // The previous unbounded scan fetched every accepted report on each cache
+    // revalidation — a DB/bandwidth bottleneck once reports scale — while only
+    // ever using the counts for documents already in this candidate set.
+    const { data: hallucinationRows } = docIds.length
+      ? await sb
+          .from("hallucination_reports")
+          .select("document_id")
+          .eq("status", "accepted")
+          .in("document_id", docIds)
+      : { data: [] as { document_id: string }[] };
 
     const hallucinationCounts = new Map<string, number>();
     for (const row of hallucinationRows ?? []) {
