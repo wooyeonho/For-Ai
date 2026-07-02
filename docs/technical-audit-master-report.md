@@ -1,0 +1,16 @@
+# Technical Audit Master Report
+
+## QA
+
+### Evidence Checklist
+
+QA pass/fail decisions must be based on concrete evidence, not visual impressions alone. Use the checklist below to attach the expected proof for each item, clarify what can be automated, and identify where manual screenshots are still required for review artifacts.
+
+| QA item | Pass evidence definition | Automation possible? | Manual screenshot required? |
+| --- | --- | --- | --- |
+| Mobile GNB | On `/ko/wiki/myungdong-laluce-parking` in a mobile viewport, the global navigation menu opens and closes from the mobile control; every visible navigation link resolves with HTTP 200 or the expected in-app route state without client-side route errors. | Yes — Playwright or equivalent can set a mobile viewport, toggle the menu, enumerate links, and assert 200/route success. | Yes — capture the opened mobile menu state for reviewer confirmation. |
+| i18n synchronization | For all 7 supported locales (`ko`, `en`, `ja`, `zh`, `es`, `hi`, `ar`), the page heading, status/badge labels, body copy, and language selector state are synchronized to the active locale with no mixed-language regression except intentional proper nouns or stable slugs. | Yes — route matrix tests can visit each locale, assert localized strings/selectors, and detect missing translations. | Yes — capture one screenshot per locale or a combined proof sheet showing heading, badge/body text, and language selector state. |
+| Community inline form | After submitting the inline community form, the user sees a pending/review 안내 message; the newly submitted item remains absent from the public list until moderation or approval exposes it. | Yes — end-to-end tests can submit fixture content, assert the pending message, and query the public list/API for non-exposure. | Yes — capture the post-submit pending state and the unchanged public list when validating a release manually. |
+| Status guidance boxes | `stale`, `high-risk`, and `needs verification` states each render the correct status guidance box, copy, visual severity treatment, and claim-level confidence/verification messaging without inventing facts. | Partially — component/page tests can assert text, status classes, and data-driven rendering for each state. | Yes — capture each status variant because severity treatment and guidance clarity are visual QA requirements. |
+| Category chips | Category chips apply the active class to the selected category and expose `aria-current` on the active chip only; inactive chips remain navigable and do not advertise current state. | Yes — DOM/a11y tests can assert class names, `aria-current`, focus order, and route updates. | No — screenshots are optional unless the visual active state changed. |
+| Admin login | A POST to `/api/admin/login` succeeds with valid admin credentials, sets an `httpOnly` cookie, and subsequent admin API calls succeed using cookie-based auth without exposing the secret to client-readable storage. | Yes — integration tests can call login, inspect `Set-Cookie` attributes, and call an authenticated admin API endpoint with the cookie jar. | No — screenshots are optional; HTTP transcript or automated test output is stronger evidence. |
