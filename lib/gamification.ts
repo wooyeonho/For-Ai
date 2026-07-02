@@ -28,10 +28,11 @@ export async function awardPoints(
     metadata?: Record<string, unknown>;
   }
 ): Promise<void> {
-  // Idempotent award: the unique index (contributor_hash, event_type,
-  // reference_id) collapses duplicate submissions of the same action so a
-  // macro-script replaying one request cannot multiply points. Reference-less
-  // events (NULL reference_id) stay distinct and rely on route rate limits.
+  // Idempotent award: the unique index on contributor_hash, event_type,
+  // reference_type, reference_id collapses duplicate submissions of the same
+  // action so a macro-script replaying one request cannot multiply points.
+  // Idempotency is only guaranteed when referenceId and referenceType are provided.
+  // Reference-less events stay distinct and rely on route rate limits.
   const { error } = await sb
     .from('contributor_point_events')
     .upsert(
