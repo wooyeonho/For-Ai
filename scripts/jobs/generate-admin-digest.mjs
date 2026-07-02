@@ -52,6 +52,29 @@ function makeSupabase() {
   });
 }
 
+
+function classifyRecommendedSourceType(source) {
+  const rawDomain = String(source.source_domain ?? source.domain ?? "").trim().toLowerCase();
+  let domain = rawDomain.replace(/^www\./, "");
+  if (!domain && source.url) {
+    try { domain = new URL(source.url).hostname.toLowerCase().replace(/^www\./, ""); } catch {}
+  }
+  const pageType = String(source.page_type ?? "").trim().toLowerCase().replace(/[\s-]+/g, "_");
+  const trustedSuffixes = [".gov", ".gov.uk", ".go.kr", ".go.jp", ".gob.es", ".gc.ca", ".europa.eu", ".edu", ".ac.uk", ".or.kr"];
+  const isTrusted = domain && trustedSuffixes.some((suffix) => domain === suffix.slice(1) || domain.endsWith(suffix));
+  if (["review", "forum", "social", "comment", "ugc", "community", "wiki_edit"].includes(pageType)) return "user_generated";
+  if (["pricing", "checkout", "affiliate", "sponsored", "advertorial", "marketplace", "store", "booking"].includes(pageType)) return "commercial";
+  if (["official", "policy", "terms", "filing", "notice", "law", "regulation", "standard", "government", "press_release"].includes(pageType) || isTrusted) return "official";
+  if (["registry", "platform", "database", "listing", "app_store", "operator", "schedule", "product_page"].includes(pageType)) return "primary";
+  if (["news", "reference", "report", "article", "blog", "dataset"].includes(pageType)) return "secondary";
+  if (domain && ["reddit.", "forum.", "community.", "facebook.com", "x.com", "twitter.com", "instagram.com", "tiktok.com", "threads.net", "youtube.com", "medium.com"].some((hint) => domain.includes(hint) || domain.startsWith(hint))) return "user_generated";
+  if (domain && ["amazon.", "booking.com", "expedia.", "tripadvisor.", "affiliate", "shop.", "store.", "coupon", "deals"].some((hint) => domain.includes(hint) || domain.startsWith(hint))) return "commercial";
+  return "unknown";
+}
+
+function withRecommendedSourceType(row) {
+  return { ...row, recommended_source_type: classifyRecommendedSourceType(row) };
+}
 async function countRows(sb, table, apply = (q) => q) {
   const query = apply(sb.from(table).select("id", { count: "exact", head: true }));
   const { count, error } = await query;
@@ -101,6 +124,7 @@ async function collectDigest(sb) {
     pendingClaimItems,
     usageEvents,
     suspiciousContributorRows,
+    sourceCandidateItems,
   ] = await Promise.all([
     listRows(sb, "topic_candidates", "id,title,slug,lang,country,category,risk_tier,created_at", (q) => q.eq("status", "new").gte("created_at", windowStart).order("created_at", { ascending: false })),
     listRows(sb, "reports", "id,document_id,entity_id,report_type,status,created_at", (q) => q.eq("status", "new").gte("created_at", windowStart).order("created_at", { ascending: false })),
@@ -109,6 +133,7 @@ async function collectDigest(sb) {
     listRows(sb, "claims", "id,document_id,entity_id,field_path,status,confidence,updated_at", (q) => q.eq("status", "needs_review").order("updated_at", { ascending: true })),
     collectApiUsage(sb),
     collectSuspiciousSubmissions(sb),
+    listRows(sb, "source_candidates", "id,claim_id,entity_id,title,url,source_domain,detected_language,page_type,source_type,review_status,created_at", (q) => q.eq("review_status", "pending").order("created_at", { ascending: false })),
   ]);
 
   return {
@@ -134,6 +159,7 @@ async function collectDigest(sb) {
       stale_claims: staleClaimItems,
       pending_review_claims: pendingClaimItems,
       suspicious_submissions: suspiciousContributorRows,
+      source_candidates: sourceCandidateItems.map(withRecommendedSourceType),
     },
     api_usage_summary: usageEvents,
   };
@@ -195,6 +221,8 @@ function formatDigest(digest) {
     `- Suspicious submissions: ${c.suspicious_submissions}`,
     `- API usage events: ${digest.api_usage_summary.total_events ?? "not tracked"}`,
     `- Admin actions: ${c.admin_actions}`,
+    `- Pending source candidates: ${digest.items.source_candidates?.length ?? 0}`,
+    ...(digest.items.source_candidates ?? []).slice(0, MAX_ITEMS).map((item) => `  - ${item.recommended_source_type}: ${item.title ?? item.url ?? item.id}`),
   ].join("\n");
 }
 
