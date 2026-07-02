@@ -7,6 +7,11 @@ export const metadata: Metadata = {
     "Suggest a global, source-backed fact topic that should enter For-Ai's candidate review queue before any claim is verified.",
 };
 
-export default function SuggestTopicPage() {
-  return <SuggestTopicForm />;
+export default async function SuggestTopicPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ q?: string; lang?: string }>;
+}) {
+  const params = await searchParams;
+  return <SuggestTopicForm initialQuestion={params?.q ?? ""} initialLanguage={params?.lang ?? "en"} />;
 }
