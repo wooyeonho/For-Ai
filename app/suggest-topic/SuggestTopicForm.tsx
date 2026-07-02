@@ -96,13 +96,18 @@ export default function SuggestTopicForm() {
       </header>
       <section className="registry-panel semantic-panel semantic-panel-success">
         <h2>Thank you!</h2>
-        <p>Your topic was saved as a candidate only. It is now connected to the admin review queue and cannot become a verified fact until a human reviews traceable sources.</p>
-        <p className="suggest-topic-actions">
+        <div className="semantic-alert semantic-alert-success sticky-success-feedback" role="status">
+          <strong>Review pending.</strong> Next, moderators check whether the topic maps to a real entity, claim, and traceable source. If accepted, it can become a claim-level candidate for human verification. Eligible accepted contributions may earn contributor points and badges.
+        </div>
+        <p>Your topic was saved as a candidate only. It cannot become a verified fact until a human reviews traceable sources.</p>
+        <div className="suggest-topic-actions success-cta-row">
           <button onClick={resetForm} className="semantic-button semantic-button-success">
             Suggest another topic
           </button>
+          <Link href="/contribute" className="cta-link">Add a source to another claim</Link>
           <Link href="/contribute/mine" className="btn-secondary">Check my submissions →</Link>
-        </p>
+          <Link href="/contribute/leaderboard" className="cta-link">View leaderboard</Link>
+        </div>
       </section>
     </article>
   );
@@ -116,6 +121,7 @@ export default function SuggestTopicForm() {
       </header>
       <section className="registry-panel" aria-labelledby="suggest-form-title">
         <h2 id="suggest-form-title">Topic candidate form</h2>
+        {error && <div className="semantic-alert semantic-alert-danger sticky-success-feedback" role="alert">{error}</div>}
         <form onSubmit={handleSubmit} className="registry-form">
           <label>Question <span aria-label="required">*</span>
             <input type="text" value={question} onChange={e => setQuestion(e.target.value)} required minLength={5} maxLength={300} placeholder="Example: What documents are required for a Japan tourist visa from India?" />
@@ -148,7 +154,6 @@ export default function SuggestTopicForm() {
           <label className="visually-hidden" aria-hidden="true">Leave this field empty
             <input type="text" value={website} onChange={e => setWebsite(e.target.value)} tabIndex={-1} autoComplete="off" />
           </label>
-          {error && <div className="semantic-alert semantic-alert-danger">{error}</div>}
           <button type="submit" disabled={loading}>{loading ? "Submitting..." : "Submit candidate"}</button>
         </form>
       </section>
