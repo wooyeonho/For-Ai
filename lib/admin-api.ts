@@ -2,6 +2,7 @@ import { createHash, createHmac, randomBytes, timingSafeEqual } from "crypto";
 import { NextResponse } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createServiceRoleClient, isServiceRoleKeyConfigured } from "./supabase-server";
+import { persistentRateLimited } from "./rate-limit-store";
 
 const ADMIN_SECRET = process.env.ADMIN_SECRET ?? "";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
@@ -61,7 +62,6 @@ const ACTION_REQUIRED_ROLES: Array<[RegExp, AdminRole]> = [
 ];
 
 const authContexts = new WeakMap<Request, AdminAuthContext>();
-const buckets = new Map<string, { count: number; resetAt: number }>();
 
 function hashSafe(value: string): string {
   return createHash("sha256").update(value).digest("hex");
@@ -85,16 +85,10 @@ function clientKey(request: Request): string {
   return `ip:${shortHash(ip)}`;
 }
 
-function rateLimited(request: Request): boolean {
-  const now = Date.now();
+async function rateLimited(request: Request): Promise<boolean> {
   const key = clientKey(request);
-  const bucket = buckets.get(key);
-  if (!bucket || bucket.resetAt <= now) {
-    buckets.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-    return false;
-  }
-  bucket.count += 1;
-  return bucket.count > RATE_LIMIT_MAX;
+  const outcome = await persistentRateLimited("admin-api", key, RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_MS);
+  return outcome.limited;
 }
 
 // Reject browser-originated cross-site requests. Browsers set Sec-Fetch-Site
@@ -404,7 +398,7 @@ export function adminErrorResponse(
 }
 
 export async function requireAdmin(request: Request, action: string): Promise<NextResponse | null> {
-  if (rateLimited(request)) {
+  if (await rateLimited(request)) {
     console.info("[admin-audit]", JSON.stringify({ action, allowed: false, reason: "rate_limited", at: new Date().toISOString() }));
     return NextResponse.json({ error: "rate_limited" }, { status: 429 });
   }
