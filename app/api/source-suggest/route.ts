@@ -118,22 +118,23 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Failed to save suggestion' }, { status: 500 });
   }
 
-  // Award base points
-  let pointsAwarded = POINT_VALUES.source_submitted;
-  await awardPoints(sb, contributorHash, 'source_submitted', POINT_VALUES.source_submitted, {
+  // Award base points idempotently per saved suggestion.
+  let pointsAwarded = 0;
+  const baseAwarded = await awardPoints(sb, contributorHash, 'source_submitted', POINT_VALUES.source_submitted, {
     referenceId: suggestion.id,
     referenceType: 'source_suggestion',
     metadata: { claim_id: claimId, country },
   });
+  if (baseAwarded) pointsAwarded += POINT_VALUES.source_submitted;
 
   // Bonus for official domain
   if (official) {
-    await awardPoints(sb, contributorHash, 'official_source_bonus', POINT_VALUES.official_source_bonus, {
+    const bonusAwarded = await awardPoints(sb, contributorHash, 'official_source_bonus', POINT_VALUES.official_source_bonus, {
       referenceId: suggestion.id,
       referenceType: 'source_suggestion',
       metadata: { domain, claim_id: claimId, country },
     });
-    pointsAwarded += POINT_VALUES.official_source_bonus;
+    if (bonusAwarded) pointsAwarded += POINT_VALUES.official_source_bonus;
   }
 
   // Check and award any newly earned badges

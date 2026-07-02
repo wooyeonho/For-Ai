@@ -27,32 +27,33 @@ export async function awardPoints(
     referenceType?: string;
     metadata?: Record<string, unknown>;
   }
-): Promise<void> {
-  // Idempotent award: the unique index (contributor_hash, event_type,
-  // reference_id) collapses duplicate submissions of the same action so a
-  // macro-script replaying one request cannot multiply points. Reference-less
-  // events (NULL reference_id) stay distinct and rely on route rate limits.
-  const { error } = await sb
-    .from('contributor_point_events')
-    .upsert(
-      {
-        contributor_hash: contributorHash,
-        event_type: eventType,
-        points,
-        reference_id: opts?.referenceId ?? null,
-        reference_type: opts?.referenceType ?? null,
-        metadata: opts?.metadata ?? {},
-      },
-      { onConflict: 'contributor_hash,event_type,reference_id', ignoreDuplicates: true }
-    );
+): Promise<boolean> {
+  const event = {
+    contributor_hash: contributorHash,
+    event_type: eventType,
+    points,
+    reference_id: opts?.referenceId ?? null,
+    reference_type: opts?.referenceType ?? null,
+    metadata: opts?.metadata ?? {},
+  };
 
-  if (error) {
-    console.error('[gamification] awardPoints insert failed', {
-      event_type: eventType,
-      message: error.message,
-      code: (error as { code?: string }).code ?? null,
-    });
-  }
+  // Award rows that are tied to a reviewed/submitted object must be idempotent.
+  // The database migration adds a matching partial unique index so concurrent
+  // retries cannot mint the same reward more than once.
+  const query = opts?.referenceId && opts?.referenceType
+    ? sb
+        .from('contributor_point_events')
+        .upsert(event, {
+          onConflict: 'contributor_hash,event_type,reference_type,reference_id',
+          ignoreDuplicates: true,
+        })
+        .select('id')
+        .maybeSingle()
+    : sb.from('contributor_point_events').insert(event).select('id').maybeSingle();
+
+  const { data, error } = await query;
+  if (error) throw new Error(`point award failed: ${error.message}`);
+  return Boolean(data);
 }
 
 export async function awardBadgeIfNew(
