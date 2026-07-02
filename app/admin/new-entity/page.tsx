@@ -1,4 +1,5 @@
 "use client";
+import { readAdminCsrfToken } from "@/lib/admin-client";
 import Link from "next/link";
 import { useState } from "react";
 import { AdminSecretField, useAdminSecret } from "../AdminSecretProvider";
@@ -25,7 +26,7 @@ export default function NewEntityPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-admin-csrf": "1",
+          "x-admin-csrf": readAdminCsrfToken(),
         },
         body: JSON.stringify({
           id: id.trim(),

@@ -1,4 +1,5 @@
 "use client";
+import { readAdminCsrfToken } from "@/lib/admin-client";
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
@@ -22,7 +23,7 @@ export default function AdminBusinessPage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<Message | null>(null);
 
-  const headers = useCallback(() => ({ "x-admin-secret": adminSecret, "x-admin-csrf": "1", "Content-Type": "application/json" }), [adminSecret]);
+  const headers = useCallback(() => ({ "x-admin-secret": adminSecret, "x-admin-csrf": readAdminCsrfToken(), "Content-Type": "application/json" }), [adminSecret]);
 
   const flash = (text: string, ok = true) => { setMessage({ text, ok }); setTimeout(() => setMessage(null), 4500); };
 

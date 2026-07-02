@@ -9,6 +9,7 @@ const ADMIN_CSRF_SECRET = process.env.ADMIN_CSRF_SECRET ?? "";
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX = 60;
 const ADMIN_SESSION_COOKIE = "for_ai_admin_session";
+const ADMIN_CSRF_COOKIE = "for_ai_admin_csrf";
 const ADMIN_SESSION_TTL_SECONDS = 30 * 60;
 
 export const ADMIN_AUDIT_TABLE = "admin_audit_events";
@@ -117,12 +118,43 @@ function sameOriginOk(request: Request): boolean {
   return true;
 }
 
+function csrfCookieToken(request: Request): string | null {
+  const cookie = request.headers.get("cookie") ?? "";
+  const token = cookie
+    .split(";")
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(`${ADMIN_CSRF_COOKIE}=`))
+    ?.slice(ADMIN_CSRF_COOKIE.length + 1);
+  return token ? decodeURIComponent(token) : null;
+}
+
+// The double-submit token is `${rand}.${HMAC(ADMIN_CSRF_SECRET, rand)}`. A
+// subdomain attacker able to set the (non-httpOnly) cookie still cannot produce
+// a valid signature without the server secret.
+function csrfTokenSignatureValid(token: string): boolean {
+  const [rand, signature] = token.split(".");
+  if (!rand || !signature) return false;
+  const expected = createHmac("sha256", ADMIN_CSRF_SECRET).update(rand).digest("base64url");
+  return safeEqual(signature, expected);
+}
+
 function csrfValid(request: Request): boolean {
   if (request.method === "GET" || request.method === "HEAD" || request.method === "OPTIONS") return true;
+  // CSRF is a browser-only attack. Non-browser callers (CLI / server-to-server
+  // authenticated via x-admin-secret) send neither Origin nor Sec-Fetch-Site
+  // and are exempt from the browser double-submit check.
+  if (!isBrowserOriginRequest(request)) return true;
   if (!sameOriginOk(request)) return false;
-  const token = request.headers.get("x-admin-csrf") ?? "";
-  if (ADMIN_CSRF_SECRET) return safeSecretEqual(ADMIN_CSRF_SECRET, token);
-  return token.length > 0;
+  // Double-submit: the browser echoes the JS-readable for_ai_admin_csrf cookie
+  // (minted at login) in the x-admin-csrf header. Require an exact match and a
+  // valid signature. ADMIN_CSRF_SECRET is mandatory — there is no permissive
+  // "any non-empty token" fallback.
+  if (!ADMIN_CSRF_SECRET) return false;
+  const header = request.headers.get("x-admin-csrf") ?? "";
+  const cookieToken = csrfCookieToken(request);
+  if (!header || !cookieToken) return false;
+  if (!safeSecretEqual(header, cookieToken)) return false;
+  return csrfTokenSignatureValid(cookieToken);
 }
 
 function safeEqual(a: string, b: string): boolean {
@@ -177,6 +209,20 @@ export function issueAdminSessionCookie(response: NextResponse): void {
     name: ADMIN_SESSION_COOKIE,
     value: `${payload}.${signSessionPayload(payload)}`,
     httpOnly: true,
+    secure: true,
+    sameSite: "strict",
+    path: "/",
+    maxAge: ADMIN_SESSION_TTL_SECONDS,
+  });
+
+  // Double-submit CSRF token. httpOnly:false so the admin client can read it
+  // and echo it in the x-admin-csrf header; signed so it cannot be forged.
+  const csrfRand = randomBytes(16).toString("base64url");
+  const csrfToken = `${csrfRand}.${createHmac("sha256", ADMIN_CSRF_SECRET).update(csrfRand).digest("base64url")}`;
+  response.cookies.set({
+    name: ADMIN_CSRF_COOKIE,
+    value: csrfToken,
+    httpOnly: false,
     secure: true,
     sameSite: "strict",
     path: "/",

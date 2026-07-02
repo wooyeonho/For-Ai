@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { experimentalGamificationEnabled } from "@/lib/feature-flags";
 import { CLAIM_BOUNTY_POLICY, SAMPLE_CLAIM_BOUNTIES, getBountyById, isSponsoredBounty } from "../../../../lib/bounties";
 import { SUPPORTED_LOCALES, isValidLocale } from "../../../../lib/i18n";
 
@@ -22,6 +23,7 @@ export async function generateMetadata({ params }: { params: Promise<Params> }):
 
 export default async function BountyDetailPage({ params }: { params: Promise<Params> }) {
   const { locale, id } = await params;
+  if (!experimentalGamificationEnabled()) notFound();
   if (!isValidLocale(locale)) notFound();
   const bounty = getBountyById(id);
   if (!bounty) notFound();

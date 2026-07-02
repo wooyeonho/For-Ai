@@ -1,4 +1,5 @@
 "use client";
+import { readAdminCsrfToken } from "@/lib/admin-client";
 
 import { useCallback, useState } from "react";
 import Link from "next/link";
@@ -43,7 +44,7 @@ export default function AdminSourceSuggestionsPage() {
 
   const adminHeaders = useCallback(() => ({
     "x-admin-secret": secret,
-    "x-admin-csrf": "1",
+    "x-admin-csrf": readAdminCsrfToken(),
     ...(adminActor.trim() ? { "x-admin-actor": adminActor.trim() } : {}),
   }), [secret, adminActor]);
 

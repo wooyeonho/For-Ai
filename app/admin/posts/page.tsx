@@ -1,4 +1,5 @@
 "use client";
+import { readAdminCsrfToken } from "@/lib/admin-client";
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { AdminSecretField, useAdminSecret } from "../AdminSecretProvider";
@@ -73,7 +74,7 @@ export default function AdminPostsPage() {
     if (!adminSecret) { flash("admin secret을 입력하세요", false); return; }
     const r = await fetch("/api/admin/posts", {
       method: "PATCH",
-      headers: { "Content-Type": "application/json", "x-admin-secret": adminSecret, "x-admin-csrf": "1" },
+      headers: { "Content-Type": "application/json", "x-admin-secret": adminSecret, "x-admin-csrf": readAdminCsrfToken() },
       body: JSON.stringify({ id, action }),
     });
     const d = await r.json();
@@ -84,7 +85,7 @@ export default function AdminPostsPage() {
   async function updateStatus(id: string, status: string) {
     const r = await fetch("/api/admin/posts", {
       method: "PATCH",
-      headers: { "Content-Type": "application/json", "x-admin-csrf": "1" },
+      headers: { "Content-Type": "application/json", "x-admin-csrf": readAdminCsrfToken() },
       body: JSON.stringify({ id, status }),
     });
     const d = await r.json();
@@ -99,7 +100,7 @@ export default function AdminPostsPage() {
     try {
       const r = await fetch("/api/admin/posts", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "x-admin-csrf": "1" },
+        headers: { "Content-Type": "application/json", "x-admin-csrf": readAdminCsrfToken() },
         body: JSON.stringify({
           content: newContent.trim(),
           author_type: newAuthorType,

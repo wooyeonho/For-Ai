@@ -1,4 +1,5 @@
 "use client";
+import { readAdminCsrfToken } from "@/lib/admin-client";
 
 import type { CSSProperties } from "react";
 import { useCallback, useState } from "react";
@@ -65,7 +66,7 @@ export function AdminSecretField({
     try {
       const response = await fetch("/api/admin/login", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "x-admin-csrf": "1" },
+        headers: { "Content-Type": "application/json", "x-admin-csrf": readAdminCsrfToken() },
         body: JSON.stringify({ password: currentSecret }),
       });
       const payload = await response.json().catch(() => ({}));

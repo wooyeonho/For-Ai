@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { experimentalGamificationEnabled } from "@/lib/feature-flags";
 import { getCountryQuests, getContributionEvents, summarizeContributors } from "../../../lib/contributions";
 import { isValidLocale } from "../../../lib/i18n";
 
@@ -26,6 +27,7 @@ function shortHash(hash: string) {
 
 export default async function QuestsPage({ params }: { params: Promise<{ locale: string }> }) {
   const { locale } = await params;
+  if (!experimentalGamificationEnabled()) notFound();
   if (!isValidLocale(locale)) notFound();
   const [quests, events] = await Promise.all([getCountryQuests(), getContributionEvents()]);
   const contributors = summarizeContributors(events).slice(0, 12);

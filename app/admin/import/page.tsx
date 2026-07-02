@@ -1,4 +1,5 @@
 "use client";
+import { readAdminCsrfToken } from "@/lib/admin-client";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { AdminSecretField, useAdminSecret } from "../AdminSecretProvider";
@@ -68,7 +69,7 @@ export default function AdminImportPage() {
         headers: {
           "Content-Type": "application/json",
           "x-admin-secret": adminSecret,
-          "x-admin-csrf": "1",
+          "x-admin-csrf": readAdminCsrfToken(),
         },
         body: JSON.stringify({ catalog: selectedCatalog }),
       });
@@ -100,7 +101,7 @@ export default function AdminImportPage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-admin-csrf": "1",
+          "x-admin-csrf": readAdminCsrfToken(),
         },
         body: JSON.stringify({ rows }),
       });
