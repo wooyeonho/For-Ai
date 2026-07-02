@@ -66,7 +66,9 @@ drop policy if exists contributor_badges_public_update on contributor_badges;
 drop policy if exists contributor_badges_public_delete on contributor_badges;
 
 -- ---------------------------------------------------------------------------
--- source_suggestions: public source-submission review queue.
+-- source_suggestions: source-submission review queue.
+-- Intake is service-role only because the same API route also mints reward
+-- events; do not add anon insert policies unless intake is split from awards.
 -- ---------------------------------------------------------------------------
 create table if not exists source_suggestions (
   id               uuid primary key default gen_random_uuid(),
@@ -95,11 +97,10 @@ create index if not exists source_suggestions_contributor_claim_created_idx
 
 alter table source_suggestions enable row level security;
 
--- Anon may only INSERT pending suggestions (mirrors community_posts). The admin
--- review queue read/update flows through service-role /api/admin routes.
+-- No anon policies: source suggestions and the associated point/badge awards
+-- are written by service-role API routes only. The admin review queue also
+-- flows through service-role /api/admin routes.
 drop policy if exists source_suggestions_public_select on source_suggestions;
 drop policy if exists source_suggestions_public_update on source_suggestions;
 drop policy if exists source_suggestions_public_insert on source_suggestions;
-create policy source_suggestions_public_insert
-  on source_suggestions for insert to anon
-  with check (status = 'pending');
+drop policy if exists source_suggestions_public_delete on source_suggestions;

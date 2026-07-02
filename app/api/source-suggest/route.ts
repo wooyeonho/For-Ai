@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createServerClient, isSupabaseConfigured } from '../../../lib/supabase-server';
+import { createServiceRoleClient, isServiceRoleConfigured } from '../../../lib/supabase-server';
 import { makeContributorHashForRequest } from '../../../lib/contributor-hash';
 import {
   awardPoints,
@@ -55,11 +55,20 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
   }
 
-  if (!isSupabaseConfigured()) {
-    return NextResponse.json({ error: 'submission_storage_unavailable' }, { status: 503 });
+  if (!isServiceRoleConfigured()) {
+    return NextResponse.json(
+      { error: 'source_suggestion_service_unavailable', message: 'Source suggestions require service-role storage.' },
+      { status: 503 }
+    );
   }
 
-  const sb = createServerClient();
+  const sb = createServiceRoleClient();
+  if (!sb) {
+    return NextResponse.json(
+      { error: 'source_suggestion_service_unavailable', message: 'Source suggestions require service-role storage.' },
+      { status: 503 }
+    );
+  }
 
   // Verify claim exists
   const { data: claim, error: claimErr } = await sb

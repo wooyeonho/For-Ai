@@ -905,4 +905,8 @@ create policy challenge_progress_public_select
 -- - Raw user-agent strings are not stored in admin audit metadata; store a short salted/one-way hash or omit.
 -- - Public intake submissions (edits, reports, hallucination_reports, topic_suggestions, topic_candidates) should be reviewed and deleted/anonymized within 180 days after final status, unless retained as accepted claim provenance.
 -- - Inactive topic_adoptions and resolved watch_subscriptions should be anonymized or aggregated after 365 days unless needed for contributor reward accounting.
+-- - Source suggestion intake uses service-role API routes only because accepted
+--   submissions currently mint contributor_point_events/contributor_badges in
+--   the same server flow; do not add public RLS policies on source_suggestions
+--   or reward tables unless intake is split from reward awarding first.
 -- - Admin audit events should be retained for 365 days, then deleted or aggregated.
