@@ -81,14 +81,14 @@ jobs:
         run: npm run build
 
       - name: Invoke notify-watchers Edge Function
-        if: env.SUPABASE_ACCESS_TOKEN != '' && env.SUPABASE_PROJECT_ID != ''
+        if: env.SUPABASE_PROJECT_ID != '' && env.NOTIFY_WATCHERS_SECRET != ''
         env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
           SUPABASE_PROJECT_ID: ${{ secrets.SUPABASE_PROJECT_ID }}
+          NOTIFY_WATCHERS_SECRET: ${{ secrets.NOTIFY_WATCHERS_SECRET }}
         run: |
-          npx supabase functions invoke notify-watchers \
-            --project-ref "$SUPABASE_PROJECT_ID" \
-            --no-verify-jwt \
+          curl -sS -X POST "https://${SUPABASE_PROJECT_ID}.supabase.co/functions/v1/notify-watchers" \
+            -H "x-notify-secret: ${NOTIFY_WATCHERS_SECRET}" \
+            --fail-with-body \
             || echo "notify-watchers invocation skipped (non-fatal)"
 
       - name: Create pull request

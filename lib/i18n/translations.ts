@@ -29,6 +29,9 @@ export interface UITranslations {
     resetSearch: string;
     noDocs: string;
     suggestFirst: string;
+    aiWrongTitle: string;
+    aiWrongCardCta: string;
+    aiWrongQuestions: string[];
   };
   claims: {
     needsReview: string;
@@ -55,6 +58,7 @@ export interface UITranslations {
   };
   wiki: {
     claimRegistry: string;
+    askAboutFact: string;
     aiGenerated: string;
     whyPeopleAsk: string;
     citationStatus: string;
@@ -180,6 +184,14 @@ const ko: UITranslations = {
     resetSearch: "검색 초기화",
     noDocs: "아직 공개된 문서가 없습니다.",
     suggestFirst: "첫 번째 토픽을 제안해보세요 →",
+    aiWrongTitle: "AI가 자주 틀리는 질문으로 시작하기",
+    aiWrongCardCta: "이 클레임을 제안하거나 검증하기 →",
+    aiWrongQuestions: [
+      "여권 재발급 수수료가 지금 얼마야?",
+      "전입신고는 며칠 안에 해야 해?",
+      "주민등록증 재발급 수수료는 무료야?",
+      "자동차세 납부 기간은 언제야?",
+    ],
   },
   topics: {
     claimLevelTopicRegistry: "Claim-level topic registry",
@@ -334,6 +346,7 @@ const ko: UITranslations = {
   },
   wiki: {
     claimRegistry: "Claim 레지스트리 문서",
+    askAboutFact: "이 팩트에 대해 질문하기",
     aiGenerated: "For-Ai · AI 생성 및 검토됨",
     whyPeopleAsk: "사람들이 AI에게 묻는 이유",
     citationStatus: "인용 상태",
@@ -417,6 +430,14 @@ const en: UITranslations = {
     resetSearch: "Reset search",
     noDocs: "No published documents yet.",
     suggestFirst: "Suggest the first topic →",
+    aiWrongTitle: "Start from questions AI often gets wrong",
+    aiWrongCardCta: "Submit or verify this claim →",
+    aiWrongQuestions: [
+      "How much is a passport reissue fee right now?",
+      "How many days do I have to file a move-in report?",
+      "Is a resident ID card reissue free?",
+      "When is the vehicle tax payment window?",
+    ],
   },
   topics: {
     claimLevelTopicRegistry: "Claim-level topic registry",
@@ -571,6 +592,7 @@ const en: UITranslations = {
   },
   wiki: {
     claimRegistry: "Claim registry document",
+    askAboutFact: "Ask a question about this fact",
     aiGenerated: "For-Ai · AI generated & reviewed",
     whyPeopleAsk: "Why people ask AI",
     citationStatus: "Citation status",
@@ -654,6 +676,14 @@ const hi: UITranslations = {
     resetSearch: "खोज रीसेट करें",
     noDocs: "अभी तक कोई प्रकाशित दस्तावेज़ नहीं।",
     suggestFirst: "पहला विषय सुझाएँ →",
+    aiWrongTitle: "उन सवालों से शुरू करें जिनमें AI अक्सर गलत होता है",
+    aiWrongCardCta: "यह दावा सुझाएँ या सत्यापित करें →",
+    aiWrongQuestions: [
+      "पासपोर्ट पुनः जारी करने का शुल्क अभी कितना है?",
+      "निवास परिवर्तन की सूचना कितने दिनों में देनी होती है?",
+      "क्या पहचान पत्र पुनः जारी करना निःशुल्क है?",
+      "वाहन कर भुगतान की अवधि कब है?",
+    ],
   },
   topics: {
     claimLevelTopicRegistry: "Claim-level topic registry",
@@ -808,6 +838,7 @@ const hi: UITranslations = {
   },
   wiki: {
     claimRegistry: "Claim रजिस्ट्री दस्तावेज़",
+    askAboutFact: "इस तथ्य के बारे में प्रश्न पूछें",
     aiGenerated: "For-Ai · AI द्वारा निर्मित और समीक्षित",
     whyPeopleAsk: "लोग AI से क्यों पूछते हैं",
     citationStatus: "उद्धरण स्थिति",
@@ -891,6 +922,14 @@ const ar: UITranslations = {
     resetSearch: "إعادة تعيين البحث",
     noDocs: "لا توجد مستندات منشورة بعد.",
     suggestFirst: "اقترح الموضوع الأول →",
+    aiWrongTitle: "ابدأ من الأسئلة التي يخطئ فيها الذكاء الاصطناعي غالبًا",
+    aiWrongCardCta: "اقترح هذا الادعاء أو تحقق منه ←",
+    aiWrongQuestions: [
+      "كم تبلغ رسوم إعادة إصدار جواز السفر الآن؟",
+      "خلال كم يومًا يجب الإبلاغ عن تغيير السكن؟",
+      "هل إعادة إصدار بطاقة الهوية مجانية؟",
+      "متى فترة سداد ضريبة المركبات؟",
+    ],
   },
   topics: {
     claimLevelTopicRegistry: "Claim-level topic registry",
@@ -1045,6 +1084,7 @@ const ar: UITranslations = {
   },
   wiki: {
     claimRegistry: "وثيقة سجل المطالبات",
+    askAboutFact: "اطرح سؤالًا حول هذه الحقيقة",
     aiGenerated: "For-Ai · تم إنشاؤه ومراجعته بواسطة AI",
     whyPeopleAsk: "لماذا يسأل الناس AI",
     citationStatus: "حالة الاستشهاد",
@@ -1128,6 +1168,14 @@ const es: UITranslations = {
     resetSearch: "Restablecer búsqueda",
     noDocs: "Aún no hay documentos publicados.",
     suggestFirst: "Sugiere el primer tema →",
+    aiWrongTitle: "Empieza por las preguntas que la IA suele responder mal",
+    aiWrongCardCta: "Propón o verifica esta afirmación →",
+    aiWrongQuestions: [
+      "¿Cuánto cuesta ahora reponer un pasaporte?",
+      "¿En cuántos días debo declarar el cambio de domicilio?",
+      "¿Es gratuita la reposición del documento de identidad?",
+      "¿Cuándo es el plazo para pagar el impuesto vehicular?",
+    ],
   },
   topics: {
     claimLevelTopicRegistry: "Claim-level topic registry",
@@ -1282,6 +1330,7 @@ const es: UITranslations = {
   },
   wiki: {
     claimRegistry: "Documento de registro de claims",
+    askAboutFact: "Haz una pregunta sobre este hecho",
     aiGenerated: "For-Ai · Generado y revisado por IA",
     whyPeopleAsk: "Por qué la gente pregunta a la IA",
     citationStatus: "Estado de citación",
@@ -1365,6 +1414,14 @@ const ja: UITranslations = {
     resetSearch: "検索リセット",
     noDocs: "まだ公開されたドキュメントはありません。",
     suggestFirst: "最初のトピックを提案する →",
+    aiWrongTitle: "AIがよく間違える質問から始める",
+    aiWrongCardCta: "このクレームを提案・検証する →",
+    aiWrongQuestions: [
+      "パスポート再発行の手数料は今いくら?",
+      "転入届は何日以内に必要?",
+      "住民登録証の再発行は無料?",
+      "自動車税の納付期間はいつ?",
+    ],
   },
   topics: {
     claimLevelTopicRegistry: "Claim-level topic registry",
@@ -1519,6 +1576,7 @@ const ja: UITranslations = {
   },
   wiki: {
     claimRegistry: "Claimレジストリ文書",
+    askAboutFact: "このファクトについて質問する",
     aiGenerated: "For-Ai · AI生成・レビュー済み",
     whyPeopleAsk: "なぜ人々はAIに質問するのか",
     citationStatus: "引用ステータス",
@@ -1602,6 +1660,14 @@ const zh: UITranslations = {
     resetSearch: "重置搜索",
     noDocs: "暂无已发布文档。",
     suggestFirst: "建议第一个主题 →",
+    aiWrongTitle: "从 AI 常答错的问题开始",
+    aiWrongCardCta: "提交或验证此声明 →",
+    aiWrongQuestions: [
+      "现在护照补办费用是多少?",
+      "迁入登记需要在几天内办理?",
+      "居民身份证补办免费吗?",
+      "车辆税的缴纳期限是什么时候?",
+    ],
   },
   topics: {
     claimLevelTopicRegistry: "Claim-level topic registry",
@@ -1756,6 +1822,7 @@ const zh: UITranslations = {
   },
   wiki: {
     claimRegistry: "Claim注册文档",
+    askAboutFact: "就此事实提问",
     aiGenerated: "For-Ai · AI生成并审核",
     whyPeopleAsk: "人们为什么问AI",
     citationStatus: "引用状态",
