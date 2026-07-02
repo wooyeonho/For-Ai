@@ -19,6 +19,13 @@ export interface AIProviderConfig {
   endpoint: string;
   envKey: string;
   supportsWebSearch: boolean;
+  // Consensus weighting. `weight` reflects trust in the model's factual output
+  // (web-search-grounded > frontier parametric > smaller parametric).
+  // `vendorGroup` lets the consensus algorithm cap how much a single vendor can
+  // contribute, so correlated errors from same-vendor models can't manufacture
+  // a false "majority".
+  weight: number;
+  vendorGroup: string;
 }
 
 export const AI_PROVIDERS: Record<AIProviderKey, AIProviderConfig> = {
@@ -29,6 +36,8 @@ export const AI_PROVIDERS: Record<AIProviderKey, AIProviderConfig> = {
     endpoint: "https://api.perplexity.ai/chat/completions",
     envKey: "PERPLEXITY_API_KEY",
     supportsWebSearch: true,
+    weight: 1.5,
+    vendorGroup: "perplexity",
   },
   nvidia: {
     key: "nvidia",
@@ -37,6 +46,8 @@ export const AI_PROVIDERS: Record<AIProviderKey, AIProviderConfig> = {
     endpoint: "https://integrate.api.nvidia.com/v1/chat/completions",
     envKey: "NVIDIA_API_KEY",
     supportsWebSearch: false,
+    weight: 0.6,
+    vendorGroup: "nvidia",
   },
   gemini: {
     key: "gemini",
@@ -45,6 +56,8 @@ export const AI_PROVIDERS: Record<AIProviderKey, AIProviderConfig> = {
     endpoint: "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent",
     envKey: "GOOGLE_GEMINI_API_KEY",
     supportsWebSearch: false,
+    weight: 1.0,
+    vendorGroup: "google",
   },
   gpt: {
     key: "gpt",
@@ -53,6 +66,8 @@ export const AI_PROVIDERS: Record<AIProviderKey, AIProviderConfig> = {
     endpoint: "https://api.openai.com/v1/chat/completions",
     envKey: "OPENAI_API_KEY",
     supportsWebSearch: false,
+    weight: 1.0,
+    vendorGroup: "openai",
   },
   grok: {
     key: "grok",
@@ -61,6 +76,8 @@ export const AI_PROVIDERS: Record<AIProviderKey, AIProviderConfig> = {
     endpoint: "https://api.x.ai/v1/chat/completions",
     envKey: "XAI_API_KEY",
     supportsWebSearch: false,
+    weight: 1.0,
+    vendorGroup: "xai",
   },
   nvidia_llama_70b: {
     key: "nvidia_llama_70b",
@@ -69,6 +86,8 @@ export const AI_PROVIDERS: Record<AIProviderKey, AIProviderConfig> = {
     endpoint: "https://integrate.api.nvidia.com/v1/chat/completions",
     envKey: "NVIDIA_API_KEY",
     supportsWebSearch: false,
+    weight: 0.6,
+    vendorGroup: "nvidia",
   },
   nvidia_nemotron_70b: {
     key: "nvidia_nemotron_70b",
@@ -77,6 +96,8 @@ export const AI_PROVIDERS: Record<AIProviderKey, AIProviderConfig> = {
     endpoint: "https://integrate.api.nvidia.com/v1/chat/completions",
     envKey: "NVIDIA_API_KEY",
     supportsWebSearch: false,
+    weight: 0.6,
+    vendorGroup: "nvidia",
   },
   nvidia_llama_8b: {
     key: "nvidia_llama_8b",
@@ -85,8 +106,43 @@ export const AI_PROVIDERS: Record<AIProviderKey, AIProviderConfig> = {
     endpoint: "https://integrate.api.nvidia.com/v1/chat/completions",
     envKey: "NVIDIA_API_KEY",
     supportsWebSearch: false,
+    weight: 0.5,
+    vendorGroup: "nvidia",
   },
 };
+
+// Maximum total weight any single vendor group can contribute to a consensus
+// score. Four NVIDIA models (0.6·3 + 0.5) would otherwise sum to 2.3 and
+// dominate a multi-vendor panel; capping keeps one vendor from manufacturing a
+// majority through correlated same-family errors.
+export const VENDOR_GROUP_WEIGHT_CAP = 1.5;
+
+export function providerWeight(key: string): number {
+  return (AI_PROVIDERS as Record<string, AIProviderConfig>)[key]?.weight ?? 1.0;
+}
+
+export function providerVendorGroup(key: string): string {
+  return (AI_PROVIDERS as Record<string, AIProviderConfig>)[key]?.vendorGroup ?? key;
+}
+
+export function providerSupportsWebSearch(key: string): boolean {
+  return (AI_PROVIDERS as Record<string, AIProviderConfig>)[key]?.supportsWebSearch ?? false;
+}
+
+// Sum provider weights, capping each vendor group's contribution. Shared by the
+// consensus numerator (agreeing providers) and denominator (full panel).
+export function cappedGroupWeight(providerKeys: string[]): number {
+  const byGroup = new Map<string, number>();
+  for (const key of providerKeys) {
+    const group = providerVendorGroup(key);
+    byGroup.set(group, (byGroup.get(group) ?? 0) + providerWeight(key));
+  }
+  let total = 0;
+  for (const groupWeight of byGroup.values()) {
+    total += Math.min(groupWeight, VENDOR_GROUP_WEIGHT_CAP);
+  }
+  return total;
+}
 
 export interface AIGenerateRequest {
   systemPrompt: string;
