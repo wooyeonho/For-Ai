@@ -19,9 +19,9 @@ export async function GET(request: Request) {
   const claimId = searchParams.get('claim_id')?.trim();
 
   let query = sb
-    .from('source_suggestions')
+    .from('source_candidates')
     .select('*, claims(id, field_path, claim_text, document_id, entity_id)')
-    .eq('status', status)
+    .eq('review_status', status)
     .order('created_at', { ascending: true })
     .limit(limit);
 
@@ -53,9 +53,9 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: 'id and valid action are required' }, { status: 400 });
   }
 
-  // Fetch the suggestion
+  // Fetch the canonical source candidate
   const { data: suggestion, error: fetchErr } = await sb
-    .from('source_suggestions')
+    .from('source_candidates')
     .select('*')
     .eq('id', id)
     .single();
@@ -64,27 +64,29 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: 'Suggestion not found' }, { status: 404 });
   }
 
-  if (suggestion.status !== 'pending') {
+  if (suggestion.review_status !== 'pending') {
     return NextResponse.json({ error: 'Suggestion is not pending' }, { status: 409 });
   }
 
-  const newStatus = action === 'accept' ? 'accepted' : action === 'duplicate' ? 'duplicate' : action === 'spam' ? 'spam' : 'rejected';
+  const newReviewStatus = action === 'accept' ? 'accepted' : action === 'spam' ? 'spam' : 'rejected';
+  const newSubmissionStatus = action === 'accept' ? 'accepted' : action === 'spam' ? 'spam' : 'rejected';
 
-  // Update status
+  // Update review status. Review status records moderation only; it does not
+  // verify a claim unless an admin separately promotes the source into claim_sources.
   const { error: updateErr } = await sb
-    .from('source_suggestions')
-    .update({ status: newStatus, reviewed_at: new Date().toISOString() })
+    .from('source_candidates')
+    .update({ status: newSubmissionStatus, review_status: newReviewStatus, reviewed_at: new Date().toISOString() })
     .eq('id', id);
 
   if (updateErr) return NextResponse.json({ error: updateErr.message }, { status: 500 });
 
   let claimSourceId: string | null = null;
 
-  if (action === 'accept') {
+  if (action === 'accept' && suggestion.contributor_hash) {
     // Award acceptance points
     await awardPoints(sb, suggestion.contributor_hash, 'source_accepted', POINT_VALUES.source_accepted, {
       referenceId: id,
-      referenceType: 'source_suggestion',
+      referenceType: 'source_candidate',
     });
 
     // Optionally promote to official claim_source
@@ -102,6 +104,7 @@ export async function PATCH(request: Request) {
       });
       if (srcErr) return NextResponse.json({ error: 'claim_sources insert failed', detail: srcErr.message }, { status: 500 });
       claimSourceId = sourceId;
+      await sb.from('source_candidates').update({ linked_claim_source_id: sourceId }).eq('id', id);
     }
 
     await checkAndAwardBadges(sb, suggestion.contributor_hash);
@@ -115,5 +118,5 @@ export async function PATCH(request: Request) {
     claim_source_id: claimSourceId,
   });
 
-  return NextResponse.json({ success: true, status: newStatus, claim_source_id: claimSourceId });
+  return NextResponse.json({ success: true, status: newReviewStatus, claim_source_id: claimSourceId });
 }

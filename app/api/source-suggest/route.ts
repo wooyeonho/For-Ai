@@ -64,7 +64,7 @@ export async function POST(request: Request) {
   // Verify claim exists
   const { data: claim, error: claimErr } = await sb
     .from('claims')
-    .select('id, entity_id, document_id')
+    .select('id, entity_id, document_id, field_path')
     .eq('id', claimId)
     .single();
 
@@ -87,7 +87,7 @@ export async function POST(request: Request) {
 
   const oneDayAgo = new Date(Date.now() - DAY_MS).toISOString();
   const { count: recentCount } = await sb
-    .from('source_suggestions')
+    .from('source_candidates')
     .select('id', { count: 'exact', head: true })
     .eq('contributor_hash', contributorHash)
     .eq('claim_id', claimId)
@@ -97,18 +97,28 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Daily suggestion limit reached for this claim' }, { status: 429 });
   }
 
-  // Insert suggestion
+  const pointsAwarded = POINT_VALUES.source_submitted + (official ? POINT_VALUES.official_source_bonus : 0);
+
+  // Insert source candidate. Source candidates are not claim truth; admins must
+  // review them before any claim_source or verification status changes.
   const { data: suggestion, error: insertErr } = await sb
-    .from('source_suggestions')
+    .from('source_candidates')
     .insert({
       claim_id: claimId,
+      document_id: claim.document_id,
+      entity_id: claim.entity_id,
+      field_path: claim.field_path,
       contributor_hash: contributorHash,
       source_type: official ? 'official' : sourceType,
+      source_authority: official ? 'official' : 'unknown',
       url,
+      normalized_url: url,
       title,
       citation,
-      domain,
-      status: 'pending',
+      status: 'new',
+      review_status: 'pending',
+      message: domain ? `Submitted from ${domain}` : null,
+      points_awarded: pointsAwarded,
     })
     .select('id')
     .single();
@@ -119,10 +129,9 @@ export async function POST(request: Request) {
   }
 
   // Award base points
-  let pointsAwarded = POINT_VALUES.source_submitted;
   await awardPoints(sb, contributorHash, 'source_submitted', POINT_VALUES.source_submitted, {
     referenceId: suggestion.id,
-    referenceType: 'source_suggestion',
+    referenceType: 'source_candidate',
     metadata: { claim_id: claimId, country },
   });
 
@@ -130,10 +139,9 @@ export async function POST(request: Request) {
   if (official) {
     await awardPoints(sb, contributorHash, 'official_source_bonus', POINT_VALUES.official_source_bonus, {
       referenceId: suggestion.id,
-      referenceType: 'source_suggestion',
+      referenceType: 'source_candidate',
       metadata: { domain, claim_id: claimId, country },
     });
-    pointsAwarded += POINT_VALUES.official_source_bonus;
   }
 
   // Check and award any newly earned badges
@@ -141,7 +149,7 @@ export async function POST(request: Request) {
 
   return NextResponse.json({
     success: true,
-    suggestion_id: suggestion.id,
+    source_candidate_id: suggestion.id,
     points_awarded: pointsAwarded,
     is_official_source: official,
     new_badges: newBadges,

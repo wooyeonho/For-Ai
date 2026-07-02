@@ -634,7 +634,7 @@ create table if not exists contribution_events (
   constraint contribution_event_identifier_required check (contributor_hash is not null or account_id is not null)
 );
 
-comment on table contribution_events is 'Audit trail for contribution activity and point decisions. Does not determine factual truth.';
+comment on table contribution_events is 'Audit trail for contribution activity and point decisions. Points and events are reputation signals only; they never determine claim truth, confidence, verified status, or citation readiness.';
 comment on column contribution_events.metadata is 'Safe metadata only. Never include raw IP addresses or raw user-agent strings.';
 
 create table if not exists contributor_points (
@@ -649,7 +649,7 @@ create table if not exists contributor_points (
   constraint contributor_points_identifier_required check (contributor_hash is not null or account_id is not null)
 );
 
-comment on table contributor_points is 'Point ledger for source contributions. Points are reputation signals, not claim verification evidence.';
+comment on table contributor_points is 'Point ledger for source contributions. Points are reputation signals only and must never determine claim truth, confidence, verified status, or citation readiness.';
 
 create index if not exists contributors_account_id_idx on contributors(account_id);
 create index if not exists source_candidates_claim_idx on source_candidates(claim_id, created_at desc);
@@ -809,7 +809,7 @@ create table contribution_events (
 );
 
 comment on table contributors is 'Privacy-preserving contributor profile keyed by contributor_hash only; never store raw IP addresses.';
-comment on table contribution_events is 'Anonymous reward event ledger. Never store raw IP addresses. All reward points are calculated from contribution events, not direct verified status changes.';
+comment on table contribution_events is 'Anonymous reward event ledger. Never store raw IP addresses. Points are reputation signals only and must never determine claim truth, confidence, verified status, or citation readiness.';
 comment on column contribution_events.contributor_hash is 'Salted contributor identifier only; raw IP addresses are forbidden.';
 comment on column contribution_events.submission_status is 'Rejected/spam submissions may be recorded for audit context but must be ignored by streak calculation.';
 

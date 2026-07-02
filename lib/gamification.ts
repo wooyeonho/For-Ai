@@ -17,6 +17,14 @@ import { BADGES } from "./badges";
 export { BADGES };
 export type { Badge } from "./badges";
 
+function toCanonicalContributionEventType(eventType: string): string {
+  if (eventType === 'source_accepted') return 'source_admin_accepted';
+  if (eventType === 'source_used_in_verified_claim') return 'source_linked_verified_claim';
+  if (eventType === 'source_duplicate_submitted') return 'source_duplicate_submitted';
+  if (eventType === 'source_spam_rejected') return 'source_spam_rejected';
+  return 'source_submitted';
+}
+
 export async function awardPoints(
   sb: SupabaseClient,
   contributorHash: string,
@@ -28,29 +36,80 @@ export async function awardPoints(
     metadata?: Record<string, unknown>;
   }
 ): Promise<void> {
-  // Idempotent award: the unique index (contributor_hash, event_type,
-  // reference_id) collapses duplicate submissions of the same action so a
-  // macro-script replaying one request cannot multiply points. Reference-less
-  // events (NULL reference_id) stay distinct and rely on route rate limits.
-  const { error } = await sb
-    .from('contributor_point_events')
-    .upsert(
-      {
-        contributor_hash: contributorHash,
-        event_type: eventType,
-        points,
+  // Contribution points are reputation signals only; canonical claim truth
+  // remains claims + claim_sources + verification_events after human review.
+  const { data: contributorRow, error: contributorError } = await sb
+    .from('contributors')
+    .upsert({ contributor_hash: contributorHash, updated_at: new Date().toISOString() }, { onConflict: 'contributor_hash' })
+    .select('id,total_points')
+    .single();
+
+  if (contributorError) {
+    console.error('[gamification] contributor upsert failed', {
+      event_type: eventType,
+      message: contributorError.message,
+      code: (contributorError as { code?: string }).code ?? null,
+    });
+    return;
+  }
+
+  const contributor = contributorRow as { id?: string; total_points?: number } | null;
+  const canonicalEventType = toCanonicalContributionEventType(eventType);
+
+  // Points are reputation signals only. They never determine claim truth,
+  // confidence, verification status, or whether a source is attached to a claim.
+  const { data: event, error: eventError } = await sb
+    .from('contribution_events')
+    .insert({
+      contributor_id: contributor?.id ?? null,
+      contributor_hash: contributorHash,
+      source_candidate_id: opts?.referenceType === 'source_candidate' ? opts.referenceId ?? null : null,
+      claim_id: typeof opts?.metadata?.claim_id === 'string' ? opts.metadata.claim_id : null,
+      event_type: canonicalEventType,
+      points_delta: points,
+      metadata: {
+        ...(opts?.metadata ?? {}),
+        original_event_type: eventType,
         reference_id: opts?.referenceId ?? null,
         reference_type: opts?.referenceType ?? null,
-        metadata: opts?.metadata ?? {},
+        points_do_not_determine_truth: true,
       },
-      { onConflict: 'contributor_hash,event_type,reference_id', ignoreDuplicates: true }
-    );
+    })
+    .select('id')
+    .single();
 
-  if (error) {
+  if (eventError || !event) {
+    console.error('[gamification] contribution event insert failed', {
+      event_type: eventType,
+      message: eventError?.message,
+      code: (eventError as { code?: string } | null)?.code ?? null,
+    });
+    return;
+  }
+
+  const { error: pointsError } = await sb.from('contributor_points').insert({
+    contributor_id: contributor?.id ?? null,
+    contributor_hash: contributorHash,
+    contribution_event_id: event.id,
+    points,
+    reason: eventType,
+  });
+
+  if (!pointsError && contributor?.id) {
+    await sb
+      .from('contributors')
+      .update({
+        total_points: Number(contributor.total_points ?? 0) + points,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', contributor.id);
+  }
+
+  if (pointsError) {
     console.error('[gamification] awardPoints insert failed', {
       event_type: eventType,
-      message: error.message,
-      code: (error as { code?: string }).code ?? null,
+      message: pointsError.message,
+      code: (pointsError as { code?: string }).code ?? null,
     });
   }
 }
@@ -60,12 +119,12 @@ export async function awardBadgeIfNew(
   contributorHash: string,
   badgeSlug: string
 ): Promise<boolean> {
-  const { error } = await sb.from('contributor_badges').insert({
-    contributor_hash: contributorHash,
-    badge_slug: badgeSlug,
-  });
-  // UNIQUE constraint violation = already has it → return false
-  return !error;
+  // Badges are derived from canonical contribution_events/contributor_points.
+  // There is intentionally no separate contributor_badges table in schema-v3.
+  void sb;
+  void contributorHash;
+  void badgeSlug;
+  return false;
 }
 
 export async function checkAndAwardBadges(
@@ -76,18 +135,19 @@ export async function checkAndAwardBadges(
 
   const [{ data: events }, { data: existingBadges }] = await Promise.all([
     sb
-      .from('contributor_point_events')
+      .from('contribution_events')
       .select('event_type, metadata')
       .eq('contributor_hash', contributorHash),
     sb
-      .from('contributor_badges')
-      .select('badge_slug')
+      .from('contribution_events')
+      .select('event_type, metadata')
       .eq('contributor_hash', contributorHash),
   ]);
 
   if (!events) return awarded;
 
-  const hasBadge = new Set((existingBadges ?? []).map((b) => b.badge_slug));
+  const hasBadge = new Set<string>();
+  void existingBadges;
 
   const counts = events.reduce((acc, e) => {
     acc[e.event_type] = (acc[e.event_type] || 0) + 1;
@@ -161,14 +221,14 @@ export async function getContributorStats(
 }> {
   const [{ data: events }, { data: badges }] = await Promise.all([
     sb
-      .from('contributor_point_events')
-      .select('event_type, points, created_at')
+      .from('contributor_points')
+      .select('reason, points, created_at')
       .eq('contributor_hash', contributorHash)
       .order('created_at', { ascending: false })
       .limit(50),
     sb
-      .from('contributor_badges')
-      .select('badge_slug, awarded_at')
+      .from('contribution_events')
+      .select('event_type, created_at')
       .eq('contributor_hash', contributorHash),
   ]);
 
@@ -177,8 +237,8 @@ export async function getContributorStats(
   return {
     total_points,
     rank_this_week: null,
-    events: events ?? [],
-    badges: badges ?? [],
+    events: (events ?? []).map((e) => ({ event_type: e.reason, points: e.points, created_at: e.created_at })),
+    badges: (badges ?? []).map((b) => ({ badge_slug: b.event_type, awarded_at: b.created_at })),
   };
 }
 

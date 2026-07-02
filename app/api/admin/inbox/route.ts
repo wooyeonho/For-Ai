@@ -10,7 +10,7 @@ type InboxItem = { id: string; type: InboxType; status: string; risk: string; cr
 
 const DEFAULT_LIMIT = 25;
 const HIGH_RISK_CATEGORIES = ["finance", "bank", "insurance", "health", "medical", "medicine", "legal", "law", "realtime", "genomic", "dna"];
-const TYPE_TO_TABLE: Record<InboxType, string> = { community_post: "community_posts", source_suggestion: "source_suggestions", hallucination_report: "hallucination_reports", report: "reports", topic_suggestion: "topic_suggestions", topic_candidate: "topic_candidates", business_correction: "business_corrections" };
+const TYPE_TO_TABLE: Record<InboxType, string> = { community_post: "community_posts", source_suggestion: "source_candidates", hallucination_report: "hallucination_reports", report: "reports", topic_suggestion: "topic_suggestions", topic_candidate: "topic_candidates", business_correction: "business_corrections" };
 const ACTIONS = new Set(["approve", "reject", "spam", "duplicate", "link_to_claim", "promote_to_source", "create_document"]);
 
 function statusForAction(type: InboxType, action: string): string {
@@ -77,7 +77,7 @@ export async function PATCH(request: Request) {
   const type = String(body.type ?? "") as InboxType; const id = String(body.id ?? "").trim(); const action = String(body.action ?? "").trim();
   if (!TYPE_TO_TABLE[type] || !id || !ACTIONS.has(action)) return NextResponse.json({ error: "valid type, id, and action are required" }, { status: 400 });
   if (action === "promote_to_source") {
-    const { data: suggestion, error: fetchError } = await sb.from("source_suggestions").select("*").eq("id", id).single();
+    const { data: suggestion, error: fetchError } = await sb.from("source_candidates").select("*").eq("id", id).single();
     if (fetchError || !suggestion) return NextResponse.json({ error: "source suggestion not found" }, { status: 404 });
     if (!suggestion.claim_id) return NextResponse.json({ error: "claim_id is required to promote to source" }, { status: 400 });
     const sourceId = `src-${suggestion.claim_id}-${Date.now()}`;

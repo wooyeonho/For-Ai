@@ -26,19 +26,18 @@ export async function GET(request: Request) {
   const sb = createServerClient();
 
   let query = sb
-    .from('contributor_point_events')
-    .select('contributor_hash, points, event_type');
+    .from('contributor_points')
+    .select('contributor_hash, points, reason, created_at');
 
   if (since) query = query.gte('created_at', since);
 
   const { data: events, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // Aggregate points per contributor, but only count quality events
-  // Excluded: topic_submitted (too easy to spam) — only acceptance-based events count
-  const QUALITY_EVENTS = new Set([
+  // Aggregate reputation points per contributor. These points are quality and
+  // participation signals only; they never determine claim truth or verification.
+  const QUALITY_REASONS = new Set([
     'source_accepted',
-    'official_source_bonus',
     'source_used_in_verified_claim',
     'hallucination_accepted',
     'stale_claim_fixed',
@@ -48,7 +47,7 @@ export async function GET(request: Request) {
 
   const scoreMap = new Map<string, number>();
   for (const e of events ?? []) {
-    if (!QUALITY_EVENTS.has(e.event_type)) continue;
+    if (!QUALITY_REASONS.has(e.reason)) continue;
     scoreMap.set(e.contributor_hash, (scoreMap.get(e.contributor_hash) ?? 0) + e.points);
   }
 
@@ -62,22 +61,9 @@ export async function GET(request: Request) {
       quality_points,
     }));
 
-  // Fetch badge counts for top contributors
-  const hashes = sorted.map((r) => r.contributor_hash);
-  const badgeCounts = new Map<string, number>();
-  if (hashes.length > 0) {
-    const { data: badges } = await sb
-      .from('contributor_badges')
-      .select('contributor_hash')
-      .in('contributor_hash', hashes);
-    for (const b of badges ?? []) {
-      badgeCounts.set(b.contributor_hash, (badgeCounts.get(b.contributor_hash) ?? 0) + 1);
-    }
-  }
-
   const leaderboard = sorted.map((row) => ({
     ...row,
-    badge_count: badgeCounts.get(row.contributor_hash) ?? 0,
+    badge_count: 0,
   }));
 
   return NextResponse.json({ leaderboard, period, generated_at: now.toISOString() });
