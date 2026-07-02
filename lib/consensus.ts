@@ -1,6 +1,20 @@
 // lib/consensus.ts
 // Cross-verification consensus algorithm for multi-AI candidate generation.
 // Given candidates from multiple providers, finds agreement and scores reliability.
+//
+// Scoring is weighted, not a raw head count: each provider carries a trust
+// `weight` (web-search-grounded > frontier > small parametric) and belongs to a
+// `vendorGroup` whose total contribution is capped. This defends the "majority"
+// signal against a single vendor's correlated errors (e.g. four NVIDIA models
+// agreeing on the same hallucination). A candidate can only reach majority /
+// unanimous if at least two distinct vendors agree, and the level is downgraded
+// one step when no web-search-grounded provider is among the agreeing set.
+
+import {
+  cappedGroupWeight,
+  providerVendorGroup,
+  providerSupportsWebSearch,
+} from "./ai-providers";
 
 interface RawCandidate {
   title: string;
@@ -104,10 +118,47 @@ function mergeClaims(
     .sort((a, b) => b.provider_count - a.provider_count);
 }
 
+type ConsensusLevel = ConsensusCandidate["consensus_level"];
+
+function downgradeLevel(level: ConsensusLevel): ConsensusLevel {
+  // single/minority are already the floor for their situations.
+  if (level === "unanimous") return "majority";
+  if (level === "majority") return "minority";
+  return level;
+}
+
+function computeConsensusLevel(
+  agreedProviderCount: number,
+  vendorGroupCount: number,
+  weightedScore: number,
+  hasWebSearch: boolean
+): ConsensusLevel {
+  let level: ConsensusLevel;
+  if (agreedProviderCount <= 1) {
+    level = "single";
+  } else if (vendorGroupCount < 2) {
+    // Multiple models but a single vendor — treat correlated agreement as weak.
+    level = "minority";
+  } else if (weightedScore >= 0.99) {
+    level = "unanimous";
+  } else if (weightedScore >= 0.5) {
+    level = "majority";
+  } else {
+    level = "minority";
+  }
+
+  // Parametric-only agreement (no web-search grounding) is weaker evidence.
+  return hasWebSearch ? level : downgradeLevel(level);
+}
+
 export function buildConsensus(
   candidatesByProvider: Map<string, Record<string, unknown>[]>,
   totalProviders: number
 ): ConsensusCandidate[] {
+  // Weighted denominator: the full panel of providers that contributed
+  // comparable output, with each vendor group capped.
+  const panelProviders = [...candidatesByProvider.keys()];
+  const panelWeight = cappedGroupWeight(panelProviders);
   const allCandidates: (RawCandidate & { _provider: string })[] = [];
   for (const [provider, candidates] of candidatesByProvider) {
     for (const c of candidates) {
@@ -144,15 +195,11 @@ export function buildConsensus(
   return groups
     .map((group) => {
       const providers = [...new Set(group.map((c) => c._provider))];
-      const score = providers.length / totalProviders;
-      const level: ConsensusCandidate["consensus_level"] =
-        providers.length === totalProviders
-          ? "unanimous"
-          : providers.length > totalProviders / 2
-            ? "majority"
-            : providers.length > 1
-              ? "minority"
-              : "single";
+      const agreedWeight = cappedGroupWeight(providers);
+      const score = panelWeight > 0 ? Math.min(1, agreedWeight / panelWeight) : 0;
+      const vendorGroupCount = new Set(providers.map(providerVendorGroup)).size;
+      const hasWebSearch = providers.some(providerSupportsWebSearch);
+      const level = computeConsensusLevel(providers.length, vendorGroupCount, score, hasWebSearch);
 
       // Use the candidate from the most reliable source (prefer web-search provider)
       const primary =

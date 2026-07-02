@@ -9,6 +9,10 @@ import {
   POINT_VALUES,
 } from '../../../lib/gamification';
 import { invalidPublicSourceUrl, parsePublicSourceUrl } from '../../../lib/source-contributions';
+import { rateLimited } from '../../../lib/rate-limit';
+
+const DAILY_PER_CLAIM_LIMIT = 20;
+const DAY_MS = 86_400_000;
 
 export async function POST(request: Request) {
   let body: Record<string, unknown>;
@@ -71,8 +75,17 @@ export async function POST(request: Request) {
   const domain = url ? extractDomain(url) : null;
   const official = url ? isOfficialDomain(url) : false;
 
-  // Rate-limit: max 20 suggestions per contributor per day per claim
-  const oneDayAgo = new Date(Date.now() - 86400000).toISOString();
+  // Rate-limit: max 20 suggestions per contributor per day per claim.
+  // The in-memory guard runs first and increments synchronously, so concurrent
+  // requests from one client cannot slip past the cap in the window between the
+  // DB count and the insert (the original check-then-act TOCTOU that let macro
+  // scripts farm points). The DB count below remains as a cross-instance
+  // best-effort backstop.
+  if (rateLimited('source-suggest', `${contributorHash}:${claimId}`, DAILY_PER_CLAIM_LIMIT, DAY_MS)) {
+    return NextResponse.json({ error: 'Daily suggestion limit reached for this claim' }, { status: 429 });
+  }
+
+  const oneDayAgo = new Date(Date.now() - DAY_MS).toISOString();
   const { count: recentCount } = await sb
     .from('source_suggestions')
     .select('id', { count: 'exact', head: true })
@@ -80,7 +93,7 @@ export async function POST(request: Request) {
     .eq('claim_id', claimId)
     .gte('created_at', oneDayAgo);
 
-  if ((recentCount ?? 0) >= 20) {
+  if ((recentCount ?? 0) >= DAILY_PER_CLAIM_LIMIT) {
     return NextResponse.json({ error: 'Daily suggestion limit reached for this claim' }, { status: 429 });
   }
 

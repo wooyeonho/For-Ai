@@ -1940,11 +1940,12 @@ details.technical-meta dd {
   padding: 6px 14px;
 }
 
+/* Active category chip: single source of truth for the ink/paper inversion. */
 .community-chip-active,
 .community-chip.is-active {
-  background: var(--accent);
-  border-color: var(--accent);
-  color: var(--panel);
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
 }
 
 .community-field-flex {
@@ -2055,6 +2056,8 @@ details.technical-meta dd {
   line-height: 1.6;
   margin: 0;
   white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: keep-all;
 }
 
 .community-related-doc {
@@ -2177,8 +2180,6 @@ body {
 }
 .semantic-button-success { background: var(--success); border-color: var(--success); }
 .community-primary-button { border-radius: 8px; }
-.community-chip-active,
-.community-chip.is-active { background: var(--ink); border-color: var(--ink); color: var(--paper); }
 
 /* 2차 버튼 */
 .btn-secondary {
