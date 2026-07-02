@@ -461,7 +461,17 @@ export async function POST(request: Request) {
         await awardPoints(sb, contributorHash, "source_accepted", POINT_VALUES.source_accepted, {
           referenceId: sourceId,
           referenceType: "claim_source",
+          metadata: { claim_id: claimId, country: clean(body.country), source_type: sourceType },
         });
+        // Official-source credit is only awarded here, at acceptance time, so
+        // pending/unreviewed submissions can't inflate the leaderboard.
+        if (sourceIsOfficialOrRegulator({ source_type: sourceType, source_authority: sourceAuthority })) {
+          await awardPoints(sb, contributorHash, "official_source_accepted_bonus", POINT_VALUES.official_source_accepted_bonus, {
+            referenceId: sourceId,
+            referenceType: "claim_source",
+            metadata: { claim_id: claimId, country: clean(body.country), source_type: sourceType },
+          });
+        }
       }
     }
 

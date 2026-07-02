@@ -118,7 +118,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Failed to save suggestion' }, { status: 500 });
   }
 
-  // Award base points idempotently per saved suggestion.
+  // Award base points idempotently per saved suggestion. Official-domain
+  // submissions no longer get a submission-time bonus — that credit is only
+  // awarded at acceptance time (official_source_accepted_bonus) so pending,
+  // unreviewed submissions can't inflate the leaderboard.
   let pointsAwarded = 0;
   const baseAwarded = await awardPoints(sb, contributorHash, 'source_submitted', POINT_VALUES.source_submitted, {
     referenceId: suggestion.id,
@@ -126,16 +129,6 @@ export async function POST(request: Request) {
     metadata: { claim_id: claimId, country },
   });
   if (baseAwarded) pointsAwarded += POINT_VALUES.source_submitted;
-
-  // Bonus for official domain
-  if (official) {
-    const bonusAwarded = await awardPoints(sb, contributorHash, 'official_source_bonus', POINT_VALUES.official_source_bonus, {
-      referenceId: suggestion.id,
-      referenceType: 'source_suggestion',
-      metadata: { domain, claim_id: claimId, country },
-    });
-    if (bonusAwarded) pointsAwarded += POINT_VALUES.official_source_bonus;
-  }
 
   // Check and award any newly earned badges
   const newBadges = await checkAndAwardBadges(sb, contributorHash);

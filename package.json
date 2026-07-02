@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "test": "rm -rf .tmp/tests && tsc --module commonjs --target ES2020 --moduleResolution node --jsx react-jsx --esModuleInterop --skipLibCheck --resolveJsonModule --noEmit false --outDir .tmp/tests lib/citation-status.ts lib/i18n/locales.ts lib/i18n/routing.ts lib/ai-providers.ts lib/consensus.ts lib/admin-api.ts lib/contributor-streaks.ts lib/point-awards.ts app/api/admin/login/route.ts test/citation-status.test.ts test/i18n-routing.test.ts test/consensus.test.ts test/admin-auth.test.ts test/contributor-streaks.test.ts test/gamification.test.ts && node scripts/stub-server-only-for-tests.mjs && node --test .tmp/tests/test/*.test.js",
+    "test": "rm -rf .tmp/tests && tsc --module commonjs --target ES2020 --moduleResolution node --jsx react-jsx --esModuleInterop --skipLibCheck --resolveJsonModule --noEmit false --outDir .tmp/tests lib/citation-status.ts lib/i18n/locales.ts lib/i18n/routing.ts lib/ai-providers.ts lib/consensus.ts lib/admin-api.ts lib/contributor-streaks.ts lib/point-awards.ts lib/gamification-leaderboard.ts app/api/admin/login/route.ts test/citation-status.test.ts test/i18n-routing.test.ts test/consensus.test.ts test/admin-auth.test.ts test/contributor-streaks.test.ts test/gamification.test.ts test/gamification-leaderboard.test.ts && node scripts/stub-server-only-for-tests.mjs && node --test .tmp/tests/test/*.test.js",
     "generate:question-candidates": "node scripts/generate-question-candidates.mjs",
     "generate:seed-candidates": "node scripts/seed-to-candidates.mjs",
     "ci:guards": "node scripts/ci-guards.mjs all",

@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createServerClient, isSupabaseConfigured } from '../../../../lib/supabase-server';
+import { buildLeaderboardRows } from '../../../../lib/gamification-leaderboard';
 
 export const revalidate = 300; // 5 minutes
 
@@ -34,33 +35,10 @@ export async function GET(request: Request) {
   const { data: events, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // Aggregate points per contributor, but only count quality events
-  // Excluded: topic_submitted (too easy to spam) — only acceptance-based events count
-  const QUALITY_EVENTS = new Set([
-    'source_accepted',
-    'official_source_bonus',
-    'source_used_in_verified_claim',
-    'hallucination_accepted',
-    'stale_claim_fixed',
-    'topic_accepted',
-    'new_country_contribution',
-  ]);
-
-  const scoreMap = new Map<string, number>();
-  for (const e of events ?? []) {
-    if (!QUALITY_EVENTS.has(e.event_type)) continue;
-    scoreMap.set(e.contributor_hash, (scoreMap.get(e.contributor_hash) ?? 0) + e.points);
-  }
-
-  // Sort by score, take top 50
-  const sorted = Array.from(scoreMap.entries())
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 50)
-    .map(([contributor_hash, quality_points], i) => ({
-      rank: i + 1,
-      contributor_hash,
-      quality_points,
-    }));
+  // Aggregate points per contributor, but only count quality events.
+  // Excluded: submission-time events such as topic_submitted, source_submitted,
+  // and legacy official_source_bonus. Only acceptance-based events count.
+  const sorted = buildLeaderboardRows(events ?? []);
 
   // Fetch badge counts for top contributors
   const hashes = sorted.map((r) => r.contributor_hash);
