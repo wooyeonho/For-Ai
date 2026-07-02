@@ -1,7 +1,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { getAllRegistryBundles } from "./data";
 import { getRegistryBundleFromSupabase } from "./supabase-documents";
-import { FRESHNESS_TTL_DAYS, getDocumentCitationStatus, isStale, type FreshnessLabel } from "./citation-status";
+import { FRESHNESS_TTL_DAYS, getClaimCitationStatus, getDocumentCitationStatus, isStale, type FreshnessLabel } from "./citation-status";
 import { DEFAULT_LOCALE } from "./i18n/locales";
 import type { Entity, RegistryDocumentBundle } from "./types";
 
@@ -9,6 +9,105 @@ import type { Entity, RegistryDocumentBundle } from "./types";
 // (a place, institution, product, service…) into a single trust view — for humans
 // to judge credibility and for AI to cite at the entity level. citable status is
 // derived from the same getDocumentCitationStatus() used everywhere else.
+
+
+export type BusinessProfileRiskDashboard = {
+  ai_answer_risk: "low" | "medium" | "high";
+  ai_answer_risk_score: number;
+  unverified_critical_claims: Array<{
+    claim_id: string;
+    document_id: string;
+    document_slug: string;
+    field_path: string;
+    claim_text: string;
+    risk_tier: string;
+    confidence: string;
+    status: string;
+  }>;
+  stale_sources: Array<{
+    claim_id: string;
+    document_id: string;
+    document_slug: string;
+    field_path: string;
+    last_verified_at: string | null;
+    freshness_window_days: number;
+  }>;
+  summary: {
+    total_claims: number;
+    citation_ready_claims: number;
+    unverified_claims: number;
+    stale_claims: number;
+  };
+  note: string;
+};
+
+const CRITICAL_FIELD_PATTERN = /(hours|opening|price|pricing|fare|fee|refund|cancellation|return|address|phone|contact|availability|booking|reservation|accessibility|visa|requirement|deadline|rate)/i;
+
+export function getBusinessProfileRiskDashboard(
+  documents: RegistryDocumentBundle[],
+  now: Date = new Date(),
+): BusinessProfileRiskDashboard {
+  const unverifiedCriticalClaims: BusinessProfileRiskDashboard["unverified_critical_claims"] = [];
+  const staleSources: BusinessProfileRiskDashboard["stale_sources"] = [];
+  let totalClaims = 0;
+  let citationReadyClaims = 0;
+
+  for (const bundle of documents) {
+    const documentStatus = getDocumentCitationStatus(bundle, undefined, now);
+    totalClaims += documentStatus.totalClaims;
+    citationReadyClaims += documentStatus.verifiedClaims;
+
+    for (const claim of bundle.claims) {
+      const claimStatus = getClaimCitationStatus(claim, documentStatus.freshnessWindowDays, now, bundle.document.category);
+      const criticalSignal =
+        claim.risk_tier === "high" ||
+        claim.risk_tier === "forbidden" ||
+        CRITICAL_FIELD_PATTERN.test(`${claim.field_path} ${claim.claim_text}`);
+
+      if (!claimStatus.isCitationReady && criticalSignal) {
+        unverifiedCriticalClaims.push({
+          claim_id: claim.id,
+          document_id: bundle.document.id,
+          document_slug: bundle.document.slug,
+          field_path: claim.field_path,
+          claim_text: claim.claim_text,
+          risk_tier: claim.risk_tier,
+          confidence: claim.confidence,
+          status: claim.status,
+        });
+      }
+
+      if (claimStatus.isCitationReady && claimStatus.freshness === "stale") {
+        staleSources.push({
+          claim_id: claim.id,
+          document_id: bundle.document.id,
+          document_slug: bundle.document.slug,
+          field_path: claim.field_path,
+          last_verified_at: claim.last_verified_at ?? null,
+          freshness_window_days: documentStatus.freshnessWindowDays,
+        });
+      }
+    }
+  }
+
+  const unverifiedClaims = Math.max(0, totalClaims - citationReadyClaims);
+  const riskScore = Math.min(100, (unverifiedCriticalClaims.length * 25) + (staleSources.length * 15) + (unverifiedClaims * 5));
+  const aiAnswerRisk = riskScore >= 60 ? "high" : riskScore >= 25 ? "medium" : "low";
+
+  return {
+    ai_answer_risk: aiAnswerRisk,
+    ai_answer_risk_score: riskScore,
+    unverified_critical_claims: unverifiedCriticalClaims,
+    stale_sources: staleSources,
+    summary: {
+      total_claims: totalClaims,
+      citation_ready_claims: citationReadyClaims,
+      unverified_claims: unverifiedClaims,
+      stale_claims: staleSources.length,
+    },
+    note: "Risk dashboard is an operational triage view. Paid status, sponsored placement, or business ownership never changes claim verification or citation readiness.",
+  };
+}
 
 export type EntityProfileSummary = {
   total_documents: number;

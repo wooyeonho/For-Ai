@@ -14,6 +14,7 @@ interface SponsoredPlacementProps {
 }
 
 const SPONSORED_DISCLOSURE = "Sponsored — not a verified factual claim";
+const SPONSORED_INTEGRITY_NOTICE = "Sponsorship affects placement only. It never changes claim verification, confidence, source status, or AI citation readiness.";
 
 /**
  * Renders a sponsored placement with a mandatory disclosure label.
@@ -81,7 +82,10 @@ export function SponsoredPlacement({
           </p>
           {description && <p style={{ margin: "6px 0 0", fontSize: "0.85rem", color: "var(--muted)" }}>{description}</p>}
           <p style={{ margin: "8px 0 0", fontSize: "0.75rem", color: "var(--muted)" }}>
-            Promotional placement by {businessName}. This block is separate from verified claim data.
+            Promotional placement by {businessName}. This block is separate from verified business profile data and verified claim data.
+          </p>
+          <p style={{ margin: "6px 0 0", fontSize: "0.75rem", fontWeight: 700, color: "#92400e" }}>
+            {SPONSORED_INTEGRITY_NOTICE}
           </p>
         </div>
       </div>
