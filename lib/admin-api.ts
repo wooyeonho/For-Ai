@@ -31,7 +31,7 @@ const FORBIDDEN_AUDIT_METADATA_KEYS = new Set([
 type AdminAuditValue = string | number | boolean | null | string[];
 type AdminAuditMetadata = Record<string, AdminAuditValue>;
 
-type AdminAuthContext = {
+export type AdminAuthContext = {
   adminUserId: string | null;
   adminUserHash: string;
   role: AdminRole;
@@ -306,6 +306,10 @@ function fallbackSessionContext(request: Request): AdminAuthContext | null {
     role: "admin",
     authMethod: "admin_session",
   };
+}
+
+export function getAdminAuthContext(request: Request): AdminAuthContext | null {
+  return authContexts.get(request) ?? null;
 }
 
 export async function authorized(request: Request): Promise<boolean> {
