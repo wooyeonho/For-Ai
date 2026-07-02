@@ -1,4 +1,5 @@
 "use client";
+import Link from "next/link";
 import { useState } from "react";
 
 const categories = [
@@ -100,6 +101,7 @@ export default function SuggestTopicForm() {
           <button onClick={resetForm} className="semantic-button semantic-button-success">
             Suggest another topic
           </button>
+          <Link href="/contribute/mine" className="btn-secondary">Check my submissions →</Link>
         </p>
       </section>
     </article>
