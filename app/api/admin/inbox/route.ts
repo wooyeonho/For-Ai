@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { logAdminAuditEvent, requireAdmin, supabaseAdmin } from "@/lib/admin-api";
+import { awardPoints, checkAndAwardBadges, POINT_VALUES } from "@/lib/gamification";
 import { DEFAULT_LOCALE } from "@/lib/i18n";
 import { documentPageUrl } from "@/lib/urls";
 
@@ -77,12 +78,38 @@ export async function PATCH(request: Request) {
   const type = String(body.type ?? "") as InboxType; const id = String(body.id ?? "").trim(); const action = String(body.action ?? "").trim();
   if (!TYPE_TO_TABLE[type] || !id || !ACTIONS.has(action)) return NextResponse.json({ error: "valid type, id, and action are required" }, { status: 400 });
   if (action === "promote_to_source") {
-    const { data: suggestion, error: fetchError } = await sb.from("source_suggestions").select("*").eq("id", id).single();
-    if (fetchError || !suggestion) return NextResponse.json({ error: "source suggestion not found" }, { status: 404 });
+    if (type !== "source_suggestion") return NextResponse.json({ error: "promote_to_source is only valid for source_suggestion" }, { status: 400 });
+    const reviewedAt = new Date().toISOString();
+    const { data: suggestion, error: transitionError } = await sb
+      .from("source_suggestions")
+      .update({ status: "accepted", reviewed_at: reviewedAt })
+      .eq("id", id)
+      .eq("status", "pending")
+      .select("*")
+      .maybeSingle();
+
+    if (transitionError) return NextResponse.json({ error: transitionError.message }, { status: 500 });
+    if (!suggestion) return NextResponse.json({ error: "source suggestion is not pending or was already reviewed" }, { status: 409 });
     if (!suggestion.claim_id) return NextResponse.json({ error: "claim_id is required to promote to source" }, { status: 400 });
-    const sourceId = `src-${suggestion.claim_id}-${Date.now()}`;
-    const { error: insertError } = await sb.from("claim_sources").insert({ id: sourceId, claim_id: suggestion.claim_id, source_type: suggestion.source_type ?? "web", title: suggestion.title ?? null, url: suggestion.url ?? null, citation: suggestion.citation ?? null, contributor_hash: suggestion.contributor_hash ?? null, observed_at: new Date().toISOString() });
-    if (insertError) return NextResponse.json({ error: insertError.message }, { status: 500 });
+
+    // Deterministic id makes promotion idempotent per source_suggestion and prevents duplicate source rows.
+    const sourceId = `src-source-suggestion-${id}`;
+    const { error: insertError } = await sb.from("claim_sources").insert({ id: sourceId, claim_id: suggestion.claim_id, source_type: suggestion.source_type ?? "web", title: suggestion.title ?? null, url: suggestion.url ?? null, citation: suggestion.citation ?? null, contributor_hash: suggestion.contributor_hash ?? null, observed_at: reviewedAt });
+    if (insertError) {
+      const status = (insertError as { code?: string }).code === "23505" ? 409 : 500;
+      return NextResponse.json({ error: "claim_sources insert failed", detail: insertError.message }, { status });
+    }
+
+    if (suggestion.contributor_hash) {
+      await awardPoints(sb, suggestion.contributor_hash, "source_accepted", POINT_VALUES.source_accepted, {
+        referenceId: id,
+        referenceType: "source_suggestion",
+      });
+      await checkAndAwardBadges(sb, suggestion.contributor_hash);
+    }
+
+    await logAdminAuditEvent(sb, request, "admin.inbox.update", { inbox_type: type, inbox_action: action, target_id: id, claim_source_id: sourceId }, id);
+    return NextResponse.json({ success: true, type, id, action, updates: { status: "accepted", reviewed_at: reviewedAt }, claim_source_id: sourceId });
   }
   const updates: Record<string, unknown> = { status: statusForAction(type, action) };
   if (["source_suggestion", "topic_suggestion", "business_correction"].includes(type)) updates.reviewed_at = new Date().toISOString();
