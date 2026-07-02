@@ -29,6 +29,8 @@ export type CommercePolicyFieldPath =
 
 export type SourceType =
   | "official"
+  | "law"
+  | "regulator"
   | "platform"
   | "review"
   | "user"
