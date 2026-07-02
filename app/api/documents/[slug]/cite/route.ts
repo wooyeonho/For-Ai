@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/admin-api";
 import { recordDocumentAnalyticsEvent } from "@/lib/analytics";
-import { clientIp, rateLimited } from "@/lib/rate-limit";
+import { publicRateLimitKey, rateLimited } from "@/lib/rate-limit";
 
 // Cap repeat citations from the same caller for the same document so the public,
 // unauthenticated counter cannot be trivially inflated.
@@ -14,7 +14,7 @@ export async function POST(
 ) {
   const { slug } = await params;
 
-  if (rateLimited("doc-cite", `${clientIp(request)}:${slug}`, CITE_MAX_PER_WINDOW, CITE_WINDOW_MS)) {
+  if (await rateLimited("doc-cite", publicRateLimitKey(request, slug), CITE_MAX_PER_WINDOW, CITE_WINDOW_MS)) {
     return NextResponse.json({ error: "rate_limited" }, { status: 429 });
   }
 

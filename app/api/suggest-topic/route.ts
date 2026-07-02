@@ -102,7 +102,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
   }
 
-  if (rateLimited("suggest-topic", contributorHash, MAX_PER_HOUR, HOUR_MS)) {
+  if (await rateLimited("suggest-topic", `contributor:${contributorHash}`, MAX_PER_HOUR, HOUR_MS)) {
     return NextResponse.json({ error: "rate_limited" }, { status: 429 });
   }
 

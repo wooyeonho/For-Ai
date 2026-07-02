@@ -2,23 +2,12 @@ import { createHash } from "crypto";
 import { NextResponse } from "next/server";
 import { API_TIER_CONFIG, type ApiTier } from "./types-monetization";
 import { supabaseAdmin } from "./admin-api";
+import { checkRateLimit as checkSharedRateLimit, publicRateLimitKey } from "./rate-limit";
 
-interface RateBucket {
-  count: number;
-  resetAt: number;
-}
-
-const buckets = new Map<string, RateBucket>();
 const WINDOW_MS = 60_000;
 
 function sha256(value: string): string {
   return createHash("sha256").update(value).digest("hex");
-}
-
-function contributorHash(request: Request): string {
-  const forwardedFor = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim();
-  const fingerprint = forwardedFor ?? request.headers.get("x-real-ip") ?? "unknown";
-  return sha256(fingerprint).slice(0, 32);
 }
 
 interface AuthResult {
@@ -72,33 +61,22 @@ interface RateLimitResult {
 }
 
 export async function checkRateLimit(request: Request): Promise<RateLimitResult> {
-  const now = Date.now();
   const auth = await authenticateApiKey(request);
   const tier: ApiTier = auth?.tier ?? "free";
   const tierConfig = API_TIER_CONFIG[tier];
   const limit = tierConfig.rate_limit_rpm;
+  const bucketKey = auth ? `api-key:${auth.keyHash}` : publicRateLimitKey(request, "api");
+  const result = await checkSharedRateLimit("api", bucketKey, limit, WINDOW_MS);
 
-  const bucketKey = auth ? `key:${auth.keyHash}` : `contributor:${contributorHash(request)}`;
-  const bucket = buckets.get(bucketKey);
-
-  if (!bucket || bucket.resetAt <= now) {
-    buckets.set(bucketKey, { count: 1, resetAt: now + WINDOW_MS });
-    return {
-      allowed: true,
-      tier,
-      limit,
-      remaining: limit - 1,
-      resetAt: now + WINDOW_MS,
-      profileId: auth?.profileId ?? null,
-      keyId: auth?.keyId ?? null,
-    };
-  }
-
-  bucket.count += 1;
-  const remaining = Math.max(0, limit - bucket.count);
-  const allowed = bucket.count <= limit;
-
-  return { allowed, tier, limit, remaining, resetAt: bucket.resetAt, profileId: auth?.profileId ?? null, keyId: auth?.keyId ?? null };
+  return {
+    allowed: result.allowed,
+    tier,
+    limit,
+    remaining: result.remaining,
+    resetAt: result.resetAt,
+    profileId: auth?.profileId ?? null,
+    keyId: auth?.keyId ?? null,
+  };
 }
 
 export async function logApiUsage(request: Request, result: RateLimitResult, responseStatus: number): Promise<void> {

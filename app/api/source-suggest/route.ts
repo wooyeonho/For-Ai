@@ -76,12 +76,10 @@ export async function POST(request: Request) {
   const official = url ? isOfficialDomain(url) : false;
 
   // Rate-limit: max 20 suggestions per contributor per day per claim.
-  // The in-memory guard runs first and increments synchronously, so concurrent
+  // The shared Supabase bucket increments before the DB insert, so concurrent
   // requests from one client cannot slip past the cap in the window between the
-  // DB count and the insert (the original check-then-act TOCTOU that let macro
-  // scripts farm points). The DB count below remains as a cross-instance
-  // best-effort backstop.
-  if (rateLimited('source-suggest', `${contributorHash}:${claimId}`, DAILY_PER_CLAIM_LIMIT, DAY_MS)) {
+  // DB count and the insert. The DB count below remains a defensive backstop.
+  if (await rateLimited('source-suggest', `contributor:${contributorHash}:${claimId}`, DAILY_PER_CLAIM_LIMIT, DAY_MS)) {
     return NextResponse.json({ error: 'Daily suggestion limit reached for this claim' }, { status: 429 });
   }
 

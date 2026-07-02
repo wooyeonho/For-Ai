@@ -2,6 +2,7 @@ import { createHash, createHmac, randomBytes, timingSafeEqual } from "crypto";
 import { NextResponse } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createServiceRoleClient, isServiceRoleKeyConfigured } from "./supabase-server";
+import { checkRateLimit, hashedFallbackKey, publicRateLimitKey } from "./rate-limit";
 
 const ADMIN_SECRET = process.env.ADMIN_SECRET ?? "";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
@@ -61,7 +62,6 @@ const ACTION_REQUIRED_ROLES: Array<[RegExp, AdminRole]> = [
 ];
 
 const authContexts = new WeakMap<Request, AdminAuthContext>();
-const buckets = new Map<string, { count: number; resetAt: number }>();
 
 function hashSafe(value: string): string {
   return createHash("sha256").update(value).digest("hex");
@@ -78,23 +78,25 @@ function safeSecretEqual(expected: string, actual: string): boolean {
   return expectedBuffer.length === actualBuffer.length && timingSafeEqual(expectedBuffer, actualBuffer);
 }
 
-function clientKey(request: Request): string {
-  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim()
-    ?? request.headers.get("x-real-ip")
-    ?? "unknown";
-  return `ip:${shortHash(ip)}`;
+function adminRateLimitKey(request: Request): string {
+  const authorization = request.headers.get("authorization") ?? "";
+  const actor = request.headers.get("x-admin-actor")?.trim();
+  const sessionCookie = request.headers.get("cookie")?.includes(`${ADMIN_SESSION_COOKIE}=`) ? "admin-session" : "no-session";
+  const secretMarker = request.headers.get("x-admin-secret") ? "admin-secret" : "no-secret";
+  const hasAuthMaterial = Boolean(authorization || actor || request.headers.get("cookie")?.includes(`${ADMIN_SESSION_COOKIE}=`) || request.headers.get("x-admin-secret"));
+  const authFingerprint = [authorization, actor, sessionCookie, secretMarker].filter(Boolean).join(":");
+  if (hasAuthMaterial) return hashedFallbackKey("admin-auth", authFingerprint);
+
+  try {
+    return publicRateLimitKey(request, "admin");
+  } catch {
+    return hashedFallbackKey("admin-anonymous", request.headers.get("user-agent") ?? "unknown");
+  }
 }
 
-function rateLimited(request: Request): boolean {
-  const now = Date.now();
-  const key = clientKey(request);
-  const bucket = buckets.get(key);
-  if (!bucket || bucket.resetAt <= now) {
-    buckets.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-    return false;
-  }
-  bucket.count += 1;
-  return bucket.count > RATE_LIMIT_MAX;
+async function rateLimited(request: Request): Promise<boolean> {
+  const result = await checkRateLimit("admin", adminRateLimitKey(request), RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_MS);
+  return !result.allowed;
 }
 
 // Reject browser-originated cross-site requests. Browsers set Sec-Fetch-Site
@@ -404,7 +406,7 @@ export function adminErrorResponse(
 }
 
 export async function requireAdmin(request: Request, action: string): Promise<NextResponse | null> {
-  if (rateLimited(request)) {
+  if (await rateLimited(request)) {
     console.info("[admin-audit]", JSON.stringify({ action, allowed: false, reason: "rate_limited", at: new Date().toISOString() }));
     return NextResponse.json({ error: "rate_limited" }, { status: 429 });
   }

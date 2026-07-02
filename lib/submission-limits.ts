@@ -74,14 +74,14 @@ export function inspectSubmissionText(values: Array<string | null | undefined>):
   return { reject: false, status: reasons.length > 0 ? 'spam_suspected' : 'new', reasons };
 }
 
-export function contributorSubmissionRateLimited(contributorHash: string): 'minute' | 'day' | null {
+export async function contributorSubmissionRateLimited(contributorHash: string): Promise<'minute' | 'day' | null> {
   const key = contributorHash;
 
-  if (rateLimited('submission-minute', key, SUBMISSION_PER_MINUTE_LIMIT, 60_000)) {
+  if (await rateLimited('submission-minute', key, SUBMISSION_PER_MINUTE_LIMIT, 60_000)) {
     return 'minute';
   }
 
-  if (rateLimited('submission-day', key, SUBMISSION_PER_DAY_LIMIT, 86_400_000)) {
+  if (await rateLimited('submission-day', key, SUBMISSION_PER_DAY_LIMIT, 86_400_000)) {
     return 'day';
   }
 

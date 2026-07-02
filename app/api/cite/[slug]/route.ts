@@ -7,6 +7,7 @@ import type { ClaimSource, RegistryDocumentBundle } from "../../../../lib/types"
 import { getCitationPolicyBlock, normalizeCitationSurface } from "../../../../lib/render";
 import { recordDocumentAnalyticsEvent } from "@/lib/analytics";
 import { supabaseAdmin } from "@/lib/admin-api";
+import { checkRateLimit, rateLimitHeaders, rateLimitResponse } from "@/lib/api-rate-limit";
 
 export const revalidate = 60;
 
@@ -37,6 +38,9 @@ export async function GET(
   { params }: { params: Promise<{ slug: string }> },
 ) {
   const { slug } = await params;
+  const rateLimit = await checkRateLimit(request);
+  if (!rateLimit.allowed) return rateLimitResponse(rateLimit);
+
   const sb = supabaseAdmin();
   if (sb) {
     recordDocumentAnalyticsEvent(sb, request, slug, "api_cite").catch((error) => {
@@ -49,7 +53,7 @@ export async function GET(
   if (!bundle) {
     return NextResponse.json(
       { error: "Document not found", slug },
-      { status: 404 },
+      { status: 404, headers: rateLimitHeaders(rateLimit) },
     );
   }
 
@@ -215,6 +219,7 @@ export async function GET(
     headers: {
       "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
       "X-Citation-Status": docStatus.label,
+      ...rateLimitHeaders(rateLimit),
     },
   });
 }
