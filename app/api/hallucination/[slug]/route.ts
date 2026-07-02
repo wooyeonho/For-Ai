@@ -3,7 +3,6 @@ import { createServerClient, isSupabaseConfigured } from '@/lib/supabase-server'
 import { makeContributorHashForRequest } from '@/lib/contributor-hash';
 import { resolveDocumentMetadataBySlug } from '@/lib/document-resolver';
 import { buildPublicTopicCandidate } from '@/lib/topic-candidates';
-import { recordContributionEvent } from '@/lib/contributions';
 import {
   HALLUCINATION_FIELD_MAX_LENGTHS,
   contributorSubmissionRateLimited,
@@ -127,17 +126,6 @@ export async function POST(
         if (topicCandidateError) console.warn('[hallucination] topic_candidates insert skipped:', topicCandidateError.message);
       }
 
-
-      if (!error && publicSourceUrl) {
-        await recordContributionEvent(supabase, {
-          contributor_hash: contributorHash,
-          event_type: 'source_submitted',
-          country: resolvedDocument.country,
-          source_type: 'web',
-          claim_id: body.claim_id?.trim() || null,
-          document_id: documentId,
-        });
-      }
 
       if (error) {
         console.error('[hallucination] Supabase insert error:', error.message);

@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 
 import { logAdminAuditEvent, requireAdmin, supabaseAdmin } from "@/lib/admin-api";
-import { recordContributionEvent } from "@/lib/contributions";
 import { scoreSourceTrust } from "@/lib/source-trust";
 import { awardPoints, checkAndAwardBadges, POINT_VALUES } from "@/lib/gamification";
 import { hasOfficialOrRegulatorSource, HIGH_RISK_CATEGORIES, isHighRiskCategory } from "@/lib/risk-policy";
@@ -10,9 +9,6 @@ import { ageInDays, getFreshnessTtlDays, isStale } from "@/lib/citation-status";
 const DEFAULT_STATUS = "needs_review";
 const DEFAULT_LIMIT = 50;
 const MAX_LIMIT = 200;
-
-const ADMIN_ACCEPTED_SOURCE_POINTS = 10;
-const VERIFIED_CLAIM_LINK_POINTS = 50;
 
 type ClaimWithDocument = {
   id: string;
@@ -140,59 +136,6 @@ function providerFromModel(model: unknown): string | null {
   return text.includes("/") ? text.split("/")[0] : text;
 }
 
-
-async function awardContributionPoints(
-  sb: NonNullable<ReturnType<typeof supabaseAdmin>>,
-  input: {
-    contributor_hash: string | null;
-    source_candidate_id?: string | null;
-    claim_id: string;
-    event_type: "source_admin_accepted" | "source_linked_verified_claim";
-    points: number;
-    reason: string;
-  },
-) {
-  if (!input.contributor_hash || input.points <= 0) return;
-  const now = new Date().toISOString();
-  const { data: contributor, error: contributorError } = await sb
-    .from("contributors")
-    .upsert({ contributor_hash: input.contributor_hash, updated_at: now }, { onConflict: "contributor_hash" })
-    .select("id,total_points,accepted_source_count,verified_claim_link_count")
-    .single();
-  if (contributorError) throw new Error(`contributor upsert failed: ${contributorError.message}`);
-
-  const { data: event, error: eventError } = await sb.from("contribution_events").insert({
-    contributor_id: contributor.id,
-    contributor_hash: input.contributor_hash,
-    source_candidate_id: input.source_candidate_id ?? null,
-    claim_id: input.claim_id,
-    event_type: input.event_type,
-    points_delta: input.points,
-    metadata: { points_do_not_determine_truth: true, reason: input.reason },
-  }).select("id").single();
-  if (eventError) throw new Error(`contribution event insert failed: ${eventError.message}`);
-
-  const { error: pointsError } = await sb.from("contributor_points").insert({
-    contributor_id: contributor.id,
-    contributor_hash: input.contributor_hash,
-    contribution_event_id: event.id,
-    points: input.points,
-    reason: input.event_type,
-  });
-  if (pointsError) throw new Error(`contributor points insert failed: ${pointsError.message}`);
-
-  const update: Record<string, number | string> = {
-    total_points: Number(contributor.total_points ?? 0) + input.points,
-    updated_at: now,
-  };
-  if (input.event_type === "source_admin_accepted") {
-    update.accepted_source_count = Number(contributor.accepted_source_count ?? 0) + 1;
-  }
-  if (input.event_type === "source_linked_verified_claim") {
-    update.verified_claim_link_count = Number(contributor.verified_claim_link_count ?? 0) + 1;
-  }
-  await sb.from("contributors").update(update).eq("id", contributor.id);
-}
 
 async function writeVerificationEvent(
   sb: NonNullable<ReturnType<typeof supabaseAdmin>>,
@@ -438,7 +381,6 @@ export async function POST(request: Request) {
   const observedAt = clean(body.observed_at) ?? new Date().toISOString();
   const note = clean(body.note) ?? clean(body.citation) ?? clean(body.reason);
   const contributorHash = clean(body.contributor_hash);
-  const sourceCandidateId = clean(body.source_candidate_id);
   const source = (body.source ?? body) as SourceInput;
   const sourceType = clean(source.source_type) ?? "official";
   const sourceAuthority = clean(source.source_authority);
@@ -515,29 +457,10 @@ export async function POST(request: Request) {
       });
       if (sourceError) throw new Error(`source insert failed: ${sourceError.message}`);
       await writeVerificationEvent(sb, existingClaim, "source_added", { note: citation ?? title ?? url, contributor_hash: contributorHash });
-      if (sourceCandidateId) {
-        await sb.from("source_candidates").update({
-          review_status: "accepted",
-          reviewed_at: new Date().toISOString(),
-          linked_claim_source_id: sourceId,
-        }).eq("id", sourceCandidateId);
-      }
-      await awardContributionPoints(sb, {
-        contributor_hash: contributorHash,
-        source_candidate_id: sourceCandidateId,
-        claim_id: claimId,
-        event_type: "source_admin_accepted",
-        points: ADMIN_ACCEPTED_SOURCE_POINTS,
-        reason: "Admin accepted source candidate for claim review",
-      });
       if (contributorHash) {
-        await recordContributionEvent(sb, {
-          contributor_hash: contributorHash,
-          event_type: "source_accepted",
-          country: clean(body.country),
-          source_type: sourceType,
-          claim_id: claimId,
-          document_id: existingClaim.document_id,
+        await awardPoints(sb, contributorHash, "source_accepted", POINT_VALUES.source_accepted, {
+          referenceId: sourceId,
+          referenceType: "claim_source",
         });
       }
     }
@@ -571,29 +494,9 @@ export async function POST(request: Request) {
       if (claimError) throw new Error(`claim update failed: ${claimError.message}`);
       updatedClaim = data;
       await writeVerificationEvent(sb, existingClaim, action === "edit_value" ? "reviewed" : "status_changed", { status: nextStatus, confidence: nextConfidence, note, contributor_hash: contributorHash });
-      if (action === "verify" && shouldAttachSource) {
-        if (sourceCandidateId) {
-          await sb.from("source_candidates").update({ review_status: "linked_to_claim", reviewed_at: new Date().toISOString() }).eq("id", sourceCandidateId);
-        }
-        await awardContributionPoints(sb, {
-          contributor_hash: contributorHash,
-          source_candidate_id: sourceCandidateId,
-          claim_id: claimId,
-          event_type: "source_linked_verified_claim",
-          points: VERIFIED_CLAIM_LINK_POINTS,
-          reason: "Accepted source was linked to a verified claim",
-        });
-      }
-      if (action === "verify" && contributorHash) {
-        await recordContributionEvent(sb, {
-          contributor_hash: contributorHash,
-          event_type: "claim_verified_from_contribution",
-          country: clean(body.country),
-          source_type: shouldAttachSource ? sourceType : null,
-          claim_id: claimId,
-          document_id: existingClaim.document_id,
-        });
-      }
+      // Reward for a verified claim carrying this contributor's source is
+      // awarded once below via awardPoints('source_used_in_verified_claim'),
+      // which already covers every action === "verify" case.
     }
 
     const documentAllVerified = action === "promote_document" || action === "verify"
