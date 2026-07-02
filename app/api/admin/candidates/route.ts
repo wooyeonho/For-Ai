@@ -8,6 +8,31 @@ function defaultCountryForLang(lang: string): string {
   return isValidLocale(lang) ? LOCALE_CONFIG[lang].country : "global";
 }
 
+// Lower weight = reviewed first. Safer, more-corroborated candidates should
+// reach a human reviewer before older-but-riskier or unconfirmed ones, so the
+// FIFO created_at order alone under-prioritizes a queue that already carries
+// risk_tier/consensus signals on every row.
+const RISK_TIER_WEIGHT: Record<string, number> = { low: 0, medium: 1, high: 2, forbidden: 3 };
+const CONSENSUS_LEVEL_WEIGHT: Record<string, number> = { unanimous: 0, majority: 1, minority: 2, single: 3 };
+
+function candidatePriorityWeight(candidate: { risk_tier?: string | null; consensus_level?: string | null; consensus_score?: number | null }): [number, number, number] {
+  const riskWeight = RISK_TIER_WEIGHT[String(candidate.risk_tier ?? "medium")] ?? RISK_TIER_WEIGHT.medium;
+  const consensusWeight = CONSENSUS_LEVEL_WEIGHT[String(candidate.consensus_level ?? "")] ?? 4;
+  const scoreWeight = -(candidate.consensus_score ?? 0);
+  return [riskWeight, consensusWeight, scoreWeight];
+}
+
+function sortCandidatesByPriority<T extends { risk_tier?: string | null; consensus_level?: string | null; consensus_score?: number | null }>(candidates: T[]): T[] {
+  return [...candidates].sort((a, b) => {
+    const wa = candidatePriorityWeight(a);
+    const wb = candidatePriorityWeight(b);
+    for (let i = 0; i < wa.length; i++) {
+      if (wa[i] !== wb[i]) return wa[i] - wb[i];
+    }
+    return 0;
+  });
+}
+
 export async function GET(request: Request) {
   const adminError = await requireAdmin(request, "candidates.read");
   if (adminError) return adminError;
@@ -17,12 +42,15 @@ export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const status = searchParams.get("status") ?? "new";
   const sourceHints = searchParams.get("source_hints") ?? "all";
+  // created_at desc is the tiebreaker within an equal priority tier (stable
+  // sort preserves it after the priority re-sort below).
   let query = sb.from("topic_candidates").select("*").order("created_at", { ascending: false }).limit(100);
   if (status !== "all") query = query.eq("status", status);
   if (sourceHints === "with") query = query.not("source_hints", "eq", "[]").not("source_hints", "is", null);
   if (sourceHints === "without") query = query.or("source_hints.eq.[],source_hints.is.null");
-  const { data, error } = await query;
+  const { data: fetched, error } = await query;
   if (error) return adminErrorResponse("admin.candidates.list", error, 500);
+  const data = sortCandidatesByPriority(fetched ?? []);
   await logAdminAuditEvent(sb, request, "admin.candidates.list", {
     status,
     result_count: data?.length ?? 0,

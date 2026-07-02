@@ -21,6 +21,7 @@ import { VerificationLevelBadge } from "../../../components/StatusBadge";
 import { SponsoredPlacement } from "../../../components/SponsoredPlacement";
 import { getBundleRiskDisclaimer } from "../../../../lib/risk-policy";
 import { getActiveSponsoredPlacementsForEntity } from "../../../../lib/sponsored-placements";
+import { safeJsonLd } from "../../../../lib/json-ld";
 
 export const revalidate = 60;
 
@@ -127,17 +128,17 @@ export default async function WikiDocumentPage({
       <ViewTracker slug={document.slug} />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
       />
       <script
         id="for-ai-normalized-citation"
         type="application/json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(normalizedCitation) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(normalizedCitation) }}
       />
       <script
         id="for-ai-citation-policy"
         type="application/json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(citationPolicyBlock) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(citationPolicyBlock) }}
       />
 
       {/* Top reading order: document title → direct answer → citation signals */}
@@ -181,12 +182,8 @@ export default async function WikiDocumentPage({
         </section>
       )}
 
-      {/* Clean header: title + status only, no technical IDs */}
-      <header className="registry-panel">
-        <p className="eyebrow">
-          {isPromoted ? t.wiki.aiGenerated : t.wiki.claimRegistry}
-        </p>
-        <h1>{document.title}</h1>
+      {/* Citation status + metadata panel; the document <h1> renders once in the top header */}
+      <section className="registry-panel" aria-label={tw("documentCitationStatus", "Document citation status")}>
         <div className={topCitationClass} aria-label={tw("documentCitationStatus", "Document citation status")}>
           <strong>{topCitationLabel}</strong>
           <span>{citationStatus.verifiedClaims}/{citationStatus.totalClaims} {tw("citationReadyLower", "citation-ready")} · {tw("freshness", "freshness")}: {citationStatus.freshness}</span>
@@ -206,10 +203,10 @@ export default async function WikiDocumentPage({
             href={`/community?document_id=${encodeURIComponent(document.id)}&q=${encodeURIComponent(document.title)}`}
             style={{ fontSize: "0.82rem", color: "var(--muted)", textDecoration: "none" }}
           >
-            💬 이 팩트에 대해 질문하기 →
+            💬 {tw("askAboutFact", "Ask a question about this fact")} →
           </Link>
         </div>
-      </header>
+      </section>
 
       {citationStatus.isVerifiedDocument && citationStatus.freshness === "stale" && (
         <section

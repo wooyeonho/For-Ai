@@ -4,6 +4,7 @@ import { getAllRegistryBundles, isVerifiedDocumentBundle, partitionRegistryBundl
 import type { RegistryDocumentBundle } from "../../lib/types";
 import HomeSearch from "./HomeSearch";
 import type { SupportedLocale } from "@/lib/i18n/locales";
+import { getTranslations } from "@/lib/i18n";
 import { TrendingWidget } from "./TrendingWidget";
 
 interface DocItem {
@@ -34,13 +35,6 @@ const INITIAL_VERTICAL = {
     "Official-source deadlines and eligibility rules",
   ],
 };
-
-const AI_WRONG_QUESTIONS = [
-  "여권 재발급 수수료가 지금 얼마야?",
-  "전입신고는 며칠 안에 해야 해?",
-  "주민등록증 재발급 수수료는 무료야?",
-  "자동차세 납부 기간은 언제야?",
-];
 
 const VERTICAL_GROUPS = [
   {
@@ -233,8 +227,12 @@ async function getPopularDocs(): Promise<PopularDoc[]> {
 }
 
 export default async function HomePageContent({ locale = "en" }: { locale?: string }) {
+  const t = getTranslations(locale as SupportedLocale);
   const bundles = getAllRegistryBundles();
   const [docs, popularDocs] = await Promise.all([getAllDocs(), getPopularDocs()]);
+  // Only advertise AI-citation telemetry once real citation events exist;
+  // an always-empty "Most Cited" section reads as a broken promise.
+  const hasCitationData = popularDocs.some((d) => d.ai_citation_count > 0 || d.view_count > 0);
 
   const claims = bundles.flatMap((b) => b.claims);
   const totalClaims = claims.length;
@@ -454,10 +452,10 @@ export default async function HomePageContent({ locale = "en" }: { locale?: stri
         </ul>
       </section>
 
-      <section className="section">
-        <p className="section-eyebrow">Most Cited by AI</p>
-        <h2 className="section-title">Citation stats from registry telemetry</h2>
-        {popularDocs.length > 0 ? (
+      {hasCitationData && (
+        <section className="section">
+          <p className="section-eyebrow">Most Cited by AI</p>
+          <h2 className="section-title">Citation stats from registry telemetry</h2>
           <ul className="registry-index">
             {popularDocs.map((d, i) => (
               <li key={d.document_id} className="registry-row">
@@ -469,35 +467,12 @@ export default async function HomePageContent({ locale = "en" }: { locale?: stri
                 <div className="registry-row-meta">
                   <span className="badge" title="AI citations">AI citations: {d.ai_citation_count}</span>
                   <span className="badge" title="Views">Views: {d.view_count}</span>
-                  <span className="badge">Not enough data</span>
                 </div>
               </li>
             ))}
           </ul>
-        ) : verifiedDocuments.length > 0 ? (
-          <ul className="registry-index">
-            {verifiedDocuments.slice(0, 3).map((b) => {
-              const badge = statusBadge(b.document.status);
-              return (
-                <li key={b.document.slug} className="registry-row">
-                  <div className="registry-row-main">
-                    <Link href={`/${locale}/wiki/${b.document.slug}`} className="registry-row-title">
-                      {b.document.title}
-                    </Link>
-                    <span className="registry-row-entity">Citation stats are not available yet</span>
-                  </div>
-                  <div className="registry-row-meta">
-                    <span className={badge.className}>{badge.label}</span>
-                    <span className="badge">{confidenceLabel(b)}</span>
-                  </div>
-                </li>
-              );
-            })}
-          </ul>
-        ) : (
-          <p className="stat-note">Citation stats are not available yet.</p>
-        )}
-      </section>
+        </section>
+      )}
 
       {/* Search */}
       <section className="section">
@@ -506,12 +481,12 @@ export default async function HomePageContent({ locale = "en" }: { locale?: stri
 
       <section className="section" aria-labelledby="ai-wrong-questions">
         <p className="section-eyebrow">Entry points</p>
-        <h2 className="section-title" id="ai-wrong-questions">AI가 자주 틀리는 질문으로 시작하기</h2>
+        <h2 className="section-title" id="ai-wrong-questions">{t.home.aiWrongTitle}</h2>
         <div className="question-grid">
-          {AI_WRONG_QUESTIONS.map((question) => (
+          {t.home.aiWrongQuestions.map((question) => (
             <Link key={question} href="/suggest-topic" className="question-card">
               <span>{question}</span>
-              <small>Submit or verify this claim →</small>
+              <small>{t.home.aiWrongCardCta}</small>
             </Link>
           ))}
         </div>

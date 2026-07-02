@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { REPORT_MESSAGE_MAX_LENGTH } from "@/lib/submission-limits";
@@ -121,6 +122,10 @@ export function ReportForm({
         <a href={returnHref} className="cta-link">
           문서로 돌아가기
         </a>
+        {" · "}
+        <Link href="/contribute/mine" className="cta-link">
+          내 제출 확인하기 →
+        </Link>
       </div>
     );
   }
