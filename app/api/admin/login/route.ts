@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { timingSafeEqual } from "crypto";
 
-import { issueAdminSessionCookie, logAdminAuditEvent, supabaseAdmin } from "../../../../lib/admin-api";
+import { issueAdminSessionCookie, logAdminAuditEvent, productionAdminSecretFallbackDisabled, supabaseAdmin } from "../../../../lib/admin-api";
 import { persistentRateLimited } from "../../../../lib/rate-limit-store";
 
 const ADMIN_SECRET = process.env.ADMIN_SECRET ?? "";
@@ -51,6 +51,20 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "invalid JSON" }, { status: 400 });
   }
 
+  if (productionAdminSecretFallbackDisabled()) {
+    const sb = supabaseAdmin();
+    if (sb) {
+      await logAdminAuditEvent(sb, request, "admin.login_blocked", {
+        reason: "admin_secret_fallback_disabled_in_production",
+        configured: Boolean(ADMIN_SECRET),
+      });
+    }
+    return NextResponse.json({
+      error: "admin_secret_login_disabled",
+      warning: "ADMIN_SECRET fallback login is disabled in production. Use Supabase Auth admin login, or set ALLOW_BREAK_GLASS_ADMIN=true only for emergency break-glass rotation.",
+    }, { status: 403 });
+  }
+
   if (!ADMIN_SECRET || !password || !safeEqual(password, ADMIN_SECRET)) {
     const sb = supabaseAdmin();
     if (sb) {
@@ -64,7 +78,10 @@ export async function POST(request: Request) {
 
   const sb = supabaseAdmin();
   if (sb) {
-    await logAdminAuditEvent(sb, request, "admin.login", { success: true });
+    await logAdminAuditEvent(sb, request, "admin.login", {
+      success: true,
+      ...(process.env.NODE_ENV === "production" ? { break_glass: true } : {}),
+    });
   }
 
   return response;

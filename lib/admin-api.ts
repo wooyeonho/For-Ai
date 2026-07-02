@@ -12,6 +12,15 @@ const RATE_LIMIT_MAX = 60;
 const ADMIN_SESSION_COOKIE = "for_ai_admin_session";
 const ADMIN_CSRF_COOKIE = "for_ai_admin_csrf";
 const ADMIN_SESSION_TTL_SECONDS = 30 * 60;
+const ALLOW_BREAK_GLASS_ADMIN = process.env.ALLOW_BREAK_GLASS_ADMIN === "true";
+
+export function productionAdminSecretFallbackDisabled(): boolean {
+  return process.env.NODE_ENV === "production" && !ALLOW_BREAK_GLASS_ADMIN;
+}
+
+function adminSecretFallbackAllowed(): boolean {
+  return !productionAdminSecretFallbackDisabled();
+}
 
 export const ADMIN_AUDIT_TABLE = "admin_audit_events";
 export const ADMIN_USERS_TABLE = "admin_users";
@@ -36,6 +45,7 @@ export type AdminAuthContext = {
   adminUserHash: string;
   role: AdminRole;
   authMethod: "supabase" | "admin_session" | "admin_secret";
+  breakGlass?: boolean;
 };
 
 type AdminUserRow = {
@@ -278,33 +288,27 @@ async function supabaseAuthContext(request: Request): Promise<AdminAuthContext |
   };
 }
 
-function adminSessionContext(request: Request): AdminAuthContext | null {
-  if (!adminSessionValid(request)) return null;
-  return {
-    adminUserId: null,
-    adminUserHash: hashSafe(`admin_session:${ADMIN_SECRET}`),
-    role: "admin",
-    authMethod: "admin_session",
-  };
-}
-
 function fallbackSecretContext(request: Request): AdminAuthContext | null {
+  if (!adminSecretFallbackAllowed()) return null;
   if (!internalSecretValid(request)) return null;
   return {
     adminUserId: null,
     adminUserHash: hashSafe(`admin_secret:${ADMIN_SECRET}`),
     role: "admin",
     authMethod: "admin_secret",
+    breakGlass: process.env.NODE_ENV === "production",
   };
 }
 
 function fallbackSessionContext(request: Request): AdminAuthContext | null {
+  if (!adminSecretFallbackAllowed()) return null;
   if (!adminSessionValid(request)) return null;
   return {
     adminUserId: null,
     adminUserHash: hashSafe(`admin_session:${ADMIN_SECRET}`),
     role: "admin",
     authMethod: "admin_session",
+    breakGlass: process.env.NODE_ENV === "production",
   };
 }
 
@@ -314,7 +318,7 @@ export function getAdminAuthContext(request: Request): AdminAuthContext | null {
 
 export async function authorized(request: Request): Promise<boolean> {
   if (browserSentAdminSecret(request)) return false;
-  return (await supabaseAuthContext(request)) !== null || adminSessionContext(request) !== null || fallbackSecretContext(request) !== null;
+  return (await supabaseAuthContext(request)) !== null || fallbackSessionContext(request) !== null || fallbackSecretContext(request) !== null;
 }
 
 export function safeRequestMetadata(request: Request): AdminAuditMetadata {
@@ -351,6 +355,7 @@ export async function logAdminAuditEvent(
       ...safeRequestMetadata(request),
       admin_role: context?.role ?? null,
       auth_method: context?.authMethod ?? "unknown",
+      ...(context?.breakGlass ? { break_glass: true } : {}),
       ...sanitizeAdminAuditMetadata(metadata),
     },
   });
@@ -412,7 +417,7 @@ export async function requireAdmin(request: Request, action: string): Promise<Ne
     return NextResponse.json({ error: "browser_admin_secret_forbidden" }, { status: 403 });
   }
 
-  const context = await supabaseAuthContext(request) ?? adminSessionContext(request) ?? fallbackSecretContext(request);
+  const context = await supabaseAuthContext(request) ?? fallbackSessionContext(request) ?? fallbackSecretContext(request);
   if (!context) {
     console.info("[admin-audit]", JSON.stringify({ action, allowed: false, reason: "unauthorized", at: new Date().toISOString() }));
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
