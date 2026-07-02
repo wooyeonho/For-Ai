@@ -171,6 +171,18 @@ export default function ApiDocsPage() {
             </p>
           </div>
 
+          {/* GET /api/contributions/mine */}
+          <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
+            <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>
+              GET /api/contributions/mine
+            </p>
+            <p style={{ margin: "8px 0", fontSize: "0.9rem", color: "var(--muted)" }}>
+              Status of topic suggestions, correction reports, hallucination reports, and source suggestions
+              submitted from the caller&apos;s own network address. No identifier is accepted or required — the
+              contributor hash is derived server-side, so this can only ever return the caller&apos;s own submissions.
+            </p>
+          </div>
+
           {/* GET/POST /api/posts */}
           <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
             <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>GET /api/posts</p>

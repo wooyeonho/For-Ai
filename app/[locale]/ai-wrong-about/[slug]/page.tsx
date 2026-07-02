@@ -7,6 +7,7 @@ import { SUPPORTED_LOCALES, isValidLocale } from "../../../../lib/i18n";
 import { siteUrl } from "../../../../lib/urls";
 import type { ClaimWithSources, RegistryDocumentBundle } from "../../../../lib/types";
 import { supabaseAdmin } from "../../../../lib/admin-api";
+import { safeJsonLd } from "../../../../lib/json-ld";
 
 export const revalidate = 60;
 
@@ -123,7 +124,7 @@ export default async function AiWrongAboutPage({
 
   return (
     <article>
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }} />
 
       <header className="registry-panel">
         <p className="eyebrow">AI wrong-answer correction route</p>
