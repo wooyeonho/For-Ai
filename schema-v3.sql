@@ -4,6 +4,7 @@
 -- entities -> documents -> claims -> claim_sources -> verification_events
 
 create extension if not exists pgcrypto;
+create extension if not exists vector;
 
 create type confidence_level as enum ('low', 'medium', 'high');
 create type document_status as enum ('ai_draft', 'needs_review', 'verified', 'published', 'archived');
@@ -112,6 +113,35 @@ create index claims_original_claim_id_idx on claims (original_claim_id);
 create index claims_jurisdiction_idx on claims (jurisdiction);
 create index claims_risk_tier_idx on claims (risk_tier);
 create unique index claims_document_field_path_key on claims (document_id, field_path);
+
+-- Embeddings are auxiliary duplicate-discovery signals, not canonical facts.
+-- They intentionally live outside documents.data and outside canonical claim values.
+-- Enable pgvector in deployments that run ANN indexes:
+-- create extension if not exists vector;
+create table claim_embeddings (
+  claim_id text primary key references claims(id) on delete cascade,
+  embedding_model text not null,
+  embedding_text text not null,
+  embedding vector(1536) not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+comment on table claim_embeddings is 'Auxiliary semantic index for duplicate review. Embeddings must never be treated as canonical claim_value or verification evidence.';
+comment on column claim_embeddings.embedding_text is 'Derived text used for embedding; safe to regenerate and not canonical factual truth.';
+create index claim_embeddings_embedding_idx on claim_embeddings using ivfflat (embedding vector_cosine_ops);
+
+create table document_embeddings (
+  document_id text primary key references documents(id) on delete cascade,
+  embedding_model text not null,
+  embedding_text text not null,
+  embedding vector(1536) not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+comment on table document_embeddings is 'Auxiliary document-level semantic index for candidate/document duplicate review only.';
+create index document_embeddings_embedding_idx on document_embeddings using ivfflat (embedding vector_cosine_ops);
 
 create table claim_sources (
   id text primary key,
@@ -272,6 +302,8 @@ create policy hallucination_reports_public_insert_only on hallucination_reports 
 alter table entities enable row level security;
 alter table documents enable row level security;
 alter table claims enable row level security;
+alter table claim_embeddings enable row level security;
+alter table document_embeddings enable row level security;
 alter table claim_sources enable row level security;
 alter table verification_events enable row level security;
 alter table listings enable row level security;
@@ -388,7 +420,60 @@ alter table topic_candidates
 create index candidate_generation_runs_created_idx on candidate_generation_runs(created_at desc);
 alter table candidate_generation_runs enable row level security;
 
+
+create table topic_candidate_embeddings (
+  topic_candidate_id uuid primary key references topic_candidates(id) on delete cascade,
+  embedding_model text not null,
+  embedding_text text not null,
+  embedding vector(1536) not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+comment on table topic_candidate_embeddings is 'Auxiliary embedding for topic_candidates title + slug + category + claims.question. Used only to raise possible_duplicate review signals.';
+create index topic_candidate_embeddings_embedding_idx on topic_candidate_embeddings using ivfflat (embedding vector_cosine_ops);
+
+create table topic_candidate_claim_links (
+  id uuid primary key default gen_random_uuid(),
+  topic_candidate_id uuid not null references topic_candidates(id) on delete cascade,
+  claim_index integer not null check (claim_index >= 0),
+  original_claim_id text references claims(id) on delete restrict,
+  review_status text not null default 'pending' check (review_status in ('pending','accepted','rejected')),
+  similarity_score numeric(5,4),
+  reviewer_note text,
+  created_at timestamptz not null default now(),
+  reviewed_at timestamptz,
+  unique (topic_candidate_id, claim_index, original_claim_id)
+);
+
+comment on table topic_candidate_claim_links is 'Review workflow for multilingual or duplicate candidate claims that may point to the same original claim. Acceptance can populate claims.original_claim_id after human review.';
+comment on column topic_candidate_claim_links.original_claim_id is 'Existing source-language claim that the candidate claim may translate or restate; never auto-accepted from embedding similarity alone.';
+create index topic_candidate_claim_links_original_claim_idx on topic_candidate_claim_links(original_claim_id);
+
+
+create table possible_duplicate_reviews (
+  id uuid primary key default gen_random_uuid(),
+  subject_type text not null check (subject_type in ('topic_candidate','document','claim','source_candidate')),
+  subject_id text not null,
+  matched_type text not null check (matched_type in ('topic_candidate','document','claim','source_candidate')),
+  matched_id text not null,
+  signal_type text not null check (signal_type in ('slug','title','embedding')),
+  similarity_score numeric(5,4) not null check (similarity_score >= 0 and similarity_score <= 1),
+  review_status text not null default 'pending' check (review_status in ('pending','duplicate','not_duplicate','linked_translation','ignored')),
+  reviewer_note text,
+  created_at timestamptz not null default now(),
+  reviewed_at timestamptz,
+  unique (subject_type, subject_id, matched_type, matched_id, signal_type)
+);
+
+comment on table possible_duplicate_reviews is 'Admin review queue for duplicate signals. Embedding matches create possible_duplicate signals only and must not auto-merge candidates, documents, claims, or sources.';
+create index possible_duplicate_reviews_subject_idx on possible_duplicate_reviews(subject_type, subject_id, review_status);
+create index possible_duplicate_reviews_matched_idx on possible_duplicate_reviews(matched_type, matched_id, review_status);
+
 alter table topic_candidates enable row level security;
+alter table topic_candidate_embeddings enable row level security;
+alter table topic_candidate_claim_links enable row level security;
+alter table possible_duplicate_reviews enable row level security;
 
 -- Only allow public anon insert for user_suggested candidates awaiting admin review.
 -- AI-generated candidates require service_role key (not anon).
@@ -689,6 +774,18 @@ comment on column source_candidates.review_priority_score is 'Auxiliary review-q
 comment on column source_candidates.review_priority_reason is 'Human-readable explanation for the auxiliary review priority score; not verification evidence.';
 comment on column source_candidates.model_version is 'Scoring model identifier for review priority, starting with rule-based-v1 and replaceable by future ML models.';
 
+create table if not exists source_candidate_embeddings (
+  source_candidate_id uuid primary key references source_candidates(id) on delete cascade,
+  embedding_model text not null,
+  embedding_text text not null,
+  embedding vector(1536) not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+comment on table source_candidate_embeddings is 'Auxiliary semantic index for finding duplicate source submissions. Human review is still required before linking sources.';
+create index if not exists source_candidate_embeddings_embedding_idx on source_candidate_embeddings using ivfflat (embedding vector_cosine_ops);
+
 -- contribution_events: single canonical reward/audit ledger for anonymous public
 -- contributions. Rewards are derived only from these events. Verified claim and
 -- document status still change only through admin-approved verification flows.
@@ -748,6 +845,7 @@ create index if not exists source_candidates_document_idx on source_candidates(d
 create index if not exists source_candidates_normalized_url_idx on source_candidates(normalized_url);
 create index if not exists source_candidates_status_idx on source_candidates(status, review_status, created_at desc);
 create index if not exists source_candidates_review_priority_idx on source_candidates(review_priority_score desc, created_at asc);
+create index if not exists source_candidate_embeddings_created_idx on source_candidate_embeddings(created_at desc);
 create index if not exists contribution_events_contributor_idx on contribution_events(contributor_hash, created_at desc);
 create index if not exists contribution_events_contributor_type_created_idx on contribution_events(contributor_hash, event_type, created_at desc);
 create index if not exists contribution_events_type_created_idx on contribution_events(event_type, created_at desc);
@@ -756,6 +854,7 @@ create index if not exists contributor_points_contributor_idx on contributor_poi
 
 alter table contributors enable row level security;
 alter table source_candidates enable row level security;
+alter table source_candidate_embeddings enable row level security;
 alter table contribution_events enable row level security;
 alter table contributor_points enable row level security;
 

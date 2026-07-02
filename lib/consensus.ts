@@ -19,7 +19,49 @@ import {
   providerSupportsWebSearch,
 } from "./ai-providers";
 
-interface RawCandidate {
+export interface CandidateEmbeddingInput {
+  title: string;
+  slug: string;
+  category: string;
+  claims?: { question?: string }[];
+}
+
+export interface CandidateEmbeddingRecord {
+  embedding_model: string;
+  embedding_text: string;
+  embedding: number[];
+}
+
+export interface CandidateEmbeddingProvider {
+  embedCandidate(input: CandidateEmbeddingInput): Promise<CandidateEmbeddingRecord>;
+}
+
+export function buildCandidateEmbeddingText(candidate: CandidateEmbeddingInput): string {
+  const claimQuestions = (candidate.claims ?? [])
+    .map((claim) => claim.question?.trim())
+    .filter((question): question is string => Boolean(question));
+
+  return [candidate.title, candidate.slug, candidate.category, ...claimQuestions]
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .join("\n");
+}
+
+interface CandidateSimilarityOptions {
+  embeddingSimilarity?: number;
+  embeddingThreshold?: number;
+}
+
+export interface CandidateSimilarityDecision {
+  isSimilar: boolean;
+  matchedBy: "slug" | "title" | "embedding" | "none";
+  slugSimilarity: number;
+  titleSimilarity: number;
+  embeddingSimilarity?: number;
+  reviewSignal: "merge_candidate" | "possible_duplicate" | "none";
+}
+
+export interface RawCandidate {
   title: string;
   slug: string;
   category: string;
@@ -73,12 +115,48 @@ function titleSimilarity(a: string, b: string): number {
   return total > 0 ? common.length / total : 0;
 }
 
-function areSimilarCandidates(a: RawCandidate, b: RawCandidate): boolean {
-  if (normalizeSlug(a.slug) === normalizeSlug(b.slug)) return true;
-  const ss = slugSimilarity(a.slug, b.slug);
-  if (ss >= 0.6) return true;
+export function getCandidateSimilarityDecision(
+  a: RawCandidate,
+  b: RawCandidate,
+  options: CandidateSimilarityOptions = {}
+): CandidateSimilarityDecision {
+  const ss = normalizeSlug(a.slug) === normalizeSlug(b.slug) ? 1 : slugSimilarity(a.slug, b.slug);
   const ts = titleSimilarity(a.title, b.title);
-  return ts >= 0.5;
+  if (ss >= 0.6) {
+    return { isSimilar: true, matchedBy: "slug", slugSimilarity: ss, titleSimilarity: ts, reviewSignal: "merge_candidate" };
+  }
+  if (ts >= 0.5) {
+    return { isSimilar: true, matchedBy: "title", slugSimilarity: ss, titleSimilarity: ts, reviewSignal: "merge_candidate" };
+  }
+
+  const threshold = options.embeddingThreshold ?? 0.86;
+  if (typeof options.embeddingSimilarity === "number" && options.embeddingSimilarity >= threshold) {
+    return {
+      isSimilar: false,
+      matchedBy: "embedding",
+      slugSimilarity: ss,
+      titleSimilarity: ts,
+      embeddingSimilarity: options.embeddingSimilarity,
+      reviewSignal: "possible_duplicate",
+    };
+  }
+
+  return {
+    isSimilar: false,
+    matchedBy: "none",
+    slugSimilarity: ss,
+    titleSimilarity: ts,
+    embeddingSimilarity: options.embeddingSimilarity,
+    reviewSignal: "none",
+  };
+}
+
+function areSimilarCandidates(a: RawCandidate, b: RawCandidate, embeddingSimilarity?: number): boolean {
+  const decision = getCandidateSimilarityDecision(a, b, { embeddingSimilarity });
+  // Embedding-only matches intentionally do not merge consensus groups. They are
+  // possible-duplicate review signals because semantic closeness can hide
+  // materially different facts, languages, jurisdictions, or claim scopes.
+  return decision.reviewSignal === "merge_candidate";
 }
 
 function mergeSourceHints(groups: RawCandidate[]): { url: string; title: string }[] {
