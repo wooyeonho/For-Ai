@@ -2,13 +2,8 @@ import { createHash } from "crypto";
 import { NextResponse } from "next/server";
 import { API_TIER_CONFIG, type ApiTier } from "./types-monetization";
 import { supabaseAdmin } from "./admin-api";
+import { persistentRateLimited } from "./rate-limit-store";
 
-interface RateBucket {
-  count: number;
-  resetAt: number;
-}
-
-const buckets = new Map<string, RateBucket>();
 const WINDOW_MS = 60_000;
 
 function sha256(value: string): string {
@@ -72,33 +67,28 @@ interface RateLimitResult {
 }
 
 export async function checkRateLimit(request: Request): Promise<RateLimitResult> {
-  const now = Date.now();
   const auth = await authenticateApiKey(request);
   const tier: ApiTier = auth?.tier ?? "free";
   const tierConfig = API_TIER_CONFIG[tier];
   const limit = tierConfig.rate_limit_rpm;
 
   const bucketKey = auth ? `key:${auth.keyHash}` : `contributor:${contributorHash(request)}`;
-  const bucket = buckets.get(bucketKey);
+  // Persistent (cross-instance) limiter — per-tier API quotas are a monetization
+  // control, so a module-level Map that resets on every serverless cold start
+  // would let callers bypass their tier's rate cap entirely.
+  const outcome = await persistentRateLimited("api-tier", bucketKey, limit, WINDOW_MS);
+  const resetAt = Date.now() + (outcome.retryAfterMs || WINDOW_MS);
+  const remaining = outcome.limited ? 0 : Math.max(0, limit - 1);
 
-  if (!bucket || bucket.resetAt <= now) {
-    buckets.set(bucketKey, { count: 1, resetAt: now + WINDOW_MS });
-    return {
-      allowed: true,
-      tier,
-      limit,
-      remaining: limit - 1,
-      resetAt: now + WINDOW_MS,
-      profileId: auth?.profileId ?? null,
-      keyId: auth?.keyId ?? null,
-    };
-  }
-
-  bucket.count += 1;
-  const remaining = Math.max(0, limit - bucket.count);
-  const allowed = bucket.count <= limit;
-
-  return { allowed, tier, limit, remaining, resetAt: bucket.resetAt, profileId: auth?.profileId ?? null, keyId: auth?.keyId ?? null };
+  return {
+    allowed: !outcome.limited,
+    tier,
+    limit,
+    remaining,
+    resetAt,
+    profileId: auth?.profileId ?? null,
+    keyId: auth?.keyId ?? null,
+  };
 }
 
 export async function logApiUsage(request: Request, result: RateLimitResult, responseStatus: number): Promise<void> {

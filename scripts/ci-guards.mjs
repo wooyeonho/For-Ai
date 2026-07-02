@@ -53,7 +53,7 @@ const SERVER_SECRET_MODULES = new Set([
 ]);
 const SERVICE_ROLE_FACTORY_FILES = new Set(["lib/supabase-server.ts"]);
 const SERVICE_ROLE_ACCESS_FILES = new Set(["lib/supabase-server.ts"]);
-const SERVER_SECRET_HELPER_FILES = new Set(["lib/supabase-server.ts", "lib/admin-api.ts"]);
+const SERVER_SECRET_HELPER_FILES = new Set(["lib/supabase-server.ts", "lib/admin-api.ts", "lib/rate-limit-store.ts"]);
 const MUTATION_METHOD_RE = /\.(insert|update|upsert|delete)\s*\(/;
 const SERVICE_ROLE_NAME_RE = /\b(SUPABASE_SERVICE_ROLE_KEY|serviceKey|serviceRoleKey|createServiceRoleClient|createServerClient|supabaseAdmin)\b/;
 

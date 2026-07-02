@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { makeContributorHashForRequest } from "@/lib/contributor-hash";
-import { rateLimited, clientIp } from "@/lib/rate-limit";
+import { clientIp } from "@/lib/rate-limit";
+import { persistentRateLimited } from "@/lib/rate-limit-store";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
@@ -57,7 +58,7 @@ export async function POST(request: Request) {
   // Block DB spam-loading: cap anonymous post submissions per IP. Public posts
   // land as 'pending' and require moderation, but unbounded inserts are a DDoS /
   // storage-abuse vector, so throttle before touching the database.
-  if (rateLimited("community-posts", clientIp(request), 10, 60 * 60 * 1000)) {
+  if ((await persistentRateLimited("community-posts", clientIp(request), 10, 60 * 60 * 1000)).limited) {
     return NextResponse.json({ error: "rate_limited" }, { status: 429 });
   }
 
