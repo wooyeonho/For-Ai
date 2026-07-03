@@ -7,10 +7,11 @@ import { AdminDbDetails, adminLabel } from "../admin-labels";
 import { isHighRiskCategory } from "@/lib/risk-policy";
 import type { AdminRecommendation } from "@/lib/admin-recommendations";
 import { calculateDocumentQuality } from "@/lib/document-quality";
+import { classifyRecommendedSourceType } from "@/lib/source-trust";
 
 type SourceRow = { id: string; title?: string | null; url?: string | null; source_type?: string | null; source_authority?: string | null; citation?: string | null; observed_at?: string | null };
 type VerificationEventRow = { id: string; note?: string | null; created_at?: string | null; new_status?: string | null };
-type SourceCandidate = { id?: string; title?: string; url?: string; source_type?: string; citation?: string; status?: string | null; created_at?: string | null; contributor_hash?: string | null };
+type SourceCandidate = { id?: string; title?: string; url?: string; source_type?: string; citation?: string; status?: string | null; created_at?: string | null; contributor_hash?: string | null; source_domain?: string | null; detected_language?: string | null; page_type?: string | null };
 type ClaimRow = {
   id: string;
   field_path: string;
@@ -640,7 +641,7 @@ export default function VerifyClaimPage() {
                   <p className="meta-label">submitter: {claim.submitter ?? claim.contributor_hash ?? "-"} · AI: {[claim.ai_provider, claim.ai_model].filter(Boolean).join(" / ") || "-"}</p>
                 </AdminDbDetails>
                 {(claim.source_candidates?.length ?? 0) > 0 && (
-                  <div><strong>출처 후보</strong><ul>{claim.source_candidates?.map((source, i) => <li key={`${source.url ?? source.title ?? i}`}>{source.source_type ?? "web"} · trust {trustScore(source.source_type, source.url, source.citation)} · {source.url ? <a href={source.url}>{source.title ?? source.url}</a> : (source.title ?? source.citation)}</li>)}</ul></div>
+                  <div><strong>출처 후보</strong><ul>{claim.source_candidates?.map((source, i) => <li key={`${source.url ?? source.title ?? i}`}>recommended source type: {classifyRecommendedSourceType({ url: source.url, title: source.title, domain: source.source_domain, detected_language: source.detected_language, page_type: source.page_type }).recommended_source_type} · submitted: {source.source_type ?? "web"} · trust {trustScore(source.source_type, source.url, source.citation)} · {source.url ? <a href={source.url}>{source.title ?? source.url}</a> : (source.title ?? source.citation)}</li>)}</ul></div>
                 )}
                 {(claim.claim_sources?.length ?? 0) > 0 && (
                   <ul style={{ margin: "4px 0", paddingLeft: 16, fontSize: 13 }}>

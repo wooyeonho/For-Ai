@@ -2,6 +2,63 @@ import type { SourceType } from "./types";
 
 export type SourceCheckStatus = "unchecked" | "passed" | "warning" | "failed";
 
+
+export type RecommendedSourceType = "official" | "primary" | "secondary" | "user_generated" | "commercial" | "unknown";
+
+export type SourceTrustClassifierInput = {
+  url?: string | null;
+  title?: string | null;
+  domain?: string | null;
+  detected_language?: string | null;
+  page_type?: string | null;
+};
+
+export type SourceTrustClassifierResult = {
+  recommended_source_type: RecommendedSourceType;
+  classifier_notes: string[];
+  input: SourceTrustClassifierInput;
+};
+
+const USER_GENERATED_PAGE_TYPES = new Set(["review", "forum", "social", "comment", "ugc", "community", "wiki_edit"]);
+const COMMERCIAL_PAGE_TYPES = new Set(["pricing", "checkout", "affiliate", "sponsored", "advertorial", "marketplace", "store", "booking"]);
+const PRIMARY_PAGE_TYPES = new Set(["registry", "platform", "database", "listing", "app_store", "operator", "schedule", "product_page"]);
+const OFFICIAL_PAGE_TYPES = new Set(["official", "policy", "terms", "filing", "notice", "law", "regulation", "standard", "government", "press_release"]);
+const SECONDARY_PAGE_TYPES = new Set(["news", "reference", "report", "article", "blog", "dataset"]);
+
+const USER_GENERATED_DOMAIN_HINTS = ["reddit.", "forum.", "community.", "facebook.com", "x.com", "twitter.com", "instagram.com", "tiktok.com", "threads.net", "youtube.com", "medium.com"];
+const COMMERCIAL_DOMAIN_HINTS = ["amazon.", "booking.com", "expedia.", "tripadvisor.", "affiliate", "shop.", "store.", "coupon", "deals"];
+
+function normalizeClassifierDomain(input: SourceTrustClassifierInput): string | null {
+  const explicitDomain = input.domain?.trim().toLowerCase();
+  if (explicitDomain) return explicitDomain.replace(/^www\./, "");
+  const parsed = parseUrl(input.url);
+  return parsed?.hostname.toLowerCase().replace(/^www\./, "") ?? null;
+}
+
+export function classifyRecommendedSourceType(input: SourceTrustClassifierInput): SourceTrustClassifierResult {
+  const domain = normalizeClassifierDomain(input);
+  const pageType = input.page_type?.trim().toLowerCase().replace(/[\s-]+/g, "_") ?? "";
+  const title = input.title?.trim() ?? "";
+  const notes: string[] = [];
+
+  let recommended_source_type: RecommendedSourceType = "unknown";
+  if (pageType && USER_GENERATED_PAGE_TYPES.has(pageType)) recommended_source_type = "user_generated";
+  else if (pageType && COMMERCIAL_PAGE_TYPES.has(pageType)) recommended_source_type = "commercial";
+  else if (pageType && OFFICIAL_PAGE_TYPES.has(pageType)) recommended_source_type = "official";
+  else if (domain && isTrustedSourceDomain(domain)) recommended_source_type = "official";
+  else if (pageType && PRIMARY_PAGE_TYPES.has(pageType)) recommended_source_type = "primary";
+  else if (pageType && SECONDARY_PAGE_TYPES.has(pageType)) recommended_source_type = "secondary";
+  else if (domain && USER_GENERATED_DOMAIN_HINTS.some((hint) => domain.includes(hint) || domain.startsWith(hint))) recommended_source_type = "user_generated";
+  else if (domain && COMMERCIAL_DOMAIN_HINTS.some((hint) => domain.includes(hint) || domain.startsWith(hint))) recommended_source_type = "commercial";
+
+  if (!domain) notes.push("domain을 확인할 수 없어 recommended source type은 보수적으로 산정됩니다.");
+  if (!title) notes.push("title이 없어 page intent 판단이 제한됩니다.");
+  if (!pageType) notes.push("page_type이 없어 URL/domain 기반 보조 분류만 수행했습니다.");
+  notes.push("recommended_source_type은 리뷰 보조 라벨이며 claim_sources 승격, verification_events 생성, confidence/status 변경을 자동 수행하지 않습니다.");
+
+  return { recommended_source_type, classifier_notes: notes, input: { ...input, domain: domain ?? input.domain ?? null } };
+}
+
 export type SourceTrustInput = {
   url?: string | null;
   source_type?: string | null;

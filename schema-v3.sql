@@ -150,6 +150,9 @@ create table claim_sources (
   source_authority source_authority not null default 'unknown',
   title text,
   url text,
+  source_domain text,
+  detected_language text,
+  page_type text,
   citation text,
   lang text,
   observed_at timestamptz,
@@ -166,6 +169,9 @@ comment on column claims.lang is 'Language of this claim text/value.';
 comment on column claims.original_claim_id is 'For translated claims, references the original source-language claim.';
 comment on column claims.translation_status is 'machine_translated until human review; human_reviewed after approval.';
 comment on column claim_sources.lang is 'Original language of the source; preserve instead of translating source identity.';
+comment on column claim_sources.source_domain is 'Normalized/extracted domain used only for review aids such as recommended source type; not canonical factual evidence.';
+comment on column claim_sources.detected_language is 'Detected source page language for review context; does not prove claim truth.';
+comment on column claim_sources.page_type is 'Detected page type for classifier input; must not auto-create verification_events or change confidence.';
 
 create index claim_sources_claim_id_idx on claim_sources (claim_id);
 
@@ -736,6 +742,9 @@ create table if not exists source_candidates (
   title text,
   url text,
   normalized_url text,
+  source_domain text,
+  detected_language text,
+  page_type text,
   citation text,
   source_type source_type not null default 'unknown',
   source_authority source_authority not null default 'unknown',
@@ -758,6 +767,10 @@ create table if not exists source_candidates (
 
 comment on table source_candidates is 'Unverified public source candidates. Human review is required before attaching to claim_sources or changing claim verification status.';
 comment on column source_candidates.points_awarded is 'Contribution reward only; must not be used to decide claim truth, confidence, or verified status.';
+comment on column source_candidates.source_type is 'Submitted/candidate source type. Classifier output may be displayed as recommended source type only; it must not auto-promote to claim_sources or verification_events.';
+comment on column source_candidates.source_domain is 'Normalized/extracted domain used as classifier input for recommended source type display only.';
+comment on column source_candidates.detected_language is 'Detected source page language used as classifier input for reviewer context only.';
+comment on column source_candidates.page_type is 'Detected page type used as classifier input for recommended source type display only.';
 
 -- Review priority scores are queue-management signals only. They are not
 -- canonical truth and must never directly change claims.confidence,

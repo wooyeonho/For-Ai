@@ -125,6 +125,7 @@ function verifyGuardrailReasons(input: {
   if (!VERIFY_ALLOWED_CONFIDENCE.has(input.confidence)) reasons.push("confidence must be medium or high before verification");
   if (input.sources.length === 0) reasons.push("at least one source is required before verification");
   if (input.sources.length > 0 && !input.sources.some(sourceHasUrlOrCitation)) reasons.push("at least one source must include a URL or citation before verification");
+  if (input.confidence === "high" && !input.sources.some(sourceIsOfficialOrRegulator)) reasons.push("high confidence requires at least one official, law, or regulator source candidate accepted by a human reviewer");
   if (input.highRisk && !input.sources.some(sourceIsOfficialOrRegulator)) reasons.push("high-risk claims require an official, law, or regulator source");
   return reasons;
 }
