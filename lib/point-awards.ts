@@ -4,7 +4,8 @@ export const POINT_VALUES = {
   topic_submitted: 2,
   topic_accepted: 20,
   source_submitted: 5,
-  official_source_bonus: 5,       // stacked on top of source_submitted for official domains
+  official_source_bonus: 5,       // legacy submission-time event; not leaderboard-eligible
+  official_source_accepted_bonus: 5, // stacked only after admin accepts an official source
   source_accepted: 30,
   source_used_in_verified_claim: 100,
   hallucination_reported: 5,

@@ -56,7 +56,7 @@ export async function checkAndAwardBadges(
     { slug: 'source_finder', condition: (counts['source_submitted'] ?? 0) >= 10 },
     {
       slug: 'official_source_hunter',
-      condition: (counts['official_source_bonus'] ?? 0) >= 10,
+      condition: (counts['official_source_accepted_bonus'] ?? 0) >= 10,
     },
     { slug: 'hallucination_spotter', condition: (counts['hallucination_accepted'] ?? 0) >= 10 },
     { slug: 'stale_fixer', condition: (counts['stale_claim_fixed'] ?? 0) >= 10 },

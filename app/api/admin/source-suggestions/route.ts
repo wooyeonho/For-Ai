@@ -94,6 +94,14 @@ export async function PATCH(request: Request) {
       referenceType: 'source_suggestion',
     });
 
+    if (suggestion.source_type === 'official') {
+      await awardPoints(sb, suggestion.contributor_hash, 'official_source_accepted_bonus', POINT_VALUES.official_source_accepted_bonus, {
+        referenceId: id,
+        referenceType: 'source_suggestion',
+        metadata: { domain: suggestion.domain ?? null, claim_id: suggestion.claim_id ?? null },
+      });
+    }
+
     // Optionally promote to official claim_source
     if (promoteToClaimSource && suggestion.claim_id) {
       const sourceId = `src-${suggestion.claim_id}-${Date.now()}`;
