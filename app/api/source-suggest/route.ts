@@ -139,5 +139,11 @@ export async function POST(request: Request) {
     points_awarded: pointsAwarded,
     is_official_source: official,
     new_badges: newBadges,
+    review_status: 'pending',
+    next_steps: [
+      'Moderators compare the source against the submitted claim.',
+      'Accepted sources may be attached to claim_sources for human verification.',
+      'Additional contribution credit may be awarded when the source is accepted or used for verification.',
+    ],
   });
 }

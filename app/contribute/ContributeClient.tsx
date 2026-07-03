@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { BADGES } from "../../lib/badges";
 
 function getLocalHash(): string | null {
@@ -47,7 +48,7 @@ export function ContributeClient() {
   const [sourceTitle, setSourceTitle] = useState("");
   const [citation, setCitation] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [submitResult, setSubmitResult] = useState<{ points?: number; badges?: string[]; error?: string } | null>(null);
+  const [submitResult, setSubmitResult] = useState<{ points?: number; badges?: string[]; official?: boolean; suggestionId?: string; error?: string } | null>(null);
 
   async function handleSourceSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -72,6 +73,8 @@ export function ContributeClient() {
         setSubmitResult({
           points: data.points_awarded,
           badges: data.new_badges ?? [],
+          official: Boolean(data.is_official_source),
+          suggestionId: data.suggestion_id,
         });
         setClaimId("");
         setSourceUrl("");
@@ -90,11 +93,38 @@ export function ContributeClient() {
   return (
     <div className="contribute-client">
       {/* Source submission form */}
-      <div className="source-submit-section">
+      <div className="source-submit-section" id="source-submit">
         <h3>Submit a Source Candidate</h3>
         <p className="form-desc">
           Know the official source for a claim? Submit it here. If admin accepts it, you earn points.
         </p>
+        {submitResult && (
+          <div className={`submit-result sticky-success-feedback ${submitResult.error ? "result-error" : "result-success"}`} role={submitResult.error ? "alert" : "status"}>
+            {submitResult.error ? (
+              <p>{submitResult.error}</p>
+            ) : (
+              <>
+                <p><strong>Review pending.</strong> Your source suggestion was saved for admin review.</p>
+                <p>You earned <strong>+{submitResult.points ?? 0} submission points</strong>{submitResult.official ? " including an official-source bonus" : ""}.</p>
+                {(submitResult.badges ?? []).length > 0 && (
+                  <p>
+                    New badges earned: {" "}
+                    <strong>{submitResult.badges!.map((slug) => BADGES[slug]?.name ?? slug).join(", ")}</strong>
+                  </p>
+                )}
+                <p className="result-note">Next, moderators compare the source against the claim. Accepted sources may unlock additional contribution credit when used for verification.</p>
+                <div className="success-cta-row">
+                  <button type="button" className="semantic-button semantic-button-success" onClick={() => setSubmitResult(null)}>
+                    Add a source to another claim
+                  </button>
+                  <Link href="/contribute#your-contributions" className="cta-link">View my contributions</Link>
+                  <Link href="/contribute/leaderboard" className="cta-link">View leaderboard</Link>
+                </div>
+              </>
+            )}
+          </div>
+        )}
+
         <form onSubmit={handleSourceSubmit} className="source-form">
           <div className="form-field">
             <label htmlFor="claim-id">Claim ID</label>
@@ -144,29 +174,11 @@ export function ContributeClient() {
           </button>
         </form>
 
-        {submitResult && (
-          <div className={`submit-result ${submitResult.error ? "result-error" : "result-success"}`}>
-            {submitResult.error ? (
-              <p>{submitResult.error}</p>
-            ) : (
-              <>
-                <p>Submitted. You earned <strong>+{submitResult.points} points</strong>.</p>
-                {(submitResult.badges ?? []).length > 0 && (
-                  <p>
-                    New badges earned:{" "}
-                    {submitResult.badges!.map((slug) => BADGES[slug]?.name ?? slug).join(", ")}
-                  </p>
-                )}
-                <p className="result-note">Final points are awarded when admin reviews your submission.</p>
-              </>
-            )}
-          </div>
-        )}
       </div>
 
       {/* Contributor stats panel */}
       {stats && (
-        <div className="contributor-stats-panel">
+        <div className="contributor-stats-panel" id="your-contributions">
           <h3>Your Contributions</h3>
           <div className="stats-summary">
             <div className="stat-item">

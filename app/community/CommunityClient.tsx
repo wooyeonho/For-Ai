@@ -27,7 +27,7 @@ const AI_DISCLOSURE_LABEL = "Unverified AI-generated suggestion";
 const AI_DISCLOSURE_DESCRIPTION = "This post was created by an admin/internal AI generation flow and is not verified fact until human review links it to source-backed claims.";
 const QUESTION_TYPE_ICON: Record<string, string> = { question: "❓", discussion: "💬", report: "⚠" };
 const QUESTION_TYPE_LABEL: Record<string, string> = { question: "질문", discussion: "토론", report: "오류 신고" };
-const POST_REVIEW_MESSAGE = "글이 검토 대기열에 등록되었습니다. 관리자 승인 전에는 공개 목록에 표시되지 않습니다. 승인 후 게시됩니다.";
+const POST_REVIEW_MESSAGE = "글이 검토 대기열에 등록되었습니다. 다음 단계: 운영자가 관련 문서·claim 연결과 정책 위반 여부를 확인한 뒤 승인하면 공개됩니다. 승인된 기여는 추후 평판/포인트 산정 대상이 될 수 있습니다.";
 const STATUS_HELP: Record<string, string> = {
   pending: "검토 대기: 제출은 접수되었지만 아직 공개되지 않았습니다.",
   published: "게시됨: 공개 목록과 관련 wiki page에 표시됩니다.",
@@ -48,7 +48,7 @@ export default function CommunityClient({ documents }: { documents: { id: string
   const [claimId, setClaimId] = useState("");
   const [questionType, setQuestionType] = useState<"question" | "discussion" | "report">("discussion");
   const [submitting, setSubmitting] = useState(false);
-  const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
+  const [msg, setMsg] = useState<{ text: string; ok: boolean; actions?: boolean } | null>(null);
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const currentLocale = useMemo(() => {
@@ -90,8 +90,8 @@ export default function CommunityClient({ documents }: { documents: { id: string
 
   useEffect(() => { loadPosts(); }, [loadPosts]);
 
-  function flash(text: string, ok = true) {
-    setMsg({ text, ok });
+  function flash(text: string, ok = true, actions = false) {
+    setMsg({ text, ok, actions });
     setTimeout(() => setMsg(null), 4000);
   }
 
@@ -122,7 +122,7 @@ export default function CommunityClient({ documents }: { documents: { id: string
         const submittedQuestionType = questionType;
         const relatedDocument = documents.find((doc) => doc.id === submittedDocumentId);
 
-        flash(POST_REVIEW_MESSAGE);
+        flash(POST_REVIEW_MESSAGE, true, true);
         setContent("");
         setAuthorName("");
         setDocumentId("");
@@ -178,8 +178,15 @@ export default function CommunityClient({ documents }: { documents: { id: string
         </div>
 
         {msg && (
-          <div className={`community-alert ${msg.ok ? "community-alert-success" : "community-alert-danger"}`}>
-            {msg.text}
+          <div className={`community-alert community-sticky-feedback ${msg.ok ? "community-alert-success" : "community-alert-danger"}`}>
+            <p>{msg.text}</p>
+            {msg.ok && msg.actions && (
+              <div className="success-cta-row">
+                <Link href="/contribute" className="cta-link">다른 claim에 source 추가하기</Link>
+                <Link href="/contribute#your-contributions" className="cta-link">내 기여 보기</Link>
+                <Link href="/contribute/leaderboard" className="cta-link">leaderboard 보기</Link>
+              </div>
+            )}
           </div>
         )}
 

@@ -3126,7 +3126,6 @@ body {
   background: var(--soft);
 }
 
-
 /* QA hardening: interaction polish and Korean-readable wrapping. */
 :where(.registry-panel, .claim-card, .direct-answer-box, .community-form, .mission-card, .registry-row, .goal-metric-card) {
   overflow-wrap: break-word;
@@ -3174,5 +3173,55 @@ body {
 
   .community-form-row {
     gap: 10px;
+  }
+}
+
+/* Success feedback and contribution CTAs ----------------------------------- */
+.semantic-alert-success {
+  background: var(--success-bg);
+  border-color: var(--success);
+  color: var(--success);
+}
+
+.sticky-success-feedback,
+.community-sticky-feedback {
+  position: sticky;
+  top: 12px;
+  z-index: 5;
+}
+
+.success-cta-row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.community-alert p,
+.submit-result p {
+  margin: 0 0 8px;
+}
+
+.community-alert p:last-child,
+.submit-result p:last-child {
+  margin-bottom: 0;
+}
+
+@media (max-width: 640px) {
+  .sticky-success-feedback,
+  .community-sticky-feedback {
+    top: 0;
+  }
+
+  .success-cta-row {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .success-cta-row .cta-link,
+  .success-cta-row .semantic-button {
+    text-align: center;
+    width: 100%;
   }
 }
