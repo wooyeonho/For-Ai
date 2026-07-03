@@ -122,6 +122,7 @@ export default function CommunityClient({ documents }: { documents: { id: string
         const submittedQuestionType = questionType;
         const relatedDocument = documents.find((doc) => doc.id === submittedDocumentId);
 
+        if (d.contributor_hash && typeof window !== "undefined") localStorage.setItem("contributor_hash_preview", d.contributor_hash);
         flash(POST_REVIEW_MESSAGE, true, true);
         setContent("");
         setAuthorName("");

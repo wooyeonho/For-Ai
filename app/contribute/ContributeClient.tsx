@@ -17,14 +17,12 @@ type ContributorStats = {
 };
 
 export function ContributeClient() {
-  const [contributorHash, setContributorHash] = useState<string | null>(null);
   const [stats, setStats] = useState<ContributorStats | null>(null);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     const hash = getLocalHash();
     if (hash) {
-      setContributorHash(hash);
       loadStats(hash);
     }
   }, []);
@@ -48,7 +46,7 @@ export function ContributeClient() {
   const [sourceTitle, setSourceTitle] = useState("");
   const [citation, setCitation] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const [submitResult, setSubmitResult] = useState<{ points?: number; badges?: string[]; official?: boolean; suggestionId?: string; error?: string } | null>(null);
+  const [submitResult, setSubmitResult] = useState<{ points?: number; badges?: string[]; official?: boolean; suggestionId?: string; error?: string; receiptUrl?: string } | null>(null);
 
   async function handleSourceSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -75,13 +73,16 @@ export function ContributeClient() {
           badges: data.new_badges ?? [],
           official: Boolean(data.is_official_source),
           suggestionId: data.suggestion_id,
+          receiptUrl: data.receipt_url,
         });
+        if (data.contributor_hash) {
+          if (typeof window !== "undefined") localStorage.setItem("contributor_hash_preview", data.contributor_hash);
+          loadStats(data.contributor_hash);
+        }
         setClaimId("");
         setSourceUrl("");
         setSourceTitle("");
         setCitation("");
-        // Reload stats if we have a hash
-        if (contributorHash) loadStats(contributorHash);
       }
     } catch {
       setSubmitResult({ error: "Network error. Please try again." });
@@ -119,6 +120,9 @@ export function ContributeClient() {
                   </button>
                   <Link href="/contribute#your-contributions" className="cta-link">View my contributions</Link>
                   <Link href="/contribute/leaderboard" className="cta-link">View leaderboard</Link>
+                  {submitResult.receiptUrl && (
+                    <a href={submitResult.receiptUrl} className="btn btn-secondary">View my contribution receipt</a>
+                  )}
                 </div>
               </>
             )}
@@ -173,7 +177,6 @@ export function ContributeClient() {
             {submitting ? "Submitting…" : "Submit Source"}
           </button>
         </form>
-
       </div>
 
       {/* Contributor stats panel */}

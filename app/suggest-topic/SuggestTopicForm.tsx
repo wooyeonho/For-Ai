@@ -38,6 +38,7 @@ export default function SuggestTopicForm({ initialQuestion = "", initialLanguage
   const [email, setEmail] = useState("");
   const [website, setWebsite] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [receiptUrl, setReceiptUrl] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -52,6 +53,7 @@ export default function SuggestTopicForm({ initialQuestion = "", initialLanguage
     setWhyThisMatters("");
     setEmail("");
     setWebsite("");
+    setReceiptUrl("");
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -79,6 +81,11 @@ export default function SuggestTopicForm({ initialQuestion = "", initialLanguage
         const data = await res.json().catch(() => ({}));
         setError("Submission failed: " + (data?.error ?? res.status));
       } else {
+        const data = await res.json().catch(() => ({}));
+        if (data?.contributor_hash && typeof window !== "undefined") {
+          localStorage.setItem("contributor_hash_preview", data.contributor_hash);
+        }
+        setReceiptUrl(data?.receipt_url ?? "");
         setSubmitted(true);
       }
     } catch {
@@ -101,6 +108,7 @@ export default function SuggestTopicForm({ initialQuestion = "", initialLanguage
         </div>
         <p>Your question was saved for review. It will not be shown as a trusted answer until a human checks reliable links or documents.</p>
         <div className="suggest-topic-actions success-cta-row">
+          {receiptUrl && <a href={receiptUrl} className="cta-link">View my contribution receipt</a>}
           <button onClick={resetForm} className="semantic-button semantic-button-success">
             Submit another question
           </button>

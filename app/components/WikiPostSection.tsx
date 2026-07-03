@@ -27,6 +27,7 @@ export function WikiPostSection({ documentId, claims = [] }: { documentId: strin
   const [msg, setMsg] = useState<string | null>(null);
   const [msgOk, setMsgOk] = useState(false);
   const [showAiSuggestions, setShowAiSuggestions] = useState(false);
+  const [receiptUrl, setReceiptUrl] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -70,6 +71,8 @@ export function WikiPostSection({ documentId, claims = [] }: { documentId: strin
         setClaimId("");
         setShowForm(false);
         setMsgOk(true);
+        if (d.contributor_hash && typeof window !== "undefined") localStorage.setItem("contributor_hash_preview", d.contributor_hash);
+        setReceiptUrl(d.receipt_url ?? null);
         setMsg(POST_REVIEW_MESSAGE);
         setPosts((currentPosts) => [
           {
@@ -133,7 +136,9 @@ export function WikiPostSection({ documentId, claims = [] }: { documentId: strin
       )}
 
       {msg && msgOk && !showForm && (
-        <p style={{ fontSize: 12, color: "#15803d", marginTop: 12 }}>{msg}</p>
+        <p style={{ fontSize: 12, color: "#15803d", marginTop: 12 }}>
+          {msg} {receiptUrl && <a href={receiptUrl}>내 기여 보기</a>}
+        </p>
       )}
 
       <div style={{ marginTop: 12 }}>
