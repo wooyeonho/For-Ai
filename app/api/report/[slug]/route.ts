@@ -65,7 +65,7 @@ export async function POST(
   if (isSupabaseConfigured()) {
     try {
       const supabase = createServerClient();
-      const limit = contributorSubmissionRateLimited(contributorHash);
+      const limit = await contributorSubmissionRateLimited(contributorHash);
       if (limit) {
         return NextResponse.json(
           { error: 'submission rate limit exceeded', code: `RATE_LIMIT_${limit.toUpperCase()}` },
