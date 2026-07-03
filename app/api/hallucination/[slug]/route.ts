@@ -3,13 +3,13 @@ import { createServerClient, isSupabaseConfigured } from '@/lib/supabase-server'
 import { makeContributorHashForRequest } from '@/lib/contributor-hash';
 import { resolveDocumentMetadataBySlug } from '@/lib/document-resolver';
 import { buildPublicTopicCandidate } from '@/lib/topic-candidates';
+import { HALLUCINATION_FIELD_MAX_LENGTHS } from '@/lib/submission-constants';
 import {
-  HALLUCINATION_FIELD_MAX_LENGTHS,
   contributorSubmissionRateLimited,
   hasHoneypotValue,
   inspectSubmissionText,
   type HallucinationFieldName,
-} from '@/lib/submission-limits';
+} from '@/lib/submission-guard';
 import { awardPoints, POINT_VALUES } from '@/lib/gamification';
 import { invalidPublicSourceUrl, parsePublicSourceUrl } from '@/lib/source-contributions';
 

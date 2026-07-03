@@ -5,7 +5,7 @@ import { buildPublicTopicCandidate } from "@/lib/topic-candidates";
 import {
   hasHoneypotValue,
   inspectSubmissionText,
-} from "@/lib/submission-limits";
+} from "@/lib/submission-guard";
 import { persistentRateLimited } from "@/lib/rate-limit-store";
 import { invalidPublicSourceUrl, parsePublicSourceUrl } from "@/lib/source-contributions";
 
@@ -51,7 +51,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "invalid JSON" }, { status: 400 });
   }
 
-  // honeypot check (submission-limits) + new global fields
+  // honeypot check (submission-guard) + new global fields
   if (hasHoneypotValue(body)) {
     return NextResponse.json({ accepted: true, status: "candidate", raw_ip_stored: false });
   }

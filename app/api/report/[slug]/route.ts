@@ -3,12 +3,12 @@ import { createServerClient, isSupabaseConfigured } from '../../../../lib/supaba
 import { makeContributorHashForRequest } from '../../../../lib/contributor-hash';
 import { resolveDocumentMetadataBySlug } from '../../../../lib/document-resolver';
 import { buildPublicTopicCandidate } from '../../../../lib/topic-candidates';
+import { REPORT_MESSAGE_MAX_LENGTH } from '../../../../lib/submission-constants';
 import {
-  REPORT_MESSAGE_MAX_LENGTH,
   contributorSubmissionRateLimited,
   hasHoneypotValue,
   inspectSubmissionText,
-} from '../../../../lib/submission-limits';
+} from '../../../../lib/submission-guard';
 import { recordDocumentAnalyticsEvent } from '@/lib/analytics';
 import { invalidPublicSourceUrl, normalizeSourceUrl, parsePublicSourceUrl } from '@/lib/source-contributions';
 import { awardPoints, extractDomain, POINT_VALUES } from '@/lib/gamification';

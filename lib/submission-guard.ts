@@ -6,9 +6,10 @@ import {
   SUBMISSION_URL_MAX_COUNT,
 } from './submission-constants';
 
-// Limit values live in submission-constants so "use client" forms can share
-// them without pulling in the server-only rate-limit store this module uses.
-export * from './submission-constants';
+// Server-only spam/rate-limit checks for the public submission endpoints
+// (report, hallucination, suggest-topic). Limit *values* live solely in
+// submission-constants so client forms can import them without pulling in
+// this module's rate-limit-store dependency (which imports "server-only").
 
 export type HallucinationFieldName = keyof typeof HALLUCINATION_FIELD_MAX_LENGTHS;
 export type SubmissionStatus = 'new' | 'spam_suspected';
