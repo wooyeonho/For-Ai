@@ -9,6 +9,89 @@ export const metadata: Metadata = {
 
 export default function ApiDocsPage() {
   const BASE = siteUrl("").replace(/\/+$/, "");
+  const publicApiEndpoints = [
+    {
+      methods: ["GET /api/search"],
+      description: "Search published documents and verified claims by query text, with optional language and limit filters.",
+      auth: "No auth required.",
+      rateLimit: "Yes — standard public API rate limit headers are returned.",
+      response: '{ "results": [{ "type": "document|claim", "document_id": "...", "slug": "...", "title": "...", "category": "...", "lang": "...", "excerpt": "..." }], "query": "...", "total": 0 }',
+      safety: "Only verified claims are searched; still check the target document citation guidance before citing a result.",
+    },
+    {
+      methods: ["GET /api/trending"],
+      description: "Returns AI citation, human view, and hallucination trending lists for public registry documents.",
+      auth: "No auth required.",
+      rateLimit: "Yes — standard public API rate limit headers are returned.",
+      response: '{ "ai_trending": [], "human_trending": [], "hallucination_trending": [], "total_ai_citations": 0, "total_human_views": 0, "total_views": 0, "total_hallucinations": 0, "generated_at": "..." }',
+      safety: "Trending rank is analytics metadata, not a factual verification signal; cite only citation-ready claims.",
+    },
+    {
+      methods: ["GET /api/coverage"],
+      description: "Public coverage metrics for the registry coverage goal and citation-readiness policy.",
+      auth: "No auth required.",
+      rateLimit: "Yes — standard public API rate limit headers are returned.",
+      response: '{ "...coverage_metrics": "...", "citation_policy": "Cite only citation-ready claims..." }',
+      safety: "Use the included citation policy as guidance; coverage counts do not make unverified facts citable.",
+    },
+    {
+      methods: ["POST /api/source-suggest"],
+      description: "Submit a public source suggestion for an existing claim; stores a contributor hash instead of raw IP.",
+      auth: "No login required.",
+      rateLimit: "Yes — limited per contributor hash and claim, with 429 on daily overuse.",
+      response: '{ "success": true, "suggestion_id": "...", "points_awarded": 0, "is_official_source": false, "new_badges": [] }',
+      safety: "Suggestions are pending evidence only; they are not verified sources until reviewed and attached to claims.",
+    },
+    {
+      methods: ["POST /api/documents/:slug/copy-citation"],
+      description: "Record a citation-copy analytics event for one document slug.",
+      auth: "No auth required.",
+      rateLimit: "Yes — per IP and slug window, with 429 when exceeded.",
+      response: '{ "success": true }',
+      safety: "This only records user intent; clients must still inspect citation guidance before copying or citing facts.",
+    },
+    {
+      methods: ["GET /api/gamification/bounties", "POST /api/gamification/bounties"],
+      description: "List open source/claim bounties, or create a new bounty for admin-managed campaigns.",
+      auth: "GET is public; POST requires admin authorization.",
+      rateLimit: "No dedicated public limiter; infrastructure or admin controls may still apply.",
+      response: 'GET: { "bounties": [] } · POST: { "success": true, "bounty_id": "..." }',
+      safety: "Bounties identify contribution targets, not verified facts; sponsored bounties must remain clearly labeled.",
+    },
+    {
+      methods: ["GET /api/gamification/leaderboard"],
+      description: "Quality-point leaderboard for contributors over week, month, or all-time periods.",
+      auth: "No auth required.",
+      rateLimit: "No dedicated public limiter; response is revalidated for five minutes.",
+      response: '{ "leaderboard": [{ "rank": 1, "contributor_hash": "...", "quality_points": 0, "badge_count": 0 }], "period": "week", "generated_at": "..." }',
+      safety: "Contributor score is reputation metadata and never a substitute for source-backed claim verification.",
+    },
+    {
+      methods: ["GET /api/gamification/country-quest"],
+      description: "Country-level quest progress derived from public entities and documents.",
+      auth: "No auth required.",
+      rateLimit: "No dedicated public limiter; response is revalidated for ten minutes.",
+      response: '{ "quests": [{ "country": "...", "verified_count": 0, "total_count": 0, "target_count": 100, "progress_pct": 0 }], "generated_at": "..." }',
+      safety: "Quest progress summarizes registry coverage only; it does not mark individual claims as citation-ready.",
+    },
+    {
+      methods: ["GET /api/gamification/contributor/:hash"],
+      description: "Contributor profile statistics, point events, badges, and weekly rank by contributor hash.",
+      auth: "No auth required; contributor hash must be at least eight characters.",
+      rateLimit: "No dedicated public limiter.",
+      response: '{ "total_points": 0, "events": [], "badges": [], "rank_this_week": null }',
+      safety: "Badges and points are contribution metadata; claim citation safety remains source and verification based.",
+    },
+    {
+      methods: ["GET /api/business/submitted-claims"],
+      description: "Review queue for claims submitted through verified business workflows.",
+      auth: "Admin authorization required.",
+      rateLimit: "Protected by admin access controls; no public rate limit contract.",
+      response: '{ "claims": [{ "...business_submitted_claim": "...", "verified_business_profiles": { "business_name": "...", "tier": "..." } }] }',
+      safety: "Business-submitted claims remain unverified until human review; sponsored or business-claimed content must be labeled.",
+    },
+  ];
+
   return (
     <article>
       <header className="registry-panel">
@@ -233,6 +316,35 @@ export default function ApiDocsPage() {
               Gamification endpoints expose contribution tasks and aggregate reputation signals only. Admin-only writes still require server-side admin authorization.
             </p>
           </div>
+        </div>
+      </section>
+
+      <section className="registry-panel" aria-labelledby="public-api">
+        <h2 id="public-api">Public API route coverage</h2>
+        <p style={{ fontSize: "0.9rem", color: "var(--muted)", lineHeight: 1.7 }}>
+          These routes are included in the CI route guard and mirror the implemented public
+          <code> app/api/**/route.ts</code> surface. Treat every factual value as non-citable
+          unless its claim-level citation guidance says it is ready.
+        </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {publicApiEndpoints.map((endpoint) => (
+            <div key={endpoint.methods.join("|")} style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
+              {endpoint.methods.map((method) => (
+                <p key={method} style={{ margin: endpoint.methods[0] === method ? 0 : "6px 0 0", fontFamily: "monospace", fontWeight: 700 }}>
+                  {method}
+                </p>
+              ))}
+              <p style={{ margin: "8px 0", fontSize: "0.9rem", color: "var(--muted)" }}>
+                {endpoint.description}
+              </p>
+              <ul style={{ margin: 0, paddingLeft: 18, fontSize: "0.85rem", color: "var(--muted)", lineHeight: 1.7 }}>
+                <li><strong>Auth:</strong> {endpoint.auth}</li>
+                <li><strong>Rate limit:</strong> {endpoint.rateLimit}</li>
+                <li><strong>Response shape:</strong> <code>{endpoint.response}</code></li>
+                <li><strong>Citation safety:</strong> {endpoint.safety}</li>
+              </ul>
+            </div>
+          ))}
         </div>
       </section>
 
