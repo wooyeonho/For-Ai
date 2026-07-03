@@ -1,17 +1,14 @@
 import { persistentRateLimited } from './rate-limit-store';
+import {
+  HALLUCINATION_FIELD_MAX_LENGTHS,
+  SUBMISSION_PER_DAY_LIMIT,
+  SUBMISSION_PER_MINUTE_LIMIT,
+  SUBMISSION_URL_MAX_COUNT,
+} from './submission-constants';
 
-export const REPORT_MESSAGE_MAX_LENGTH = 2000;
-export const SUGGEST_TOPIC_MESSAGE_MAX_LENGTH = 2000;
-export const SUBMISSION_URL_MAX_COUNT = 3;
-export const SUBMISSION_PER_MINUTE_LIMIT = 3;
-export const SUBMISSION_PER_DAY_LIMIT = 20;
-
-export const HALLUCINATION_FIELD_MAX_LENGTHS = {
-  ai_service: 100,
-  prompt: 2000,
-  ai_answer: 5000,
-  expected_correction: 2000,
-} as const;
+// Limit values live in submission-constants so "use client" forms can share
+// them without pulling in the server-only rate-limit store this module uses.
+export * from './submission-constants';
 
 export type HallucinationFieldName = keyof typeof HALLUCINATION_FIELD_MAX_LENGTHS;
 export type SubmissionStatus = 'new' | 'spam_suspected';
