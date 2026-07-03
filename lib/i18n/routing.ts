@@ -50,3 +50,12 @@ export function getReportReturnUrl(locale: SupportedLocale | string, slug: strin
 export function getHallucinationReturnUrl(locale: SupportedLocale | string, slug: string): string {
   return getDocumentReturnPath(locale, slug);
 }
+
+// The suggest-topic page pre-fills its form from ?q and ?lang, so the home
+// search CTA must carry both or the user retypes their failed query.
+export function getSuggestTopicHref(query: string, locale: SupportedLocale | string): string {
+  const trimmed = query.trim();
+  return trimmed
+    ? `/suggest-topic?q=${encodeURIComponent(trimmed)}&lang=${encodeURIComponent(String(locale))}`
+    : `/suggest-topic?lang=${encodeURIComponent(String(locale))}`;
+}

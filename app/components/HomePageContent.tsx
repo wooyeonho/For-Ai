@@ -70,6 +70,12 @@ type HomeCopy = {
   statusPrefix: string;
   questionHeading: string;
   questions: string[];
+  explainerEyebrow?: string;
+  explainerTitle?: string;
+  explainerBody?: string;
+  explainerRegistryBundle?: string;
+  explainerCandidate?: string;
+  explainerSourceTrust?: string;
 };
 
 const HOME_COPY: Record<string, HomeCopy> = {
@@ -137,6 +143,16 @@ const HOME_COPY: Record<string, HomeCopy> = {
       "주민등록증 재발급 수수료는 무료야?",
       "자동차세 납부 기간은 언제야?",
     ],
+    explainerEyebrow: "레지스트리 용어 설명",
+    explainerTitle: "운영 용어는 헤드라인 아래에서 설명합니다",
+    explainerBody:
+      "히어로는 약속을 쉬운 언어로 말하고, 이 영역은 워크플로를 알고 싶은 사람을 위해 registry bundle, candidate, source trust를 정의합니다.",
+    explainerRegistryBundle:
+      "Registry bundle: entity, document, claims, sources, verification 이벤트를 하나로 묶어 읽는 단위입니다.",
+    explainerCandidate:
+      "Candidate: 검토 전까지 Needs verification / confidence: low 상태로 유지되는 미검증 claim 또는 주제입니다.",
+    explainerSourceTrust:
+      "Source trust: 출처 유형, 관찰 시점, 검토 이력에서 나오는 신호로 인용 가능 여부를 판단합니다.",
   },
   en: {
     verticalLabel: "Initial focus vertical",
@@ -592,13 +608,13 @@ export default async function HomePageContent({ locale = "en" }: { locale?: stri
       </section>
 
       <section className="section">
-        <p className="section-eyebrow">{DEFAULT_HOME_EXPLAINER.eyebrow}</p>
-        <h2 className="section-title">{DEFAULT_HOME_EXPLAINER.title}</h2>
-        <p className="section-lede">{DEFAULT_HOME_EXPLAINER.body}</p>
+        <p className="section-eyebrow">{home.explainerEyebrow ?? DEFAULT_HOME_EXPLAINER.eyebrow}</p>
+        <h2 className="section-title">{home.explainerTitle ?? DEFAULT_HOME_EXPLAINER.title}</h2>
+        <p className="section-lede">{home.explainerBody ?? DEFAULT_HOME_EXPLAINER.body}</p>
         <div className="audience-grid">
-          <article className="audience-card"><h3>Registry bundle</h3><p>{DEFAULT_HOME_EXPLAINER.registryBundle}</p></article>
-          <article className="audience-card"><h3>Candidate</h3><p>{DEFAULT_HOME_EXPLAINER.candidate}</p></article>
-          <article className="audience-card"><h3>Source trust</h3><p>{DEFAULT_HOME_EXPLAINER.sourceTrust}</p></article>
+          <article className="audience-card"><h3>Registry bundle</h3><p>{home.explainerRegistryBundle ?? DEFAULT_HOME_EXPLAINER.registryBundle}</p></article>
+          <article className="audience-card"><h3>Candidate</h3><p>{home.explainerCandidate ?? DEFAULT_HOME_EXPLAINER.candidate}</p></article>
+          <article className="audience-card"><h3>Source trust</h3><p>{home.explainerSourceTrust ?? DEFAULT_HOME_EXPLAINER.sourceTrust}</p></article>
         </div>
       </section>
 

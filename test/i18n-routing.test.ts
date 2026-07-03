@@ -8,6 +8,7 @@ import {
   getHallucinationReturnUrl,
   getLocalePath,
   getReportReturnUrl,
+  getSuggestTopicHref,
 } from "../lib/i18n/routing";
 
 function primaryRoutes(locale: SupportedLocale): string[] {
@@ -53,4 +54,11 @@ test("LanguageSelector helper converts report and hallucination pages back to lo
 test("current locale detection falls back to configured default for non-locale paths", () => {
   assert.equal(getCurrentLocaleFromPath("/ja/wiki/bts-members-agency"), "ja");
   assert.equal(getCurrentLocaleFromPath("/report/bts-members-agency"), "en");
+});
+
+test("suggest-topic CTA carries the failed query and locale into the form", () => {
+  assert.equal(getSuggestTopicHref("passport fee", "ko"), "/suggest-topic?q=passport%20fee&lang=ko");
+  assert.equal(getSuggestTopicHref("  여권 수수료  ", "ko"), `/suggest-topic?q=${encodeURIComponent("여권 수수료")}&lang=ko`);
+  assert.equal(getSuggestTopicHref("", "ja"), "/suggest-topic?lang=ja");
+  assert.equal(getSuggestTopicHref("   ", "en"), "/suggest-topic?lang=en");
 });

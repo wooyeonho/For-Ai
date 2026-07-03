@@ -122,7 +122,7 @@ export function AdminSecretField({
           placeholder={placeholder}
           style={inputStyle ?? { flex: 1, padding: 8 }}
         />
-        <button type="button" onClick={() => void (onSubmit ?? login)()} disabled={isLoading || !currentSecret} style={{ padding: "8px 12px", border: 0, borderRadius: 6, background: "#111827", color: "#fff", fontSize: 12, cursor: isLoading || !currentSecret ? "not-allowed" : "pointer" }}>
+        <button type="button" onClick={() => void (onSubmit ?? loginAdmin ?? login)()} disabled={isLoading || !currentSecret} style={{ padding: "8px 12px", border: 0, borderRadius: 6, background: "#111827", color: "#fff", fontSize: 12, cursor: isLoading || !currentSecret ? "not-allowed" : "pointer" }}>
           {isLoading ? "로그인 중" : (buttonLabel ?? "로그인")}
         </button>
       </div>

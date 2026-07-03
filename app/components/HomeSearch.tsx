@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useState, useEffect, useRef } from "react";
 import { getTranslations } from "../../lib/i18n";
 import type { SupportedLocale } from "../../lib/i18n";
+import { getSuggestTopicHref } from "../../lib/i18n/routing";
 import type { SearchResult } from "../api/search/route";
 
 interface DocItem {
@@ -20,7 +21,7 @@ export default function HomeSearch({ docs, locale }: { docs: DocItem[]; locale: 
   const [searching, setSearching] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const t = getTranslations(locale);
-  const suggestHref = "/suggest-topic";
+  const suggestHref = getSuggestTopicHref(query, locale);
 
   const q = query.trim().toLowerCase();
 

@@ -1,5 +1,4 @@
 "use client";
-import Link from "next/link";
 import { useState, useEffect, useCallback } from "react";
 
 interface Post {
