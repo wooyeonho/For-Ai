@@ -3225,3 +3225,17 @@ body {
     width: 100%;
   }
 }
+
+.home-search-empty {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.home-search-empty-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 12px;
+}

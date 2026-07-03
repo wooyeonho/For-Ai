@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useState, useEffect, useRef } from "react";
+import { FormEvent, useState, useEffect, useRef } from "react";
 import { getTranslations } from "../../lib/i18n";
 import type { SupportedLocale } from "../../lib/i18n";
 import type { SearchResult } from "../api/search/route";
@@ -67,15 +67,31 @@ export default function HomeSearch({ docs, locale }: { docs: DocItem[]; locale: 
   const apiSlugs = new Set(apiResults.map((r) => r.slug));
   const localExtra = localFiltered.filter((d) => !apiSlugs.has(d.slug));
   const merged = q ? [...apiResults, ...localExtra] : localFiltered;
+  const suggestHref = query.trim()
+    ? `/suggest-topic?q=${encodeURIComponent(query.trim())}&lang=${encodeURIComponent(locale)}`
+    : `/suggest-topic?lang=${encodeURIComponent(locale)}`;
+
+  function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!q) return;
+
+    const firstResult = merged[0];
+    if (firstResult) {
+      window.location.href = `/${locale}/wiki/${firstResult.slug}`;
+      return;
+    }
+
+    window.location.href = suggestHref;
+  }
 
   return (
     <>
-      <div style={{ position: "relative" }}>
+      <form onSubmit={handleSubmit} style={{ position: "relative" }} role="search" aria-label="For-Ai fact search">
         <input
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder={t.home.searchPlaceholder}
+          placeholder="Ask or paste a fact AI might get wrong"
           className="home-search-input"
         />
         {searching && (
@@ -94,30 +110,31 @@ export default function HomeSearch({ docs, locale }: { docs: DocItem[]; locale: 
             ...
           </span>
         )}
-      </div>
+      </form>
 
       {merged.length === 0 ? (
         <div>
           {query ? (
-            <p className="home-search-muted">
-              &quot;{query}&quot; — {t.home.noResults}.{" "}
-              <Link
-                href={`/suggest-topic?q=${encodeURIComponent(query)}`}
-                className="home-search-link"
-              >
-                {t.home.suggestFirst}
-              </Link>{" "}
-              <button
-                onClick={() => setQuery("")}
-                className="home-search-reset"
-              >
-                {t.home.resetSearch}
-              </button>
-            </p>
+            <div className="home-search-empty">
+              <p className="home-search-muted">
+                &quot;{query}&quot; — {t.home.noResults}. If For-Ai does not have this answer yet, send it for review.
+              </p>
+              <div className="home-search-empty-actions">
+                <Link href={suggestHref} className="btn btn-primary">
+                  이 질문을 For-Ai에 등록하기
+                </Link>
+                <button
+                  onClick={() => setQuery("")}
+                  className="home-search-reset"
+                >
+                  {t.home.resetSearch}
+                </button>
+              </div>
+            </div>
           ) : (
             <p className="home-search-muted">
               {t.home.noDocs}{" "}
-              <Link href="/suggest-topic" className="home-search-link">
+              <Link href={suggestHref} className="home-search-link">
                 {t.home.suggestFirst}
               </Link>
             </p>
@@ -140,7 +157,7 @@ export default function HomeSearch({ docs, locale }: { docs: DocItem[]; locale: 
                     {r.category && <span className="meta-label"> — {r.category}</span>}
                     {r.excerpt && (
                       <span className="home-source-badge" title={r.excerpt}>
-                        {r.type === "claim" ? "클레임 매치" : ""}
+                        {r.type === "claim" ? "Fact match" : ""}
                       </span>
                     )}
                   </li>
