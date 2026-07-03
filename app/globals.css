@@ -10,6 +10,10 @@
   --warning: #7a4c00;
   --success: #15613a;
   --danger: #9f1b1e;
+  --status-verified: #15613a;
+  --status-review: #8a5a14;
+  --status-disputed: #9f1b1e;
+  --status-candidate: #526276;
   --success-bg: #e6f4ed;
   --danger-bg: #fde8e8;
   --warning-bg: #fff7df;
@@ -157,32 +161,33 @@ h2 {
 }
 
 .badge-low,
-.badge-warning {
-  border-color: rgba(245, 190, 92, 0.34);
-  background: rgba(245, 190, 92, 0.12);
-  color: #8a5a14;
+.badge-candidate {
+  border-color: color-mix(in srgb, var(--status-candidate) 34%, transparent);
+  background: color-mix(in srgb, var(--status-candidate) 12%, transparent);
+  color: var(--status-candidate);
 }
 
 .badge-review,
+.badge-warning,
 .badge-medium {
-  border-color: rgba(183, 200, 225, 0.34);
-  background: rgba(183, 200, 225, 0.12);
-  color: #526276;
+  border-color: color-mix(in srgb, var(--status-review) 34%, transparent);
+  background: color-mix(in srgb, var(--status-review) 12%, transparent);
+  color: var(--status-review);
 }
 
 .badge-high,
 .badge-verified,
 .badge-pass {
-  border-color: rgba(0, 242, 255, 0.45);
-  background: rgba(0, 242, 255, 0.15);
-  color: #006b73;
+  border-color: color-mix(in srgb, var(--status-verified) 42%, transparent);
+  background: color-mix(in srgb, var(--status-verified) 14%, transparent);
+  color: var(--status-verified);
 }
 
 .badge-disputed,
 .badge-danger {
-  border-color: rgba(255, 180, 171, 0.42);
-  background: rgba(255, 180, 171, 0.14);
-  color: #9f1b1e;
+  border-color: color-mix(in srgb, var(--status-disputed) 42%, transparent);
+  background: color-mix(in srgb, var(--status-disputed) 14%, transparent);
+  color: var(--status-disputed);
 }
 
 /* Direct Answer Box */
@@ -1026,6 +1031,14 @@ textarea::placeholder {
 .btn-ghost:focus-visible {
   outline: none;
   box-shadow: var(--focus-glow);
+}
+
+.btn-ghost.is-active,
+.community-chip-active,
+.community-chip.is-active {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--paper);
 }
 
 /* Stat strip -------------------------------------------------------------- */
@@ -1940,13 +1953,7 @@ details.technical-meta dd {
   padding: 6px 14px;
 }
 
-/* Active category chip: single source of truth for the ink/paper inversion. */
-.community-chip-active,
-.community-chip.is-active {
-  background: var(--ink);
-  border-color: var(--ink);
-  color: var(--paper);
-}
+/* Active category chip uses the shared active filter rule above. */
 
 .community-field-flex {
   flex: 1;
@@ -2104,6 +2111,10 @@ details.technical-meta dd {
   --success: #15613a;     /* 검증됨 */
   --success-bg: #e7f0e9;
   --danger: #9f1b1e;      /* 분쟁/불가 */
+  --status-verified: #15613a;
+  --status-review: #8a5a14;
+  --status-disputed: #9f1b1e;
+  --status-candidate: #526276;
   --danger-bg: #f8eaea;
   --glass-border: var(--line);
   --font-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
