@@ -26,6 +26,7 @@ export interface AIProviderConfig {
   // a false "majority".
   weight: number;
   vendorGroup: string;
+  estimatedCostPer1kTokensUsd: number;
 }
 
 export const AI_PROVIDERS: Record<AIProviderKey, AIProviderConfig> = {
@@ -38,6 +39,7 @@ export const AI_PROVIDERS: Record<AIProviderKey, AIProviderConfig> = {
     supportsWebSearch: true,
     weight: 1.5,
     vendorGroup: "perplexity",
+    estimatedCostPer1kTokensUsd: 0.003,
   },
   nvidia: {
     key: "nvidia",
@@ -48,6 +50,7 @@ export const AI_PROVIDERS: Record<AIProviderKey, AIProviderConfig> = {
     supportsWebSearch: false,
     weight: 0.6,
     vendorGroup: "nvidia",
+    estimatedCostPer1kTokensUsd: 0.0008,
   },
   gemini: {
     key: "gemini",
@@ -58,6 +61,7 @@ export const AI_PROVIDERS: Record<AIProviderKey, AIProviderConfig> = {
     supportsWebSearch: false,
     weight: 1.0,
     vendorGroup: "google",
+    estimatedCostPer1kTokensUsd: 0.00015,
   },
   gpt: {
     key: "gpt",
@@ -68,6 +72,7 @@ export const AI_PROVIDERS: Record<AIProviderKey, AIProviderConfig> = {
     supportsWebSearch: false,
     weight: 1.0,
     vendorGroup: "openai",
+    estimatedCostPer1kTokensUsd: 0.00375,
   },
   grok: {
     key: "grok",
@@ -78,6 +83,7 @@ export const AI_PROVIDERS: Record<AIProviderKey, AIProviderConfig> = {
     supportsWebSearch: false,
     weight: 1.0,
     vendorGroup: "xai",
+    estimatedCostPer1kTokensUsd: 0.0006,
   },
   nvidia_llama_70b: {
     key: "nvidia_llama_70b",
@@ -88,6 +94,7 @@ export const AI_PROVIDERS: Record<AIProviderKey, AIProviderConfig> = {
     supportsWebSearch: false,
     weight: 0.6,
     vendorGroup: "nvidia",
+    estimatedCostPer1kTokensUsd: 0.0008,
   },
   nvidia_nemotron_70b: {
     key: "nvidia_nemotron_70b",
@@ -98,6 +105,7 @@ export const AI_PROVIDERS: Record<AIProviderKey, AIProviderConfig> = {
     supportsWebSearch: false,
     weight: 0.6,
     vendorGroup: "nvidia",
+    estimatedCostPer1kTokensUsd: 0.0008,
   },
   nvidia_llama_8b: {
     key: "nvidia_llama_8b",
@@ -108,6 +116,7 @@ export const AI_PROVIDERS: Record<AIProviderKey, AIProviderConfig> = {
     supportsWebSearch: false,
     weight: 0.5,
     vendorGroup: "nvidia",
+    estimatedCostPer1kTokensUsd: 0.0008,
   },
 };
 
@@ -123,6 +132,10 @@ export function providerWeight(key: string): number {
 
 export function providerVendorGroup(key: string): string {
   return (AI_PROVIDERS as Record<string, AIProviderConfig>)[key]?.vendorGroup ?? key;
+}
+
+export function providerEstimatedCostPer1kTokensUsd(key: string): number {
+  return (AI_PROVIDERS as Record<string, AIProviderConfig>)[key]?.estimatedCostPer1kTokensUsd ?? 0.001;
 }
 
 export function providerSupportsWebSearch(key: string): boolean {
@@ -149,6 +162,8 @@ export interface AIGenerateRequest {
   userPrompt: string;
   temperature?: number;
   maxOutputTokens?: number;
+  /** Admin-only guard: public request paths must not be able to call paid providers. */
+  adminContext: "admin";
 }
 
 export interface AIGenerateResponse {
@@ -157,6 +172,29 @@ export interface AIGenerateResponse {
   content: string;
   citations?: string[];
   error?: string;
+  estimated_cost_usd?: number;
+  duration_ms?: number;
+  success?: boolean;
+}
+
+function assertAdminProviderRequest(req: AIGenerateRequest): void {
+  if (req.adminContext !== "admin") {
+    throw new Error("AI provider calls are admin-only; public request paths must not call providers directly.");
+  }
+}
+
+function estimateCost(config: AIProviderConfig, req: AIGenerateRequest, content: string): number {
+  const approxTokens = Math.ceil(`${req.systemPrompt}\n${req.userPrompt}\n${content}`.length / 4);
+  return Number(((approxTokens / 1000) * config.estimatedCostPer1kTokensUsd).toFixed(6));
+}
+
+function withMetrics(config: AIProviderConfig, req: AIGenerateRequest, startedAt: number, response: AIGenerateResponse): AIGenerateResponse {
+  return {
+    ...response,
+    duration_ms: Date.now() - startedAt,
+    estimated_cost_usd: estimateCost(config, req, response.content),
+    success: !response.error && response.content.trim().length > 0,
+  };
 }
 
 function getApiKey(provider: AIProviderConfig): string | null {
@@ -173,8 +211,9 @@ async function callPerplexity(
   config: AIProviderConfig,
   req: AIGenerateRequest
 ): Promise<AIGenerateResponse> {
+  const startedAt = Date.now();
   const apiKey = getApiKey(config);
-  if (!apiKey) return { provider: "perplexity", model: config.model, content: "", error: "API key not configured" };
+  if (!apiKey) return withMetrics(config, req, startedAt, { provider: "perplexity", model: config.model, content: "", error: "API key not configured" });
 
   const res = await fetch(config.endpoint, {
     method: "POST",
@@ -195,24 +234,25 @@ async function callPerplexity(
 
   if (!res.ok) {
     const err = await res.text();
-    return { provider: "perplexity", model: config.model, content: "", error: `HTTP ${res.status}: ${err.slice(0, 200)}` };
+    return withMetrics(config, req, startedAt, { provider: "perplexity", model: config.model, content: "", error: `HTTP ${res.status}: ${err.slice(0, 200)}` });
   }
 
   const json = await res.json();
-  return {
+  return withMetrics(config, req, startedAt, {
     provider: "perplexity",
     model: config.model,
     content: json.choices?.[0]?.message?.content ?? "",
     citations: json.citations ?? [],
-  };
+  });
 }
 
 async function callGemini(
   config: AIProviderConfig,
   req: AIGenerateRequest
 ): Promise<AIGenerateResponse> {
+  const startedAt = Date.now();
   const apiKey = getApiKey(config);
-  if (!apiKey) return { provider: "gemini", model: config.model, content: "", error: "API key not configured" };
+  if (!apiKey) return withMetrics(config, req, startedAt, { provider: "gemini", model: config.model, content: "", error: "API key not configured" });
 
   const endpoint = `${config.endpoint}?key=${apiKey}`;
   const res = await fetch(endpoint, {
@@ -231,20 +271,21 @@ async function callGemini(
 
   if (!res.ok) {
     const err = await res.text();
-    return { provider: "gemini", model: config.model, content: "", error: `HTTP ${res.status}: ${err.slice(0, 200)}` };
+    return withMetrics(config, req, startedAt, { provider: "gemini", model: config.model, content: "", error: `HTTP ${res.status}: ${err.slice(0, 200)}` });
   }
 
   const json = await res.json();
   const content = json.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
-  return { provider: "gemini", model: config.model, content };
+  return withMetrics(config, req, startedAt, { provider: "gemini", model: config.model, content });
 }
 
 async function callOpenAI(
   config: AIProviderConfig,
   req: AIGenerateRequest
 ): Promise<AIGenerateResponse> {
+  const startedAt = Date.now();
   const apiKey = getApiKey(config);
-  if (!apiKey) return { provider: config.key, model: config.model, content: "", error: "API key not configured" };
+  if (!apiKey) return withMetrics(config, req, startedAt, { provider: config.key, model: config.model, content: "", error: "API key not configured" });
 
   const res = await fetch(config.endpoint, {
     method: "POST",
@@ -265,21 +306,22 @@ async function callOpenAI(
 
   if (!res.ok) {
     const err = await res.text();
-    return { provider: config.key, model: config.model, content: "", error: `HTTP ${res.status}: ${err.slice(0, 200)}` };
+    return withMetrics(config, req, startedAt, { provider: config.key, model: config.model, content: "", error: `HTTP ${res.status}: ${err.slice(0, 200)}` });
   }
 
   const json = await res.json();
-  return {
+  return withMetrics(config, req, startedAt, {
     provider: config.key,
     model: config.model,
     content: json.choices?.[0]?.message?.content ?? "",
-  };
+  });
 }
 
 export async function generateWithProvider(
   provider: AIProviderKey,
   req: AIGenerateRequest
 ): Promise<AIGenerateResponse> {
+  assertAdminProviderRequest(req);
   const config = AI_PROVIDERS[provider];
 
   switch (provider) {

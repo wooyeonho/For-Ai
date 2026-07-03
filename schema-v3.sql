@@ -334,6 +334,7 @@ create table topic_candidates (
   source_hints   jsonb default '[]',
   contributor_hash text,
   generation_model text,
+  generation_run_id uuid,
   consensus_score  numeric(3,2),
   consensus_level  text check (consensus_level in ('unanimous','majority','minority','single')),
   agreed_providers text[],
@@ -346,6 +347,38 @@ create index topic_candidates_country_idx  on topic_candidates(country);
 create index topic_candidates_status_idx   on topic_candidates(status);
 create index topic_candidates_category_idx on topic_candidates(category);
 create index topic_candidates_created_idx  on topic_candidates(created_at desc);
+create index topic_candidates_generation_run_idx on topic_candidates(generation_run_id);
+
+
+-- candidate_generation_runs: admin-only AI generation run records for reuse,
+-- provider cost/success telemetry, and accepted/promoted ratios.
+create table candidate_generation_runs (
+  id uuid primary key default gen_random_uuid(),
+  topic text not null,
+  lang text not null default 'ko',
+  requested_count integer not null default 0,
+  cross_verify boolean not null default false,
+  requested_providers text[] not null default '{}',
+  providers_used text[] not null default '{}',
+  provider_results jsonb not null default '{}'::jsonb,
+  consensus_summary jsonb,
+  total_generated integer not null default 0,
+  saved_count integer not null default 0,
+  skipped_duplicates integer not null default 0,
+  accepted_count integer not null default 0,
+  promoted_count integer not null default 0,
+  estimated_cost_usd numeric(12,6) not null default 0,
+  status text not null default 'generated' check (status in ('generated','saved','duplicates','failed','save_failed')),
+  save_error text,
+  created_at timestamptz not null default now()
+);
+
+alter table topic_candidates
+  add constraint topic_candidates_generation_run_id_fkey
+  foreign key (generation_run_id) references candidate_generation_runs(id) on delete set null;
+
+create index candidate_generation_runs_created_idx on candidate_generation_runs(created_at desc);
+alter table candidate_generation_runs enable row level security;
 
 alter table topic_candidates enable row level security;
 

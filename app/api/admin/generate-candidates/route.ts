@@ -4,8 +4,8 @@ import {
   AI_PROVIDERS,
   getAvailableProviders,
   generateWithProvider,
-  generateWithAll,
   type AIGenerateResponse,
+  providerEstimatedCostPer1kTokensUsd,
 } from "../../../../lib/ai-providers";
 import { buildConsensus, type ConsensusCandidate } from "../../../../lib/consensus";
 import { getAdminAuthContext, logAdminAuditEvent, missingSupabaseAdminEnv, requireAdmin, supabaseAdmin } from "@/lib/admin-api";
@@ -223,56 +223,59 @@ function parseCandidatesFromResponse(
 
 async function generateCandidateBatch(
   providers: AIProviderKey[],
-  aiRequest: { systemPrompt: string; userPrompt: string; temperature: number },
+  aiRequest: { systemPrompt: string; userPrompt: string; temperature: number; adminContext: "admin" },
   lang: string,
   crossVerify: boolean
 ): Promise<{
   candidates: Record<string, unknown>[];
-  providerResults: Record<string, { generated: number; error?: string; parse_error?: string }>;
+  providerResults: Record<string, { generated: number; error?: string; parse_error?: string; estimated_cost_usd?: number; duration_ms?: number; success?: boolean; role?: "primary" | "escalation" | "consensus" }>;
   consensusResults: ConsensusCandidate[] | null;
 }> {
-  const providerResults: Record<string, { generated: number; error?: string; parse_error?: string }> = {};
+  const providerResults: Record<string, { generated: number; error?: string; parse_error?: string; estimated_cost_usd?: number; duration_ms?: number; success?: boolean; role?: "primary" | "escalation" | "consensus" }> = {};
   let allCandidates: Record<string, unknown>[] = [];
   let consensusResults: ConsensusCandidate[] | null = null;
 
-  if (crossVerify && providers.length >= 2) {
-    const responses = await generateWithAll(providers, aiRequest);
-    const candidatesByProvider = new Map<string, Record<string, unknown>[]>();
+  const orderedProviders = [...providers].sort(
+    (a, b) => providerEstimatedCostPer1kTokensUsd(a) - providerEstimatedCostPer1kTokensUsd(b)
+  );
 
-    for (const resp of responses) {
-      const { candidates, parseError } = parseCandidatesFromResponse(resp, lang);
-      providerResults[resp.provider] = {
-        generated: candidates.length,
-        error: resp.error || undefined,
-        parse_error: parseError,
-      };
-      if (candidates.length > 0) {
-        candidatesByProvider.set(resp.provider, candidates);
-      }
-    }
-
-    // Single source of truth for cross-provider agreement: the weighted,
-    // vendor-capped engine in lib/consensus.ts. (A second, unweighted-Jaccard
-    // consensus pass used to run here too and silently replace this candidate
-    // list — see git history for the removed `applyConsensus` duplicate.)
-    if (candidatesByProvider.size >= 2) {
-      consensusResults = buildConsensus(candidatesByProvider, providers.length);
-      allCandidates = consensusResults;
-    } else {
-      for (const candidates of candidatesByProvider.values()) {
-        allCandidates.push(...candidates);
-      }
-    }
-  } else {
-    const primaryProvider = providers[0];
-    const response = await generateWithProvider(primaryProvider, aiRequest);
+  for (let index = 0; index < orderedProviders.length; index += 1) {
+    const provider = orderedProviders[index];
+    const response = await generateWithProvider(provider, aiRequest);
     const { candidates, parseError } = parseCandidatesFromResponse(response, lang);
-    providerResults[primaryProvider] = {
+    providerResults[provider] = {
       generated: candidates.length,
       error: response.error || undefined,
       parse_error: parseError,
+      estimated_cost_usd: response.estimated_cost_usd,
+      duration_ms: response.duration_ms,
+      success: response.success,
+      role: index === 0 ? "primary" : (crossVerify ? "consensus" : "escalation"),
     };
-    allCandidates = candidates;
+
+    if (candidates.length > 0) {
+      allCandidates.push(...candidates);
+    }
+
+    const hasEnoughPrimaryCandidates = !crossVerify && allCandidates.length >= 1;
+    const hasUsableConsensusPanel = crossVerify && Object.values(providerResults).filter((r) => r.generated > 0).length >= 2;
+    if (hasEnoughPrimaryCandidates || hasUsableConsensusPanel) break;
+  }
+
+  // Single source of truth for cross-provider agreement: the weighted,
+  // vendor-capped engine in lib/consensus.ts. (A second, unweighted-Jaccard
+  // consensus pass used to run here too and silently replace this candidate
+  // list — see git history for the removed `applyConsensus` duplicate.)
+  if (crossVerify && Object.values(providerResults).filter((r) => r.generated > 0).length >= 2) {
+    const candidatesByProvider = new Map<string, Record<string, unknown>[]>();
+    for (const provider of Object.keys(providerResults)) {
+      const providerCandidates = allCandidates.filter((candidate) =>
+        String(candidate.generation_model ?? "").startsWith(`${provider}/`)
+      );
+      if (providerCandidates.length > 0) candidatesByProvider.set(provider, providerCandidates);
+    }
+    consensusResults = buildConsensus(candidatesByProvider, Object.keys(providerResults).length);
+    allCandidates = consensusResults;
   }
 
   return { candidates: allCandidates, providerResults, consensusResults };
@@ -298,7 +301,38 @@ async function filterDuplicateCandidates(
   };
 }
 
-function toTopicCandidateDbRows(candidates: Record<string, unknown>[]): Record<string, unknown>[] {
+function sumProviderCost(providerResults: Record<string, { estimated_cost_usd?: number }>): number {
+  return Number(Object.values(providerResults).reduce((sum, r) => sum + (r.estimated_cost_usd ?? 0), 0).toFixed(6));
+}
+
+async function createGenerationRun(
+  client: ReturnType<typeof supabaseAdmin>,
+  payload: Record<string, unknown>
+): Promise<string | null> {
+  if (!client) return null;
+  const { data, error } = await client
+    .from("candidate_generation_runs")
+    .insert(payload)
+    .select("id")
+    .single();
+  if (error) {
+    console.warn("[admin/generate-candidates] generation run insert skipped", error.message);
+    return null;
+  }
+  return data?.id ?? null;
+}
+
+async function updateGenerationRun(
+  client: ReturnType<typeof supabaseAdmin>,
+  runId: string | null,
+  payload: Record<string, unknown>
+): Promise<void> {
+  if (!client || !runId) return;
+  const { error } = await client.from("candidate_generation_runs").update(payload).eq("id", runId);
+  if (error) console.warn("[admin/generate-candidates] generation run update skipped", error.message);
+}
+
+function toTopicCandidateDbRows(candidates: Record<string, unknown>[], generationRunId: string | null): Record<string, unknown>[] {
   return candidates.map((c) => {
     const row = { ...c } as Record<string, unknown>;
     delete row.merged_source_hints;
@@ -306,6 +340,7 @@ function toTopicCandidateDbRows(candidates: Record<string, unknown>[]): Record<s
     delete row.total_providers;
     delete row.consensus_sources;
     delete row.agreed_providers;
+    if (generationRunId) row.generation_run_id = generationRunId;
     return row;
   });
 }
@@ -370,7 +405,7 @@ export async function POST(request: Request) {
 
   const systemPrompt = buildSystemPrompt(lang);
   const userPrompt = buildPrompt(topic, count, lang);
-  const aiRequest = { systemPrompt, userPrompt, temperature: 0.3, maxOutputTokens: AI_GENERATION_LIMITS.maxOutputTokens };
+  const aiRequest = { systemPrompt, userPrompt, temperature: 0.3, maxOutputTokens: AI_GENERATION_LIMITS.maxOutputTokens, adminContext: "admin" as const };
 
   const {
     candidates: allCandidates,
@@ -415,15 +450,38 @@ export async function POST(request: Request) {
   let saveError: string | null = null;
   let saveErrorDetails: Record<string, unknown> | null = null;
   let skippedDuplicates = 0;
+  const totalEstimatedCostUsd = sumProviderCost(providerResults);
+  const generationRunId = await createGenerationRun(client, {
+    topic,
+    lang,
+    requested_count: count,
+    cross_verify: crossVerify,
+    requested_providers: providers,
+    providers_used: Object.keys(providerResults),
+    provider_results: providerResults,
+    consensus_summary: consensusResults ? {
+      total_unique: consensusResults.length,
+      unanimous: consensusResults.filter((c) => c.consensus_level === "unanimous").length,
+      majority: consensusResults.filter((c) => c.consensus_level === "majority").length,
+      minority: consensusResults.filter((c) => c.consensus_level === "minority").length,
+      single: consensusResults.filter((c) => c.consensus_level === "single").length,
+    } : null,
+    total_generated: allCandidates.length,
+    saved_count: 0,
+    estimated_cost_usd: totalEstimatedCostUsd,
+    status: allCandidates.length > 0 ? "generated" : "failed",
+  });
+
   if (saveToDb && client) {
     const duplicateFilter = await filterDuplicateCandidates(allCandidates, client);
     const deduped = duplicateFilter.deduped;
     skippedDuplicates = duplicateFilter.skippedDuplicates;
 
-    const dbRows = toTopicCandidateDbRows(deduped);
+    const dbRows = toTopicCandidateDbRows(deduped, generationRunId);
 
     if (dbRows.length === 0) {
       saved = [];
+      await updateGenerationRun(client, generationRunId, { saved_count: 0, skipped_duplicates: skippedDuplicates, status: "duplicates" });
       await logAdminAuditEvent(client, request, "admin.generate_candidates", {
         topic, lang, saved_count: 0, skipped_duplicates: skippedDuplicates,
         providers_used: Object.keys(providerResults), cross_verify: crossVerify,
@@ -437,6 +495,7 @@ export async function POST(request: Request) {
         effective_count: count,
         cross_verify: crossVerify,
         provider_results: providerResults,
+        generation_run: { id: generationRunId, cost_usd: totalEstimatedCostUsd, provider_count: Object.keys(providerResults).length, accepted_count: 0, promoted_count: 0, accepted_promoted_ratio: 0 },
         fallback_used: false,
         total_generated: allCandidates.length,
         saved: 0,
@@ -458,6 +517,7 @@ export async function POST(request: Request) {
         details: error.details,
         hint: error.hint,
       };
+      await updateGenerationRun(client, generationRunId, { saved_count: 0, skipped_duplicates: skippedDuplicates, status: "save_failed", save_error: saveError });
       console.error("[admin/generate-candidates] Supabase insert failed", {
         message: error.message,
         code: error.code,
@@ -467,6 +527,7 @@ export async function POST(request: Request) {
       });
     } else {
       saved = data ?? [];
+      await updateGenerationRun(client, generationRunId, { saved_count: saved.length, skipped_duplicates: skippedDuplicates, status: "saved" });
       await logAdminAuditEvent(client, request, "admin.generate_candidates", {
         topic,
         lang,
@@ -493,6 +554,7 @@ export async function POST(request: Request) {
     effective_count: count,
     cross_verify: crossVerify,
     provider_results: providerResults,
+    generation_run: { id: generationRunId, cost_usd: totalEstimatedCostUsd, provider_count: Object.keys(providerResults).length, accepted_count: 0, promoted_count: 0, accepted_promoted_ratio: 0 },
     fallback_used: false,
     total_generated: allCandidates.length,
     saved: saved.length,
