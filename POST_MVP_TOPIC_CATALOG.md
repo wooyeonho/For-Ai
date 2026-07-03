@@ -443,40 +443,59 @@ Disallowed by default:
 
 ## P0 Topic Prioritization Scorecard
 
-Candidate generation should score every vertical on a 0-5 rubric before producing large batches. The first post-MVP batch uses equal weights because For-Ai is optimizing for citation usefulness rather than traffic alone.
+Candidate generation should score every vertical on a 0-5 rubric before producing large batches. After reviewing the commercial path, the first post-MVP batch is no longer a broad civic/transport/travel seed set. The selected P0 wedge is **business operating facts / reputation correction**.
 
 | Criterion | Weight | Scoring guidance |
 | --- | ---: | --- |
-| Official source existence | 5 | A national/regional government, regulator, operator, or platform publishes the rule directly. |
-| AI hallucination likelihood | 5 | AI commonly mixes years, jurisdictions, provider rules, or unofficial summaries. |
-| Search demand | 5 | The topic answers frequent practical questions from travelers, residents, or applicants. |
-| Volatility | 5 | Values change annually, by event, or by policy update, making stale AI answers likely. |
-| Global expansion | 5 | The same claim template can be reused across many countries and locales. |
-| Claim structuring ease | 5 | The topic decomposes into atomic claims with a clear source and verification status. |
+| Commercial correction pain | 5 | A stale or wrong AI/search answer can directly affect customer visits, bookings, revenue, or reputation. |
+| Source availability | 5 | The business, platform, booking page, official profile, or other acceptable source can support the claim. |
+| Owner correction loop | 5 | A business can submit a correction request or source lead without being allowed to self-verify truth. |
+| AI hallucination likelihood | 5 | AI commonly invents or confuses hours, closures, availability, prices, parking, refund rules, or service policies. |
+| Monitoring/API value | 5 | AI systems, search products, or reputation tools would query the claim repeatedly. |
+| Claim structuring ease | 5 | The topic decomposes into atomic claims with clear status, confidence, sources, and verification events. |
 
-### Selected P0 verticals
+### Selected P0 vertical
 
 | Rank | Vertical | Score | Why it is first |
 | --- | --- | ---: | --- |
-| P0 | `transport fares/rules` | 30/30 | Official transit operators publish fares and transfer rules; AI frequently confuses zones, caps, surcharges, concessions, and stale fare tables. |
-| P0 | `government fees/processing times` | 30/30 | Official service portals publish fees and timelines; AI often mixes regular/expedited paths, adults/minors, and old processing estimates. |
-| P0 | `travel/visa requirements` | 30/30 | Official immigration authorities publish requirements; hallucination risk and user harm are high because rules vary by nationality, transit status, and update date. |
+| P0 | `business operating facts/reputation correction` | 30/30 | Wrong business hours, closure status, availability, prices, parking, booking/refund rules, and service policies create immediate commercial pain and a repeatable paid correction/monitoring workflow while preserving independent verification. |
 
-### Country coverage targets
+### Future coverage verticals
 
-Each P0 country target is represented as one candidate entity with at least 10 placeholder claims. All claims remain `확인 필요` until a human attaches acceptable sources and verification events.
+The following domains remain in the catalog taxonomy but are lowered to **future coverage** and excluded from P0 seed generation until the business wedge has stable metrics and verification operations:
 
-| Vertical | Countries | Minimum citation-ready claim targets |
+- `government fees/processing times`;
+- `transport fares/rules`;
+- `travel/visa requirements`;
+- healthcare, genomics, finance, education, housing, labor, telecom, legal, public benefits, and public-profile topics.
+
+### Business wedge coverage targets
+
+Each P0 country target is represented as candidate business entities and document templates with placeholder claims. All claims remain `확인 필요` until a human attaches acceptable sources and verification events.
+
+| Vertical | Initial markets | Minimum citation-ready claim targets |
 | --- | --- | ---: |
-| `transport fares/rules` | US, GB, JP, KR, DE, FR, SG, AU | 8 countries × 10 claims = 80 claims |
-| `government fees/processing times` | US, GB, CA, AU, KR, JP, DE, FR, SG, IN | 10 countries × 10 claims = 100 claims |
-| `travel/visa requirements` | US, GB, CA, AU, JP, KR, DE, FR, SG, IN | 10 countries × 10 claims = 100 claims |
+| `business operating facts/reputation correction` | KR, US, JP, GB, SG | 5 markets × 20 businesses × 8 claims = 800 claim targets |
 
-### Claim template targets by vertical
+### Claim template targets for the selected wedge
 
-- `transport fares/rules`: base adult fare, distance/zone pricing, transfer window, maximum transfers, daily cap, weekly cap, airport surcharge, child fare, senior/concession fare, refund/penalty rule.
-- `government fees/processing times`: standard fee, expedited fee, adult fee, minor fee, standard processing time, expedited processing time, online availability, in-person requirement, required documents, fee waiver/refund rule.
-- `travel/visa requirements`: visa requirement, ETA/e-visa requirement, passport validity, allowed stay period, application fee, processing time, required documents, transit rule, extension rule, official update page.
+- `business.operating_hours`: regular hours, holiday hours, temporary closures, last order/cutoff time.
+- `business.availability`: service availability, reservation/booking availability, delivery/takeout availability.
+- `business.access`: parking availability, accessibility facilities, entrance/location instructions.
+- `business.policy`: refund/cancellation window, booking deposit rule, delivery fee rule, age/pet/group restrictions.
+- `business.reputation_correction`: open/closed status dispute, outdated price correction, unavailable-service correction, incorrect policy correction.
+
+### Dashboard metrics for seed eligibility
+
+A business vertical batch is eligible for more seed generation only when these metrics are visible together in the operator dashboard:
+
+| Metric | Seed-generation gate |
+| --- | --- |
+| Verified claims | At least one canonical claim per business document can become citation-ready through human verification. |
+| Stale claims | Existing verified claims have a freshness policy and re-check queue. |
+| Source coverage | Each candidate template identifies acceptable source types before generation. |
+| API usage | Document/citation usage can be counted so high-demand business facts are prioritized. |
+| Business correction requests | Owner-submitted corrections are tracked as intake signals, separate from canonical verified claims. |
 
 ## Sample Topic Candidates
 
