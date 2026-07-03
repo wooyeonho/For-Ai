@@ -201,9 +201,36 @@ export default function ApiDocsPage() {
               POST /api/hallucination/<span style={{ color: "var(--accent)" }}>{"{slug}"}</span>
             </p>
             <p style={{ margin: "6px 0 0", fontFamily: "monospace", fontWeight: 700 }}>POST /api/suggest-topic</p>
+            <p style={{ margin: "6px 0 0", fontFamily: "monospace", fontWeight: 700 }}>POST /api/source-suggest</p>
             <p style={{ margin: "8px 0", fontSize: "0.9rem", color: "var(--muted)" }}>
-              Public submissions for corrections, hallucination reports, and suggested registry topics.
-              Submissions store contributor hashes, not raw IP addresses.
+              Public submissions for corrections, hallucination reports, suggested registry topics, and claim source suggestions.
+              Submissions store contributor hashes, not raw IP addresses, and point awards are server-side/idempotent.
+            </p>
+          </div>
+
+          {/* Discovery, analytics, and gamification endpoints */}
+          <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
+            <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>GET /api/search</p>
+            <p style={{ margin: "6px 0 0", fontFamily: "monospace", fontWeight: 700 }}>GET /api/trending</p>
+            <p style={{ margin: "6px 0 0", fontFamily: "monospace", fontWeight: 700 }}>GET /api/coverage</p>
+            <p style={{ margin: "6px 0 0", fontFamily: "monospace", fontWeight: 700 }}>
+              POST /api/documents/<span style={{ color: "var(--accent)" }}>{"{slug}"}</span>/copy-citation
+            </p>
+            <p style={{ margin: "8px 0", fontSize: "0.9rem", color: "var(--muted)" }}>
+              Public discovery and analytics surfaces for registry search, trending documents, coverage summaries, and citation-copy counters.
+            </p>
+          </div>
+
+          <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
+            <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>GET /api/gamification/bounties</p>
+            <p style={{ margin: "6px 0 0", fontFamily: "monospace", fontWeight: 700 }}>POST /api/gamification/bounties</p>
+            <p style={{ margin: "6px 0 0", fontFamily: "monospace", fontWeight: 700 }}>
+              GET /api/gamification/contributor/<span style={{ color: "var(--accent)" }}>{"{hash}"}</span>
+            </p>
+            <p style={{ margin: "6px 0 0", fontFamily: "monospace", fontWeight: 700 }}>GET /api/gamification/country-quest</p>
+            <p style={{ margin: "6px 0 0", fontFamily: "monospace", fontWeight: 700 }}>GET /api/gamification/leaderboard</p>
+            <p style={{ margin: "8px 0", fontSize: "0.9rem", color: "var(--muted)" }}>
+              Gamification endpoints expose contribution tasks and aggregate reputation signals only. Admin-only writes still require server-side admin authorization.
             </p>
           </div>
         </div>
@@ -276,6 +303,9 @@ if (data.citation_guidance.can_cite) {
           </div>
           <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
             <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>
+              GET /api/business/submitted-claims
+            </p>
+            <p style={{ margin: "6px 0 0", fontFamily: "monospace", fontWeight: 700 }}>
               POST /api/business/corrections
             </p>
             <p style={{ margin: "8px 0 0", fontSize: "0.85rem", color: "var(--muted)" }}>
