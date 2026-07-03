@@ -436,8 +436,12 @@ export async function POST(request: Request) {
     }
   } else {
     // Default provider policy: prefer Perplexity for web search, then NVIDIA, then other configured providers.
-    providers = [selectDefaultProvider(available)];
+    const preferred: AIProviderKey[] = ["perplexity", "nvidia", "gemini", "gpt", "grok"];
+    const defaultProvider = preferred.find((p) => available.includes(p)) ?? available[0];
+    providers = [defaultProvider];
   }
+
+  const fallbackUsed = !requestedProviders && providers[0] !== "perplexity";
 
   const systemPrompt = buildSystemPrompt(lang);
   const userPrompt = buildPrompt(topic, count, lang);

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { useState } from "react";
 import { AdminSecretField, useAdminSecret } from "../AdminSecretProvider";
 import { AdminDbDetails, adminLabel } from "../admin-labels";
+import { formatAdminError } from "../admin-error";
 
 export default function NewEntityPage() {
   const { adminSecret, setAdminSecret, resetAdminSecret, loginAdmin, authMessage } = useAdminSecret();

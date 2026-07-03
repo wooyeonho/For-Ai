@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 
-import { logAdminAuditEvent, requireAdmin, supabaseAdmin } from "@/lib/admin-api";
+import { adminErrorResponse, logAdminAuditEvent, requireAdmin, supabaseAdmin } from "@/lib/admin-api";
 import { findDuplicateDocuments } from "@/lib/duplicate-detection";
 import { DEFAULT_LOCALE, LOCALE_CONFIG, isValidLocale } from "@/lib/i18n/locales";
 

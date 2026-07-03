@@ -2,6 +2,7 @@
 import { useMemo, useState } from "react";
 import { AdminSecretField, useAdminSecret } from "../AdminSecretProvider";
 import { AdminDbDetails, adminLabel } from "../admin-labels";
+import { formatAdminError } from "../admin-error";
 
 type ClaimRow = {
   id: string;

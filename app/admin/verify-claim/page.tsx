@@ -4,6 +4,9 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { AdminDbDetails, adminLabel } from "../admin-labels";
 import { isHighRiskCategory } from "@/lib/risk-policy";
+import { isStale } from "@/lib/citation-status";
+import { calculateDocumentQuality } from "@/lib/document-quality";
+import type { AdminRecommendation } from "@/lib/admin-recommendations";
 
 type SourceRow = { id: string; title?: string | null; url?: string | null; source_type?: string | null; source_authority?: string | null; citation?: string | null; observed_at?: string | null };
 type VerificationEventRow = { id: string; note?: string | null; created_at?: string | null; new_status?: string | null };
@@ -13,7 +16,7 @@ type ClaimRow = {
   field_path: string;
   claim_text: string;
   claim_value: string;
-  신뢰도: string;
+  confidence: string;
   status: string;
   last_verified_at?: string | null;
   contributor_hash?: string | null;
@@ -34,7 +37,7 @@ type DocumentRow = {
   country?: string;
   category?: string;
   status: string;
-  신뢰도: string;
+  confidence: string;
   lang?: string;
   entity_id?: string;
   source_hints?: SourceCandidate[];
@@ -205,7 +208,8 @@ export default function VerifyClaimPage() {
     const claimId = params.get("claim_id");
     if (slug) {
       setTargetSlug(slug);
-      setFilters((current) => ({ ...current, slug, offset: "0", ...(stale ? { stale: "true", status: "verified", sort: "oldest" } : {}) }));
+      const staleParam = params.get("stale");
+      setFilters((current) => ({ ...current, slug, offset: "0", ...(staleParam ? { stale: "true", status: "verified", sort: "oldest" } : {}) }));
     }
     if (claimId) {
       setTargetClaimId(claimId);
@@ -376,7 +380,7 @@ export default function VerifyClaimPage() {
     }
   }
 
-  function isStale(claim: ClaimRow) {
+  function isClaimStale(claim: ClaimRow) {
     if (claim.status !== "verified" || !claim.last_verified_at) return false;
     return Date.now() - new Date(claim.last_verified_at).getTime() > 180 * 24 * 60 * 60 * 1000;
   }
@@ -411,7 +415,7 @@ export default function VerifyClaimPage() {
       && (localFilters.source === "all" || (localFilters.source === "present" ? sourceCount > 0 : sourceCount === 0))
       && (localFilters.confidence === "all" || claim.confidence === localFilters.confidence)
       && (localFilters.status === "all" || claim.status === localFilters.status)
-      && (localFilters.stale === "all" || (localFilters.stale === "stale" ? isStale(claim) : !isStale(claim)));
+      && (localFilters.stale === "all" || (localFilters.stale === "stale" ? isStale(claim.last_verified_at, claim.freshness_ttl_days) : !isStale(claim.last_verified_at, claim.freshness_ttl_days)));
   });
   const visibleDocIds = new Set(filteredClaims.map(({ doc }) => doc.id));
   const reviewCount = allClaims.filter(({ claim }) => claim.status !== "verified").length;
@@ -627,7 +631,7 @@ export default function VerifyClaimPage() {
                       ✓ {new Date(claim.last_verified_at).toLocaleDateString("ko-KR")}
                     </span>
                   )}
-                  {isStale(claim) && <span className="badge" style={{ marginLeft: 4 }}>{adminLabel("stale")}</span>}
+                  {isStale(claim.last_verified_at, claim.freshness_ttl_days) && <span className="badge" style={{ marginLeft: 4 }}>{adminLabel("stale")}</span>}
                 </p>
                 <AdminDbDetails>
                   <p className="meta-label">{adminLabel("entity_id")}: {doc.entity_id ?? "-"} · {adminLabel("document_id")}: {doc.id}</p>

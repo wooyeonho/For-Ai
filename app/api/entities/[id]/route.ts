@@ -45,7 +45,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
         confidence: bundle.document.confidence,
         can_cite: status.isVerifiedDocument,
         freshness: status.freshness,
-        freshness_ttl_days: status.freshnessTtlDays,
+        freshness_ttl_days: status.freshnessWindowDays,
         freshness_policy_reason: status.freshnessPolicy.reason,
         verified_claims: status.verifiedClaims,
         total_claims: status.totalClaims,

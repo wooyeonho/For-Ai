@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { getPublicBaseUrl } from '@/lib/public-base-url';
 
 export const metadata: Metadata = {
   title: 'Country Quests — For-Ai',
@@ -17,7 +18,7 @@ type CountryQuest = {
 };
 
 async function fetchQuests(): Promise<CountryQuest[]> {
-  const base = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
+  const base = getPublicBaseUrl();
   try {
     const res = await fetch(`${base}/api/gamification/country-quest`, {
       next: { revalidate: 600 },

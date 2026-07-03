@@ -70,7 +70,7 @@ export async function GET(request: Request) {
     }
 
     for (const c of claimResults ?? []) {
-      const doc = c.documents as { id: string; slug: string; title: string; category: string; lang: string; status: string } | null;
+      const doc = c.documents as unknown as { id: string; slug: string; title: string; category: string; lang: string; status: string } | null;
       if (!doc) continue;
       if (seen.has(doc.id)) continue;
       if (lang && doc.lang !== lang) continue;

@@ -35,6 +35,16 @@ Confirm all required runtime secrets are configured in the production deployment
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `ADMIN_SECRET`
 - `CONTRIBUTOR_SALT`
+- `NEXT_PUBLIC_APP_URL` (recommended; avoids self-fetching contribute pages falling back to localhost)
+
+Optional AI provider keys for `/admin/generate`:
+
+- `PERPLEXITY_API_KEY`
+- `GOOGLE_GEMINI_API_KEY`
+- `OPENAI_API_KEY`
+- `XAI_API_KEY`
+- `NVIDIA_API_KEY`
+- `NVIDIA_MODEL`
 
 Notes:
 
@@ -42,6 +52,7 @@ Notes:
 - `SUPABASE_SERVICE_ROLE_KEY` is required only on trusted server-side routes; never expose it to client code.
 - `ADMIN_SECRET` gates admin APIs and admin-only UI actions.
 - `CONTRIBUTOR_SALT` is required so public submissions store only `contributor_hash` and never raw IP addresses.
+- `NEXT_PUBLIC_APP_URL` keeps the contribute/leaderboard/country-quest pages self-fetching against the deployed origin instead of localhost.
 
 ### 2. Supabase SQL Editor migrations
 

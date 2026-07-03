@@ -5,10 +5,39 @@ import { useCallback, useState } from "react";
 
 export function useAdminSecret() {
   const [adminSecret, setAdminSecret] = useState("");
+  const [authenticated, setAuthenticated] = useState(false);
+  const [authMessage, setAuthMessage] = useState<string | null>(null);
 
   const resetAdminSecret = useCallback(() => {
     setAdminSecret("");
   }, []);
+
+  const loginAdmin = useCallback(async () => {
+    if (!adminSecret) {
+      setAuthMessage("관리자 키를 입력하세요.");
+      return false;
+    }
+    setAuthMessage(null);
+    try {
+      const response = await fetch("/api/admin/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", "x-admin-csrf": "1" },
+        body: JSON.stringify({ password: adminSecret }),
+      });
+      if (!response.ok) {
+        const payload = await response.json().catch(() => ({}));
+        setAuthMessage(payload.error ?? "관리자 로그인 실패");
+        return false;
+      }
+      setAuthenticated(true);
+      setAuthMessage("로그인되었습니다.");
+      resetAdminSecret();
+      return true;
+    } catch {
+      setAuthMessage("네트워크 오류");
+      return false;
+    }
+  }, [adminSecret, resetAdminSecret]);
 
   return { adminSecret, setAdminSecret, resetAdminSecret, loginAdmin, authenticated, authMessage };
 }
@@ -17,6 +46,8 @@ export function AdminSecretField({
   adminSecret,
   setAdminSecret,
   resetAdminSecret,
+  loginAdmin,
+  authMessage,
   label = "Admin Login",
   placeholder = "ADMIN_SECRET",
   inputStyle,

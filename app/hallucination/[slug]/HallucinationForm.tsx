@@ -1,7 +1,6 @@
 "use client";
 
-import { useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
 import { HALLUCINATION_FIELD_MAX_LENGTHS } from "@/lib/submission-limits";
 import { isValidLocale } from "@/lib/i18n/locales";
 
@@ -14,10 +13,14 @@ export function HallucinationForm({
   entityId: string;
   slug: string;
 }) {
-  const searchParams = useSearchParams();
+  const [search, setSearch] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  useEffect(() => {
+    setSearch(window.location.search);
+  }, []);
+  const searchParams = new URLSearchParams(search);
   const lang = searchParams.get("lang") || "en";
   const returnParam = searchParams.get("return");
   const returnHref = returnParam && returnParam.startsWith("/") && !returnParam.startsWith("//")

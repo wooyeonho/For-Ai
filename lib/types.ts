@@ -38,7 +38,7 @@ export type SourceType =
   | "web"
   | "other"
   | "unknown";
-export type RiskTier = "low" | "medium" | "high" | "forbidden";
+export type RiskTier = "low" | "medium" | "high" | "forbidden" | "standard";
 export type UpdateFrequency = "realtime" | "daily" | "weekly" | "monthly" | "quarterly" | "annual" | "event_based" | "static" | "unknown";
 export type DisclaimerType =
   | "none"

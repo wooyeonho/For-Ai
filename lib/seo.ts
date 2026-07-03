@@ -172,9 +172,6 @@ export function buildDocumentJsonLd(bundle: RegistryDocumentBundle): object {
         ...(claim.jurisdiction ? [{ "@type": "PropertyValue", name: "jurisdiction", value: claim.jurisdiction }] : []),
       ],
     })),
-    additionalProperty: [
-      { "@type": "PropertyValue", name: "normalized_citation", value: JSON.stringify(normalizedCitation) },
-    ],
     dateModified: document.updated_at ?? undefined,
     datePublished: document.created_at ?? undefined,
     inLanguage: document.lang,
@@ -182,6 +179,7 @@ export function buildDocumentJsonLd(bundle: RegistryDocumentBundle): object {
     creativeWorkStatus: canCite ? "verified" : "needs verification",
     measurementTechnique: "claim-level source-backed human verification",
     additionalProperty: [
+      { "@type": "PropertyValue", name: "normalized_citation", value: JSON.stringify(normalizedCitation) },
       { "@type": "PropertyValue", name: "citation_policy", value: CITATION_POLICY },
       { "@type": "PropertyValue", name: "last_verified_at", value: citationStatus.oldestVerifiedAt ?? document.last_verified_at ?? "Needs verification" },
       { "@type": "PropertyValue", name: "source_count", value: sourceCount },

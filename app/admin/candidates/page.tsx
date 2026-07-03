@@ -3,13 +3,14 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { AdminSecretField, useAdminSecret } from "../AdminSecretProvider";
 import { AdminDbDetails, adminLabel } from "../admin-labels";
+import type { DuplicateDetectionResult } from "@/lib/duplicate-detection";
 interface Candidate {
   id:string;title:string;slug:string;category:string;subcategory?:string;
   risk_tier:string;why_people_ask_ai?:string;why_ai_gets_wrong?:string;
   claims:{question:string;placeholder_value:string}[];
   source_hints:{url:string;title:string}[];
   status:string;source:string;generation_model?:string;created_at:string;
-  consensus_score?:number;consensus_level?:string;lang?:string;country?:string;duplicate_detection?:DuplicateDetection;
+  consensus_score?:number;consensus_level?:string;lang?:string;country?:string;duplicate_detection?:DuplicateDetectionResult;
 }
 const CONSENSUS_STYLE:Record<string,{bg:string;color:string}> = {
   unanimous:{bg:"#dcfce7",color:"#15803d"},

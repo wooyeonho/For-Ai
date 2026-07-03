@@ -1,7 +1,10 @@
 "use client";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
+import { SUPPORTED_LOCALES } from "@/lib/i18n/locales";
+
+const SUPPORTED_COMMUNITY_LOCALES = new Set<string>(SUPPORTED_LOCALES);
 
 interface Post {
   id: string;
@@ -46,16 +49,21 @@ export default function CommunityClient({ documents }: { documents: { id: string
   const [submitting, setSubmitting] = useState(false);
   const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const [search, setSearch] = useState("");
+  useEffect(() => {
+    setSearch(window.location.search);
+  }, []);
   const currentLocale = useMemo(() => {
+    const searchParams = new URLSearchParams(search);
     const lang = searchParams.get("lang");
     if (lang && SUPPORTED_COMMUNITY_LOCALES.has(lang)) return lang;
     const firstPathSegment = pathname.split("/").filter(Boolean)[0];
     return SUPPORTED_COMMUNITY_LOCALES.has(firstPathSegment) ? firstPathSegment : "en";
-  }, [pathname, searchParams]);
+  }, [pathname, search]);
 
   // Pre-fill from URL params (e.g. from wiki "질문하기" button)
   useEffect(() => {
+    const searchParams = new URLSearchParams(search);
     const urlDocId = searchParams.get("document_id");
     const urlQ = searchParams.get("q");
     if (urlDocId) {
@@ -67,7 +75,7 @@ export default function CommunityClient({ documents }: { documents: { id: string
       setContent(urlQ);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [search]);
 
   const loadPosts = useCallback(async () => {
     setLoading(true);

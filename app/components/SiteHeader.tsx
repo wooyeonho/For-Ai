@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { getLocaleFromPathname, getTranslations, withLocaleLink } from "../../lib/i18n/translations";
 import { LanguageSelector } from "./LanguageSelector";
 import { DEFAULT_LOCALE, isValidLocale } from "../../lib/i18n/locales";
+import type { SupportedLocale } from "../../lib/i18n/locales";
 
 interface ExploreLink {
   label: string;
