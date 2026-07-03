@@ -23,6 +23,15 @@ export interface UITranslations {
   home: {
     heroTitle: string;
     heroSubtitle: string;
+    heroEyebrow?: string;
+    primaryCta?: string;
+    secondaryCta?: string;
+    explainerEyebrow?: string;
+    explainerTitle?: string;
+    explainerBody?: string;
+    explainerRegistryBundle?: string;
+    explainerCandidate?: string;
+    explainerSourceTrust?: string;
     searchPlaceholder: string;
     registeredDocs: string;
     noResults: string;
@@ -176,8 +185,17 @@ const ko: UITranslations = {
     admin: "관리자",
   },
   home: {
-    heroTitle: "AI가 인용할 수 있는 글로벌 사실 레지스트리",
-    heroSubtitle: "AI·검색엔진·사람이 같은 출처에서 같은 사실을 인용하도록 claim 단위로 신뢰도·출처·검증 상태를 관리합니다",
+    heroTitle: "AI가 인용할 facts. 사람이 검증할 claims.",
+    heroSubtitle: "AI·검색엔진·사람이 같은 출처를 인용하도록 claim 단위로 신뢰도·출처·검증 상태를 관리합니다.",
+    heroEyebrow: "Global claim-level fact registry",
+    primaryCta: "Search verified claims",
+    secondaryCta: "Submit a source",
+    explainerEyebrow: "Registry explainer",
+    explainerTitle: "내부 용어는 검증 워크플로를 설명할 때만 사용합니다",
+    explainerBody: "For-Ai는 홈 상단에서는 간단한 약속을 말하고, 상세 영역에서 registry bundle, candidate, source trust 같은 운영 용어를 설명합니다.",
+    explainerRegistryBundle: "Registry bundle: entity, document, claims, sources, verification events를 함께 읽는 단위입니다.",
+    explainerCandidate: "Candidate: 아직 검증되지 않은 claim 또는 topic이며, 확인 필요와 낮은 confidence로 유지됩니다.",
+    explainerSourceTrust: "Source trust: 출처 유형, 관찰 시점, 검토 이력을 기준으로 citation readiness를 판단하는 신호입니다.",
     searchPlaceholder: "제목 또는 카테고리 검색...",
     registeredDocs: "등록된 문서",
     noResults: "결과 없음",
@@ -422,8 +440,17 @@ const en: UITranslations = {
     admin: "Admin",
   },
   home: {
-    heroTitle: "A global fact registry for AI citation",
-    heroSubtitle: "AI, search engines, and humans cite the same facts from the same claim-level sources",
+    heroTitle: "Facts AI can cite. Claims humans can verify.",
+    heroSubtitle: "For-Ai keeps facts at claim level with confidence, sources, and verification status so AI, search engines, and humans can cite the same evidence.",
+    heroEyebrow: "Global claim-level fact registry",
+    primaryCta: "Search verified claims",
+    secondaryCta: "Submit a source",
+    explainerEyebrow: "Registry explainer",
+    explainerTitle: "Operational terms belong below the headline",
+    explainerBody: "The hero states the promise in plain language. The explainer can define registry bundle, candidate, and source trust for people who want the workflow details.",
+    explainerRegistryBundle: "Registry bundle: the entity, document, claims, sources, and verification events read together.",
+    explainerCandidate: "Candidate: an unverified claim or topic that stays Needs verification with low confidence until reviewed.",
+    explainerSourceTrust: "Source trust: signals from source type, observation time, and review history that inform citation readiness.",
     searchPlaceholder: "Search by title or category...",
     registeredDocs: "Registered documents",
     noResults: "No results",

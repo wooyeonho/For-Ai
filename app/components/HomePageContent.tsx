@@ -4,7 +4,7 @@ import { getAllRegistryBundles, isVerifiedDocumentBundle, partitionRegistryBundl
 import type { RegistryDocumentBundle } from "../../lib/types";
 import HomeSearch from "./HomeSearch";
 import type { SupportedLocale } from "@/lib/i18n/locales";
-import { getTranslations } from "@/lib/i18n";
+import { DEFAULT_LOCALE, getTranslations, isValidLocale } from "@/lib/i18n";
 import { TrendingWidget } from "./TrendingWidget";
 
 interface DocItem {
@@ -23,18 +23,6 @@ interface PopularDoc {
   slug?: string;
   title?: string;
 }
-
-const INITIAL_VERTICAL = {
-  title: "Public fees & civic processing times",
-  label: "Initial focus vertical",
-  description:
-    "For-Ai should start where AI answers are high-impact, frequently outdated, and source-verifiable: government fees, filing windows, renewal costs, and civil-service processing rules.",
-  examples: [
-    "Passport and resident ID reissue fees",
-    "Move-in report and tax payment windows",
-    "Official-source deadlines and eligibility rules",
-  ],
-};
 
 const VERTICAL_GROUPS = [
   {
@@ -133,6 +121,35 @@ function confidenceLabel(b: RegistryDocumentBundle): string {
   return "Needs verification";
 }
 
+const DEFAULT_HOME_EXPLAINER = {
+  eyebrow: "Registry explainer",
+  title: "Operational terms belong below the headline",
+  body: "The hero states the promise in plain language. The explainer can define registry bundle, candidate, and source trust for people who want the workflow details.",
+  registryBundle: "Registry bundle: the entity, document, claims, sources, and verification events read together.",
+  candidate: "Candidate: an unverified claim or topic that stays Needs verification with low confidence until reviewed.",
+  sourceTrust: "Source trust: signals from source type, observation time, and review history that inform citation readiness.",
+};
+
+function HomeHero({ locale }: { locale: SupportedLocale }) {
+  const t = getTranslations(locale).home;
+
+  return (
+    <section className="hero">
+      <p className="hero-eyebrow">{t.heroEyebrow ?? "Global claim-level fact registry"}</p>
+      <h1 className="hero-title">{t.heroTitle}</h1>
+      <p className="hero-sub">{t.heroSubtitle}</p>
+      <div className="hero-cta-row">
+        <Link href="/#registry" className="btn btn-primary">
+          {t.primaryCta ?? "Search verified claims"}
+        </Link>
+        <Link href="/suggest-topic" className="btn btn-secondary">
+          {t.secondaryCta ?? "Submit a source"}
+        </Link>
+      </div>
+    </section>
+  );
+}
+
 async function getAllDocs(): Promise<DocItem[]> {
   const staticDocs: DocItem[] = getAllRegistryBundles().map((b) => ({
     slug: b.document.slug,
@@ -227,7 +244,8 @@ async function getPopularDocs(): Promise<PopularDoc[]> {
 }
 
 export default async function HomePageContent({ locale = "en" }: { locale?: string }) {
-  const t = getTranslations(locale as SupportedLocale);
+  const activeLocale = isValidLocale(locale) ? locale : DEFAULT_LOCALE;
+  const homeCopy = getTranslations(activeLocale).home;
   const bundles = getAllRegistryBundles();
   const [docs, popularDocs] = await Promise.all([getAllDocs(), getPopularDocs()]);
   // Only advertise AI-citation telemetry once real citation events exist;
@@ -246,7 +264,7 @@ export default async function HomePageContent({ locale = "en" }: { locale?: stri
 
   const sorted = [...bundles].sort((a, b) => {
     const r = statusRank(a) - statusRank(b);
-    return r !== 0 ? r : a.document.title.localeCompare(b.document.title, locale);
+    return r !== 0 ? r : a.document.title.localeCompare(b.document.title, activeLocale);
   });
   const { verified: verifiedDocuments } = partitionRegistryBundles(sorted);
   const groupedDocuments = groupedRegistryBundles(sorted);
@@ -255,36 +273,7 @@ export default async function HomePageContent({ locale = "en" }: { locale?: stri
   return (
     <div className="home">
       {/* Hero */}
-      <section className="hero">
-        <p className="hero-eyebrow">{INITIAL_VERTICAL.label}: {INITIAL_VERTICAL.title}</p>
-        <h1 className="hero-title">
-          Start with civic facts AI often gets wrong
-          <br />
-          then expand as a <span className="hero-accent">global claim-level registry</span>.
-        </h1>
-        <p className="hero-sub">
-          {INITIAL_VERTICAL.description} Every claim carries confidence, sources, and verification status; unknowns stay as <strong>&ldquo;Needs verification&rdquo;</strong>.
-        </p>
-        <ul className="hero-focus-list" aria-label="Initial focus examples">
-          {INITIAL_VERTICAL.examples.map((example) => (
-            <li key={example}>{example}</li>
-          ))}
-        </ul>
-        <div className="hero-cta-row">
-          <Link href="/#registry" className="btn btn-primary">
-            Browse Registry
-          </Link>
-          <Link href="/api-docs" className="btn btn-secondary">
-            API Docs
-          </Link>
-          <Link href="/community" className="btn btn-secondary">
-            Community
-          </Link>
-          <Link href="/suggest-topic" className="btn btn-secondary">
-            Suggest Topic
-          </Link>
-        </div>
-      </section>
+      <HomeHero locale={activeLocale} />
 
       {/* Trust / stats */}
       <section className="stat-strip" aria-label="Registry stats">
@@ -314,7 +303,7 @@ export default async function HomePageContent({ locale = "en" }: { locale?: stri
       </section>
 
       {/* Trending */}
-      <TrendingWidget locale={locale as SupportedLocale} />
+      <TrendingWidget locale={activeLocale} />
 
       {/* 3 audience entry points */}
       <section className="section">
@@ -390,6 +379,17 @@ export default async function HomePageContent({ locale = "en" }: { locale?: stri
         </div>
       </section>
 
+      <section className="section">
+        <p className="section-eyebrow">{homeCopy.explainerEyebrow ?? DEFAULT_HOME_EXPLAINER.eyebrow}</p>
+        <h2 className="section-title">{homeCopy.explainerTitle ?? DEFAULT_HOME_EXPLAINER.title}</h2>
+        <p className="section-lede">{homeCopy.explainerBody ?? DEFAULT_HOME_EXPLAINER.body}</p>
+        <div className="audience-grid">
+          <article className="audience-card"><h3>Registry bundle</h3><p>{homeCopy.explainerRegistryBundle ?? DEFAULT_HOME_EXPLAINER.registryBundle}</p></article>
+          <article className="audience-card"><h3>Candidate</h3><p>{homeCopy.explainerCandidate ?? DEFAULT_HOME_EXPLAINER.candidate}</p></article>
+          <article className="audience-card"><h3>Source trust</h3><p>{homeCopy.explainerSourceTrust ?? DEFAULT_HOME_EXPLAINER.sourceTrust}</p></article>
+        </div>
+      </section>
+
       {/* How it works */}
       <section className="section">
         <p className="section-eyebrow">How it works</p>
@@ -437,7 +437,7 @@ export default async function HomePageContent({ locale = "en" }: { locale?: stri
             return (
               <li key={b.document.slug} className="registry-row">
                 <div className="registry-row-main">
-                  <Link href={`/${locale}/wiki/${b.document.slug}`} className="registry-row-title">
+                  <Link href={`/${activeLocale}/wiki/${b.document.slug}`} className="registry-row-title">
                     {b.document.title}
                   </Link>
                   <span className="registry-row-entity">{b.entity.canonical_name}</span>
@@ -460,7 +460,7 @@ export default async function HomePageContent({ locale = "en" }: { locale?: stri
             {popularDocs.map((d, i) => (
               <li key={d.document_id} className="registry-row">
                 <div className="registry-row-main">
-                  <Link href={`/${locale}/wiki/${d.slug}`} className="registry-row-title">
+                  <Link href={`/${activeLocale}/wiki/${d.slug}`} className="registry-row-title">
                     {i + 1}. {d.title}
                   </Link>
                 </div>
@@ -476,17 +476,17 @@ export default async function HomePageContent({ locale = "en" }: { locale?: stri
 
       {/* Search */}
       <section className="section">
-        <HomeSearch docs={docs} locale={locale as SupportedLocale} />
+        <HomeSearch docs={docs} locale={activeLocale} />
       </section>
 
       <section className="section" aria-labelledby="ai-wrong-questions">
         <p className="section-eyebrow">Entry points</p>
-        <h2 className="section-title" id="ai-wrong-questions">{t.home.aiWrongTitle}</h2>
+        <h2 className="section-title" id="ai-wrong-questions">{homeCopy.aiWrongTitle}</h2>
         <div className="question-grid">
-          {t.home.aiWrongQuestions.map((question) => (
+          {homeCopy.aiWrongQuestions.map((question) => (
             <Link key={question} href="/suggest-topic" className="question-card">
               <span>{question}</span>
-              <small>{t.home.aiWrongCardCta}</small>
+              <small>{homeCopy.aiWrongCardCta}</small>
             </Link>
           ))}
         </div>
@@ -516,7 +516,7 @@ export default async function HomePageContent({ locale = "en" }: { locale?: stri
                   return (
                     <li key={b.document.slug} className="registry-row">
                       <div className="registry-row-main">
-                        <Link href={`/${locale}/wiki/${b.document.slug}`} className="registry-row-title">
+                        <Link href={`/${activeLocale}/wiki/${b.document.slug}`} className="registry-row-title">
                           {b.document.title}
                         </Link>
                         <span className="registry-row-entity">{b.entity.canonical_name}</span>
