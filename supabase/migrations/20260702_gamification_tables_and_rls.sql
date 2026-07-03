@@ -32,11 +32,12 @@ create index if not exists contributor_point_events_type_created_idx
   on contributor_point_events (event_type, created_at desc);
 
 -- Idempotency guard against race-condition point multiplication: a given
--- (contributor, event_type, reference_id) can only ever score once. NULL
--- reference_id rows (e.g. hallucination_reported) stay NULL-distinct and are
--- instead throttled by route-level rate limits + spam gating.
-create unique index if not exists contributor_point_events_idem_idx
-  on contributor_point_events (contributor_hash, event_type, reference_id);
+-- (contributor, event_type, reference_type, reference_id) can only ever score
+-- once. NULL reference_id rows stay NULL-distinct and are instead throttled by
+-- route-level rate limits + spam gating.
+drop index if exists contributor_point_events_idem_idx;
+create unique index contributor_point_events_idem_idx
+  on contributor_point_events (contributor_hash, event_type, reference_type, reference_id);
 
 alter table contributor_point_events enable row level security;
 -- No anon policies: points are written by service-role API routes only.
