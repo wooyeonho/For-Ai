@@ -22,7 +22,9 @@ interface Post {
 const SUPPORTED_COMMUNITY_LOCALES = new Set<string>(SUPPORTED_LOCALES);
 
 const AUTHOR_ICON: Record<string, string> = { user: "👤", ai: "✦", admin: "🛡️" };
-const AUTHOR_LABEL: Record<string, string> = { user: "사용자", ai: "AI", admin: "관리자" };
+const AUTHOR_LABEL: Record<string, string> = { user: "사용자", ai: "AI 제안", admin: "관리자" };
+const AI_DISCLOSURE_LABEL = "Unverified AI-generated suggestion";
+const AI_DISCLOSURE_DESCRIPTION = "This post was created by an admin/internal AI generation flow and is not verified fact until human review links it to source-backed claims.";
 const QUESTION_TYPE_ICON: Record<string, string> = { question: "❓", discussion: "💬", report: "⚠" };
 const QUESTION_TYPE_LABEL: Record<string, string> = { question: "질문", discussion: "토론", report: "오류 신고" };
 const POST_REVIEW_MESSAGE = "글이 검토 대기열에 등록되었습니다. 관리자 승인 전에는 공개 목록에 표시되지 않습니다. 승인 후 게시됩니다.";
@@ -40,7 +42,6 @@ export default function CommunityClient({ documents }: { documents: { id: string
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [showForm, setShowForm] = useState(false);
 
-  const [authorType, setAuthorType] = useState<"user" | "ai">("user");
   const [authorName, setAuthorName] = useState("");
   const [content, setContent] = useState("");
   const [documentId, setDocumentId] = useState("");
@@ -103,7 +104,7 @@ export default function CommunityClient({ documents }: { documents: { id: string
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          author_type: authorType,
+          author_type: "user",
           author_name: authorName.trim() || undefined,
           content: content.trim(),
           document_id: documentId || null,
@@ -114,8 +115,8 @@ export default function CommunityClient({ documents }: { documents: { id: string
       const d = await r.json();
       if (r.ok) {
         const submittedContent = content.trim();
-        const submittedAuthorType = authorType;
-        const submittedAuthorName = authorName.trim() || (authorType === "ai" ? "AI" : "익명");
+        const submittedAuthorType = "user" as const;
+        const submittedAuthorName = authorName.trim() || "익명";
         const submittedDocumentId = documentId || null;
         const submittedClaimId = claimId.trim() || null;
         const submittedQuestionType = questionType;
@@ -162,7 +163,7 @@ export default function CommunityClient({ documents }: { documents: { id: string
           <div>
             <h1 className="community-title">커뮤니티</h1>
             <p className="community-subtitle">
-              사용자·AI·관리자 모두 글을 남길 수 있습니다
+              공개 글쓰기는 사용자 제보만 받습니다. AI 제안은 관리자/내부 생성 결과로만 표시됩니다
             </p>
           </div>
           <div className="community-actions">
@@ -199,21 +200,10 @@ export default function CommunityClient({ documents }: { documents: { id: string
                   ))}
                 </div>
               </div>
-              <div>
-                <label className="community-label">작성자 유형</label>
-                <div className="community-segmented">
-                  {(["user", "ai"] as const).map((t) => (
-                    <button key={t} type="button" onClick={() => setAuthorType(t)}
-                      className={`btn btn-ghost community-chip ${authorType === t ? "is-active" : ""}`}>
-                      {AUTHOR_ICON[t]} {AUTHOR_LABEL[t]}
-                    </button>
-                  ))}
-                </div>
-              </div>
               <div className="community-field-flex">
                 <label className="community-label">이름 (선택)</label>
                 <input type="text" value={authorName} onChange={(e) => setAuthorName(e.target.value)}
-                  placeholder={authorType === "ai" ? "AI 이름" : "닉네임"}
+                  placeholder="닉네임"
                   className="community-input" />
               </div>
             </div>
@@ -279,7 +269,7 @@ export default function CommunityClient({ documents }: { documents: { id: string
         </div>
         <div className="community-filter-row">
           {[
-            { key: "all", label: "전체 작성자" },
+            { key: "all", label: "기본 피드 (사용자·관리자)" },
             { key: "user", label: "👤 사용자" },
             { key: "ai", label: "✦ AI" },
             { key: "admin", label: "🛡️ 관리자" },
@@ -313,6 +303,11 @@ export default function CommunityClient({ documents }: { documents: { id: string
                     {p.resolved_at && (
                       <span className="community-author-badge community-author-badge-verified">✓ 해결됨</span>
                     )}
+                    {p.author_type === "ai" && (
+                      <span className="community-author-badge community-author-badge-ai">
+                        {AI_DISCLOSURE_LABEL}
+                      </span>
+                    )}
                     {p.status === "pending" ? (
                       <span className="community-author-badge community-author-badge-pending">
                         검토 대기
@@ -323,6 +318,9 @@ export default function CommunityClient({ documents }: { documents: { id: string
                       </span>
                     )}
                   </div>
+                  {p.author_type === "ai" && (
+                    <div className="community-related-doc">{AI_DISCLOSURE_DESCRIPTION}</div>
+                  )}
                   <p className="community-post-content">{p.content}</p>
                   {p.status && <div className="community-related-doc">상태: {STATUS_HELP[p.status] ?? p.status}</div>}
                   {p.claim_id && <div className="community-related-doc">관련 claim: <code>{p.claim_id}</code></div>}

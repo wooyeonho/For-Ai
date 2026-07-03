@@ -392,7 +392,7 @@ create policy topic_candidates_public_insert
 -- intake records and are readable only through admin/service-role API routes
 -- (/api/admin/*) gated by x-admin-secret.
 
--- community_posts: users, AI (aiai), and admins can all leave posts.
+-- community_posts: public users can submit user posts; AI/admin posts are service-role only.
 create table community_posts (
   id              uuid primary key default gen_random_uuid(),
   document_id     text references documents(id) on delete set null,
@@ -418,7 +418,7 @@ alter table community_posts enable row level security;
 
 create policy community_posts_public_insert
   on community_posts for insert to anon
-  with check (status = 'pending' and author_type in ('user', 'ai'));
+  with check (status = 'pending' and author_type = 'user');
 
 create policy community_posts_public_select
   on community_posts for select to anon

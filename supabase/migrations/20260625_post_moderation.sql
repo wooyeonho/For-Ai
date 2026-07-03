@@ -5,7 +5,7 @@
 -- land as 'pending' and require an admin to approve them (set status='published')
 -- via /admin/posts before they become public. Admin/AI posts created through the
 -- service-role /api/admin/posts route continue to publish directly, since the
--- service role bypasses RLS.
+-- service role bypasses RLS. AI posts are reserved for admin/internal generation.
 --
 -- DEPLOY TOGETHER WITH THE APP CODE: the public POST /api/posts route must insert
 -- status='pending' to satisfy the new anon INSERT policy. If this migration is
@@ -24,7 +24,7 @@ alter table community_posts alter column status set default 'pending';
 drop policy if exists community_posts_public_insert on community_posts;
 create policy community_posts_public_insert
   on community_posts for insert to anon
-  with check (status = 'pending' and author_type in ('user', 'ai'));
+  with check (status = 'pending' and author_type = 'user');
 
 -- The public SELECT policy already restricts anon reads to status='published',
 -- so pending posts stay hidden until an admin approves them. (unchanged)

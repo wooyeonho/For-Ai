@@ -12,29 +12,33 @@ interface Post {
 }
 
 const AUTHOR_ICON: Record<string, string> = { user: "👤", ai: "✦", admin: "🛡️" };
+const AI_DISCLOSURE_LABEL = "Unverified AI-generated suggestion";
+const AI_DISCLOSURE_DESCRIPTION = "This post was created by an admin/internal AI generation flow and is not verified fact until human review links it to source-backed claims.";
 const POST_REVIEW_MESSAGE = "글이 검토 대기열에 등록되었습니다. 관리자 승인 후 공개 목록에 표시됩니다.";
 
 export function WikiPostSection({ documentId, claims = [] }: { documentId: string; claims?: { id: string; label: string }[] }) {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
-  const [authorType, setAuthorType] = useState<"user" | "ai">("user");
   const [authorName, setAuthorName] = useState("");
   const [content, setContent] = useState("");
   const [claimId, setClaimId] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [msgOk, setMsgOk] = useState(false);
+  const [showAiSuggestions, setShowAiSuggestions] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const r = await fetch(`/api/posts?document_id=${documentId}&limit=20`);
+      const params = new URLSearchParams({ document_id: documentId, limit: "20" });
+      if (showAiSuggestions) params.set("include_ai", "true");
+      const r = await fetch(`/api/posts?${params.toString()}`);
       const d = await r.json();
       setPosts(Array.isArray(d.posts) ? d.posts : []);
     } catch { setPosts([]); }
     setLoading(false);
-  }, [documentId]);
+  }, [documentId, showAiSuggestions]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -49,7 +53,7 @@ export function WikiPostSection({ documentId, claims = [] }: { documentId: strin
         body: JSON.stringify({
           document_id: documentId,
           claim_id: claimId || null,
-          author_type: authorType,
+          author_type: "user",
           author_name: authorName.trim() || undefined,
           content: content.trim(),
         }),
@@ -57,8 +61,8 @@ export function WikiPostSection({ documentId, claims = [] }: { documentId: strin
       const d = await r.json();
       if (r.ok) {
         const submittedContent = content.trim();
-        const submittedAuthorType = authorType;
-        const submittedAuthorName = authorName.trim() || (authorType === "ai" ? "AI" : "익명");
+        const submittedAuthorType = "user" as const;
+        const submittedAuthorName = authorName.trim() || "익명";
         const submittedClaimId = claimId || null;
 
         setContent("");
@@ -101,15 +105,10 @@ export function WikiPostSection({ documentId, claims = [] }: { documentId: strin
 
       {showForm && (
         <form onSubmit={submit} style={{ marginTop: 12, padding: 12, background: "#f9fafb", borderRadius: 8, border: "1px solid #e5e7eb" }}>
-          <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-            {(["user", "ai"] as const).map((t) => (
-              <button key={t} type="button" onClick={() => setAuthorType(t)}
-                className={`btn btn-ghost ${authorType === t ? "is-active" : ""}`}>
-                {AUTHOR_ICON[t]} {t === "user" ? "사용자" : "AI"}
-              </button>
-            ))}
+          <div style={{ marginBottom: 8 }}>
+            <p style={{ fontSize: 12, color: "#6b7280", margin: "0 0 6px" }}>공개 글쓰기는 사용자 제보만 받습니다. AI 제안은 관리자/내부 생성 결과로만 표시됩니다.</p>
             <input type="text" value={authorName} onChange={(e) => setAuthorName(e.target.value)}
-              placeholder="이름 (선택)" style={{ flex: 1, padding: "4px 8px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 12 }} />
+              placeholder="이름 (선택)" style={{ width: "100%", padding: "4px 8px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 12 }} />
           </div>
           {claims.length > 0 && (
             <select value={claimId} onChange={(e) => setClaimId(e.target.value)}
@@ -137,6 +136,13 @@ export function WikiPostSection({ documentId, claims = [] }: { documentId: strin
         <p style={{ fontSize: 12, color: "#15803d", marginTop: 12 }}>{msg}</p>
       )}
 
+      <div style={{ marginTop: 12 }}>
+        <button type="button" onClick={() => setShowAiSuggestions((v) => !v)} className="btn btn-ghost" aria-pressed={showAiSuggestions}>
+          {showAiSuggestions ? "AI 제안 숨기기" : "AI 제안 별도 보기"}
+        </button>
+        <p style={{ fontSize: 12, color: "#6b7280", margin: "6px 0 0" }}>기본 커뮤니티 목록은 사용자·관리자 글만 표시합니다. AI 글은 별도 보기에서만 펼쳐집니다.</p>
+      </div>
+
       {loading ? (
         <p style={{ color: "#9ca3af", fontSize: 13 }}>로딩 중...</p>
       ) : posts.length === 0 ? (
@@ -149,6 +155,11 @@ export function WikiPostSection({ documentId, claims = [] }: { documentId: strin
                 <span style={{ fontSize: 13, fontWeight: 600, color: p.author_type === "ai" ? "#7c3aed" : p.author_type === "admin" ? "#dc2626" : "#374151" }}>
                   {AUTHOR_ICON[p.author_type]} {p.author_name}
                 </span>
+                {p.author_type === "ai" && (
+                  <span style={{ fontSize: 11, color: "#6d28d9", background: "#ede9fe", borderRadius: 999, padding: "1px 8px", fontWeight: 700 }}>
+                    {AI_DISCLOSURE_LABEL}
+                  </span>
+                )}
                 {p.status === "pending" && (
                   <span style={{ fontSize: 11, color: "#92400e", background: "#fef3c7", borderRadius: 999, padding: "1px 8px", fontWeight: 600 }}>
                     검토 대기
@@ -158,6 +169,7 @@ export function WikiPostSection({ documentId, claims = [] }: { documentId: strin
                   {new Date(p.created_at).toLocaleString("ko-KR", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                 </span>
               </div>
+              {p.author_type === "ai" && <p style={{ fontSize: 11, color: "#6b7280", margin: "0 0 4px" }}>{AI_DISCLOSURE_DESCRIPTION}</p>}
               {p.claim_id && <p style={{ fontSize: 11, color: "#6b7280", margin: "0 0 4px" }}>관련 claim: <code>{p.claim_id}</code></p>}
               <p style={{ fontSize: 13, lineHeight: 1.6, margin: 0, whiteSpace: "pre-wrap" }}>{p.content}</p>
             </div>
