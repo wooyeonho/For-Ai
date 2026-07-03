@@ -20,6 +20,7 @@ export default function HomeSearch({ docs, locale }: { docs: DocItem[]; locale: 
   const [searching, setSearching] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const t = getTranslations(locale);
+  const suggestHref = "/suggest-topic";
 
   const q = query.trim().toLowerCase();
 

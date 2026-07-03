@@ -29,6 +29,7 @@ export async function GET(request: Request) {
   const claimId = url.searchParams.get("claim_id");
   const authorType = url.searchParams.get("author_type");
   const questionType = url.searchParams.get("question_type");
+  const includeAi = url.searchParams.get("include_ai") === "true";
   const limit = Math.min(parseInt(url.searchParams.get("limit") ?? "50"), 200);
   const offset = parseInt(url.searchParams.get("offset") ?? "0");
 
@@ -45,9 +46,6 @@ export async function GET(request: Request) {
     query = query.eq("author_type", authorType);
   } else if (!includeAi) {
     query = query.neq("author_type", "ai");
-  }
-  if (questionType && ["question", "discussion", "report"].includes(questionType)) {
-    query = query.eq("question_type", questionType);
   }
   if (questionType && ["question", "discussion", "report"].includes(questionType)) {
     query = query.eq("question_type", questionType);

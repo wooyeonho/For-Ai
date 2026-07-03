@@ -1,5 +1,4 @@
 import { logAdminAuditEvent, requireAdmin, supabaseAdmin } from "@/lib/admin-api";
-import { getFreshnessTtlDays, ageInDays, isStale } from "@/lib/citation-status";
 import { calculateDocumentQuality } from "@/lib/document-quality";
 import { ageInDays, getFreshnessTtlDays, isStale } from "@/lib/citation-status";
 import { DEFAULT_LOCALE } from "@/lib/i18n";

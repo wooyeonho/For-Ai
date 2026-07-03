@@ -4,8 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { SUPPORTED_LOCALES } from "@/lib/i18n/locales";
 
-const SUPPORTED_COMMUNITY_LOCALES = new Set<string>(SUPPORTED_LOCALES);
-
 interface Post {
   id: string;
   document_id: string | null;
@@ -28,6 +26,7 @@ const AUTHOR_LABEL: Record<string, string> = { user: "사용자", ai: "AI", admi
 const QUESTION_TYPE_ICON: Record<string, string> = { question: "❓", discussion: "💬", report: "⚠" };
 const QUESTION_TYPE_LABEL: Record<string, string> = { question: "질문", discussion: "토론", report: "오류 신고" };
 const POST_REVIEW_MESSAGE = "글이 검토 대기열에 등록되었습니다. 관리자 승인 전에는 공개 목록에 표시되지 않습니다. 승인 후 게시됩니다.";
+const AI_DISCLOSURE_DESCRIPTION = "이 글은 관리자/내부 AI 생성 흐름으로 작성된 비검증 제안이며, 인간 검토가 출처 기반 사실로 연결하기 전까지는 사실이 아닙니다.";
 const STATUS_HELP: Record<string, string> = {
   pending: "검토 대기: 제출은 접수되었지만 아직 공개되지 않았습니다.",
   published: "게시됨: 공개 목록과 관련 wiki page에 표시됩니다.",
@@ -77,21 +76,6 @@ export default function CommunityClient({ documents }: { documents: { id: string
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search]);
-
-  // Pre-fill from URL params (e.g. from wiki "질문하기" button)
-  useEffect(() => {
-    const urlDocId = searchParams.get("document_id");
-    const urlQ = searchParams.get("q");
-    if (urlDocId) {
-      setDocumentId(urlDocId);
-      setQuestionType("question");
-      setShowForm(true);
-    }
-    if (urlQ && !content) {
-      setContent(urlQ);
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
 
   const loadPosts = useCallback(async () => {
     setLoading(true);

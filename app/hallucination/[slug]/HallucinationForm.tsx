@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { HALLUCINATION_FIELD_MAX_LENGTHS } from "@/lib/submission-limits";
+import { HALLUCINATION_FIELD_MAX_LENGTHS } from "@/lib/submission-constants";
 
 export function HallucinationForm({
   documentId,

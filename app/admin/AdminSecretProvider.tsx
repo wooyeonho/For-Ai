@@ -51,6 +51,12 @@ export function AdminSecretField({
   authMessage,
   label = "Admin Login",
   placeholder = "ADMIN_SECRET",
+  value,
+  onChange,
+  onReset,
+  onSubmit,
+  loading: externalLoading,
+  buttonLabel,
   inputStyle,
 }: {
   adminSecret?: string;

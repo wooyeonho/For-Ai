@@ -450,7 +450,7 @@ export default async function HomePageContent({ locale = "en" }: { locale?: stri
 
   const sorted = [...bundles].sort((a, b) => {
     const r = statusRank(a) - statusRank(b);
-    return r !== 0 ? r : a.document.title.localeCompare(b.document.title, activeLocale);
+    return r !== 0 ? r : a.document.title.localeCompare(b.document.title, localeKey);
   });
   const { verified: verifiedDocuments } = partitionRegistryBundles(sorted);
   const groupedDocuments = groupedRegistryBundles(sorted);
@@ -592,13 +592,13 @@ export default async function HomePageContent({ locale = "en" }: { locale?: stri
       </section>
 
       <section className="section">
-        <p className="section-eyebrow">{homeCopy.explainerEyebrow ?? DEFAULT_HOME_EXPLAINER.eyebrow}</p>
-        <h2 className="section-title">{homeCopy.explainerTitle ?? DEFAULT_HOME_EXPLAINER.title}</h2>
-        <p className="section-lede">{homeCopy.explainerBody ?? DEFAULT_HOME_EXPLAINER.body}</p>
+        <p className="section-eyebrow">{DEFAULT_HOME_EXPLAINER.eyebrow}</p>
+        <h2 className="section-title">{DEFAULT_HOME_EXPLAINER.title}</h2>
+        <p className="section-lede">{DEFAULT_HOME_EXPLAINER.body}</p>
         <div className="audience-grid">
-          <article className="audience-card"><h3>Registry bundle</h3><p>{homeCopy.explainerRegistryBundle ?? DEFAULT_HOME_EXPLAINER.registryBundle}</p></article>
-          <article className="audience-card"><h3>Candidate</h3><p>{homeCopy.explainerCandidate ?? DEFAULT_HOME_EXPLAINER.candidate}</p></article>
-          <article className="audience-card"><h3>Source trust</h3><p>{homeCopy.explainerSourceTrust ?? DEFAULT_HOME_EXPLAINER.sourceTrust}</p></article>
+          <article className="audience-card"><h3>Registry bundle</h3><p>{DEFAULT_HOME_EXPLAINER.registryBundle}</p></article>
+          <article className="audience-card"><h3>Candidate</h3><p>{DEFAULT_HOME_EXPLAINER.candidate}</p></article>
+          <article className="audience-card"><h3>Source trust</h3><p>{DEFAULT_HOME_EXPLAINER.sourceTrust}</p></article>
         </div>
       </section>
 
@@ -649,7 +649,7 @@ export default async function HomePageContent({ locale = "en" }: { locale?: stri
             return (
               <li key={b.document.slug} className="registry-row">
                 <div className="registry-row-main">
-                  <Link href={`/${activeLocale}/wiki/${b.document.slug}`} className="registry-row-title">
+                  <Link href={`/${localeKey}/wiki/${b.document.slug}`} className="registry-row-title">
                     {b.document.title}
                   </Link>
                   <span className="registry-row-entity">{b.entity.canonical_name}</span>
@@ -672,7 +672,7 @@ export default async function HomePageContent({ locale = "en" }: { locale?: stri
             {popularDocs.map((d, i) => (
               <li key={d.document_id} className="registry-row">
                 <div className="registry-row-main">
-                  <Link href={`/${activeLocale}/wiki/${d.slug}`} className="registry-row-title">
+                  <Link href={`/${localeKey}/wiki/${d.slug}`} className="registry-row-title">
                     {i + 1}. {d.title}
                   </Link>
                 </div>
@@ -751,7 +751,7 @@ export default async function HomePageContent({ locale = "en" }: { locale?: stri
                   return (
                     <li key={b.document.slug} className="registry-row">
                       <div className="registry-row-main">
-                        <Link href={`/${activeLocale}/wiki/${b.document.slug}`} className="registry-row-title">
+                        <Link href={`/${localeKey}/wiki/${b.document.slug}`} className="registry-row-title">
                           {b.document.title}
                         </Link>
                         <span className="registry-row-entity">{b.entity.canonical_name}</span>

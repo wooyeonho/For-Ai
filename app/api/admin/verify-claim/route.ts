@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 
 import { logAdminAuditEvent, requireAdmin, supabaseAdmin } from "@/lib/admin-api";
-import { getFreshnessTtlDays, ageInDays, isStale } from "@/lib/citation-status";
 import { recordContributionEvent } from "@/lib/contributions";
 import { scoreSourceTrust } from "@/lib/source-trust";
 import { awardPoints, checkAndAwardBadges, POINT_VALUES } from "@/lib/gamification";

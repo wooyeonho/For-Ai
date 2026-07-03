@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { REPORT_MESSAGE_MAX_LENGTH } from "@/lib/submission-limits";
+import { REPORT_MESSAGE_MAX_LENGTH } from "@/lib/submission-constants";
 import { isValidLocale } from "@/lib/i18n/locales";
 
 type ClaimOption = {

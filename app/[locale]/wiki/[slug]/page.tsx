@@ -11,12 +11,12 @@ import type { RegistryDocumentBundle } from "../../../../lib/types";
 import { getRegistryBundleFromSupabase } from "../../../../lib/supabase-documents";
 import { getDocumentCitationStatus, getCitationSafetyBlock } from "../../../../lib/citation-status";
 import { getRenderedDirectAnswer, normalizeCitationSurface, getCitationPolicyBlock } from "../../../../lib/render";
-import { getActiveSponsoredPlacementsForEntity } from "../../../../lib/sponsored-placements";
 import { SponsoredPlacement } from "../../../components/SponsoredPlacement";
 import { DirectAnswerBox } from "../../../components/DirectAnswerBox";
 import { ClaimTable } from "../../../components/ClaimTable";
 import { ViewTracker } from "../../../components/ViewTracker";
 import { DocumentStatsBar } from "../../../components/DocumentStatsBar";
+import { BusinessClaimCTA } from "../../../components/BusinessClaimCTA";
 import { WikiPostSection } from "../../../components/WikiPostSection";
 import { CorrectionCTA } from "../../../components/CorrectionCTA";
 import { VerificationLevelBadge } from "../../../components/StatusBadge";
@@ -116,6 +116,7 @@ export default async function WikiDocumentPage({
     "official_page",
   ];
   const sponsoredPlacements = await getActiveSponsoredPlacementsForEntity(entity.id);
+  const businessRiskDashboard = getBusinessProfileRiskDashboard([bundle]);
   const isGovernmentFeeTemplate =
     docData.disclaimer_type === "check_official_source" &&
     claims.some((claim) => standardGovernmentFeeFieldPaths.includes(claim.field_path)) &&
@@ -124,7 +125,6 @@ export default async function WikiDocumentPage({
   const totalSources = claims.reduce((sum, claim) => sum + claim.sources.length, 0);
   const hasBusinessSubmittedClaims = claims.some((claim) => claim.source_of_claim === "business_submitted");
   const hasSponsoredClaims = claims.some((claim) => claim.source_of_claim === "sponsored");
-  const totalSources = claims.reduce((sum, c) => sum + (c.sources?.length ?? 0), 0);
 
   return (
     <article>
@@ -209,7 +209,7 @@ export default async function WikiDocumentPage({
             💬 이 팩트에 대해 질문하기 →
           </Link>
         </div>
-      </header>
+      </section>
 
       <BusinessClaimCTA
         entityId={entity.id}

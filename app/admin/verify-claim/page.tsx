@@ -8,6 +8,7 @@ import { isHighRiskCategory } from "@/lib/risk-policy";
 import { isStale } from "@/lib/citation-status";
 import { calculateDocumentQuality } from "@/lib/document-quality";
 import type { AdminRecommendation } from "@/lib/admin-recommendations";
+import { classifyRecommendedSourceType } from "@/lib/source-trust";
 
 type SourceRow = { id: string; title?: string | null; url?: string | null; source_type?: string | null; source_authority?: string | null; citation?: string | null; observed_at?: string | null };
 type VerificationEventRow = { id: string; note?: string | null; created_at?: string | null; new_status?: string | null };
