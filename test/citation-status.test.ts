@@ -398,3 +398,26 @@ test("business-submitted pending claims stay citation-ready false even if they l
   assert.equal(documentStatus.verifiedClaims, 1);
   assert.equal(documentStatus.unverifiedClaims, 1);
 });
+
+test("high-risk machine translations are not citation-ready until human translation review", () => {
+  const status = getClaimCitationStatus(claim({
+    id: "claim-translated-high-risk",
+    risk_tier: "high",
+    original_claim_id: "claim-source-1",
+    translation_status: "machine_translated",
+  }), 180, NOW, "finance");
+
+  assert.equal(status.isCitationReady, false);
+  assert.match(status.reason, /human-reviewed translation/);
+});
+
+test("high-risk human translated claims can be citation-ready when other verification signals pass", () => {
+  const status = getClaimCitationStatus(claim({
+    id: "claim-translated-high-risk",
+    risk_tier: "high",
+    original_claim_id: "claim-source-1",
+    translation_status: "human_translated",
+  }), 180, NOW, "finance");
+
+  assert.equal(status.isCitationReady, true);
+});
