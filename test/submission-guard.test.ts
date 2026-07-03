@@ -6,7 +6,12 @@ import {
   hasRepeatedText,
   hasAdvertisingLanguage,
   inspectSubmissionText,
+  contributorSubmissionRateLimited,
 } from "../lib/submission-guard";
+import {
+  SUBMISSION_URL_MAX_COUNT,
+  SUBMISSION_PER_MINUTE_LIMIT,
+} from "../lib/submission-constants";
 
 test("hasHoneypotValue flags any filled honeypot field", () => {
   assert.equal(hasHoneypotValue({ honeypot: "bot" }), true);
@@ -42,4 +47,35 @@ test("inspectSubmissionText flags spam-suspected content without hard-rejecting 
   const clean = inspectSubmissionText(["the passport reissue fee changed last month"]);
   assert.equal(clean.status, "new");
   assert.deepEqual(clean.reasons, []);
+});
+
+function urlList(count: number): string {
+  return Array.from({ length: count }, (_, i) => `https://example.com/${i}`).join(" ");
+}
+
+test("inspectSubmissionText honors the SUBMISSION_URL_MAX_COUNT boundary from constants", () => {
+  const atLimit = inspectSubmissionText([`a report with sources ${urlList(SUBMISSION_URL_MAX_COUNT)}`]);
+  assert.ok(!atLimit.reasons.includes("too_many_urls"), "exactly the max URL count must not trip the check");
+
+  const overLimit = inspectSubmissionText([`a report with sources ${urlList(SUBMISSION_URL_MAX_COUNT + 1)}`]);
+  assert.ok(overLimit.reasons.includes("too_many_urls"), "one more than the max URL count must trip the check");
+});
+
+test("contributorSubmissionRateLimited enforces SUBMISSION_PER_MINUTE_LIMIT per contributor", async () => {
+  const hash = `test-contributor-${Date.now()}-a`;
+  for (let i = 0; i < SUBMISSION_PER_MINUTE_LIMIT; i++) {
+    assert.equal(await contributorSubmissionRateLimited(hash), null, `call ${i + 1} should be within the per-minute limit`);
+  }
+  assert.equal(await contributorSubmissionRateLimited(hash), "minute");
+});
+
+test("contributorSubmissionRateLimited keys the per-minute limit independently per contributor", async () => {
+  const exhausted = `test-contributor-${Date.now()}-b`;
+  for (let i = 0; i < SUBMISSION_PER_MINUTE_LIMIT; i++) {
+    await contributorSubmissionRateLimited(exhausted);
+  }
+  assert.equal(await contributorSubmissionRateLimited(exhausted), "minute");
+
+  const fresh = `test-contributor-${Date.now()}-c`;
+  assert.equal(await contributorSubmissionRateLimited(fresh), null);
 });
