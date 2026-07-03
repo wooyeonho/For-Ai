@@ -19,7 +19,9 @@ import { WikiPostSection } from "../../../components/WikiPostSection";
 import { CorrectionCTA } from "../../../components/CorrectionCTA";
 import { VerificationLevelBadge } from "../../../components/StatusBadge";
 import { SponsoredPlacement } from "../../../components/SponsoredPlacement";
+import { BusinessClaimCTA } from "../../../components/BusinessClaimCTA";
 import { getBundleRiskDisclaimer } from "../../../../lib/risk-policy";
+import { getBusinessProfileRiskDashboard } from "../../../../lib/entity-profile";
 import { getActiveSponsoredPlacementsForEntity } from "../../../../lib/sponsored-placements";
 import { safeJsonLd } from "../../../../lib/json-ld";
 
@@ -122,6 +124,7 @@ export default async function WikiDocumentPage({
   const totalSources = claims.reduce((sum, claim) => sum + claim.sources.length, 0);
   const hasBusinessSubmittedClaims = claims.some((claim) => claim.source_of_claim === "business_submitted");
   const hasSponsoredClaims = claims.some((claim) => claim.source_of_claim === "sponsored");
+  const businessRiskDashboard = getBusinessProfileRiskDashboard([bundle]);
 
   return (
     <article>
@@ -207,6 +210,15 @@ export default async function WikiDocumentPage({
           </Link>
         </div>
       </section>
+
+      <BusinessClaimCTA
+        entityId={entity.id}
+        documentSlug={document.slug}
+        locale={locale}
+        documentTitle={document.title}
+        unverifiedCriticalClaims={businessRiskDashboard.unverified_critical_claims.length}
+        staleSources={businessRiskDashboard.stale_sources.length}
+      />
 
       {citationStatus.isVerifiedDocument && citationStatus.freshness === "stale" && (
         <section

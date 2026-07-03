@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin, requireAdmin, logAdminAuditEvent } from "@/lib/admin-api";
 
+const COMMERCIAL_INTEGRITY_NOTICE = "Business product actions are intake/monitoring only; independent human verification is still required before any factual claim becomes AI-citable.";
+
 // GET: Admin — list business corrections (filterable by status/priority)
 export async function GET(request: Request) {
   const adminError = await requireAdmin(request, "business_corrections.read");
@@ -23,7 +25,7 @@ export async function GET(request: Request) {
 
   const { data, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ corrections: data ?? [] });
+  return NextResponse.json({ product_step: "submit_corrections_with_sources", integrity_notice: COMMERCIAL_INTEGRITY_NOTICE, corrections: data ?? [] });
 }
 
 // POST: Submit a business correction (requires valid profile_id via API key or admin)
@@ -153,6 +155,9 @@ export async function POST(request: Request) {
       correction,
       submitted_claim: submittedClaim,
       differs_from_verified_claim: differsFromVerifiedClaim,
+      product_step: "submit_corrections_with_sources",
+      next_step: "independent_human_verification",
+      integrity_notice: COMMERCIAL_INTEGRITY_NOTICE,
       message: "Business-submitted claim stored separately and queued for verification",
     },
     { status: 201 },
