@@ -52,7 +52,7 @@ export type DisclaimerType =
   | "public_profile_only"
   | "realtime_data_required";
 export type SourceAuthority = "primary" | "official" | "regulator" | "legal" | "platform" | "secondary" | "community" | "unknown";
-export type TranslationStatus = "source_language" | "human_translated" | "human_reviewed" | "machine_translated" | "needs_translation_review";
+export type TranslationStatus = "source_language" | "human_translated" | "human_reviewed" | "machine_translated" | "needs_translation_review" | "needs_human_translation_review";
 
 export type LocalizedTitle = Record<string, string>;
 

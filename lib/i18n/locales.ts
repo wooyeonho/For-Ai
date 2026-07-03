@@ -16,17 +16,19 @@ export const DEFAULT_LOCALE: SupportedLocale = SUPPORTED_LOCALES.includes(config
  * Slugs are canonical, stable English identifiers shared by every locale route.
  * Human-facing titles and UI labels are localized per locale, but claim sources
  * preserve the source's original language. Claim translations must point back
- * to their original claim and must expose whether they are machine-translated or
- * human-reviewed.
+ * to their original claim and must expose whether they are machine-translated, human-review-required,
+ * or human-translated.
  */
 export const LANGUAGE_POLICY = {
   canonicalSlugLocale: "en",
   slugPolicy: "stable_english_canonical",
   localizedDisplayFields: ["title", "ui_label"],
   preserveSourceLanguage: true,
-  translationStatuses: ["machine_translated", "human_reviewed"],
+  translationStatuses: ["machine_translated", "needs_human_translation_review", "human_translated"],
   requireOriginalClaimLink: true,
   showMachineTranslationWarningUntilHumanReviewed: true,
+  blockHighRiskVerifiedDisplayUntilHumanTranslated: true,
+  conflictFieldsRequireHumanReview: ["claim_value", "field_path", "jurisdiction", "country"],
 } as const;
 
 export type TranslationStatus = (typeof LANGUAGE_POLICY.translationStatuses)[number];

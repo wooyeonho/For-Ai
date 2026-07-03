@@ -15,7 +15,7 @@ create type risk_tier as enum ('low', 'medium', 'high', 'forbidden');
 create type update_frequency as enum ('realtime', 'daily', 'weekly', 'monthly', 'quarterly', 'annual', 'event_based', 'static');
 create type disclaimer_type as enum ('none', 'check_official_source', 'not_medical_advice', 'not_financial_advice', 'not_legal_advice', 'not_genetic_or_medical_advice', 'public_profile_only', 'realtime_data_required');
 create type source_authority as enum ('primary', 'official', 'regulator', 'legal', 'platform', 'secondary', 'community', 'unknown');
-create type translation_status as enum ('source_language', 'human_translated', 'machine_translated', 'needs_translation_review');
+create type translation_status as enum ('source_language', 'human_translated', 'machine_translated', 'needs_translation_review', 'needs_human_translation_review');
 create type submission_status as enum ('new', 'reviewing', 'accepted', 'rejected', 'spam', 'spam_suspected');
 create type verification_event_type as enum ('created', 'reviewed', 'source_added', 'source_removed', 'source_verified', 'status_changed', 'confidence_changed');
 create type notification_preference as enum ('none', 'in_app', 'email_digest', 'webhook');
@@ -167,7 +167,7 @@ comment on column documents.slug is 'Canonical stable English slug shared across
 comment on column documents.title is 'Locale-specific display title; do not use as canonical identity.';
 comment on column claims.lang is 'Language of this claim text/value.';
 comment on column claims.original_claim_id is 'For translated claims, references the original source-language claim.';
-comment on column claims.translation_status is 'machine_translated until human review; human_reviewed after approval.';
+comment on column claims.translation_status is 'machine_translated for aligned candidates; needs_human_translation_review when semantic similarity is low, claim_value/field_path/jurisdiction/country conflicts, or high-risk content awaits human translation review; human_translated after approval.';
 comment on column claim_sources.lang is 'Original language of the source; preserve instead of translating source identity.';
 comment on column claim_sources.source_domain is 'Normalized/extracted domain used only for review aids such as recommended source type; not canonical factual evidence.';
 comment on column claim_sources.detected_language is 'Detected source page language for review context; does not prove claim truth.';

@@ -283,7 +283,10 @@ export function getClaimCitationStatus(
     event.new_status === "verified" || event.event_type === "source_verified",
   );
   const hasVerifiedValue = Boolean(claim.claim_value?.trim()) && claim.claim_value !== UNKNOWN_FACT_TEXT;
-  const hasRequiredHighRiskSource = !isHighRiskCategory(category) || hasOfficialOrRegulatorSource(claim.sources);
+  const highRisk = claim.risk_tier === "high" || isHighRiskCategory(category);
+  const hasRequiredHighRiskSource = !highRisk || hasOfficialOrRegulatorSource(claim.sources);
+  const hasHumanReviewedTranslation = !claim.original_claim_id || claim.translation_status === "human_translated" || claim.translation_status === "human_reviewed";
+  const hasRequiredTranslationReview = !highRisk || hasHumanReviewedTranslation;
   const isCitationReady =
     claim.status === "verified" &&
     claim.confidence !== "low" &&
@@ -291,6 +294,7 @@ export function getClaimCitationStatus(
     hasSource &&
     hasVerificationEvent &&
     hasRequiredHighRiskSource &&
+    hasRequiredTranslationReview &&
     Boolean(claim.last_verified_at);
   const stale = isCitationReady && isStale(claim.last_verified_at, ttlDays, now);
 
@@ -312,9 +316,11 @@ export function getClaimCitationStatus(
   return {
     isCitationReady,
     label: "unverified",
-    reason: isHighRiskCategory(category) && !hasOfficialOrRegulatorSource(claim.sources)
+    reason: highRisk && !hasOfficialOrRegulatorSource(claim.sources)
       ? "high-risk claims require an official or regulator source"
-      : "requires verified status, non-low confidence, source, verification event, and last_verified_at",
+      : highRisk && !hasHumanReviewedTranslation
+        ? "high-risk translated claims require human-reviewed translation before verified display"
+        : "requires verified status, non-low confidence, source, verification event, and last_verified_at",
     freshness: "unknown",
     freshnessWindowDays: ttlDays,
     lastVerifiedAt: claim.last_verified_at ?? null,
