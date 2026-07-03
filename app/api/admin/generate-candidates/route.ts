@@ -8,8 +8,9 @@ import {
   type AIGenerateResponse,
 } from "../../../../lib/ai-providers";
 import { buildConsensus, type ConsensusCandidate } from "../../../../lib/consensus";
-import { logAdminAuditEvent, missingSupabaseAdminEnv, requireAdmin, supabaseAdmin } from "@/lib/admin-api";
+import { getAdminAuthContext, logAdminAuditEvent, missingSupabaseAdminEnv, requireAdmin, supabaseAdmin } from "@/lib/admin-api";
 import { DEFAULT_LOCALE, LOCALE_CONFIG, isValidLocale } from "@/lib/i18n/locales";
+import { AI_GENERATION_LIMITS, adminActorHashFromRequest, aiGenerationKillSwitchEnabled, checkAIGenerationQuota, recordAIGenerationUsage } from "@/lib/ai-budget";
 
 function buildPrompt(topic: string, count: number, lang: string) {
   const langInstructions: Record<string, string> = {
@@ -315,14 +316,35 @@ export async function POST(request: Request) {
 
   const body = await request.json();
   const topic = String(body.topic ?? body.category ?? "").trim();
-  const count = Math.min(Math.max(parseInt(body.count ?? "10"), 1), 50);
+  const requestedCount = parseInt(body.count ?? "10", 10);
+  const count = Math.min(Math.max(Number.isFinite(requestedCount) ? requestedCount : 10, 1), AI_GENERATION_LIMITS.maxCount);
   const lang = String(body.lang ?? DEFAULT_LOCALE).trim() || DEFAULT_LOCALE;
   const saveToDb = body.save !== false;
   const requestedProviders = body.providers as AIProviderKey[] | undefined;
   const crossVerify = body.cross_verify === true;
+  const requestId = crypto.randomUUID();
+  const client = supabaseAdmin();
+  const authContext = getAdminAuthContext(request);
+  const adminActorHash = adminActorHashFromRequest(request, authContext?.adminUserHash ?? "unknown-admin");
 
   if (!topic) {
     return NextResponse.json({ error: "topic 필드가 필요합니다" }, { status: 400 });
+  }
+
+  const killSwitch = await aiGenerationKillSwitchEnabled(client);
+  if (killSwitch.disabled) {
+    return NextResponse.json({ error: "AI generation is disabled", reason: killSwitch.reason }, { status: 503 });
+  }
+
+  const quota = await checkAIGenerationQuota(client, adminActorHash);
+  if (!quota.allowed) {
+    return NextResponse.json({
+      error: "AI generation quota exceeded",
+      reason: quota.reason,
+      daily_used: quota.dailyUsed,
+      monthly_used: quota.monthlyUsed,
+      limits: AI_GENERATION_LIMITS,
+    }, { status: 429 });
   }
 
   const available = getAvailableProviders();
@@ -333,7 +355,7 @@ export async function POST(request: Request) {
   // Determine which providers to use
   let providers: AIProviderKey[];
   if (requestedProviders && requestedProviders.length > 0) {
-    providers = requestedProviders.filter((p) => available.includes(p));
+    providers = [...new Set(requestedProviders)].filter((p) => available.includes(p)).slice(0, AI_GENERATION_LIMITS.maxProviders);
     if (providers.length === 0) {
       return NextResponse.json({
         error: "Requested providers not available",
@@ -343,18 +365,30 @@ export async function POST(request: Request) {
     }
   } else {
     // Default provider policy: prefer Perplexity for web search, then NVIDIA, then other configured providers.
-    providers = [selectDefaultProvider(available)];
+    providers = [selectDefaultProvider(available)].slice(0, AI_GENERATION_LIMITS.maxProviders);
   }
 
   const systemPrompt = buildSystemPrompt(lang);
   const userPrompt = buildPrompt(topic, count, lang);
-  const aiRequest = { systemPrompt, userPrompt, temperature: 0.3 };
+  const aiRequest = { systemPrompt, userPrompt, temperature: 0.3, maxOutputTokens: AI_GENERATION_LIMITS.maxOutputTokens };
 
   const {
     candidates: allCandidates,
     providerResults,
     consensusResults,
   } = await generateCandidateBatch(providers, aiRequest, lang, crossVerify);
+
+  await Promise.all(Object.entries(providerResults).map(([provider, result]) => recordAIGenerationUsage(client, {
+    provider: provider as AIProviderKey,
+    model: AI_PROVIDERS[provider as AIProviderKey].model,
+    requestedCount: count,
+    generatedCount: result.generated,
+    maxOutputTokens: AI_GENERATION_LIMITS.maxOutputTokens,
+    adminActorHash,
+    requestId,
+    status: result.error || result.parse_error ? "failed" : "completed",
+    error: result.error ?? result.parse_error ?? null,
+  })));
 
   if (allCandidates.length === 0) {
     const parseErrors = Object.entries(providerResults)
@@ -381,8 +415,6 @@ export async function POST(request: Request) {
   let saveError: string | null = null;
   let saveErrorDetails: Record<string, unknown> | null = null;
   let skippedDuplicates = 0;
-  const client = supabaseAdmin();
-
   if (saveToDb && client) {
     const duplicateFilter = await filterDuplicateCandidates(allCandidates, client);
     const deduped = duplicateFilter.deduped;
@@ -400,6 +432,9 @@ export async function POST(request: Request) {
         topic, lang,
         providers_used: Object.keys(providerResults),
         available_providers: available.map((p) => ({ key: p, label: AI_PROVIDERS[p].label })),
+        limits: AI_GENERATION_LIMITS,
+        quota,
+        effective_count: count,
         cross_verify: crossVerify,
         provider_results: providerResults,
         fallback_used: false,
@@ -453,6 +488,9 @@ export async function POST(request: Request) {
     lang,
     providers_used: Object.keys(providerResults),
     available_providers: available.map((p) => ({ key: p, label: AI_PROVIDERS[p].label })),
+    limits: AI_GENERATION_LIMITS,
+    quota,
+    effective_count: count,
     cross_verify: crossVerify,
     provider_results: providerResults,
     fallback_used: false,
@@ -490,6 +528,11 @@ export async function POST(request: Request) {
 export async function GET(request: Request) {
   const adminError = await requireAdmin(request, "candidates.generate_metadata");
   if (adminError) return adminError;
+  const client = supabaseAdmin();
+  const authContext = getAdminAuthContext(request);
+  const adminActorHash = adminActorHashFromRequest(request, authContext?.adminUserHash ?? "unknown-admin");
+  const killSwitch = await aiGenerationKillSwitchEnabled(client);
+  const quota = await checkAIGenerationQuota(client, adminActorHash);
   const available = getAvailableProviders();
   return NextResponse.json({
     available_providers: available.map((p) => ({
@@ -499,5 +542,8 @@ export async function GET(request: Request) {
       supports_web_search: AI_PROVIDERS[p].supportsWebSearch,
     })),
     supported_languages: ["ko", "en", "hi", "ar", "es", "ja", "zh"],
+    limits: AI_GENERATION_LIMITS,
+    kill_switch: killSwitch,
+    quota,
   });
 }

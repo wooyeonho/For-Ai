@@ -148,6 +148,7 @@ export interface AIGenerateRequest {
   systemPrompt: string;
   userPrompt: string;
   temperature?: number;
+  maxOutputTokens?: number;
 }
 
 export interface AIGenerateResponse {
@@ -223,7 +224,7 @@ async function callGemini(
       ],
       generationConfig: {
         temperature: req.temperature ?? 0.3,
-        maxOutputTokens: 8192,
+        maxOutputTokens: Math.min(Math.max(req.maxOutputTokens ?? 4096, 256), 8192),
       },
     }),
   });
@@ -258,7 +259,7 @@ async function callOpenAI(
         { role: "user", content: req.userPrompt },
       ],
       temperature: req.temperature ?? 0.3,
-      max_tokens: 8192,
+      max_tokens: Math.min(Math.max(req.maxOutputTokens ?? 4096, 256), 8192),
     }),
   });
 
