@@ -1,6 +1,9 @@
 // lib/consensus.ts
 // Cross-verification consensus algorithm for multi-AI candidate generation.
 // Given candidates from multiple providers, finds agreement and scores reliability.
+// Consensus output is a topic_candidates triage signal only: it must not write
+// directly to claims, claim_sources, or verification_events, and it cannot
+// promote anything to verified without human source review.
 //
 // Scoring is weighted, not a raw head count: each provider carries a trust
 // `weight` (web-search-grounded > frontier > small parametric) and belongs to a
@@ -105,6 +108,8 @@ function mergeClaims(
       } else {
         claimMap.set(key, {
           question: claim.question,
+          // AI harness candidates carry unknown placeholders only; factual
+          // values are filled later by human verification workflows.
           placeholder_value: "확인 필요",
           required_source_type: claim.required_source_type,
           count: 1,

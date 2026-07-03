@@ -84,6 +84,14 @@ Use `disputed` when credible sources disagree, the official source conflicts wit
 
 Resolve unknown or disputed claims only after a human reviewer verifies acceptable evidence. Record the accepted source in `claim_sources`, record the action in `verification_events`, set `last_verified_at` to the review time, and choose the confidence level according to the evidence quality above.
 
-## 6. AI-generated candidate rule
+## 6. AI candidate generation harness policy
 
 AI may help identify candidates, draft placeholders, summarize pages, suggest field paths, or prepare review queues. AI may not approve facts. A human reviewer must perform the final source check before any AI-generated candidate, imported candidate, or generated draft becomes `verified`.
+
+The AI generation harness is restricted to `topic_candidates` only. Harness output must never write directly to the canonical factual tables: `claims`, `claim_sources`, or `verification_events`. Those tables are populated only by imports or workflows that include human source review and explicit verification actions.
+
+All AI-generated `topic_candidates.claims` values must be placeholders by default. The only acceptable placeholder values are `확인 필요` for Korean-facing candidates and `Needs verification` for English/global candidates. The harness may propose questions, required source types, source hints, and review metadata, but it must not fill factual answers, inferred values, or confident-looking defaults into candidate claim values.
+
+Consensus is a triage signal, not verification evidence. A high `consensus_score`, `majority`, or `unanimous` consensus may prioritize review, but it must not promote a candidate to `verified` without human review, acceptable source evidence in `claim_sources`, and a recorded `verification_events` action.
+
+The topic-candidate triage job should preserve this boundary by treating harness signals as review routing inputs. Candidates with no source hints, high-risk domains, or only one agreeing provider should be routed for careful review or rejection according to local policy; none of these signals can create verified claims automatically.

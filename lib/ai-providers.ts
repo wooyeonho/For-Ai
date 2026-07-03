@@ -1,5 +1,8 @@
 // lib/ai-providers.ts
 // Multi-AI provider abstraction for For-Ai fact registry
+// Provider output is candidate-generation input only. AI-generated content may
+// enter topic_candidates, but must not directly create claims, claim_sources,
+// verification_events, or verified facts.
 // Supports provider keys: perplexity, gemini, gpt, grok, nvidia_*
 
 export type AIProviderKey =
