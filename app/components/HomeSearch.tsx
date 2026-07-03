@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { FormEvent, useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { getTranslations } from "../../lib/i18n";
 import type { SupportedLocale } from "../../lib/i18n";
 import type { SearchResult } from "../api/search/route";
@@ -20,6 +20,7 @@ export default function HomeSearch({ docs, locale }: { docs: DocItem[]; locale: 
   const [searching, setSearching] = useState(false);
   const abortRef = useRef<AbortController | null>(null);
   const t = getTranslations(locale);
+  const suggestHref = "/suggest-topic";
 
   const q = query.trim().toLowerCase();
 
@@ -67,31 +68,15 @@ export default function HomeSearch({ docs, locale }: { docs: DocItem[]; locale: 
   const apiSlugs = new Set(apiResults.map((r) => r.slug));
   const localExtra = localFiltered.filter((d) => !apiSlugs.has(d.slug));
   const merged = q ? [...apiResults, ...localExtra] : localFiltered;
-  const suggestHref = query.trim()
-    ? `/suggest-topic?q=${encodeURIComponent(query.trim())}&lang=${encodeURIComponent(locale)}`
-    : `/suggest-topic?lang=${encodeURIComponent(locale)}`;
-
-  function handleSubmit(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    if (!q) return;
-
-    const firstResult = merged[0];
-    if (firstResult) {
-      window.location.href = `/${locale}/wiki/${firstResult.slug}`;
-      return;
-    }
-
-    window.location.href = suggestHref;
-  }
 
   return (
     <>
-      <form onSubmit={handleSubmit} style={{ position: "relative" }} role="search" aria-label="For-Ai fact search">
+      <div style={{ position: "relative" }}>
         <input
           type="search"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Ask or paste a fact AI might get wrong"
+          placeholder={t.home.searchPlaceholder}
           className="home-search-input"
         />
         {searching && (
@@ -110,7 +95,7 @@ export default function HomeSearch({ docs, locale }: { docs: DocItem[]; locale: 
             ...
           </span>
         )}
-      </form>
+      </div>
 
       {merged.length === 0 ? (
         <div>
@@ -157,7 +142,7 @@ export default function HomeSearch({ docs, locale }: { docs: DocItem[]; locale: 
                     {r.category && <span className="meta-label"> — {r.category}</span>}
                     {r.excerpt && (
                       <span className="home-source-badge" title={r.excerpt}>
-                        {r.type === "claim" ? "Fact match" : ""}
+                        {r.type === "claim" ? "클레임 매치" : ""}
                       </span>
                     )}
                   </li>

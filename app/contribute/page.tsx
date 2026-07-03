@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { ContributeClient } from './ContributeClient';
+import { getPublicBaseUrl } from '@/lib/public-base-url';
 
 export const metadata: Metadata = {
   title: 'Contribute — For-Ai Fact Registry',
@@ -38,7 +39,7 @@ type CountryQuest = {
 };
 
 async function fetchBounties(): Promise<Bounty[]> {
-  const base = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
+  const base = getPublicBaseUrl();
   try {
     const res = await fetch(`${base}/api/gamification/bounties?status=open&limit=8`, {
       next: { revalidate: 120 },
@@ -52,7 +53,7 @@ async function fetchBounties(): Promise<Bounty[]> {
 }
 
 async function fetchLeaderboard(): Promise<LeaderboardEntry[]> {
-  const base = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
+  const base = getPublicBaseUrl();
   try {
     const res = await fetch(`${base}/api/gamification/leaderboard?period=week`, {
       next: { revalidate: 300 },
@@ -66,7 +67,7 @@ async function fetchLeaderboard(): Promise<LeaderboardEntry[]> {
 }
 
 async function fetchCountryQuests(): Promise<CountryQuest[]> {
-  const base = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
+  const base = getPublicBaseUrl();
   try {
     const res = await fetch(`${base}/api/gamification/country-quest`, {
       next: { revalidate: 600 },

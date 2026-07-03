@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, useCallback, useMemo } from "react";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { SUPPORTED_LOCALES } from "@/lib/i18n/locales";
 
 interface Post {
@@ -22,12 +22,11 @@ interface Post {
 const SUPPORTED_COMMUNITY_LOCALES = new Set<string>(SUPPORTED_LOCALES);
 
 const AUTHOR_ICON: Record<string, string> = { user: "👤", ai: "✦", admin: "🛡️" };
-const AUTHOR_LABEL: Record<string, string> = { user: "사용자", ai: "AI 제안", admin: "관리자" };
-const AI_DISCLOSURE_LABEL = "Unverified AI-generated suggestion";
-const AI_DISCLOSURE_DESCRIPTION = "This post was created by an admin/internal AI generation flow and is not verified fact until human review links it to source-backed claims.";
+const AUTHOR_LABEL: Record<string, string> = { user: "사용자", ai: "AI", admin: "관리자" };
 const QUESTION_TYPE_ICON: Record<string, string> = { question: "❓", discussion: "💬", report: "⚠" };
 const QUESTION_TYPE_LABEL: Record<string, string> = { question: "질문", discussion: "토론", report: "오류 신고" };
-const POST_REVIEW_MESSAGE = "글이 검토 대기열에 등록되었습니다. 다음 단계: 운영자가 관련 문서·claim 연결과 정책 위반 여부를 확인한 뒤 승인하면 공개됩니다. 승인된 기여는 추후 평판/포인트 산정 대상이 될 수 있습니다.";
+const POST_REVIEW_MESSAGE = "글이 검토 대기열에 등록되었습니다. 관리자 승인 전에는 공개 목록에 표시되지 않습니다. 승인 후 게시됩니다.";
+const AI_DISCLOSURE_DESCRIPTION = "이 글은 관리자/내부 AI 생성 흐름으로 작성된 비검증 제안이며, 인간 검토가 출처 기반 사실로 연결하기 전까지는 사실이 아닙니다.";
 const STATUS_HELP: Record<string, string> = {
   pending: "검토 대기: 제출은 접수되었지만 아직 공개되지 않았습니다.",
   published: "게시됨: 공개 목록과 관련 wiki page에 표시됩니다.",
@@ -50,16 +49,21 @@ export default function CommunityClient({ documents }: { documents: { id: string
   const [submitting, setSubmitting] = useState(false);
   const [msg, setMsg] = useState<{ text: string; ok: boolean; actions?: boolean } | null>(null);
   const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const [search, setSearch] = useState("");
+  useEffect(() => {
+    setSearch(window.location.search);
+  }, []);
   const currentLocale = useMemo(() => {
+    const searchParams = new URLSearchParams(search);
     const lang = searchParams.get("lang");
     if (lang && SUPPORTED_COMMUNITY_LOCALES.has(lang)) return lang;
     const firstPathSegment = pathname.split("/").filter(Boolean)[0];
     return SUPPORTED_COMMUNITY_LOCALES.has(firstPathSegment) ? firstPathSegment : "en";
-  }, [pathname, searchParams]);
+  }, [pathname, search]);
 
   // Pre-fill from URL params (e.g. from wiki "질문하기" button)
   useEffect(() => {
+    const searchParams = new URLSearchParams(search);
     const urlDocId = searchParams.get("document_id");
     const urlQ = searchParams.get("q");
     if (urlDocId) {
@@ -71,7 +75,7 @@ export default function CommunityClient({ documents }: { documents: { id: string
       setContent(urlQ);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [search]);
 
   const loadPosts = useCallback(async () => {
     setLoading(true);
@@ -208,6 +212,17 @@ export default function CommunityClient({ documents }: { documents: { id: string
                   ))}
                 </div>
               </div>
+              <div>
+                <label className="community-label">작성자 유형</label>
+                <div className="community-segmented">
+                  {(["question", "discussion", "report"] as const).map((qt) => (
+                    <button key={qt} type="button" onClick={() => setQuestionType(qt)}
+                      className={`btn btn-ghost community-chip ${questionType === qt ? "is-active" : ""}`}>
+                      {QUESTION_TYPE_ICON[qt]} {QUESTION_TYPE_LABEL[qt]}
+                    </button>
+                  ))}
+                </div>
+              </div>
               <div className="community-field-flex">
                 <label className="community-label">이름 (선택)</label>
                 <input type="text" value={authorName} onChange={(e) => setAuthorName(e.target.value)}
@@ -277,7 +292,7 @@ export default function CommunityClient({ documents }: { documents: { id: string
         </div>
         <div className="community-filter-row">
           {[
-            { key: "all", label: "기본 피드 (사용자·관리자)" },
+            { key: "all", label: "전체 작성자" },
             { key: "user", label: "👤 사용자" },
             { key: "ai", label: "✦ AI" },
             { key: "admin", label: "🛡️ 관리자" },
@@ -310,11 +325,6 @@ export default function CommunityClient({ documents }: { documents: { id: string
                     )}
                     {p.resolved_at && (
                       <span className="community-author-badge community-author-badge-verified">✓ 해결됨</span>
-                    )}
-                    {p.author_type === "ai" && (
-                      <span className="community-author-badge community-author-badge-ai">
-                        {AI_DISCLOSURE_LABEL}
-                      </span>
                     )}
                     {p.status === "pending" ? (
                       <span className="community-author-badge community-author-badge-pending">

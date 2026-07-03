@@ -28,8 +28,8 @@ export async function GET(request: Request) {
   const documentId = url.searchParams.get("document_id");
   const claimId = url.searchParams.get("claim_id");
   const authorType = url.searchParams.get("author_type");
-  const includeAi = url.searchParams.get("include_ai") === "true";
   const questionType = url.searchParams.get("question_type");
+  const includeAi = url.searchParams.get("include_ai") === "true";
   const limit = Math.min(parseInt(url.searchParams.get("limit") ?? "50"), 200);
   const offset = parseInt(url.searchParams.get("offset") ?? "0");
 

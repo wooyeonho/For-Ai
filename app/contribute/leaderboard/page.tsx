@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { LeaderboardClient } from './LeaderboardClient';
+import { getPublicBaseUrl } from '@/lib/public-base-url';
 
 export const metadata: Metadata = {
   title: 'Contributor Leaderboard — For-Ai',
@@ -17,7 +18,7 @@ type LeaderboardEntry = {
 };
 
 async function fetchLeaderboard(period: string): Promise<LeaderboardEntry[]> {
-  const base = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
+  const base = getPublicBaseUrl();
   try {
     const res = await fetch(`${base}/api/gamification/leaderboard?period=${period}`, {
       next: { revalidate: 300 },

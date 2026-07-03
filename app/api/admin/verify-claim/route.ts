@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { logAdminAuditEvent, requireAdmin, supabaseAdmin } from "@/lib/admin-api";
+import { recordContributionEvent } from "@/lib/contributions";
 import { scoreSourceTrust } from "@/lib/source-trust";
 import { awardPoints, checkAndAwardBadges, POINT_VALUES } from "@/lib/gamification";
 import { hasOfficialOrRegulatorSource, HIGH_RISK_CATEGORIES, isHighRiskCategory } from "@/lib/risk-policy";
@@ -53,7 +54,7 @@ function boundedInt(value: string | null, fallback: number, max?: number) {
   return typeof max === "number" ? Math.min(parsed, max) : parsed;
 }
 
-function firstDocument(row: ClaimWithDocument) {
+function firstDocument(row: { documents?: { slug?: string; lang?: string; [k: string]: unknown } | { slug?: string; lang?: string; [k: string]: unknown }[] | null }) {
   return Array.isArray(row.documents) ? row.documents[0] : row.documents;
 }
 
@@ -109,7 +110,7 @@ function sourceIsOfficialOrRegulator(source: ClaimSourceForGuardrail) {
 function isHighRiskClaim(claim: { risk_tier?: string | null; documents?: { category?: string | null; risk_tier?: string | null } | { category?: string | null; risk_tier?: string | null }[] | null }) {
   const document = Array.isArray(claim.documents) ? claim.documents[0] : claim.documents;
   const category = String(document?.category ?? "").toLowerCase();
-  return claim.risk_tier === "high" || document?.risk_tier === "high" || HIGH_RISK_CATEGORIES.includes(category as typeof HIGH_RISK_CATEGORIES[number]);
+  return claim.risk_tier === "high" || document?.risk_tier === "high" || (HIGH_RISK_CATEGORIES as readonly string[]).includes(category);
 }
 
 function verifyGuardrailReasons(input: {
@@ -421,7 +422,6 @@ export async function POST(request: Request) {
       confidence,
       sources: [...existingSources, ...incomingSource],
       highRisk: isHighRiskClaim(existingClaim),
-      highRiskConfirmed: body.high_risk_confirmed === true,
     });
     if (guardrailReasons.length > 0) {
       await logAdminAuditEvent(sb, request, "admin.verify_claim.verify_guardrail_blocked", {
@@ -529,7 +529,7 @@ export async function POST(request: Request) {
       source_id: sourceId,
       source_type: shouldAttachSource ? sourceType : null,
       source_authority: shouldAttachSource ? sourceAuthority : null,
-      high_risk_second_confirmation: isHighRiskClaim(existingClaim) ? Boolean(body.high_risk_second_confirmation ?? body.high_risk_confirmed) : null,
+      high_risk_second_confirmation: isHighRiskClaim(existingClaim) ? (body.high_risk_confirmed ?? null) : null,
       source_check_status: shouldAttachSource ? String(body.source_check_status ?? sourceTrust.source_check_status) : null,
       source_trust_score: shouldAttachSource ? Number(body.source_trust_score ?? sourceTrust.source_trust_score) : null,
       previous_status: existingClaim.status,
@@ -547,15 +547,14 @@ export async function POST(request: Request) {
       await checkAndAwardBadges(sb, contributorHash);
     }
 
-    const responseDocument = Array.isArray(existingClaim.documents) ? existingClaim.documents[0] : existingClaim.documents;
-
+    const docRow = firstDocument(existingClaim);
     return NextResponse.json({
       claim: updatedClaim,
       source_id: sourceId,
       source_trust_score: sourceId ? sourceTrust.source_trust_score : null,
       document_all_verified: documentAllVerified,
-      public_url: responseDocument?.slug ? `/${responseDocument.lang ?? "en"}/wiki/${responseDocument.slug}` : null,
-      api_url: responseDocument?.slug ? `/api/documents/${responseDocument.slug}` : null,
+      public_url: docRow?.slug ? `/${docRow.lang ?? "en"}/wiki/${docRow.slug}` : null,
+      api_url: docRow?.slug ? `/api/documents/${docRow.slug}` : null,
     });
   } catch (error) {
     if (sourceId) await sb.from("claim_sources").delete().eq("id", sourceId);

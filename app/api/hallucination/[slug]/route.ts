@@ -138,7 +138,7 @@ export async function POST(
           aiContext: `AI service: ${aiService}\nPrompt: ${normalizedBody.prompt || '(not provided)'}\nAI answer: ${normalizedBody.ai_answer || '(not provided)'}\nDocument: ${documentId ?? 'unknown'} / Entity: ${entityId ?? 'unknown'}`,
           sourceUrls: [publicSourceUrl],
           contributorHash,
-          claimQuestion: normalizedBody.expected_correction || `Which claim on ${resolvedDocument.title ?? slug} did ${aiService} answer incorrectly?`,
+          claimQuestion: normalizedBody.expected_correction || `Which claim on ${resolvedDocument?.title ?? slug} did ${aiService} answer incorrectly?`,
         }));
         if (topicCandidateError) console.warn('[hallucination] topic_candidates insert skipped:', topicCandidateError.message);
       }

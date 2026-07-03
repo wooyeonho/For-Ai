@@ -5,11 +5,9 @@
 //   - resolved_at is null (still watching)
 //
 // Requires env vars:
-//   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, RESEND_API_KEY, NOTIFY_WATCHERS_SECRET
+//   SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, RESEND_API_KEY
 //
-// Callers must present the shared secret via the `x-notify-secret` header
-// (or `Authorization: Bearer <secret>`); the function fails closed when the
-// secret is missing from the environment.
+// Invoke via cron or manually: supabase functions invoke notify-watchers
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -31,33 +29,9 @@ interface WatchSubscription {
   contributor_email?: string | null;
 }
 
-// Constant-time comparison to avoid leaking the secret via timing differences.
-function secretMatches(provided: string, expected: string): boolean {
-  const enc = new TextEncoder();
-  const a = enc.encode(provided);
-  const b = enc.encode(expected);
-  if (a.length !== b.length) return false;
-  let diff = 0;
-  for (let i = 0; i < a.length; i++) diff |= a[i] ^ b[i];
-  return diff === 0;
-}
-
 Deno.serve(async (req: Request) => {
   if (req.method !== "POST" && req.method !== "GET") {
     return new Response("Method not allowed", { status: 405 });
-  }
-
-  // Fail closed: this function runs with the service-role key and sends email
-  // via Resend, so it must never be triggerable by unauthenticated callers.
-  const notifySecret = Deno.env.get("NOTIFY_WATCHERS_SECRET");
-  if (!notifySecret) {
-    return new Response(JSON.stringify({ error: "NOTIFY_WATCHERS_SECRET is not configured" }), { status: 503 });
-  }
-  const authHeader = req.headers.get("authorization") ?? "";
-  const provided = req.headers.get("x-notify-secret")
-    ?? (authHeader.toLowerCase().startsWith("bearer ") ? authHeader.slice(7) : "");
-  if (!provided || !secretMatches(provided, notifySecret)) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401 });
   }
 
   const supabaseUrl = Deno.env.get("SUPABASE_URL");

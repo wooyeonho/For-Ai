@@ -1,5 +1,6 @@
 "use client";
-import { usePathname, useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { SUPPORTED_LOCALES, DEFAULT_LOCALE, LOCALE_CONFIG, isValidLocale, type SupportedLocale } from "../../lib/i18n";
 
@@ -63,7 +64,11 @@ export function getLocalePath(pathname: string, locale: string, searchParams?: S
 
 export function LanguageSelector() {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const [search, setSearch] = useState("");
+  useEffect(() => {
+    setSearch(window.location.search);
+  }, []);
+  const searchParams = new URLSearchParams(search);
   const currentUrl = getCurrentUrl(pathname, searchParams);
 
   // Extract current locale from path first, then from lang query for non-localized pages.
@@ -78,10 +83,6 @@ export function LanguageSelector() {
 
   function getPathForLocale(locale: string): string {
     return getLocalePath(pathname, locale, searchParams);
-  }
-
-  function isSameDestination(href: string): boolean {
-    return href === currentUrl || href === pathname;
   }
 
   return (

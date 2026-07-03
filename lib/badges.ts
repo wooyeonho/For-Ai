@@ -1,8 +1,25 @@
+// lib/badges.ts
+// Client-safe badge and point constants extracted from gamification.ts
+// This file must NOT import anything that uses Node.js built-ins (fs, path, etc.)
+
+export const POINT_VALUES = {
+  topic_submitted: 2,
+  topic_accepted: 20,
+  source_submitted: 5,
+  official_source_bonus: 5,
+  source_accepted: 30,
+  source_used_in_verified_claim: 100,
+  hallucination_reported: 5,
+  hallucination_accepted: 50,
+  new_country_contribution: 50,
+  stale_claim_fixed: 80,
+} as const;
+
 export interface Badge {
   slug: string;
   name: string;
   description: string;
-  icon: string;  // two-letter abbreviation for display
+  icon: string;
 }
 
 export const BADGES: Record<string, Badge> = {

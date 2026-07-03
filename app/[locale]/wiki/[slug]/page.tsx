@@ -9,17 +9,17 @@ import type { SupportedLocale } from "../../../../lib/i18n";
 import { getEntityLabels } from "../../../../lib/i18n/entity-labels";
 import type { RegistryDocumentBundle } from "../../../../lib/types";
 import { getRegistryBundleFromSupabase } from "../../../../lib/supabase-documents";
-import { getCitationSafetyBlock, getDocumentCitationStatus } from "../../../../lib/citation-status";
-import { getCitationPolicyBlock, getRenderedDirectAnswer, normalizeCitationSurface } from "../../../../lib/render";
+import { getDocumentCitationStatus, getCitationSafetyBlock } from "../../../../lib/citation-status";
+import { getRenderedDirectAnswer, normalizeCitationSurface, getCitationPolicyBlock } from "../../../../lib/render";
+import { SponsoredPlacement } from "../../../components/SponsoredPlacement";
 import { DirectAnswerBox } from "../../../components/DirectAnswerBox";
 import { ClaimTable } from "../../../components/ClaimTable";
 import { ViewTracker } from "../../../components/ViewTracker";
 import { DocumentStatsBar } from "../../../components/DocumentStatsBar";
+import { BusinessClaimCTA } from "../../../components/BusinessClaimCTA";
 import { WikiPostSection } from "../../../components/WikiPostSection";
 import { CorrectionCTA } from "../../../components/CorrectionCTA";
 import { VerificationLevelBadge } from "../../../components/StatusBadge";
-import { SponsoredPlacement } from "../../../components/SponsoredPlacement";
-import { BusinessClaimCTA } from "../../../components/BusinessClaimCTA";
 import { getBundleRiskDisclaimer } from "../../../../lib/risk-policy";
 import { getBusinessProfileRiskDashboard } from "../../../../lib/entity-profile";
 import { getActiveSponsoredPlacementsForEntity } from "../../../../lib/sponsored-placements";
@@ -116,6 +116,7 @@ export default async function WikiDocumentPage({
     "official_page",
   ];
   const sponsoredPlacements = await getActiveSponsoredPlacementsForEntity(entity.id);
+  const businessRiskDashboard = getBusinessProfileRiskDashboard([bundle]);
   const isGovernmentFeeTemplate =
     docData.disclaimer_type === "check_official_source" &&
     claims.some((claim) => standardGovernmentFeeFieldPaths.includes(claim.field_path)) &&
@@ -124,7 +125,6 @@ export default async function WikiDocumentPage({
   const totalSources = claims.reduce((sum, claim) => sum + claim.sources.length, 0);
   const hasBusinessSubmittedClaims = claims.some((claim) => claim.source_of_claim === "business_submitted");
   const hasSponsoredClaims = claims.some((claim) => claim.source_of_claim === "sponsored");
-  const businessRiskDashboard = getBusinessProfileRiskDashboard([bundle]);
 
   return (
     <article>
@@ -206,7 +206,7 @@ export default async function WikiDocumentPage({
             href={`/community?document_id=${encodeURIComponent(document.id)}&q=${encodeURIComponent(document.title)}`}
             style={{ fontSize: "0.82rem", color: "var(--muted)", textDecoration: "none" }}
           >
-            💬 {tw("askAboutFact", "Ask a question about this fact")} →
+            💬 이 팩트에 대해 질문하기 →
           </Link>
         </div>
       </section>

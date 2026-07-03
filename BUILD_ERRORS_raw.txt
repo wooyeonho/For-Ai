@@ -1,0 +1,190 @@
+.next/types/app/admin/verify-queue/page.ts(34,29): error TS2344: Type '{ searchParams?: Record<string, string | string[] | undefined> | undefined; }' does not satisfy the constraint 'PageProps'.
+.next/types/app/api/gamification/bounties/route.ts(181,7): error TS2344: Type '{ __tag__: "POST"; __return_type__: Promise<NextResponse<unknown> | null>; }' does not satisfy the constraint '{ __tag__: "POST"; __return_type__: void | Response | Promise<void | Response>; }'.
+.next/types/validator.ts(747,31): error TS2344: Type 'typeof import("/home/user/For-Ai/app/api/gamification/bounties/route")' does not satisfy the constraint 'RouteHandlerConfig<"/api/gamification/bounties">'.
+app/[locale]/topics/[category]/page.tsx(21,5): error TS2304: Cannot find name 'getAllTopicCategorySlugs'.
+app/[locale]/topics/[category]/page.tsx(21,37): error TS7006: Parameter 'category' implicitly has an 'any' type.
+app/[locale]/topics/[category]/page.tsx(31,34): error TS2304: Cannot find name 'isKnownCategory'.
+app/[locale]/topics/[category]/page.tsx(34,20): error TS2304: Cannot find name 'formatCategoryTitle'.
+app/[locale]/topics/[category]/page.tsx(35,23): error TS2304: Cannot find name 'CATEGORY_DESCRIPTIONS'.
+app/[locale]/topics/[category]/page.tsx(54,34): error TS2304: Cannot find name 'isKnownCategory'.
+app/[locale]/topics/[category]/page.tsx(56,27): error TS2304: Cannot find name 'getBundlesForCategory'.
+app/[locale]/topics/[category]/page.tsx(57,51): error TS7006: Parameter 'bundle' implicitly has an 'any' type.
+app/[locale]/topics/[category]/page.tsx(58,54): error TS7006: Parameter 'bundle' implicitly has an 'any' type.
+app/[locale]/topics/[category]/page.tsx(59,48): error TS7006: Parameter 'bundle' implicitly has an 'any' type.
+app/[locale]/topics/[category]/page.tsx(62,17): error TS2304: Cannot find name 'formatCategoryTitle'.
+app/[locale]/topics/[category]/page.tsx(69,13): error TS2304: Cannot find name 'CATEGORY_DESCRIPTIONS'.
+app/admin/AdminSecretProvider.tsx(13,59): error TS18004: No value exists in scope for the shorthand property 'loginAdmin'. Either declare one or provide an initializer.
+app/admin/AdminSecretProvider.tsx(13,71): error TS18004: No value exists in scope for the shorthand property 'authenticated'. Either declare one or provide an initializer.
+app/admin/AdminSecretProvider.tsx(13,86): error TS18004: No value exists in scope for the shorthand property 'authMessage'. Either declare one or provide an initializer.
+app/admin/AdminSecretProvider.tsx(72,45): error TS2304: Cannot find name 'loginAdmin'.
+app/admin/AdminSecretProvider.tsx(85,8): error TS2304: Cannot find name 'authMessage'.
+app/admin/AdminSecretProvider.tsx(85,67): error TS2304: Cannot find name 'authMessage'.
+app/admin/AdminSecretProvider.tsx(85,122): error TS2304: Cannot find name 'authMessage'.
+app/admin/candidates/page.tsx(12,101): error TS2304: Cannot find name 'DuplicateDetection'.
+app/admin/candidates/page.tsx(111,63): error TS7006: Parameter 'm' implicitly has an 'any' type.
+app/admin/inbox/page.tsx(39,548): error TS2322: Type '{ value: string; onChange: Dispatch<SetStateAction<string>>; onReset: () => void; onSubmit: () => Promise<void>; loading: boolean; buttonLabel: string; }' is not assignable to type 'IntrinsicAttributes & { adminSecret: string; setAdminSecret: (value: string) => void; resetAdminSecret: () => void; loginAdmin?: (() => Promise<boolean>) | undefined; authMessage?: string | ... 1 more ... | undefined; label?: string | undefined; placeholder?: string | undefined; inputStyle?: CSSProperties | undefine...'.
+app/admin/new-document/page.tsx(190,44): error TS2304: Cannot find name 'formatAdminError'.
+app/admin/new-entity/page.tsx(43,44): error TS2304: Cannot find name 'formatAdminError'.
+app/admin/verify-claim/page.tsx(79,70): error TS2304: Cannot find name 'AdminRecommendation'.
+app/admin/verify-claim/page.tsx(208,69): error TS2304: Cannot find name 'stale'.
+app/admin/verify-claim/page.tsx(412,54): error TS2339: Property 'confidence' does not exist on type 'ClaimRow'.
+app/admin/verify-claim/page.tsx(588,25): error TS2304: Cannot find name 'calculateDocumentQuality'.
+app/admin/verify-claim/page.tsx(599,179): error TS2339: Property 'confidence' does not exist on type 'DocumentRow'.
+app/admin/verify-claim/page.tsx(623,55): error TS2339: Property 'confidence' does not exist on type 'ClaimRow'.
+app/api/admin/candidates/route.ts(15,19): error TS2304: Cannot find name 'adminErrorResponse'.
+app/api/admin/candidates/route.ts(25,21): error TS2304: Cannot find name 'adminErrorResponse'.
+app/api/admin/candidates/route.ts(49,19): error TS2304: Cannot find name 'adminErrorResponse'.
+app/api/admin/candidates/route.ts(92,21): error TS2304: Cannot find name 'adminErrorResponse'.
+app/api/admin/candidates/route.ts(104,19): error TS2304: Cannot find name 'adminErrorResponse'.
+app/api/admin/candidates/route.ts(119,21): error TS2304: Cannot find name 'adminErrorResponse'.
+app/api/admin/generate-candidates/route.ts(439,18): error TS2304: Cannot find name 'selectDefaultProvider'.
+app/api/admin/generate-candidates/route.ts(469,22): error TS2304: Cannot find name 'fallbackUsed'.
+app/api/admin/generate-candidates/route.ts(499,24): error TS2304: Cannot find name 'fallbackUsed'.
+app/api/admin/generate-candidates/route.ts(552,20): error TS2304: Cannot find name 'fallbackUsed'.
+app/api/admin/inbox/route.ts(50,265): error TS2352: Conversion of type 'GenericStringError' to type 'Record<string, unknown>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+app/api/admin/review/route.ts(80,10): error TS2304: Cannot find name 'getFreshnessTtlDays'.
+app/api/admin/review/route.ts(80,109): error TS2304: Cannot find name 'getFreshnessTtlDays'.
+app/api/admin/review/route.ts(101,23): error TS2304: Cannot find name 'ageInDays'.
+app/api/admin/review/route.ts(102,53): error TS2304: Cannot find name 'isStale'.
+app/api/admin/verify-claim/route.ts(115,95): error TS2339: Property 'has' does not exist on type 'readonly ["finance", "healthcare", "genomics", "legal", "tax", "travel", "government", "real_estate"]'.
+app/api/admin/verify-claim/route.ts(300,25): error TS2304: Cannot find name 'getFreshnessTtlDays'.
+app/api/admin/verify-claim/route.ts(300,119): error TS2304: Cannot find name 'getFreshnessTtlDays'.
+app/api/admin/verify-claim/route.ts(301,16): error TS2304: Cannot find name 'isStale'.
+app/api/admin/verify-claim/route.ts(303,25): error TS2304: Cannot find name 'getFreshnessTtlDays'.
+app/api/admin/verify-claim/route.ts(303,119): error TS2304: Cannot find name 'getFreshnessTtlDays'.
+app/api/admin/verify-claim/route.ts(307,21): error TS2304: Cannot find name 'ageInDays'.
+app/api/admin/verify-claim/route.ts(309,32): error TS2304: Cannot find name 'ageInDays'.
+app/api/admin/verify-claim/route.ts(479,7): error TS2353: Object literal may only specify known properties, and 'highRiskConfirmed' does not exist in type '{ claimValue: string | null; confidence: string; sources: ClaimSourceForGuardrail[]; highRisk: boolean; }'.
+app/api/admin/verify-claim/route.ts(616,38): error TS2774: This condition will always return true since this function is always defined. Did you mean to call it instead?
+app/api/admin/verify-claim/route.ts(616,56): error TS2304: Cannot find name 'secondConfirmation'.
+app/api/admin/verify-claim/route.ts(639,19): error TS2304: Cannot find name 'documentRow'.
+app/api/admin/verify-claim/route.ts(639,43): error TS2304: Cannot find name 'documentRow'.
+app/api/admin/verify-claim/route.ts(639,76): error TS2304: Cannot find name 'documentRow'.
+app/api/admin/verify-claim/route.ts(640,16): error TS2304: Cannot find name 'documentRow'.
+app/api/admin/verify-claim/route.ts(640,54): error TS2304: Cannot find name 'documentRow'.
+app/api/entities/[id]/route.ts(48,36): error TS2339: Property 'freshnessTtlDays' does not exist on type 'DocumentCitationStatus'.
+app/api/hallucination/[slug]/route.ts(125,82): error TS2304: Cannot find name 'doc'.
+app/api/search/route.ts(73,19): error TS2352: Conversion of type '{ id: any; slug: any; title: any; category: any; lang: any; status: any; }[]' to type '{ id: string; slug: string; title: string; category: string; lang: string; status: string; }' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+app/community/CommunityClient.tsx(52,17): error TS2304: Cannot find name 'SUPPORTED_COMMUNITY_LOCALES'.
+app/community/CommunityClient.tsx(54,12): error TS2304: Cannot find name 'SUPPORTED_COMMUNITY_LOCALES'.
+app/components/HomePageContent.tsx(504,33): error TS2322: Type 'string' is not assignable to type '"ko" | "en" | "hi" | "ar" | "es" | "ja" | "zh"'.
+app/components/SiteHeader.tsx(29,80): error TS2304: Cannot find name 'SupportedLocale'.
+app/components/SiteHeader.tsx(35,51): error TS2304: Cannot find name 'SupportedLocale'.
+app/components/SiteHeader.tsx(42,53): error TS2304: Cannot find name 'SupportedLocale'.
+app/components/SiteHeader.tsx(47,29): error TS2304: Cannot find name 'SupportedLocale'.
+app/llms.txt/route.ts(63,94): error TS2339: Property 'freshnessTtlDays' does not exist on type 'DocumentCitationStatus'.
+app/llms.txt/route.ts(64,57): error TS2339: Property 'freshnessTtlDays' does not exist on type 'DocumentCitationStatus'.
+lib/ai-providers.ts(32,3): error TS2353: Object literal may only specify known properties, and 'nvidia' does not exist in type 'Record<AIProviderKey, AIProviderConfig>'.
+lib/ai-providers.ts(230,10): error TS2678: Type '"nvidia"' is not comparable to type 'AIProviderKey'.
+lib/i18n/translations.ts(33,3): error TS2300: Duplicate identifier 'topics'.
+lib/i18n/translations.ts(34,3): error TS2300: Duplicate identifier 'country'.
+lib/i18n/translations.ts(35,3): error TS2300: Duplicate identifier 'bounties'.
+lib/i18n/translations.ts(36,3): error TS2300: Duplicate identifier 'challenges'.
+lib/i18n/translations.ts(37,3): error TS2300: Duplicate identifier 'leaderboard'.
+lib/i18n/translations.ts(38,3): error TS2300: Duplicate identifier 'quests'.
+lib/i18n/translations.ts(39,3): error TS2300: Duplicate identifier 'compare'.
+lib/i18n/translations.ts(40,3): error TS2300: Duplicate identifier 'aiWrongAbout'.
+lib/i18n/translations.ts(94,3): error TS2300: Duplicate identifier 'topics'.
+lib/i18n/translations.ts(94,3): error TS2717: Subsequent property declarations must have the same type.  Property 'topics' must be of type 'Record<string, string>', but here has type '{ claimLevelTopicRegistry: string; factsSuffix: string; documents: string; verified: string; needsReview: string; stale: string; countryIndex: string; popularFactsByCountry: string; noCountryFacts: string; ... 16 more ...; topicNotFound: string; }'.
+lib/i18n/translations.ts(97,3): error TS2300: Duplicate identifier 'country'.
+lib/i18n/translations.ts(97,3): error TS2717: Subsequent property declarations must have the same type.  Property 'country' must be of type 'Record<string, string>', but here has type '{ countryRegistry: string; dashboardDescription: string; verifiedFacts: string; needsReviewFacts: string; staleFacts: string; targetFacts: string; questProgress: string; currentCountryTarget: string; ... 23 more ...; needsVerification: string; }'.
+lib/i18n/translations.ts(100,3): error TS2300: Duplicate identifier 'bounties'.
+lib/i18n/translations.ts(100,3): error TS2717: Subsequent property declarations must have the same type.  Property 'bounties' must be of type 'Record<string, string>', but here has type '{ notFound: string; metadataTitle: string; metadataDescription: string; eyebrow: string; title: string; description: string; open: string; sponsoredLabeled: string; contributorsSubmitSourcesOnly: string; ... 8 more ...; otherLanguages: string; }'.
+lib/i18n/translations.ts(103,3): error TS2300: Duplicate identifier 'challenges'.
+lib/i18n/translations.ts(103,3): error TS2717: Subsequent property declarations must have the same type.  Property 'challenges' must be of type 'Record<string, string>', but here has type '{ metadataTitle: string; metadataDescription: string; eyebrow: string; title: string; directAnswer: string; description: string; rulesTitle: string; ruleAcceptedOnly: string; ruleNoAutoVerification: string; ... 8 more ...; viewDetails: string; }'.
+lib/i18n/translations.ts(106,3): error TS2300: Duplicate identifier 'leaderboard'.
+lib/i18n/translations.ts(106,3): error TS2717: Subsequent property declarations must have the same type.  Property 'leaderboard' must be of type 'Record<string, string>', but here has type '{ notFound: string; metadataTitle: string; metadataDescription: string; eyebrow: string; title: string; description: string; acceptedSources: string; verifiedClaims: string; staleFixes: string; ... 35 more ...; submitMissingFact: string; }'.
+lib/i18n/translations.ts(109,3): error TS2300: Duplicate identifier 'quests'.
+lib/i18n/translations.ts(109,3): error TS2717: Subsequent property declarations must have the same type.  Property 'quests' must be of type 'Record<string, string>', but here has type '{ title: string; }'.
+lib/i18n/translations.ts(110,3): error TS2300: Duplicate identifier 'compare'.
+lib/i18n/translations.ts(110,3): error TS2717: Subsequent property declarations must have the same type.  Property 'compare' must be of type 'Record<string, string>', but here has type '{ title: string; }'.
+lib/i18n/translations.ts(111,3): error TS2300: Duplicate identifier 'aiWrongAbout'.
+lib/i18n/translations.ts(111,3): error TS2717: Subsequent property declarations must have the same type.  Property 'aiWrongAbout' must be of type 'Record<string, string>', but here has type '{ title: string; }'.
+lib/i18n/translations.ts(187,3): error TS2783: 'topics' is specified more than once, so this usage will be overwritten.
+lib/i18n/translations.ts(216,3): error TS2783: 'country' is specified more than once, so this usage will be overwritten.
+lib/i18n/translations.ts(248,3): error TS2783: 'bounties' is specified more than once, so this usage will be overwritten.
+lib/i18n/translations.ts(265,3): error TS2783: 'challenges' is specified more than once, so this usage will be overwritten.
+lib/i18n/translations.ts(283,3): error TS2783: 'leaderboard' is specified more than once, so this usage will be overwritten.
+lib/i18n/translations.ts(312,3): error TS2783: 'quests' is specified more than once, so this usage will be overwritten.
+lib/i18n/translations.ts(313,3): error TS2783: 'compare' is specified more than once, so this usage will be overwritten.
+lib/i18n/translations.ts(314,3): error TS2783: 'aiWrongAbout' is specified more than once, so this usage will be overwritten.
+lib/i18n/translations.ts(424,3): error TS2783: 'topics' is specified more than once, so this usage will be overwritten.
+lib/i18n/translations.ts(453,3): error TS2783: 'country' is specified more than once, so this usage will be overwritten.
+lib/i18n/translations.ts(485,3): error TS2783: 'bounties' is specified more than once, so this usage will be overwritten.
+lib/i18n/translations.ts(502,3): error TS2783: 'challenges' is specified more than once, so this usage will be overwritten.
+lib/i18n/translations.ts(520,3): error TS2783: 'leaderboard' is specified more than once, so this usage will be overwritten.
+lib/i18n/translations.ts(549,3): error TS2783: 'quests' is specified more than once, so this usage will be overwritten.
+lib/i18n/translations.ts(550,3): error TS2783: 'compare' is specified more than once, so this usage will be overwritten.
+lib/i18n/translations.ts(551,3): error TS2783: 'aiWrongAbout' is specified more than once, so this usage will be overwritten.
+lib/i18n/translations.ts(661,3): error TS2783: 'topics' is specified more than once, so this usage will be overwritten.
+lib/i18n/translations.ts(690,3): error TS2783: 'country' is specified more than once, so this usage will be overwritten.
+lib/i18n/translations.ts(722,3): error TS2783: 'bounties' is specified more than once, so this usage will be overwritten.
+lib/i18n/translations.ts(739,3): error TS2783: 'challenges' is specified more than once, so this usage will be overwritten.
+lib/i18n/translations.ts(757,3): error TS2783: 'leaderboard' is specified more than once, so this usage will be overwritten.
+lib/i18n/translations.ts(786,3): error TS2783: 'quests' is specified more than once, so this usage will be overwritten.
+lib/i18n/translations.ts(787,3): error TS2783: 'compare' is specified more than once, so this usage will be overwritten.
+lib/i18n/translations.ts(788,3): error TS2783: 'aiWrongAbout' is specified more than once, so this usage will be overwritten.
+lib/i18n/translations.ts(898,3): error TS2783: 'topics' is specified more than once, so this usage will be overwritten.
+lib/i18n/translations.ts(927,3): error TS2783: 'country' is specified more than once, so this usage will be overwritten.
+lib/i18n/translations.ts(959,3): error TS2783: 'bounties' is specified more than once, so this usage will be overwritten.
+lib/i18n/translations.ts(976,3): error TS2783: 'challenges' is specified more than once, so this usage will be overwritten.
+lib/i18n/translations.ts(994,3): error TS2783: 'leaderboard' is specified more than once, so this usage will be overwritten.
+lib/i18n/translations.ts(1023,3): error TS2783: 'quests' is specified more than once, so this usage will be overwritten.
+lib/i18n/translations.ts(1024,3): error TS2783: 'compare' is specified more than once, so this usage will be overwritten.
+lib/i18n/translations.ts(1025,3): error TS2783: 'aiWrongAbout' is specified more than once, so this usage will be overwritten.
+lib/i18n/translations.ts(1135,3): error TS2783: 'topics' is specified more than once, so this usage will be overwritten.
+lib/i18n/translations.ts(1164,3): error TS2783: 'country' is specified more than once, so this usage will be overwritten.
+lib/i18n/translations.ts(1196,3): error TS2783: 'bounties' is specified more than once, so this usage will be overwritten.
+lib/i18n/translations.ts(1213,3): error TS2783: 'challenges' is specified more than once, so this usage will be overwritten.
+lib/i18n/translations.ts(1231,3): error TS2783: 'leaderboard' is specified more than once, so this usage will be overwritten.
+lib/i18n/translations.ts(1260,3): error TS2783: 'quests' is specified more than once, so this usage will be overwritten.
+lib/i18n/translations.ts(1261,3): error TS2783: 'compare' is specified more than once, so this usage will be overwritten.
+lib/i18n/translations.ts(1262,3): error TS2783: 'aiWrongAbout' is specified more than once, so this usage will be overwritten.
+lib/i18n/translations.ts(1372,3): error TS2783: 'topics' is specified more than once, so this usage will be overwritten.
+lib/i18n/translations.ts(1401,3): error TS2783: 'country' is specified more than once, so this usage will be overwritten.
+lib/i18n/translations.ts(1433,3): error TS2783: 'bounties' is specified more than once, so this usage will be overwritten.
+lib/i18n/translations.ts(1450,3): error TS2783: 'challenges' is specified more than once, so this usage will be overwritten.
+lib/i18n/translations.ts(1468,3): error TS2783: 'leaderboard' is specified more than once, so this usage will be overwritten.
+lib/i18n/translations.ts(1497,3): error TS2783: 'quests' is specified more than once, so this usage will be overwritten.
+lib/i18n/translations.ts(1498,3): error TS2783: 'compare' is specified more than once, so this usage will be overwritten.
+lib/i18n/translations.ts(1499,3): error TS2783: 'aiWrongAbout' is specified more than once, so this usage will be overwritten.
+lib/i18n/translations.ts(1609,3): error TS2783: 'topics' is specified more than once, so this usage will be overwritten.
+lib/i18n/translations.ts(1638,3): error TS2783: 'country' is specified more than once, so this usage will be overwritten.
+lib/i18n/translations.ts(1670,3): error TS2783: 'bounties' is specified more than once, so this usage will be overwritten.
+lib/i18n/translations.ts(1687,3): error TS2783: 'challenges' is specified more than once, so this usage will be overwritten.
+lib/i18n/translations.ts(1705,3): error TS2783: 'leaderboard' is specified more than once, so this usage will be overwritten.
+lib/i18n/translations.ts(1734,3): error TS2783: 'quests' is specified more than once, so this usage will be overwritten.
+lib/i18n/translations.ts(1735,3): error TS2783: 'compare' is specified more than once, so this usage will be overwritten.
+lib/i18n/translations.ts(1736,3): error TS2783: 'aiWrongAbout' is specified more than once, so this usage will be overwritten.
+lib/seo.ts(184,5): error TS1117: An object literal cannot have multiple properties with the same name.
+lib/supabase-documents.ts(58,5): error TS2322: Type 'string | null' is not assignable to type 'string'.
+lib/supabase-documents.ts(87,3): error TS2322: Type '{ id: string; document_id: string; entity_id: string; field_path: string; claim_text: string; claim_value: string; jurisdiction: null; confidence: "low"; status: "needs_review"; last_verified_at: null; ... 6 more ...; verification_events: never[]; }[]' is not assignable to type 'ClaimWithSources[]'.
+lib/verified-claims.ts(33,19): error TS2339: Property 'last_verified_at' does not exist on type '{ claim_id: string; field_path: string; claim_text: string; claim_value: string; confidence: string; status: string; last_verified_at: string; sources: { source_type: string; title: string; url: string; observed_at: string; note: string; source_authority: string; }[]; ... 7 more ...; disclaimer_type: string; } | ......'.
+lib/verified-claims.ts(34,19): error TS2339: Property 'verification_event' does not exist on type '{ claim_id: string; field_path: string; claim_text: string; claim_value: string; confidence: string; status: string; last_verified_at: string; sources: { source_type: string; title: string; url: string; observed_at: string; note: string; source_authority: string; }[]; ... 7 more ...; disclaimer_type: string; } | ......'.
+lib/verified-claims.ts(80,16): error TS2339: Property 'city' does not exist on type 'VerifiedClaimFile'.
+lib/verified-claims.ts(97,16): error TS2339: Property 'city' does not exist on type 'VerifiedClaimFile'.
+lib/verified-claims.ts(99,26): error TS2339: Property 'canonical_slug' does not exist on type 'VerifiedClaimFile'.
+lib/verified-claims.ts(101,27): error TS2339: Property 'localized_title' does not exist on type 'VerifiedClaimFile'.
+lib/verified-claims.ts(109,30): error TS2339: Property 'translation_status' does not exist on type 'VerifiedClaimFile'.
+lib/verified-claims.ts(110,28): error TS2339: Property 'last_verified_at' does not exist on type 'VerifiedClaimFile'.
+lib/verified-claims.ts(136,21): error TS2339: Property 'jurisdiction' does not exist on type '{ claim_id: string; field_path: string; claim_text: string; claim_value: string; confidence: string; status: string; last_verified_at: string; sources: { source_type: string; title: string; url: string; observed_at: string; note: string; source_authority: string; }[]; ... 7 more ...; disclaimer_type: string; } | ......'.
+lib/verified-claims.ts(137,16): error TS2339: Property 'country' does not exist on type '{ claim_id: string; field_path: string; claim_text: string; claim_value: string; confidence: string; status: string; last_verified_at: string; sources: { source_type: string; title: string; url: string; observed_at: string; note: string; source_authority: string; }[]; ... 7 more ...; disclaimer_type: string; } | ......'.
+lib/verified-claims.ts(138,15): error TS2339: Property 'region' does not exist on type '{ claim_id: string; field_path: string; claim_text: string; claim_value: string; confidence: string; status: string; last_verified_at: string; sources: { source_type: string; title: string; url: string; observed_at: string; note: string; source_authority: string; }[]; ... 7 more ...; disclaimer_type: string; } | ......'.
+lib/verified-claims.ts(139,13): error TS2339: Property 'city' does not exist on type '{ claim_id: string; field_path: string; claim_text: string; claim_value: string; confidence: string; status: string; last_verified_at: string; sources: { source_type: string; title: string; url: string; observed_at: string; note: string; source_authority: string; }[]; ... 7 more ...; disclaimer_type: string; } | ......'.
+lib/verified-claims.ts(140,18): error TS2339: Property 'risk_tier' does not exist on type '{ claim_id: string; field_path: string; claim_text: string; claim_value: string; confidence: string; status: string; last_verified_at: string; sources: { source_type: string; title: string; url: string; observed_at: string; note: string; source_authority: string; }[]; ... 7 more ...; disclaimer_type: string; } | ......'.
+lib/verified-claims.ts(141,25): error TS2339: Property 'update_frequency' does not exist on type '{ claim_id: string; field_path: string; claim_text: string; claim_value: string; confidence: string; status: string; last_verified_at: string; sources: { source_type: string; title: string; url: string; observed_at: string; note: string; source_authority: string; }[]; ... 7 more ...; disclaimer_type: string; } | ......'.
+lib/verified-claims.ts(142,24): error TS2339: Property 'disclaimer_type' does not exist on type '{ claim_id: string; field_path: string; claim_text: string; claim_value: string; confidence: string; status: string; last_verified_at: string; sources: { source_type: string; title: string; url: string; observed_at: string; note: string; source_authority: string; }[]; ... 7 more ...; disclaimer_type: string; } | ......'.
+lib/verified-claims.ts(148,25): error TS2339: Property 'last_verified_at' does not exist on type '{ claim_id: string; field_path: string; claim_text: string; claim_value: string; confidence: string; status: string; last_verified_at: string; sources: { source_type: string; title: string; url: string; observed_at: string; note: string; source_authority: string; }[]; ... 7 more ...; disclaimer_type: string; } | ......'.
+lib/verified-claims.ts(164,29): error TS2339: Property 'source_authority' does not exist on type '{ source_type: string; title: string; url: string; observed_at: string; note: string; source_authority: string; } | { source_type: string; title: string; url: string; observed_at: string; note: string; }'.
+lib/verified-claims.ts(177,28): error TS2339: Property 'verification_event' does not exist on type '{ claim_id: string; field_path: string; claim_text: string; claim_value: string; confidence: string; status: string; last_verified_at: string; sources: { source_type: string; title: string; url: string; observed_at: string; note: string; source_authority: string; }[]; ... 7 more ...; disclaimer_type: string; } | ......'.
+lib/verified-claims.ts(182,28): error TS2339: Property 'verification_event' does not exist on type '{ claim_id: string; field_path: string; claim_text: string; claim_value: string; confidence: string; status: string; last_verified_at: string; sources: { source_type: string; title: string; url: string; observed_at: string; note: string; source_authority: string; }[]; ... 7 more ...; disclaimer_type: string; } | ......'.
+lib/verified-claims.ts(187,21): error TS2339: Property 'verification_event' does not exist on type '{ claim_id: string; field_path: string; claim_text: string; claim_value: string; confidence: string; status: string; last_verified_at: string; sources: { source_type: string; title: string; url: string; observed_at: string; note: string; source_authority: string; }[]; ... 7 more ...; disclaimer_type: string; } | ......'.
+lib/verified-claims.ts(189,27): error TS2339: Property 'verification_event' does not exist on type '{ claim_id: string; field_path: string; claim_text: string; claim_value: string; confidence: string; status: string; last_verified_at: string; sources: { source_type: string; title: string; url: string; observed_at: string; note: string; source_authority: string; }[]; ... 7 more ...; disclaimer_type: string; } | ......'.
+supabase/functions/notify-watchers/index.ts(12,30): error TS2307: Cannot find module 'https://esm.sh/@supabase/supabase-js@2' or its corresponding type declarations.
+supabase/functions/notify-watchers/index.ts(32,1): error TS2304: Cannot find name 'Deno'.
+supabase/functions/notify-watchers/index.ts(37,23): error TS2304: Cannot find name 'Deno'.
+supabase/functions/notify-watchers/index.ts(38,23): error TS2304: Cannot find name 'Deno'.
+supabase/functions/notify-watchers/index.ts(39,21): error TS2304: Cannot find name 'Deno'.
+supabase/functions/notify-watchers/index.ts(84,32): error TS2339: Property 'title' does not exist on type '{}'.
+supabase/functions/notify-watchers/index.ts(88,43): error TS2339: Property 'slug' does not exist on type '{}'.
+supabase/functions/notify-watchers/index.ts(96,126): error TS2339: Property 'title' does not exist on type '{}'.

@@ -1,9 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
-import { REPORT_MESSAGE_MAX_LENGTH } from "@/lib/submission-limits";
+import { useEffect, useMemo, useState } from "react";
+import { REPORT_MESSAGE_MAX_LENGTH } from "@/lib/submission-constants";
 import { isValidLocale } from "@/lib/i18n/locales";
 
 type ClaimOption = {
@@ -27,11 +26,15 @@ export function ReportForm({
   claims: ClaimOption[];
   intent?: ReportIntent;
 }) {
-  const searchParams = useSearchParams();
+  const [search, setSearch] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [pointsAwarded, setPointsAwarded] = useState<number | null>(null);
+  useEffect(() => {
+    setSearch(window.location.search);
+  }, []);
+
   const copy = useMemo(() => {
     if (intent === "source") {
       return {
@@ -63,6 +66,7 @@ export function ReportForm({
     };
   }, [intent]);
   const returnHref = useMemo(() => {
+    const searchParams = new URLSearchParams(search);
     const requestedReturn = searchParams.get("return");
     if (requestedReturn?.startsWith("/") && !requestedReturn.startsWith("//")) {
       return requestedReturn;
@@ -70,7 +74,7 @@ export function ReportForm({
 
     const lang = searchParams.get("lang");
     return isValidLocale(lang ?? "") ? `/${lang}/wiki/${slug}` : `/en/wiki/${slug}`;
-  }, [searchParams, slug]);
+  }, [search, slug]);
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();

@@ -20,8 +20,44 @@ import singaporeMrtBusAdultFares from "../data/verified-claims/singapore-mrt-bus
 import torontoTtcFares from "../data/verified-claims/toronto-ttc-fares.json";
 import sydneyAdultOpalFares from "../data/verified-claims/sydney-adult-opal-fares.json";
 
-type VerifiedClaimFile = typeof seoulMetroFare | typeof passportFee | typeof moveInReport | typeof londonTubeFare | typeof usPassportFee | typeof tokyoMetroFare | typeof seoulCityBusFare | typeof seoulTransitTransferRule | typeof seoulTaxiBaseFare | typeof residentIdReissueFee | typeof vehicleTaxPaymentPeriod | typeof incomeTaxFilingPeriod | typeof educationExamTemplate;
-type VerifiedClaimFileClaim = VerifiedClaimFile["claims"][number];
+interface VerifiedClaimFileClaim {
+  claim_id: string;
+  field_path: string;
+  claim_text: string;
+  claim_value: string;
+  confidence: string;
+  status: string;
+  last_verified_at?: string | null;
+  sources?: { source_type: string; title: string; url: string; observed_at: string; note: string; source_authority?: string; publisher?: string }[];
+  verification_event?: { event_type?: string; note?: string; verified_at?: string } | null;
+  jurisdiction?: string | null;
+  country?: string | null;
+  region?: string | null;
+  city?: string | null;
+  risk_tier?: string | null;
+  update_frequency?: string | null;
+  disclaimer_type?: string | null;
+}
+
+interface VerifiedClaimFile {
+  entity_id: string;
+  slug: string;
+  canonical_slug?: string;
+  type: string;
+  name: string;
+  localized_title?: Record<string, string>;
+  lang: string;
+  country: string;
+  region?: string | null;
+  city?: string | null;
+  jurisdiction?: string;
+  risk_tier?: string;
+  update_frequency?: string;
+  disclaimer_type?: string;
+  last_verified_at?: string;
+  translation_status?: string;
+  claims: VerifiedClaimFileClaim[];
+}
 
 function isVerifiedFileClaim(claim: VerifiedClaimFileClaim): boolean {
   return (
@@ -49,10 +85,10 @@ const verifiedFiles: VerifiedClaimFile[] = [
   vehicleTaxPaymentPeriod,
   incomeTaxFilingPeriod,
   educationExamTemplate,
-  newYorkSubwayBusFare as unknown as VerifiedClaimFile,
-  singaporeMrtBusAdultFares as unknown as VerifiedClaimFile,
-  torontoTtcFares as unknown as VerifiedClaimFile,
-  sydneyAdultOpalFares as unknown as VerifiedClaimFile,
+  newYorkSubwayBusFare as VerifiedClaimFile,
+  singaporeMrtBusAdultFares as VerifiedClaimFile,
+  torontoTtcFares as VerifiedClaimFile,
+  sydneyAdultOpalFares as VerifiedClaimFile,
 ];
 
 function toRegistryBundle(file: VerifiedClaimFile): RegistryDocumentBundle {
@@ -76,8 +112,8 @@ function toRegistryBundle(file: VerifiedClaimFile): RegistryDocumentBundle {
     type: file.type,
     canonical_name: file.name,
     country: file.country,
-    region: file.region,
-    city: file.city,
+    region: file.region ?? null,
+    city: file.city ?? null,
     created_at: null,
     updated_at: null,
   };
@@ -93,12 +129,12 @@ function toRegistryBundle(file: VerifiedClaimFile): RegistryDocumentBundle {
     slug: file.slug,
     lang: file.lang,
     country: file.country,
-    region: file.region,
-    city: file.city,
-    jurisdiction: file.jurisdiction,
-    canonical_slug: file.canonical_slug,
+    region: file.region ?? null,
+    city: file.city ?? null,
+    jurisdiction: file.jurisdiction ?? "",
+    canonical_slug: file.canonical_slug ?? file.slug,
     title: file.name,
-    localized_title: file.localized_title,
+    localized_title: file.localized_title ?? { [file.lang]: file.name },
     category: file.type,
     template: isGovernmentFeeTemplate ? "government-fee" : "fact-registry",
     status: docStatus,
@@ -107,7 +143,7 @@ function toRegistryBundle(file: VerifiedClaimFile): RegistryDocumentBundle {
     update_frequency: file.update_frequency as RegistryDocumentBundle["document"]["update_frequency"],
     disclaimer_type: file.disclaimer_type as RegistryDocumentBundle["document"]["disclaimer_type"],
     translation_status: file.translation_status as RegistryDocumentBundle["document"]["translation_status"],
-    last_verified_at: file.last_verified_at,
+    last_verified_at: file.last_verified_at ?? null,
     license_code: "forai-data-license-v0.1",
     data: {
       direct_answer: file.claims[0]?.claim_value ?? "확인 필요",
@@ -133,10 +169,10 @@ function toRegistryBundle(file: VerifiedClaimFile): RegistryDocumentBundle {
     field_path: c.field_path,
     claim_text: c.claim_text,
     claim_value: c.claim_value,
-    jurisdiction: c.jurisdiction,
-    country: c.country,
-    region: c.region,
-    city: c.city,
+    jurisdiction: c.jurisdiction ?? "",
+    country: c.country ?? "",
+    region: c.region ?? null,
+    city: c.city ?? null,
     risk_tier: c.risk_tier as ClaimWithSources["risk_tier"],
     update_frequency: c.update_frequency as ClaimWithSources["update_frequency"],
     disclaimer_type: c.disclaimer_type as ClaimWithSources["disclaimer_type"],
@@ -145,7 +181,7 @@ function toRegistryBundle(file: VerifiedClaimFile): RegistryDocumentBundle {
     translation_status: null,
     confidence: c.confidence as "high" | "medium" | "low",
     status: (isVerifiedFileClaim(c) ? "verified" : "needs_review") as "verified" | "needs_review",
-    last_verified_at: c.last_verified_at,
+    last_verified_at: c.last_verified_at ?? null,
     created_at: null,
     updated_at: null,
     sources: (c.sources ?? []).map((s, i) => {
@@ -184,9 +220,9 @@ function toRegistryBundle(file: VerifiedClaimFile): RegistryDocumentBundle {
             new_status: "verified" as const,
             previous_confidence: "low" as const,
             new_confidence: "high" as const,
-            note: c.verification_event.note,
+            note: c.verification_event.note ?? null,
             contributor_hash: null,
-            created_at: c.verification_event.verified_at,
+            created_at: c.verification_event.verified_at ?? null,
           },
         ]
       : [],
