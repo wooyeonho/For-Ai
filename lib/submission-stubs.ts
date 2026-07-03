@@ -1,9 +1,10 @@
+import { DataSourceKind } from "./data-source";
 import type { HallucinationReport, ReportSubmission } from "./types";
 
 export type SubmissionStubResult = {
   accepted: true;
   status: "new";
-  storage: "stub";
+  storage: DataSourceKind.Stub;
   raw_ip_stored: false;
   contributor_hash: string;
 };
@@ -26,7 +27,7 @@ export function createReportSubmissionStub(input: {
     status: "new",
     created_at: null,
     accepted: true,
-    storage: "stub",
+    storage: DataSourceKind.Stub,
     raw_ip_stored: false,
   };
 }
@@ -56,7 +57,7 @@ export function createHallucinationReportStub(input: {
     status: "new",
     created_at: null,
     accepted: true,
-    storage: "stub",
+    storage: DataSourceKind.Stub,
     raw_ip_stored: false,
   };
 }

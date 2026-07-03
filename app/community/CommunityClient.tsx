@@ -21,6 +21,8 @@ interface Post {
   document_slug?: string;
 }
 
+const SUPPORTED_COMMUNITY_LOCALES = new Set<string>(SUPPORTED_LOCALES);
+
 const AUTHOR_ICON: Record<string, string> = { user: "👤", ai: "✦", admin: "🛡️" };
 const AUTHOR_LABEL: Record<string, string> = { user: "사용자", ai: "AI", admin: "관리자" };
 const QUESTION_TYPE_ICON: Record<string, string> = { question: "❓", discussion: "💬", report: "⚠" };
@@ -40,14 +42,13 @@ export default function CommunityClient({ documents }: { documents: { id: string
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [showForm, setShowForm] = useState(false);
 
-  const [authorType, setAuthorType] = useState<"user" | "ai">("user");
   const [authorName, setAuthorName] = useState("");
   const [content, setContent] = useState("");
   const [documentId, setDocumentId] = useState("");
   const [claimId, setClaimId] = useState("");
   const [questionType, setQuestionType] = useState<"question" | "discussion" | "report">("discussion");
   const [submitting, setSubmitting] = useState(false);
-  const [msg, setMsg] = useState<{ text: string; ok: boolean } | null>(null);
+  const [msg, setMsg] = useState<{ text: string; ok: boolean; actions?: boolean } | null>(null);
   const pathname = usePathname();
   const [search, setSearch] = useState("");
   useEffect(() => {
@@ -77,6 +78,21 @@ export default function CommunityClient({ documents }: { documents: { id: string
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [search]);
 
+  // Pre-fill from URL params (e.g. from wiki "질문하기" button)
+  useEffect(() => {
+    const urlDocId = searchParams.get("document_id");
+    const urlQ = searchParams.get("q");
+    if (urlDocId) {
+      setDocumentId(urlDocId);
+      setQuestionType("question");
+      setShowForm(true);
+    }
+    if (urlQ && !content) {
+      setContent(urlQ);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const loadPosts = useCallback(async () => {
     setLoading(true);
     const params = new URLSearchParams({ limit: "100" });
@@ -94,8 +110,8 @@ export default function CommunityClient({ documents }: { documents: { id: string
 
   useEffect(() => { loadPosts(); }, [loadPosts]);
 
-  function flash(text: string, ok = true) {
-    setMsg({ text, ok });
+  function flash(text: string, ok = true, actions = false) {
+    setMsg({ text, ok, actions });
     setTimeout(() => setMsg(null), 4000);
   }
 
@@ -108,7 +124,7 @@ export default function CommunityClient({ documents }: { documents: { id: string
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          author_type: authorType,
+          author_type: "user",
           author_name: authorName.trim() || undefined,
           content: content.trim(),
           document_id: documentId || null,
@@ -119,14 +135,15 @@ export default function CommunityClient({ documents }: { documents: { id: string
       const d = await r.json();
       if (r.ok) {
         const submittedContent = content.trim();
-        const submittedAuthorType = authorType;
-        const submittedAuthorName = authorName.trim() || (authorType === "ai" ? "AI" : "익명");
+        const submittedAuthorType = "user" as const;
+        const submittedAuthorName = authorName.trim() || "익명";
         const submittedDocumentId = documentId || null;
         const submittedClaimId = claimId.trim() || null;
         const submittedQuestionType = questionType;
         const relatedDocument = documents.find((doc) => doc.id === submittedDocumentId);
 
-        flash(POST_REVIEW_MESSAGE);
+        if (d.contributor_hash && typeof window !== "undefined") localStorage.setItem("contributor_hash_preview", d.contributor_hash);
+        flash(POST_REVIEW_MESSAGE, true, true);
         setContent("");
         setAuthorName("");
         setDocumentId("");
@@ -167,7 +184,7 @@ export default function CommunityClient({ documents }: { documents: { id: string
           <div>
             <h1 className="community-title">커뮤니티</h1>
             <p className="community-subtitle">
-              사용자·AI·관리자 모두 글을 남길 수 있습니다
+              공개 글쓰기는 사용자 제보만 받습니다. AI 제안은 관리자/내부 생성 결과로만 표시됩니다
             </p>
           </div>
           <div className="community-actions">
@@ -182,8 +199,15 @@ export default function CommunityClient({ documents }: { documents: { id: string
         </div>
 
         {msg && (
-          <div className={`community-alert ${msg.ok ? "community-alert-success" : "community-alert-danger"}`}>
-            {msg.text}
+          <div className={`community-alert community-sticky-feedback ${msg.ok ? "community-alert-success" : "community-alert-danger"}`}>
+            <p>{msg.text}</p>
+            {msg.ok && msg.actions && (
+              <div className="success-cta-row">
+                <Link href="/contribute" className="cta-link">다른 claim에 source 추가하기</Link>
+                <Link href="/contribute#your-contributions" className="cta-link">내 기여 보기</Link>
+                <Link href="/contribute/leaderboard" className="cta-link">leaderboard 보기</Link>
+              </div>
+            )}
           </div>
         )}
 
@@ -207,10 +231,10 @@ export default function CommunityClient({ documents }: { documents: { id: string
               <div>
                 <label className="community-label">작성자 유형</label>
                 <div className="community-segmented">
-                  {(["user", "ai"] as const).map((t) => (
-                    <button key={t} type="button" onClick={() => setAuthorType(t)}
-                      className={`btn btn-ghost community-chip ${authorType === t ? "is-active" : ""}`}>
-                      {AUTHOR_ICON[t]} {AUTHOR_LABEL[t]}
+                  {(["question", "discussion", "report"] as const).map((qt) => (
+                    <button key={qt} type="button" onClick={() => setQuestionType(qt)}
+                      className={`btn btn-ghost community-chip ${questionType === qt ? "is-active" : ""}`}>
+                      {QUESTION_TYPE_ICON[qt]} {QUESTION_TYPE_LABEL[qt]}
                     </button>
                   ))}
                 </div>
@@ -218,7 +242,7 @@ export default function CommunityClient({ documents }: { documents: { id: string
               <div className="community-field-flex">
                 <label className="community-label">이름 (선택)</label>
                 <input type="text" value={authorName} onChange={(e) => setAuthorName(e.target.value)}
-                  placeholder={authorType === "ai" ? "AI 이름" : "닉네임"}
+                  placeholder="닉네임"
                   className="community-input" />
               </div>
             </div>
@@ -328,6 +352,9 @@ export default function CommunityClient({ documents }: { documents: { id: string
                       </span>
                     )}
                   </div>
+                  {p.author_type === "ai" && (
+                    <div className="community-related-doc">{AI_DISCLOSURE_DESCRIPTION}</div>
+                  )}
                   <p className="community-post-content">{p.content}</p>
                   {p.status && <div className="community-related-doc">상태: {STATUS_HELP[p.status] ?? p.status}</div>}
                   {p.claim_id && <div className="community-related-doc">관련 claim: <code>{p.claim_id}</code></div>}

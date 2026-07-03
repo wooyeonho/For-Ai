@@ -125,6 +125,10 @@ export function ReportForm({
         <a href={returnHref} className="cta-link">
           문서로 돌아가기
         </a>
+        {" · "}
+        <Link href="/contribute/mine" className="cta-link">
+          내 제출 확인하기 →
+        </Link>
       </div>
     );
   }

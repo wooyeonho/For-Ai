@@ -23,12 +23,24 @@ export interface UITranslations {
   home: {
     heroTitle: string;
     heroSubtitle: string;
+    heroEyebrow?: string;
+    primaryCta?: string;
+    secondaryCta?: string;
+    explainerEyebrow?: string;
+    explainerTitle?: string;
+    explainerBody?: string;
+    explainerRegistryBundle?: string;
+    explainerCandidate?: string;
+    explainerSourceTrust?: string;
     searchPlaceholder: string;
     registeredDocs: string;
     noResults: string;
     resetSearch: string;
     noDocs: string;
     suggestFirst: string;
+    aiWrongTitle: string;
+    aiWrongCardCta: string;
+    aiWrongQuestions: string[];
   };
   claims: {
     needsReview: string;
@@ -55,6 +67,7 @@ export interface UITranslations {
   };
   wiki: {
     claimRegistry: string;
+    askAboutFact: string;
     aiGenerated: string;
     whyPeopleAsk: string;
     citationStatus: string;
@@ -84,23 +97,26 @@ governmentFeeDisclaimer: string;
   };
 
   topics: {
+    [key: string]: string;
     claimLevelTopicRegistry: string; factsSuffix: string; documents: string; verified: string; needsReview: string; stale: string; countryIndex: string; popularFactsByCountry: string; noCountryFacts: string; citableClaims: string; verifiedFacts: string; noVerifiedFacts: string; verificationQueue: string; needsReviewTopics: string; noNeedsReviewTopics: string; freshnessMonitoring: string; staleFacts: string; noStaleFacts: string; missingFact: string; submitMissingFact: string; submitMissingFactDescription: string; submitMissingFactButton: string; otherLanguages: string; oldest: string; verificationDateNeeded: string; topicNotFound: string;
   };
   country: {
     countryRegistry: string; dashboardDescription: string; verifiedFacts: string; needsReviewFacts: string; staleFacts: string; targetFacts: string; questProgress: string; currentCountryTarget: string; progressNote: string; categoryProgress: string; verified: string; stale: string; topNeededSources: string; noMissingSources: string; recentContributors: string; noContributors: string; contribution: string; contributions: string; lastSeen: string; recentlyVerifiedFacts: string; noStaleFacts: string; oldestVerified: string; popularQuestions: string; documents: string; verifiedStatus: string; needsReviewStatus: string; submitSourceCta: string; knowOfficialSource: string; submitSourceDescription: string; submitSource: string; global: string; needsVerification: string; claimCount: string; needsReview: string;
   };
   bounties: {
+    [key: string]: string;
     notFound: string; metadataTitle: string; metadataDescription: string; eyebrow: string; title: string; description: string; open: string; sponsoredLabeled: string; contributorsSubmitSourcesOnly: string; policyEyebrow: string; policyTitle: string; availableTasks: string; bountyQueue: string; target: string; sponsoredBounty: string; unsponsoredTask: string; points: string; otherLanguages: string;
   };
   challenges: {
+    [key: string]: string;
     metadataTitle: string; metadataDescription: string; eyebrow: string; title: string; directAnswer: string; description: string; rulesTitle: string; ruleAcceptedOnly: string; ruleNoAutoVerification: string; ruleSponsoredLabeled: string; listLabel: string; sponsored: string; challengeId: string; category: string; country: string; window: string; completeSuffix: string; viewDetails: string;
   };
   leaderboard: {
     notFound: string; metadataTitle: string; metadataDescription: string; eyebrow: string; title: string; description: string; acceptedSources: string; verifiedClaims: string; staleFixes: string; countryCoverage: string; rankingEyebrow: string; currentRanking: string; liveDataNotice: string; noEligibleActivity: string; countries: string; categories: string; abuseAdjustedScore: string; acceptedHallucinationReports: string; points: string; moderationPenalties: string; duplicateUrlCap: string; scoringEyebrow: string; criteriaTitle: string; acceptedSourcesRule: string; verifiedClaimsRule: string; staleFixesRule: string; hallucinationReportsRule: string; countryCoverageRule: string; categoryContributionsRule: string; abuseEyebrow: string; spamTitle: string; spamRuleNoRawCount: string; spamRuleRejected: string; spamRuleDuplicate: string; spamRuleHashOnly: string; spamRulePublicPseudonym: string; rewardRules: string; sourceSubmitted: string; sourceAccepted: string; claimVerified: string; hallucinationAccepted: string; viewQuests: string; actionsTitle: string; actionsDescription: string; submitMissingFact: string; liveDataRequired: string;
   };
-  quests: { title: string; };
-  compare: { title: string; };
-  aiWrongAbout: { title: string; };
+  quests: { [key: string]: string; title: string; };
+  compare: { [key: string]: string; title: string; };
+  aiWrongAbout: { [key: string]: string; title: string; };
   footer: {
     tagline: string;
     forHumans: string;
@@ -167,14 +183,31 @@ const ko: UITranslations = {
     admin: "관리자",
   },
   home: {
-    heroTitle: "AI가 인용할 수 있는 글로벌 사실 레지스트리",
-    heroSubtitle: "AI·검색엔진·사람이 같은 출처에서 같은 사실을 인용하도록 claim 단위로 신뢰도·출처·검증 상태를 관리합니다",
+    heroTitle: "AI가 인용할 facts. 사람이 검증할 claims.",
+    heroSubtitle: "AI·검색엔진·사람이 같은 출처를 인용하도록 claim 단위로 신뢰도·출처·검증 상태를 관리합니다.",
+    heroEyebrow: "Global claim-level fact registry",
+    primaryCta: "Search verified claims",
+    secondaryCta: "Submit a source",
+    explainerEyebrow: "Registry explainer",
+    explainerTitle: "내부 용어는 검증 워크플로를 설명할 때만 사용합니다",
+    explainerBody: "For-Ai는 홈 상단에서는 간단한 약속을 말하고, 상세 영역에서 registry bundle, candidate, source trust 같은 운영 용어를 설명합니다.",
+    explainerRegistryBundle: "Registry bundle: entity, document, claims, sources, verification events를 함께 읽는 단위입니다.",
+    explainerCandidate: "Candidate: 아직 검증되지 않은 claim 또는 topic이며, 확인 필요와 낮은 confidence로 유지됩니다.",
+    explainerSourceTrust: "Source trust: 출처 유형, 관찰 시점, 검토 이력을 기준으로 citation readiness를 판단하는 신호입니다.",
     searchPlaceholder: "제목 또는 카테고리 검색...",
     registeredDocs: "등록된 문서",
     noResults: "결과 없음",
     resetSearch: "검색 초기화",
     noDocs: "아직 공개된 문서가 없습니다.",
     suggestFirst: "첫 번째 토픽을 제안해보세요 →",
+    aiWrongTitle: "AI가 자주 틀리는 질문으로 시작하기",
+    aiWrongCardCta: "이 클레임을 제안하거나 검증하기 →",
+    aiWrongQuestions: [
+      "여권 재발급 수수료가 지금 얼마야?",
+      "전입신고는 며칠 안에 해야 해?",
+      "주민등록증 재발급 수수료는 무료야?",
+      "자동차세 납부 기간은 언제야?",
+    ],
   },
   claims: {
     unknownLabel: "확인 필요",
@@ -201,6 +234,7 @@ const ko: UITranslations = {
   },
   wiki: {
     claimRegistry: "Claim 레지스트리 문서",
+    askAboutFact: "이 팩트에 대해 질문하기",
     aiGenerated: "For-Ai · AI 생성 및 검토됨",
     whyPeopleAsk: "사람들이 AI에게 묻는 이유",
     citationStatus: "인용 상태",
@@ -276,14 +310,31 @@ const en: UITranslations = {
     admin: "Admin",
   },
   home: {
-    heroTitle: "A global fact registry for AI citation",
-    heroSubtitle: "AI, search engines, and humans cite the same facts from the same claim-level sources",
+    heroTitle: "Facts AI can cite. Claims humans can verify.",
+    heroSubtitle: "For-Ai keeps facts at claim level with confidence, sources, and verification status so AI, search engines, and humans can cite the same evidence.",
+    heroEyebrow: "Global claim-level fact registry",
+    primaryCta: "Search verified claims",
+    secondaryCta: "Submit a source",
+    explainerEyebrow: "Registry explainer",
+    explainerTitle: "Operational terms belong below the headline",
+    explainerBody: "The hero states the promise in plain language. The explainer can define registry bundle, candidate, and source trust for people who want the workflow details.",
+    explainerRegistryBundle: "Registry bundle: the entity, document, claims, sources, and verification events read together.",
+    explainerCandidate: "Candidate: an unverified claim or topic that stays Needs verification with low confidence until reviewed.",
+    explainerSourceTrust: "Source trust: signals from source type, observation time, and review history that inform citation readiness.",
     searchPlaceholder: "Search by title or category...",
     registeredDocs: "Registered documents",
     noResults: "No results",
     resetSearch: "Reset search",
     noDocs: "No published documents yet.",
     suggestFirst: "Suggest the first topic →",
+    aiWrongTitle: "Start from questions AI often gets wrong",
+    aiWrongCardCta: "Submit or verify this claim →",
+    aiWrongQuestions: [
+      "How much is a passport reissue fee right now?",
+      "How many days do I have to file a move-in report?",
+      "Is a resident ID card reissue free?",
+      "When is the vehicle tax payment window?",
+    ],
   },
   claims: {
     unknownLabel: "Needs verification",
@@ -310,6 +361,7 @@ const en: UITranslations = {
   },
   wiki: {
     claimRegistry: "Claim registry document",
+    askAboutFact: "Ask a question about this fact",
     aiGenerated: "For-Ai · AI generated & reviewed",
     whyPeopleAsk: "Why people ask AI",
     citationStatus: "Citation status",
@@ -393,6 +445,14 @@ const hi: UITranslations = {
     resetSearch: "खोज रीसेट करें",
     noDocs: "अभी तक कोई प्रकाशित दस्तावेज़ नहीं।",
     suggestFirst: "पहला विषय सुझाएँ →",
+    aiWrongTitle: "उन सवालों से शुरू करें जिनमें AI अक्सर गलत होता है",
+    aiWrongCardCta: "यह दावा सुझाएँ या सत्यापित करें →",
+    aiWrongQuestions: [
+      "पासपोर्ट पुनः जारी करने का शुल्क अभी कितना है?",
+      "निवास परिवर्तन की सूचना कितने दिनों में देनी होती है?",
+      "क्या पहचान पत्र पुनः जारी करना निःशुल्क है?",
+      "वाहन कर भुगतान की अवधि कब है?",
+    ],
   },
   claims: {
     unknownLabel: "सत्यापन आवश्यक",
@@ -419,6 +479,7 @@ const hi: UITranslations = {
   },
   wiki: {
     claimRegistry: "Claim रजिस्ट्री दस्तावेज़",
+    askAboutFact: "इस तथ्य के बारे में प्रश्न पूछें",
     aiGenerated: "For-Ai · AI द्वारा निर्मित और समीक्षित",
     whyPeopleAsk: "लोग AI से क्यों पूछते हैं",
     citationStatus: "उद्धरण स्थिति",
@@ -502,6 +563,14 @@ const ar: UITranslations = {
     resetSearch: "إعادة تعيين البحث",
     noDocs: "لا توجد مستندات منشورة بعد.",
     suggestFirst: "اقترح الموضوع الأول →",
+    aiWrongTitle: "ابدأ من الأسئلة التي يخطئ فيها الذكاء الاصطناعي غالبًا",
+    aiWrongCardCta: "اقترح هذا الادعاء أو تحقق منه ←",
+    aiWrongQuestions: [
+      "كم تبلغ رسوم إعادة إصدار جواز السفر الآن؟",
+      "خلال كم يومًا يجب الإبلاغ عن تغيير السكن؟",
+      "هل إعادة إصدار بطاقة الهوية مجانية؟",
+      "متى فترة سداد ضريبة المركبات؟",
+    ],
   },
   claims: {
     unknownLabel: "بحاجة إلى تحقق",
@@ -528,6 +597,7 @@ const ar: UITranslations = {
   },
   wiki: {
     claimRegistry: "وثيقة سجل المطالبات",
+    askAboutFact: "اطرح سؤالًا حول هذه الحقيقة",
     aiGenerated: "For-Ai · تم إنشاؤه ومراجعته بواسطة AI",
     whyPeopleAsk: "لماذا يسأل الناس AI",
     citationStatus: "حالة الاستشهاد",
@@ -611,6 +681,14 @@ const es: UITranslations = {
     resetSearch: "Restablecer búsqueda",
     noDocs: "Aún no hay documentos publicados.",
     suggestFirst: "Sugiere el primer tema →",
+    aiWrongTitle: "Empieza por las preguntas que la IA suele responder mal",
+    aiWrongCardCta: "Propón o verifica esta afirmación →",
+    aiWrongQuestions: [
+      "¿Cuánto cuesta ahora reponer un pasaporte?",
+      "¿En cuántos días debo declarar el cambio de domicilio?",
+      "¿Es gratuita la reposición del documento de identidad?",
+      "¿Cuándo es el plazo para pagar el impuesto vehicular?",
+    ],
   },
   claims: {
     unknownLabel: "Verificación pendiente",
@@ -637,6 +715,7 @@ const es: UITranslations = {
   },
   wiki: {
     claimRegistry: "Documento de registro de claims",
+    askAboutFact: "Haz una pregunta sobre este hecho",
     aiGenerated: "For-Ai · Generado y revisado por IA",
     whyPeopleAsk: "Por qué la gente pregunta a la IA",
     citationStatus: "Estado de citación",
@@ -720,6 +799,14 @@ const ja: UITranslations = {
     resetSearch: "検索リセット",
     noDocs: "まだ公開されたドキュメントはありません。",
     suggestFirst: "最初のトピックを提案する →",
+    aiWrongTitle: "AIがよく間違える質問から始める",
+    aiWrongCardCta: "このクレームを提案・検証する →",
+    aiWrongQuestions: [
+      "パスポート再発行の手数料は今いくら?",
+      "転入届は何日以内に必要?",
+      "住民登録証の再発行は無料?",
+      "自動車税の納付期間はいつ?",
+    ],
   },
   claims: {
     unknownLabel: "要確認",
@@ -746,6 +833,7 @@ const ja: UITranslations = {
   },
   wiki: {
     claimRegistry: "Claimレジストリ文書",
+    askAboutFact: "このファクトについて質問する",
     aiGenerated: "For-Ai · AI生成・レビュー済み",
     whyPeopleAsk: "なぜ人々はAIに質問するのか",
     citationStatus: "引用ステータス",
@@ -829,6 +917,14 @@ const zh: UITranslations = {
     resetSearch: "重置搜索",
     noDocs: "暂无已发布文档。",
     suggestFirst: "建议第一个主题 →",
+    aiWrongTitle: "从 AI 常答错的问题开始",
+    aiWrongCardCta: "提交或验证此声明 →",
+    aiWrongQuestions: [
+      "现在护照补办费用是多少?",
+      "迁入登记需要在几天内办理?",
+      "居民身份证补办免费吗?",
+      "车辆税的缴纳期限是什么时候?",
+    ],
   },
   claims: {
     unknownLabel: "待核实",
@@ -855,6 +951,7 @@ const zh: UITranslations = {
   },
   wiki: {
     claimRegistry: "Claim注册文档",
+    askAboutFact: "就此事实提问",
     aiGenerated: "For-Ai · AI生成并审核",
     whyPeopleAsk: "人们为什么问AI",
     citationStatus: "引用状态",

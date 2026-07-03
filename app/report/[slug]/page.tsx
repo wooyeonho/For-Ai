@@ -61,7 +61,7 @@ export default async function ReportPage({
       {submitted === "1" ? (
         <section className="notice-box success-box" aria-live="polite">
           <h2>제출되었습니다</h2>
-          <p>정정 요청이 접수 대기 상태로 처리되었습니다. 현재 MVP에서는 저장소에 기록하지 않는 안전한 stub 응답입니다.</p>
+          <p>정정 요청이 Supabase 저장소에 접수 대기 상태로 기록되었습니다. 저장소가 설정되지 않은 환경에서는 API가 503을 반환하며 성공으로 표시하지 않습니다.</p>
         </section>
       ) : null}
 

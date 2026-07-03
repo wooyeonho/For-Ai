@@ -10,6 +10,7 @@ import { SUPPORTED_LOCALES, isValidLocale, getTranslations } from "../../../../l
 import type { SupportedLocale } from "../../../../lib/i18n";
 import { getEntityLabels } from "../../../../lib/i18n/entity-labels";
 import { ClaimTable } from "../../../components/ClaimTable";
+import { safeJsonLd } from "../../../../lib/json-ld";
 
 export const revalidate = 60;
 
@@ -50,7 +51,7 @@ export default async function EntityProfilePage({
     <article>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
       />
 
       <header className="registry-panel">

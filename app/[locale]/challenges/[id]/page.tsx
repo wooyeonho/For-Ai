@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { experimentalGamificationEnabled } from "@/lib/feature-flags";
 import { getCommunityChallenge, getCommunityChallenges } from "@/lib/challenges";
 import { isValidLocale, SUPPORTED_LOCALES } from "@/lib/i18n";
 
@@ -36,6 +37,7 @@ export default async function ChallengeDetailPage({
   params: Promise<{ locale: string; id: string }>;
 }) {
   const { locale, id } = await params;
+  if (!experimentalGamificationEnabled()) notFound();
   if (!isValidLocale(locale)) notFound();
 
   const challenge = getCommunityChallenge(id);

@@ -44,6 +44,7 @@ Detailed verified promotion criteria live in `docs/operations/CLAIM_VERIFICATION
 - Do not upgrade confidence without explicit source evidence.
 - Do not use `documents.data` as canonical factual truth; it is rendering convenience only.
 - Never promote AI-generated candidates to `verified` without human source review.
+- Hallucination report clustering is an admin-only triage aid. Possible matches and repeated-report clusters may raise review priority, but they must not automatically change claims or promote candidates; see `docs/operations/HALLUCINATION_REPORT_CLUSTERING.md`.
 
 ## Merge guidance for documentation PRs
 

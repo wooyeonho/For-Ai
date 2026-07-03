@@ -21,6 +21,9 @@ import { WikiPostSection } from "../../../components/WikiPostSection";
 import { CorrectionCTA } from "../../../components/CorrectionCTA";
 import { VerificationLevelBadge } from "../../../components/StatusBadge";
 import { getBundleRiskDisclaimer } from "../../../../lib/risk-policy";
+import { getBusinessProfileRiskDashboard } from "../../../../lib/entity-profile";
+import { getActiveSponsoredPlacementsForEntity } from "../../../../lib/sponsored-placements";
+import { safeJsonLd } from "../../../../lib/json-ld";
 
 export const revalidate = 60;
 
@@ -79,7 +82,7 @@ export default async function WikiDocumentPage({
   const citationSafety = getCitationSafetyBlock(bundle, locale);
   const normalizedCitation = normalizeCitationSurface(bundle);
   const citationPolicyBlock = getCitationPolicyBlock(bundle, locale);
-  const freshnessTtlDays = typeof document.freshness_ttl_days === "number"
+  const freshnessWindowDays = typeof document.freshness_ttl_days === "number"
     ? document.freshness_ttl_days
     : typeof docData.freshness_ttl_days === "number"
       ? docData.freshness_ttl_days
@@ -118,6 +121,7 @@ export default async function WikiDocumentPage({
     claims.some((claim) => standardGovernmentFeeFieldPaths.includes(claim.field_path)) &&
     (document.category.toLowerCase().includes("government") ||
       document.category.toLowerCase().includes("administration"));
+  const totalSources = claims.reduce((sum, claim) => sum + claim.sources.length, 0);
   const hasBusinessSubmittedClaims = claims.some((claim) => claim.source_of_claim === "business_submitted");
   const hasSponsoredClaims = claims.some((claim) => claim.source_of_claim === "sponsored");
   const totalSources = claims.reduce((sum, c) => sum + (c.sources?.length ?? 0), 0);
@@ -127,17 +131,17 @@ export default async function WikiDocumentPage({
       <ViewTracker slug={document.slug} />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(jsonLd) }}
       />
       <script
         id="for-ai-normalized-citation"
         type="application/json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(normalizedCitation) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(normalizedCitation) }}
       />
       <script
         id="for-ai-citation-policy"
         type="application/json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(citationPolicyBlock) }}
+        dangerouslySetInnerHTML={{ __html: safeJsonLd(citationPolicyBlock) }}
       />
 
       {/* Top reading order: document title → direct answer → citation signals */}
@@ -181,12 +185,8 @@ export default async function WikiDocumentPage({
         </section>
       )}
 
-      {/* Clean header: title + status only, no technical IDs */}
-      <header className="registry-panel">
-        <p className="eyebrow">
-          {isPromoted ? t.wiki.aiGenerated : t.wiki.claimRegistry}
-        </p>
-        <h1>{document.title}</h1>
+      {/* Citation status + metadata panel; the document <h1> renders once in the top header */}
+      <section className="registry-panel" aria-label={tw("documentCitationStatus", "Document citation status")}>
         <div className={topCitationClass} aria-label={tw("documentCitationStatus", "Document citation status")}>
           <strong>{topCitationLabel}</strong>
           <span>{citationStatus.verifiedClaims}/{citationStatus.totalClaims} {tw("citationReadyLower", "citation-ready")} · {tw("freshness", "freshness")}: {citationStatus.freshness}</span>
@@ -210,6 +210,15 @@ export default async function WikiDocumentPage({
           </Link>
         </div>
       </header>
+
+      <BusinessClaimCTA
+        entityId={entity.id}
+        documentSlug={document.slug}
+        locale={locale}
+        documentTitle={document.title}
+        unverifiedCriticalClaims={businessRiskDashboard.unverified_critical_claims.length}
+        staleSources={businessRiskDashboard.stale_sources.length}
+      />
 
       {citationStatus.isVerifiedDocument && citationStatus.freshness === "stale" && (
         <section
@@ -291,7 +300,7 @@ export default async function WikiDocumentPage({
           <ul className="link-list">
             <li>country: <strong>{document.country || entity.country}</strong></li>
             <li>jurisdiction: <strong>{claims.find((claim) => claim.jurisdiction)?.jurisdiction ?? entity.country}</strong></li>
-            {freshnessTtlDays && <li>{tw("freshnessTtl", "freshness TTL")}: <strong>{freshnessTtlDays} days</strong></li>}
+            {freshnessWindowDays && <li>{tw("freshnessTtl", "freshness TTL")}: <strong>{freshnessWindowDays} days</strong></li>}
           </ul>
         </details>
       )}

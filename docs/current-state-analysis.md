@@ -3,6 +3,16 @@ For-Ai 현재 상태 통합 분석
 
 ---
 
+업데이트 (2026-07-02)
+
+스토리지 출처와 stub 노출 상태를 실제 라우트 기준으로 재점검했다.
+
+- `lib/data-source.ts`를 추가해 데이터 출처를 `static`, `supabase`, `stub` 세 종류로 명시한다. static은 버전 관리되는 정적 데이터, supabase는 schema-v3.sql 기반 영속 저장소, stub은 비영속 로컬/테스트 fixture다.
+- `rg "admin-stubs|submission-stubs|topic-suggestion-stubs"` 결과, 현재 직접 파일명 import는 `lib/topic-suggestion-stubs.ts`가 `lib/submission-stubs.ts`의 타입과 `STUB_CONTRIBUTOR_HASH`를 재사용하는 내부 stub 간 의존뿐이다. public `app/api/**/route.ts`에서 세 stub 모듈을 직접 import하는 사용처는 없다.
+- 실제 public submission route 동작은 stub 성공이 아니다. `/api/report/[slug]`와 `/api/hallucination/[slug]`는 Supabase 설정이 없으면 `submission_storage_unavailable` 503을 반환하고, `/api/suggest-topic`도 DB 미설정 시 503을 반환한다. 즉 production public route에서 비영속 stub 응답이 성공으로 나가는 경로는 제거된 상태다.
+- 사용자-facing 성공 문구도 실제 route와 맞게 갱신했다. 성공은 Supabase에 접수 대기 상태로 기록된 경우를 뜻하며, 저장소 미설정 환경은 성공으로 표시하지 않는다.
+- CI guard에 `no-stub-storage`를 추가했다. public `app/api/**/route.ts`가 stub storage 모듈 또는 `storage: "stub"`/`DataSourceKind.Stub`를 feature flag 없이 참조하면 실패한다. 명시적 예외는 `FORAI_ENABLE_STUB_STORAGE` 또는 `lib/data-source.ts` helper를 route에서 사용하는 경우에만 허용한다.
+
 업데이트 (2026-06-28)
 
 글로벌 데이터 채우기와 생산 도구화 이후 실측을 다시 보정한다.

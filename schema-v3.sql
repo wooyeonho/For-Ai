@@ -4,6 +4,7 @@
 -- entities -> documents -> claims -> claim_sources -> verification_events
 
 create extension if not exists pgcrypto;
+create extension if not exists vector;
 
 create type confidence_level as enum ('low', 'medium', 'high');
 create type document_status as enum ('ai_draft', 'needs_review', 'verified', 'published', 'archived');
@@ -14,13 +15,14 @@ create type risk_tier as enum ('low', 'medium', 'high', 'forbidden');
 create type update_frequency as enum ('realtime', 'daily', 'weekly', 'monthly', 'quarterly', 'annual', 'event_based', 'static');
 create type disclaimer_type as enum ('none', 'check_official_source', 'not_medical_advice', 'not_financial_advice', 'not_legal_advice', 'not_genetic_or_medical_advice', 'public_profile_only', 'realtime_data_required');
 create type source_authority as enum ('primary', 'official', 'regulator', 'legal', 'platform', 'secondary', 'community', 'unknown');
-create type translation_status as enum ('source_language', 'human_translated', 'machine_translated', 'needs_translation_review');
+create type translation_status as enum ('source_language', 'human_translated', 'machine_translated', 'needs_translation_review', 'needs_human_translation_review');
 create type submission_status as enum ('new', 'reviewing', 'accepted', 'rejected', 'spam', 'spam_suspected');
 create type verification_event_type as enum ('created', 'reviewed', 'source_added', 'source_removed', 'source_verified', 'status_changed', 'confidence_changed');
 create type notification_preference as enum ('none', 'in_app', 'email_digest', 'webhook');
 create type watch_event_type as enum ('claim_stale', 'source_update_needed', 'verified_fix');
 create type mission_status as enum ('open', 'in_progress', 'resolved', 'expired');
 create type reward_badge as enum ('stale_claim_fixer', 'source_updater', 'topic_steward');
+create type hallucination_match_target_type as enum ('claim', 'topic_candidate');
 
 create table entities (
   id text primary key,
@@ -92,6 +94,7 @@ create table claims (
   translation_status translation_status,
   confidence confidence_level not null default 'low',
   status claim_status not null default 'needs_review',
+  review_priority_score numeric(6,2) not null default 0,
   last_verified_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
@@ -113,6 +116,35 @@ create index claims_jurisdiction_idx on claims (jurisdiction);
 create index claims_risk_tier_idx on claims (risk_tier);
 create unique index claims_document_field_path_key on claims (document_id, field_path);
 
+-- Embeddings are auxiliary duplicate-discovery signals, not canonical facts.
+-- They intentionally live outside documents.data and outside canonical claim values.
+-- Enable pgvector in deployments that run ANN indexes:
+-- create extension if not exists vector;
+create table claim_embeddings (
+  claim_id text primary key references claims(id) on delete cascade,
+  embedding_model text not null,
+  embedding_text text not null,
+  embedding vector(1536) not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+comment on table claim_embeddings is 'Auxiliary semantic index for duplicate review. Embeddings must never be treated as canonical claim_value or verification evidence.';
+comment on column claim_embeddings.embedding_text is 'Derived text used for embedding; safe to regenerate and not canonical factual truth.';
+create index claim_embeddings_embedding_idx on claim_embeddings using ivfflat (embedding vector_cosine_ops);
+
+create table document_embeddings (
+  document_id text primary key references documents(id) on delete cascade,
+  embedding_model text not null,
+  embedding_text text not null,
+  embedding vector(1536) not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+comment on table document_embeddings is 'Auxiliary document-level semantic index for candidate/document duplicate review only.';
+create index document_embeddings_embedding_idx on document_embeddings using ivfflat (embedding vector_cosine_ops);
+
 create table claim_sources (
   id text primary key,
   claim_id text not null references claims(id) on delete cascade,
@@ -120,6 +152,9 @@ create table claim_sources (
   source_authority source_authority not null default 'unknown',
   title text,
   url text,
+  source_domain text,
+  detected_language text,
+  page_type text,
   citation text,
   lang text,
   observed_at timestamptz,
@@ -134,8 +169,11 @@ comment on column documents.slug is 'Canonical stable English slug shared across
 comment on column documents.title is 'Locale-specific display title; do not use as canonical identity.';
 comment on column claims.lang is 'Language of this claim text/value.';
 comment on column claims.original_claim_id is 'For translated claims, references the original source-language claim.';
-comment on column claims.translation_status is 'machine_translated until human review; human_reviewed after approval.';
+comment on column claims.translation_status is 'machine_translated for aligned candidates; needs_human_translation_review when semantic similarity is low, claim_value/field_path/jurisdiction/country conflicts, or high-risk content awaits human translation review; human_translated after approval.';
 comment on column claim_sources.lang is 'Original language of the source; preserve instead of translating source identity.';
+comment on column claim_sources.source_domain is 'Normalized/extracted domain used only for review aids such as recommended source type; not canonical factual evidence.';
+comment on column claim_sources.detected_language is 'Detected source page language for review context; does not prove claim truth.';
+comment on column claim_sources.page_type is 'Detected page type for classifier input; must not auto-create verification_events or change confidence.';
 
 create index claim_sources_claim_id_idx on claim_sources (claim_id);
 
@@ -170,8 +208,18 @@ create table hallucination_reports (
   prompt text,
   ai_answer text,
   expected_correction text,
+  review_priority_score integer not null default 0 check (review_priority_score >= 0 and review_priority_score <= 100),
+  review_priority_reason text,
+  model_version text not null default 'rule-based-v1',
   claim_id text references claims(id) on delete set null,
   wrong_answer_type text,
+  extracted_entity_text text,
+  extracted_domain text,
+  extracted_claim_like_phrase text,
+  report_embedding jsonb,
+  pii_redaction_status text not null default 'pending'
+    check (pii_redaction_status in ('pending', 'redacted', 'not_needed', 'purged')),
+  raw_text_expires_at timestamptz,
   correction_prompt text,
   share_card jsonb not null default '{}'::jsonb,
   moderation_note text,
@@ -195,6 +243,9 @@ create table verification_events (
 
 create index hallucination_reports_claim_id_idx on hallucination_reports (claim_id);
 create index hallucination_reports_status_idx on hallucination_reports (status);
+create index hallucination_reports_review_priority_idx on hallucination_reports (review_priority_score desc, created_at asc);
+create index hallucination_reports_extracted_domain_idx on hallucination_reports (extracted_domain);
+create index hallucination_reports_raw_text_expires_idx on hallucination_reports (raw_text_expires_at);
 
 create index verification_events_claim_id_idx on verification_events (claim_id);
 
@@ -268,6 +319,8 @@ create policy hallucination_reports_public_insert_only on hallucination_reports 
 alter table entities enable row level security;
 alter table documents enable row level security;
 alter table claims enable row level security;
+alter table claim_embeddings enable row level security;
+alter table document_embeddings enable row level security;
 alter table claim_sources enable row level security;
 alter table verification_events enable row level security;
 alter table listings enable row level security;
@@ -334,9 +387,13 @@ create table topic_candidates (
   source_hints   jsonb default '[]',
   contributor_hash text,
   generation_model text,
+  generation_run_id uuid,
   consensus_score  numeric(3,2),
   consensus_level  text check (consensus_level in ('unanimous','majority','minority','single')),
   agreed_providers text[],
+  review_priority_score integer not null default 0 check (review_priority_score >= 0 and review_priority_score <= 100),
+  review_priority_reason text,
+  model_version text not null default 'rule-based-v1',
   created_at     timestamptz default now(),
   reviewed_at    timestamptz,
   promoted_at    timestamptz
@@ -346,8 +403,94 @@ create index topic_candidates_country_idx  on topic_candidates(country);
 create index topic_candidates_status_idx   on topic_candidates(status);
 create index topic_candidates_category_idx on topic_candidates(category);
 create index topic_candidates_created_idx  on topic_candidates(created_at desc);
+create index topic_candidates_generation_run_idx on topic_candidates(generation_run_id);
+create index topic_candidates_review_priority_idx on topic_candidates(review_priority_score desc, created_at asc);
+
+
+-- candidate_generation_runs: admin-only AI generation run records for reuse,
+-- provider cost/success telemetry, and accepted/promoted ratios.
+create table candidate_generation_runs (
+  id uuid primary key default gen_random_uuid(),
+  topic text not null,
+  lang text not null default 'ko',
+  requested_count integer not null default 0,
+  cross_verify boolean not null default false,
+  requested_providers text[] not null default '{}',
+  providers_used text[] not null default '{}',
+  provider_results jsonb not null default '{}'::jsonb,
+  consensus_summary jsonb,
+  total_generated integer not null default 0,
+  saved_count integer not null default 0,
+  skipped_duplicates integer not null default 0,
+  accepted_count integer not null default 0,
+  promoted_count integer not null default 0,
+  estimated_cost_usd numeric(12,6) not null default 0,
+  status text not null default 'generated' check (status in ('generated','saved','duplicates','failed','save_failed')),
+  save_error text,
+  created_at timestamptz not null default now()
+);
+
+alter table topic_candidates
+  add constraint topic_candidates_generation_run_id_fkey
+  foreign key (generation_run_id) references candidate_generation_runs(id) on delete set null;
+
+create index candidate_generation_runs_created_idx on candidate_generation_runs(created_at desc);
+alter table candidate_generation_runs enable row level security;
+
+
+create table topic_candidate_embeddings (
+  topic_candidate_id uuid primary key references topic_candidates(id) on delete cascade,
+  embedding_model text not null,
+  embedding_text text not null,
+  embedding vector(1536) not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+comment on table topic_candidate_embeddings is 'Auxiliary embedding for topic_candidates title + slug + category + claims.question. Used only to raise possible_duplicate review signals.';
+create index topic_candidate_embeddings_embedding_idx on topic_candidate_embeddings using ivfflat (embedding vector_cosine_ops);
+
+create table topic_candidate_claim_links (
+  id uuid primary key default gen_random_uuid(),
+  topic_candidate_id uuid not null references topic_candidates(id) on delete cascade,
+  claim_index integer not null check (claim_index >= 0),
+  original_claim_id text references claims(id) on delete restrict,
+  review_status text not null default 'pending' check (review_status in ('pending','accepted','rejected')),
+  similarity_score numeric(5,4),
+  reviewer_note text,
+  created_at timestamptz not null default now(),
+  reviewed_at timestamptz,
+  unique (topic_candidate_id, claim_index, original_claim_id)
+);
+
+comment on table topic_candidate_claim_links is 'Review workflow for multilingual or duplicate candidate claims that may point to the same original claim. Acceptance can populate claims.original_claim_id after human review.';
+comment on column topic_candidate_claim_links.original_claim_id is 'Existing source-language claim that the candidate claim may translate or restate; never auto-accepted from embedding similarity alone.';
+create index topic_candidate_claim_links_original_claim_idx on topic_candidate_claim_links(original_claim_id);
+
+
+create table possible_duplicate_reviews (
+  id uuid primary key default gen_random_uuid(),
+  subject_type text not null check (subject_type in ('topic_candidate','document','claim','source_candidate')),
+  subject_id text not null,
+  matched_type text not null check (matched_type in ('topic_candidate','document','claim','source_candidate')),
+  matched_id text not null,
+  signal_type text not null check (signal_type in ('slug','title','embedding')),
+  similarity_score numeric(5,4) not null check (similarity_score >= 0 and similarity_score <= 1),
+  review_status text not null default 'pending' check (review_status in ('pending','duplicate','not_duplicate','linked_translation','ignored')),
+  reviewer_note text,
+  created_at timestamptz not null default now(),
+  reviewed_at timestamptz,
+  unique (subject_type, subject_id, matched_type, matched_id, signal_type)
+);
+
+comment on table possible_duplicate_reviews is 'Admin review queue for duplicate signals. Embedding matches create possible_duplicate signals only and must not auto-merge candidates, documents, claims, or sources.';
+create index possible_duplicate_reviews_subject_idx on possible_duplicate_reviews(subject_type, subject_id, review_status);
+create index possible_duplicate_reviews_matched_idx on possible_duplicate_reviews(matched_type, matched_id, review_status);
 
 alter table topic_candidates enable row level security;
+alter table topic_candidate_embeddings enable row level security;
+alter table topic_candidate_claim_links enable row level security;
+alter table possible_duplicate_reviews enable row level security;
 
 -- Only allow public anon insert for user_suggested candidates awaiting admin review.
 -- AI-generated candidates require service_role key (not anon).
@@ -359,7 +502,76 @@ create policy topic_candidates_public_insert
 -- intake records and are readable only through admin/service-role API routes
 -- (/api/admin/*) gated by x-admin-secret.
 
--- community_posts: users, AI (aiai), and admins can all leave posts.
+-- hallucination_report_clusters: admin-only clustering hints derived from
+-- hallucination_reports/reports text. Clusters and matches are review signals,
+-- not canonical facts, and must never update claims automatically.
+create table hallucination_report_clusters (
+  id uuid primary key default gen_random_uuid(),
+  cluster_key text not null unique,
+  entity_id text references entities(id) on delete set null,
+  domain text not null default 'unknown',
+  claim_like_phrase text not null,
+  report_count integer not null default 0 check (report_count >= 0),
+  repeated_signal_score numeric(6,2) not null default 0,
+  review_priority_score numeric(6,2) not null default 0,
+  status submission_status not null default 'new',
+  extraction_metadata jsonb not null default '{}'::jsonb,
+  retention_expires_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table hallucination_report_cluster_members (
+  cluster_id uuid not null references hallucination_report_clusters(id) on delete cascade,
+  hallucination_report_id uuid references hallucination_reports(id) on delete cascade,
+  report_id uuid references reports(id) on delete cascade,
+  normalized_text_hash text not null,
+  created_at timestamptz not null default now(),
+  primary key (cluster_id, normalized_text_hash),
+  constraint hallucination_cluster_member_one_source check (
+    (hallucination_report_id is not null and report_id is null)
+    or (hallucination_report_id is null and report_id is not null)
+  )
+);
+
+create table hallucination_report_possible_matches (
+  id uuid primary key default gen_random_uuid(),
+  cluster_id uuid not null references hallucination_report_clusters(id) on delete cascade,
+  target_type hallucination_match_target_type not null,
+  claim_id text references claims(id) on delete cascade,
+  topic_candidate_id uuid references topic_candidates(id) on delete cascade,
+  similarity_score numeric(5,4) not null check (similarity_score >= 0 and similarity_score <= 1),
+  match_reason text not null,
+  review_status submission_status not null default 'new',
+  reviewed_by text,
+  reviewed_at timestamptz,
+  created_at timestamptz not null default now(),
+  constraint hallucination_possible_match_one_target check (
+    (target_type = 'claim' and claim_id is not null and topic_candidate_id is null)
+    or (target_type = 'topic_candidate' and topic_candidate_id is not null and claim_id is null)
+  )
+);
+
+comment on table hallucination_report_clusters is 'Admin-only clustering hints from user report text. Repeated reports may raise review priority but must not modify claims automatically.';
+comment on table hallucination_report_possible_matches is 'Possible matches to existing claims or topic_candidates shown only in admin review queues; human review is required before any claim/source change.';
+comment on column hallucination_reports.report_embedding is 'Embedding payload for similarity search metadata only; do not expose publicly and purge with raw report text retention.';
+comment on column hallucination_reports.raw_text_expires_at is 'Deadline for deleting or anonymizing raw prompt/answer/correction text because it may contain personal data.';
+
+create index hallucination_clusters_entity_idx on hallucination_report_clusters(entity_id);
+create index hallucination_clusters_priority_idx on hallucination_report_clusters(review_priority_score desc, report_count desc);
+create index hallucination_cluster_members_hreport_idx on hallucination_report_cluster_members(hallucination_report_id);
+create index hallucination_cluster_members_report_idx on hallucination_report_cluster_members(report_id);
+create index hallucination_possible_matches_cluster_idx on hallucination_report_possible_matches(cluster_id);
+create index hallucination_possible_matches_claim_idx on hallucination_report_possible_matches(claim_id);
+create index hallucination_possible_matches_topic_candidate_idx on hallucination_report_possible_matches(topic_candidate_id);
+
+alter table hallucination_report_clusters enable row level security;
+alter table hallucination_report_cluster_members enable row level security;
+alter table hallucination_report_possible_matches enable row level security;
+-- No public SELECT/INSERT policies: clustering, embeddings, and possible matches
+-- are service-role/admin-only because they are derived from private report text.
+
+-- community_posts: public users can submit user posts; AI/admin posts are service-role only.
 create table community_posts (
   id              uuid primary key default gen_random_uuid(),
   document_id     text references documents(id) on delete set null,
@@ -385,7 +597,7 @@ alter table community_posts enable row level security;
 
 create policy community_posts_public_insert
   on community_posts for insert to anon
-  with check (status = 'pending' and author_type in ('user', 'ai'));
+  with check (status = 'pending' and author_type = 'user');
 
 create policy community_posts_public_select
   on community_posts for select to anon
@@ -575,15 +787,25 @@ alter table watch_subscriptions enable row level security;
 
 -- Source contribution system for public source candidates.
 -- Points reward contribution activity only; points never determine claim truth.
+-- Single canonical definition: identity/point columns and privacy-preserving
+-- streak columns live on one table keyed by id, with contributor_hash unique
+-- so both uuid and hash foreign keys remain valid.
 
 create table if not exists contributors (
   id uuid primary key default gen_random_uuid(),
   contributor_hash text unique,
   account_id uuid references auth.users(id) on delete set null,
+  display_name text,
   total_points integer not null default 0 check (total_points >= 0),
   accepted_source_count integer not null default 0 check (accepted_source_count >= 0),
   verified_claim_link_count integer not null default 0 check (verified_claim_link_count >= 0),
   spam_submission_count integer not null default 0 check (spam_submission_count >= 0),
+  visit_streak_points bigint not null default 0,
+  submission_streak_points bigint not null default 0,
+  accepted_streak_points bigint not null default 0,
+  verified_source_leaderboard_score bigint not null default 0,
+  badges text[] not null default '{}',
+  last_streak_calculated_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   constraint contributors_identifier_required check (contributor_hash is not null or account_id is not null)
@@ -600,6 +822,9 @@ create table if not exists source_candidates (
   title text,
   url text,
   normalized_url text,
+  source_domain text,
+  detected_language text,
+  page_type text,
   citation text,
   source_type source_type not null default 'unknown',
   source_authority source_authority not null default 'unknown',
@@ -610,6 +835,9 @@ create table if not exists source_candidates (
   status submission_status not null default 'new',
   review_status text not null default 'pending' check (review_status in ('pending','accepted','rejected','linked_to_claim','spam')),
   points_awarded integer not null default 0 check (points_awarded >= 0),
+  review_priority_score integer not null default 0 check (review_priority_score >= 0 and review_priority_score <= 100),
+  review_priority_reason text,
+  model_version text not null default 'rule-based-v1',
   created_at timestamptz not null default now(),
   reviewed_at timestamptz,
   reviewed_by text,
@@ -619,7 +847,41 @@ create table if not exists source_candidates (
 
 comment on table source_candidates is 'Unverified public source candidates. Human review is required before attaching to claim_sources or changing claim verification status.';
 comment on column source_candidates.points_awarded is 'Contribution reward only; must not be used to decide claim truth, confidence, or verified status.';
+comment on column source_candidates.source_type is 'Submitted/candidate source type. Classifier output may be displayed as recommended source type only; it must not auto-promote to claim_sources or verification_events.';
+comment on column source_candidates.source_domain is 'Normalized/extracted domain used as classifier input for recommended source type display only.';
+comment on column source_candidates.detected_language is 'Detected source page language used as classifier input for reviewer context only.';
+comment on column source_candidates.page_type is 'Detected page type used as classifier input for recommended source type display only.';
 
+-- Review priority scores are queue-management signals only. They are not
+-- canonical truth and must never directly change claims.confidence,
+-- claims.status, documents.confidence, documents.status, claim_sources, or
+-- verification_events. Only human-approved verification workflows may change
+-- canonical claim confidence or verification status.
+comment on column hallucination_reports.review_priority_score is 'Auxiliary review-queue score from source presence, risk tier, domain volatility, consensus level, and user demand only. Not canonical truth; must not change claim confidence or verification status directly.';
+comment on column hallucination_reports.review_priority_reason is 'Human-readable explanation for the auxiliary review priority score; not verification evidence.';
+comment on column hallucination_reports.model_version is 'Scoring model identifier for review priority, starting with rule-based-v1 and replaceable by future ML models.';
+comment on column topic_candidates.review_priority_score is 'Auxiliary review-queue score from source presence, risk tier, domain volatility, consensus level, and user demand only. Not canonical truth; must not change claim confidence or verification status directly.';
+comment on column topic_candidates.review_priority_reason is 'Human-readable explanation for the auxiliary review priority score; not verification evidence.';
+comment on column topic_candidates.model_version is 'Scoring model identifier for review priority, starting with rule-based-v1 and replaceable by future ML models.';
+comment on column source_candidates.review_priority_score is 'Auxiliary review-queue score from source presence, risk tier, domain volatility, consensus level, and user demand only. Not canonical truth; must not change claim confidence or verification status directly.';
+comment on column source_candidates.review_priority_reason is 'Human-readable explanation for the auxiliary review priority score; not verification evidence.';
+comment on column source_candidates.model_version is 'Scoring model identifier for review priority, starting with rule-based-v1 and replaceable by future ML models.';
+
+create table if not exists source_candidate_embeddings (
+  source_candidate_id uuid primary key references source_candidates(id) on delete cascade,
+  embedding_model text not null,
+  embedding_text text not null,
+  embedding vector(1536) not null,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+comment on table source_candidate_embeddings is 'Auxiliary semantic index for finding duplicate source submissions. Human review is still required before linking sources.';
+create index if not exists source_candidate_embeddings_embedding_idx on source_candidate_embeddings using ivfflat (embedding vector_cosine_ops);
+
+-- contribution_events: single canonical reward/audit ledger for anonymous public
+-- contributions. Rewards are derived only from these events. Verified claim and
+-- document status still change only through admin-approved verification flows.
 create table if not exists contribution_events (
   id uuid primary key default gen_random_uuid(),
   contributor_id uuid references contributors(id) on delete set null,
@@ -627,15 +889,34 @@ create table if not exists contribution_events (
   account_id uuid references auth.users(id) on delete set null,
   source_candidate_id uuid references source_candidates(id) on delete set null,
   claim_id text references claims(id) on delete set null,
-  event_type text not null check (event_type in ('source_submitted','source_duplicate_submitted','source_admin_accepted','source_linked_verified_claim','source_spam_rejected')),
+  document_id text references documents(id) on delete set null,
+  hallucination_report_id uuid references hallucination_reports(id) on delete set null,
+  event_type text not null check (event_type in (
+    'source_submitted',
+    'source_duplicate_submitted',
+    'source_admin_accepted',
+    'source_linked_verified_claim',
+    'source_spam_rejected',
+    'source_accepted',
+    'claim_verified_from_contribution',
+    'hallucination_report_accepted'
+  )),
+  points integer not null default 0 check (points >= 0),
   points_delta integer not null default 0 check (points_delta >= 0),
+  country text,
+  source_type source_type,
+  submission_status submission_status,
+  related_table text,
+  related_id text,
   metadata jsonb not null default '{}'::jsonb,
   created_at timestamptz not null default now(),
   constraint contribution_event_identifier_required check (contributor_hash is not null or account_id is not null)
 );
 
-comment on table contribution_events is 'Audit trail for contribution activity and point decisions. Does not determine factual truth.';
+comment on table contribution_events is 'Audit trail and anonymous reward ledger for contribution activity. Does not determine factual truth. Never store raw IP addresses.';
 comment on column contribution_events.metadata is 'Safe metadata only. Never include raw IP addresses or raw user-agent strings.';
+comment on column contribution_events.contributor_hash is 'Salted contributor identifier only; raw IP addresses are forbidden.';
+comment on column contribution_events.submission_status is 'Rejected/spam submissions may be recorded for audit context but must be ignored by streak calculation.';
 
 create table if not exists contributor_points (
   id uuid primary key default gen_random_uuid(),
@@ -656,11 +937,17 @@ create index if not exists source_candidates_claim_idx on source_candidates(clai
 create index if not exists source_candidates_document_idx on source_candidates(document_id, created_at desc);
 create index if not exists source_candidates_normalized_url_idx on source_candidates(normalized_url);
 create index if not exists source_candidates_status_idx on source_candidates(status, review_status, created_at desc);
+create index if not exists source_candidates_review_priority_idx on source_candidates(review_priority_score desc, created_at asc);
+create index if not exists source_candidate_embeddings_created_idx on source_candidate_embeddings(created_at desc);
 create index if not exists contribution_events_contributor_idx on contribution_events(contributor_hash, created_at desc);
+create index if not exists contribution_events_contributor_type_created_idx on contribution_events(contributor_hash, event_type, created_at desc);
+create index if not exists contribution_events_type_created_idx on contribution_events(event_type, created_at desc);
+create index if not exists contribution_events_country_idx on contribution_events(country);
 create index if not exists contributor_points_contributor_idx on contributor_points(contributor_hash, created_at desc);
 
 alter table contributors enable row level security;
 alter table source_candidates enable row level security;
+alter table source_candidate_embeddings enable row level security;
 alter table contribution_events enable row level security;
 alter table contributor_points enable row level security;
 
@@ -668,8 +955,15 @@ create policy source_candidates_public_insert_only
   on source_candidates for insert to anon
   with check (status in ('new', 'spam_suspected') and review_status = 'pending');
 
--- No public SELECT policies: source candidates, contributors, events, and points
--- are private review/reputation data exposed only through service-role APIs.
+-- Public reads on contribution_events are limited to pseudonymous reward rows
+-- (contributor_hash only, no raw identity or submission text) so leaderboards
+-- can render with the anon key. No public INSERT/UPDATE: the ledger is written
+-- by service-role routes/jobs only.
+create policy contribution_events_public_select on contribution_events for select to anon using (true);
+
+-- No public SELECT policies for source_candidates, contributors, or
+-- contributor_points: private review/reputation data exposed only through
+-- service-role APIs.
 
 
 
@@ -766,65 +1060,9 @@ create policy bounty_submissions_public_insert_only
 -- No public SELECT/UPDATE policies for bounty_submissions. Moderation and any
 -- conversion into claim_sources/verification_events require service-role APIs.
 
--- contributors/contribution_events: privacy-preserving streak source tables.
-create table contributors (
-  contributor_hash text primary key,
-  display_name text,
-  visit_streak_points bigint not null default 0,
-  submission_streak_points bigint not null default 0,
-  accepted_streak_points bigint not null default 0,
-  verified_source_leaderboard_score bigint not null default 0,
-  badges text[] not null default '{}',
-  last_streak_calculated_at timestamptz,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now(),
-  constraint contributors_hash_required check (length(contributor_hash) > 0)
-);
-
--- contribution_events: reward ledger for anonymous public contributions.
--- Rewards are derived only from these events. Verified claim/document status still
--- changes only through admin-approved verification flows.
-create type contribution_event_type as enum (
-  'source_submitted',
-  'source_accepted',
-  'claim_verified_from_contribution',
-  'hallucination_report_accepted'
-);
-
-create table contribution_events (
-  id uuid primary key default gen_random_uuid(),
-  contributor_hash text not null references contributors(contributor_hash) on delete cascade,
-  event_type contribution_event_type not null,
-  points integer not null default 0 check (points >= 0),
-  country text,
-  source_type source_type,
-  claim_id text references claims(id) on delete set null,
-  document_id text references documents(id) on delete set null,
-  hallucination_report_id uuid references hallucination_reports(id) on delete set null,
-  submission_status submission_status,
-  related_table text,
-  related_id text,
-  created_at timestamptz not null default now(),
-  constraint contribution_events_contributor_hash_required check (length(contributor_hash) > 0)
-);
-
-comment on table contributors is 'Privacy-preserving contributor profile keyed by contributor_hash only; never store raw IP addresses.';
-comment on table contribution_events is 'Anonymous reward event ledger. Never store raw IP addresses. All reward points are calculated from contribution events, not direct verified status changes.';
-comment on column contribution_events.contributor_hash is 'Salted contributor identifier only; raw IP addresses are forbidden.';
-comment on column contribution_events.submission_status is 'Rejected/spam submissions may be recorded for audit context but must be ignored by streak calculation.';
-
-create index contribution_events_contributor_type_created_idx on contribution_events (contributor_hash, event_type, created_at desc);
-create index contribution_events_contributor_created_idx on contribution_events(contributor_hash, created_at desc);
-create index contribution_events_type_created_idx on contribution_events (event_type, created_at desc);
-create index contribution_events_country_idx on contribution_events(country);
-
-alter table contributors enable row level security;
-alter table contribution_events enable row level security;
-
--- Public reads are safe because contributor_hash is already pseudonymous and no
--- private submission text is exposed. Writes require server/admin routes.
-create policy contribution_events_public_select on contribution_events for select to anon using (true);
--- No public INSERT policy: contribution streak data is updated by service-role routes/jobs only.
+-- NOTE: contributors and contribution_events are defined once, above, in the
+-- source contribution section. Streak/reward columns live on those canonical
+-- tables; do not redeclare them here.
 
 -- community_challenges: structured intake goals for accepted contribution candidates.
 -- Challenge completion is not verification; verified facts still require claim_sources

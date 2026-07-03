@@ -3,7 +3,6 @@ import { createServerClient, isSupabaseConfigured } from '@/lib/supabase-server'
 import { makeContributorHashForRequest } from '@/lib/contributor-hash';
 import { resolveDocumentMetadataBySlug } from '@/lib/document-resolver';
 import { buildPublicTopicCandidate } from '@/lib/topic-candidates';
-import { recordContributionEvent } from '@/lib/contributions';
 import {
   HALLUCINATION_FIELD_MAX_LENGTHS,
   contributorSubmissionRateLimited,
@@ -75,7 +74,7 @@ export async function POST(
   if (isSupabaseConfigured()) {
     try {
       const supabase = createServerClient();
-      const limit = contributorSubmissionRateLimited(contributorHash);
+      const limit = await contributorSubmissionRateLimited(contributorHash);
       if (limit) {
         return NextResponse.json(
           { error: 'submission rate limit exceeded', code: `RATE_LIMIT_${limit.toUpperCase()}` },
@@ -97,7 +96,7 @@ export async function POST(
         normalizedBody.ai_answer,
         normalizedBody.expected_correction,
       ]);
-      const { error } = await supabase.from('hallucination_reports').insert({
+      const { data: insertedReport, error: insertError } = await supabase.from('hallucination_reports').insert({
         document_id: documentId,
         entity_id: entityId,
         ai_service: aiService,
@@ -110,8 +109,25 @@ export async function POST(
         share_card: body.share_card && typeof body.share_card === 'object' ? body.share_card : {},
         contributor_hash: contributorHash,
         status: spamCheck.status,
-      });
-      if (!error) {
+      }).select('id').single();
+
+      if (insertError) {
+        console.error('[hallucination] Supabase insert error:', insertError.message);
+        return NextResponse.json(
+          { error: 'Failed to save hallucination candidate' },
+          { status: 500 }
+        );
+      }
+
+      if (!insertedReport?.id) {
+        console.error('[hallucination] Supabase insert returned no report id');
+        return NextResponse.json(
+          { error: 'Failed to save hallucination candidate' },
+          { status: 500 }
+        );
+      }
+
+      {
         const { error: topicCandidateError } = await supabase.from('topic_candidates').insert(buildPublicTopicCandidate({
           kind: 'hallucination_report',
           title: `AI hallucination report: ${resolvedDocument.title}`,
@@ -127,31 +143,16 @@ export async function POST(
         if (topicCandidateError) console.warn('[hallucination] topic_candidates insert skipped:', topicCandidateError.message);
       }
 
-
-      if (!error && publicSourceUrl) {
-        await recordContributionEvent(supabase, {
-          contributor_hash: contributorHash,
-          event_type: 'source_submitted',
-          country: resolvedDocument.country,
-          source_type: 'web',
-          claim_id: body.claim_id?.trim() || null,
-          document_id: documentId,
+      // Award points for reporting a hallucination — but never reward
+      // spam-suspected submissions, so mission/point farming can't pay out on
+      // fabricated reports.
+      if (spamCheck.status !== 'spam_suspected') {
+        await awardPoints(supabase, contributorHash, 'hallucination_reported', POINT_VALUES.hallucination_reported, {
+          referenceType: 'hallucination_report',
+          referenceId: insertedReport.id,
+          metadata: { slug, ai_service: aiService },
         });
       }
-
-      if (error) {
-        console.error('[hallucination] Supabase insert error:', error.message);
-        return NextResponse.json(
-          { error: 'Failed to save hallucination candidate' },
-          { status: 500 }
-        );
-      }
-
-      // Award points for reporting a hallucination
-      await awardPoints(supabase, contributorHash, 'hallucination_reported', POINT_VALUES.hallucination_reported, {
-        referenceType: 'hallucination_report',
-        metadata: { slug, ai_service: aiService },
-      });
     } catch (err) {
       console.error('[hallucination] Unexpected error:', err);
       return NextResponse.json({ error: 'Server error' }, { status: 500 });

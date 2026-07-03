@@ -50,7 +50,7 @@ const VALID_SOURCE_AUTHORITY = new Set([
   "primary", "official", "regulator", "legal", "platform", "secondary", "community", "unknown",
 ]);
 const VALID_TRANSLATION_STATUS = new Set([
-  "source_language", "human_translated", "machine_translated", "needs_translation_review",
+  "source_language", "human_translated", "machine_translated", "needs_translation_review", "needs_human_translation_review",
 ]);
 
 const FRESHNESS_WINDOWS_DAYS = {

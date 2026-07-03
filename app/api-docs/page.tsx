@@ -9,13 +9,96 @@ export const metadata: Metadata = {
 
 export default function ApiDocsPage() {
   const BASE = siteUrl("").replace(/\/+$/, "");
+  const publicApiEndpoints = [
+    {
+      methods: ["GET /api/search"],
+      description: "Search published documents and verified claims by query text, with optional language and limit filters.",
+      auth: "No auth required.",
+      rateLimit: "Yes — standard public API rate limit headers are returned.",
+      response: '{ "results": [{ "type": "document|claim", "document_id": "...", "slug": "...", "title": "...", "category": "...", "lang": "...", "excerpt": "..." }], "query": "...", "total": 0 }',
+      safety: "Only verified claims are searched; still check the target document citation guidance before citing a result.",
+    },
+    {
+      methods: ["GET /api/trending"],
+      description: "Returns AI citation, human view, and hallucination trending lists for public registry documents.",
+      auth: "No auth required.",
+      rateLimit: "Yes — standard public API rate limit headers are returned.",
+      response: '{ "ai_trending": [], "human_trending": [], "hallucination_trending": [], "total_ai_citations": 0, "total_human_views": 0, "total_views": 0, "total_hallucinations": 0, "generated_at": "..." }',
+      safety: "Trending rank is analytics metadata, not a factual verification signal; cite only citation-ready claims.",
+    },
+    {
+      methods: ["GET /api/coverage"],
+      description: "Public coverage metrics for the registry coverage goal and citation-readiness policy.",
+      auth: "No auth required.",
+      rateLimit: "Yes — standard public API rate limit headers are returned.",
+      response: '{ "...coverage_metrics": "...", "citation_policy": "Cite only citation-ready claims..." }',
+      safety: "Use the included citation policy as guidance; coverage counts do not make unverified facts citable.",
+    },
+    {
+      methods: ["POST /api/source-suggest"],
+      description: "Submit a public source suggestion for an existing claim; stores a contributor hash instead of raw IP.",
+      auth: "No login required.",
+      rateLimit: "Yes — limited per contributor hash and claim, with 429 on daily overuse.",
+      response: '{ "success": true, "suggestion_id": "...", "points_awarded": 0, "is_official_source": false, "new_badges": [] }',
+      safety: "Suggestions are pending evidence only; they are not verified sources until reviewed and attached to claims.",
+    },
+    {
+      methods: ["POST /api/documents/:slug/copy-citation"],
+      description: "Record a citation-copy analytics event for one document slug.",
+      auth: "No auth required.",
+      rateLimit: "Yes — per IP and slug window, with 429 when exceeded.",
+      response: '{ "success": true }',
+      safety: "This only records user intent; clients must still inspect citation guidance before copying or citing facts.",
+    },
+    {
+      methods: ["GET /api/gamification/bounties", "POST /api/gamification/bounties"],
+      description: "List open source/claim bounties, or create a new bounty for admin-managed campaigns.",
+      auth: "GET is public; POST requires admin authorization.",
+      rateLimit: "No dedicated public limiter; infrastructure or admin controls may still apply.",
+      response: 'GET: { "bounties": [] } · POST: { "success": true, "bounty_id": "..." }',
+      safety: "Bounties identify contribution targets, not verified facts; sponsored bounties must remain clearly labeled.",
+    },
+    {
+      methods: ["GET /api/gamification/leaderboard"],
+      description: "Quality-point leaderboard for contributors over week, month, or all-time periods.",
+      auth: "No auth required.",
+      rateLimit: "No dedicated public limiter; response is revalidated for five minutes.",
+      response: '{ "leaderboard": [{ "rank": 1, "contributor_hash": "...", "quality_points": 0, "badge_count": 0 }], "period": "week", "generated_at": "..." }',
+      safety: "Contributor score is reputation metadata and never a substitute for source-backed claim verification.",
+    },
+    {
+      methods: ["GET /api/gamification/country-quest"],
+      description: "Country-level quest progress derived from public entities and documents.",
+      auth: "No auth required.",
+      rateLimit: "No dedicated public limiter; response is revalidated for ten minutes.",
+      response: '{ "quests": [{ "country": "...", "verified_count": 0, "total_count": 0, "target_count": 100, "progress_pct": 0 }], "generated_at": "..." }',
+      safety: "Quest progress summarizes registry coverage only; it does not mark individual claims as citation-ready.",
+    },
+    {
+      methods: ["GET /api/gamification/contributor/:hash"],
+      description: "Contributor profile statistics, point events, badges, and weekly rank by contributor hash.",
+      auth: "No auth required; contributor hash must be at least eight characters.",
+      rateLimit: "No dedicated public limiter.",
+      response: '{ "total_points": 0, "events": [], "badges": [], "rank_this_week": null }',
+      safety: "Badges and points are contribution metadata; claim citation safety remains source and verification based.",
+    },
+    {
+      methods: ["GET /api/business/submitted-claims"],
+      description: "Review queue for claims submitted through verified business workflows.",
+      auth: "Admin authorization required.",
+      rateLimit: "Protected by admin access controls; no public rate limit contract.",
+      response: '{ "claims": [{ "...business_submitted_claim": "...", "verified_business_profiles": { "business_name": "...", "tier": "..." } }] }',
+      safety: "Business-submitted claims remain unverified until human review; sponsored or business-claimed content must be labeled.",
+    },
+  ];
+
   return (
     <article>
       <header className="registry-panel">
         <p className="eyebrow">For-Ai · Developers</p>
         <h1>API Documentation</h1>
         <p style={{ color: "var(--muted)", fontSize: "1rem", lineHeight: 1.7 }}>
-          Machine-readable fact data for AI systems, search engines, and developers.
+          Machine-readable fact data for AI systems, search engines, and developers. The first commercial wedge is business operating facts and reputation correction, so the key API signals are verified claims, stale claims, source coverage, API usage, and business correction requests.
           All endpoints return JSON unless noted. CORS is open for <code>GET</code> requests.
         </p>
       </header>
@@ -62,10 +145,24 @@ export default function ApiDocsPage() {
           On 429, check <code>Retry-After</code> (seconds).
         </p>
         <div style={{ marginTop: 16, padding: "12px 16px", background: "var(--soft)", borderRadius: 6, fontSize: "0.85rem" }}>
-          <strong>Pro features:</strong> Priority claim corrections, webhook callbacks, bulk export, advanced search filters, priority support.
+          <strong>Pro features:</strong> Priority business correction intake, reputation alerts, webhook callbacks, bulk export, advanced search filters, priority support.
           <br />
           <strong>Enterprise features:</strong> All Pro features + custom SLA, data licensing, private namespaces, dedicated account manager, SSO.
         </div>
+      </section>
+
+      <section className="registry-panel" aria-labelledby="business-dashboard-metrics" id="business-dashboard-metrics">
+        <h2 id="business-dashboard-metrics">Business wedge dashboard metrics</h2>
+        <p style={{ fontSize: "0.9rem", color: "var(--muted)", lineHeight: 1.7 }}>
+          For the initial vertical, API consumers should evaluate business facts as one operating bundle rather than separate vanity counters.
+        </p>
+        <ul style={{ fontSize: "0.9rem", color: "var(--muted)", lineHeight: 2 }}>
+          <li><strong>Verified claims:</strong> canonical business facts that passed source-backed human review.</li>
+          <li><strong>Stale claims:</strong> verified operating facts due for re-checking before AI keeps citing them.</li>
+          <li><strong>Source coverage:</strong> share of business claims with acceptable traceable sources attached.</li>
+          <li><strong>API usage:</strong> document/citation reads that identify high-demand business facts.</li>
+          <li><strong>Business correction requests:</strong> owner or operator intake signals, never automatically citation-ready.</li>
+        </ul>
       </section>
 
       {/* Endpoints */}
@@ -171,12 +268,58 @@ export default function ApiDocsPage() {
             </p>
           </div>
 
+          {/* GET /api/contributions/mine */}
+          <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
+            <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>
+              GET /api/contributions/mine
+            </p>
+            <p style={{ margin: "8px 0", fontSize: "0.9rem", color: "var(--muted)" }}>
+              Status of topic suggestions, correction reports, hallucination reports, and source suggestions
+              submitted from the caller&apos;s own network address. No identifier is accepted or required — the
+              contributor hash is derived server-side, so this can only ever return the caller&apos;s own submissions.
+            </p>
+          </div>
+
           {/* GET/POST /api/posts */}
           <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
             <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>GET /api/posts</p>
             <p style={{ margin: "6px 0 0", fontFamily: "monospace", fontWeight: 700 }}>POST /api/posts</p>
             <p style={{ margin: "8px 0", fontSize: "0.9rem", color: "var(--muted)" }}>
               List published community posts or submit a new public post for review.
+            </p>
+          </div>
+
+          <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
+            <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>GET /api/search</p>
+            <p style={{ margin: "6px 0 0", fontFamily: "monospace", fontWeight: 700 }}>GET /api/trending</p>
+            <p style={{ margin: "6px 0 0", fontFamily: "monospace", fontWeight: 700 }}>GET /api/coverage</p>
+            <p style={{ margin: "8px 0", fontSize: "0.9rem", color: "var(--muted)" }}>
+              Discovery, trending, and public coverage metrics for registry documents.
+            </p>
+          </div>
+
+          <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
+            <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>POST /api/documents/<span style={{ color: "var(--accent)" }}>{"{slug}"}</span>/copy-citation</p>
+            <p style={{ margin: "8px 0", fontSize: "0.9rem", color: "var(--muted)" }}>
+              Increment citation-copy telemetry for API usage and high-demand fact prioritization.
+            </p>
+          </div>
+
+          <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
+            <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>POST /api/source-suggest</p>
+            <p style={{ margin: "8px 0", fontSize: "0.9rem", color: "var(--muted)" }}>
+              Submit source suggestions for claim verification without making the claim citation-ready.
+            </p>
+          </div>
+
+          <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
+            <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>GET /api/gamification/bounties</p>
+            <p style={{ margin: "6px 0 0", fontFamily: "monospace", fontWeight: 700 }}>POST /api/gamification/bounties</p>
+            <p style={{ margin: "6px 0 0", fontFamily: "monospace", fontWeight: 700 }}>GET /api/gamification/contributor/<span style={{ color: "var(--accent)" }}>{"{hash}"}</span></p>
+            <p style={{ margin: "6px 0 0", fontFamily: "monospace", fontWeight: 700 }}>GET /api/gamification/country-quest</p>
+            <p style={{ margin: "6px 0 0", fontFamily: "monospace", fontWeight: 700 }}>GET /api/gamification/leaderboard</p>
+            <p style={{ margin: "8px 0", fontSize: "0.9rem", color: "var(--muted)" }}>
+              Public verification participation endpoints for bounties, contributor progress, country quests, and leaderboard views.
             </p>
           </div>
 
@@ -189,11 +332,67 @@ export default function ApiDocsPage() {
               POST /api/hallucination/<span style={{ color: "var(--accent)" }}>{"{slug}"}</span>
             </p>
             <p style={{ margin: "6px 0 0", fontFamily: "monospace", fontWeight: 700 }}>POST /api/suggest-topic</p>
+            <p style={{ margin: "6px 0 0", fontFamily: "monospace", fontWeight: 700 }}>POST /api/source-suggest</p>
             <p style={{ margin: "8px 0", fontSize: "0.9rem", color: "var(--muted)" }}>
-              Public submissions for corrections, hallucination reports, and suggested registry topics.
-              Submissions store contributor hashes, not raw IP addresses.
+              Public submissions for corrections, hallucination reports, suggested registry topics, and claim source suggestions.
+              Submissions store contributor hashes, not raw IP addresses, and point awards are server-side/idempotent.
             </p>
           </div>
+
+          {/* Discovery, analytics, and gamification endpoints */}
+          <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
+            <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>GET /api/search</p>
+            <p style={{ margin: "6px 0 0", fontFamily: "monospace", fontWeight: 700 }}>GET /api/trending</p>
+            <p style={{ margin: "6px 0 0", fontFamily: "monospace", fontWeight: 700 }}>GET /api/coverage</p>
+            <p style={{ margin: "6px 0 0", fontFamily: "monospace", fontWeight: 700 }}>
+              POST /api/documents/<span style={{ color: "var(--accent)" }}>{"{slug}"}</span>/copy-citation
+            </p>
+            <p style={{ margin: "8px 0", fontSize: "0.9rem", color: "var(--muted)" }}>
+              Public discovery and analytics surfaces for registry search, trending documents, coverage summaries, and citation-copy counters.
+            </p>
+          </div>
+
+          <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
+            <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>GET /api/gamification/bounties</p>
+            <p style={{ margin: "6px 0 0", fontFamily: "monospace", fontWeight: 700 }}>POST /api/gamification/bounties</p>
+            <p style={{ margin: "6px 0 0", fontFamily: "monospace", fontWeight: 700 }}>
+              GET /api/gamification/contributor/<span style={{ color: "var(--accent)" }}>{"{hash}"}</span>
+            </p>
+            <p style={{ margin: "6px 0 0", fontFamily: "monospace", fontWeight: 700 }}>GET /api/gamification/country-quest</p>
+            <p style={{ margin: "6px 0 0", fontFamily: "monospace", fontWeight: 700 }}>GET /api/gamification/leaderboard</p>
+            <p style={{ margin: "8px 0", fontSize: "0.9rem", color: "var(--muted)" }}>
+              Gamification endpoints expose contribution tasks and aggregate reputation signals only. Admin-only writes still require server-side admin authorization.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <section className="registry-panel" aria-labelledby="public-api">
+        <h2 id="public-api">Public API route coverage</h2>
+        <p style={{ fontSize: "0.9rem", color: "var(--muted)", lineHeight: 1.7 }}>
+          These routes are included in the CI route guard and mirror the implemented public
+          <code> app/api/**/route.ts</code> surface. Treat every factual value as non-citable
+          unless its claim-level citation guidance says it is ready.
+        </p>
+        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+          {publicApiEndpoints.map((endpoint) => (
+            <div key={endpoint.methods.join("|")} style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
+              {endpoint.methods.map((method) => (
+                <p key={method} style={{ margin: endpoint.methods[0] === method ? 0 : "6px 0 0", fontFamily: "monospace", fontWeight: 700 }}>
+                  {method}
+                </p>
+              ))}
+              <p style={{ margin: "8px 0", fontSize: "0.9rem", color: "var(--muted)" }}>
+                {endpoint.description}
+              </p>
+              <ul style={{ margin: 0, paddingLeft: 18, fontSize: "0.85rem", color: "var(--muted)", lineHeight: 1.7 }}>
+                <li><strong>Auth:</strong> {endpoint.auth}</li>
+                <li><strong>Rate limit:</strong> {endpoint.rateLimit}</li>
+                <li><strong>Response shape:</strong> <code>{endpoint.response}</code></li>
+                <li><strong>Citation safety:</strong> {endpoint.safety}</li>
+              </ul>
+            </div>
+          ))}
         </div>
       </section>
 
@@ -248,7 +447,7 @@ if (data.citation_guidance.can_cite) {
         <h2 id="business-api">Business API</h2>
         <p style={{ fontSize: "0.9rem", color: "var(--muted)", lineHeight: 1.7 }}>
           Verified businesses can manage their fact profile, submit priority corrections,
-          and monitor AI reputation through the Business API.
+          and monitor AI reputation through the Business API. Business-submitted data is intake only; canonical claims still require independent verification before AI citation.
         </p>
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
           <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
@@ -264,6 +463,9 @@ if (data.citation_guidance.can_cite) {
           </div>
           <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
             <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>
+              GET /api/business/submitted-claims
+            </p>
+            <p style={{ margin: "6px 0 0", fontFamily: "monospace", fontWeight: 700 }}>
               POST /api/business/corrections
             </p>
             <p style={{ margin: "8px 0 0", fontSize: "0.85rem", color: "var(--muted)" }}>
@@ -272,10 +474,18 @@ if (data.citation_guidance.can_cite) {
           </div>
           <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
             <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>
+              GET /api/business/submitted-claims
+            </p>
+            <p style={{ margin: "8px 0 0", fontSize: "0.85rem", color: "var(--muted)" }}>
+              List business-submitted claims for verified-profile workflows. These remain separate from canonical citation-ready claims.
+            </p>
+          </div>
+          <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
+            <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>
               GET /api/business/alerts?profile_id=...
             </p>
             <p style={{ margin: "8px 0 0", fontSize: "0.85rem", color: "var(--muted)" }}>
-              View reputation alerts (incorrect citations, outdated facts, new hallucinations).
+              View reputation alerts and stale-claim signals for operating facts (incorrect citations, outdated facts, new hallucinations).
             </p>
           </div>
           <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
@@ -297,7 +507,7 @@ if (data.citation_guidance.can_cite) {
       >
         <h2 id="pro">Pro & Enterprise</h2>
         <p style={{ fontSize: "0.9rem", lineHeight: 1.7 }}>
-          Need higher rate limits, priority corrections, or reputation monitoring?
+          Need higher rate limits, priority business corrections, or reputation monitoring?
           Contact <strong>wooyeanho@gmail.com</strong> for Pro and Enterprise plans.
         </p>
         <ul style={{ fontSize: "0.9rem", color: "var(--muted)", lineHeight: 2 }}>

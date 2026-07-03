@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { makeContributorHashForRequest } from "@/lib/contributor-hash";
+import { clientIp } from "@/lib/rate-limit";
+import { persistentRateLimited } from "@/lib/rate-limit-store";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const SUPABASE_ANON_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? "";
@@ -41,6 +43,11 @@ export async function GET(request: Request) {
   if (claimId) query = query.eq("claim_id", claimId);
   if (authorType && ["user", "ai", "admin"].includes(authorType)) {
     query = query.eq("author_type", authorType);
+  } else if (!includeAi) {
+    query = query.neq("author_type", "ai");
+  }
+  if (questionType && ["question", "discussion", "report"].includes(questionType)) {
+    query = query.eq("question_type", questionType);
   }
   if (questionType && ["question", "discussion", "report"].includes(questionType)) {
     query = query.eq("question_type", questionType);
@@ -53,6 +60,13 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  // Block DB spam-loading: cap anonymous post submissions per IP. Public posts
+  // land as 'pending' and require moderation, but unbounded inserts are a DDoS /
+  // storage-abuse vector, so throttle before touching the database.
+  if ((await persistentRateLimited("community-posts", clientIp(request), 10, 60 * 60 * 1000)).limited) {
+    return NextResponse.json({ error: "rate_limited" }, { status: 429 });
+  }
+
   const sb = supabaseAnon();
   if (!sb) {
     const missing = [
@@ -70,8 +84,8 @@ export async function POST(request: Request) {
   }
 
   const authorType = String(body.author_type ?? "user");
-  if (!["user", "ai"].includes(authorType)) {
-    return NextResponse.json({ error: "author_type must be 'user' or 'ai'" }, { status: 400 });
+  if (authorType !== "user") {
+    return NextResponse.json({ error: "public submissions must use author_type='user'; AI suggestions require the admin/internal route" }, { status: 400 });
   }
 
   const content = String(body.content ?? "").trim();
@@ -82,7 +96,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "content too long (max 2000 chars)" }, { status: 400 });
   }
 
-  const authorName = String(body.author_name ?? (authorType === "ai" ? "AI" : "익명")).trim().slice(0, 50);
+  const authorName = String(body.author_name ?? "익명").trim().slice(0, 50);
   const documentId = body.document_id ? String(body.document_id).trim() : null;
   const claimId = body.claim_id ? String(body.claim_id).trim() : null;
   const rawQuestionType = body.question_type ? String(body.question_type).trim() : null;
@@ -109,9 +123,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
   }
 
-  // Public submissions land as 'pending' and require admin approval in
-  // /admin/posts before they become visible. Admin/AI posts created through the
-  // service-role /api/admin/posts route publish directly.
+  // Public submissions land as 'pending' user posts and require admin approval in
+  // /admin/posts before they become visible. AI posts are reserved for the
+  // service-role /api/admin/posts route or internal generation flows.
   const { data, error } = await sb.from("community_posts").insert({
     document_id: documentId,
     claim_id: claimId,
@@ -131,5 +145,8 @@ export async function POST(request: Request) {
     created_at: data.created_at,
     status: "pending",
     message: "검토 후 게시됩니다.",
+    contributor_hash: contributorHash,
+    receipt_url: `/contribute/receipt/${contributorHash}`,
+    raw_ip_stored: false,
   }, { status: 201 });
 }

@@ -26,6 +26,9 @@ await runJob("check-source-health", async () => {
     const health = await checkUrl(source.url, timeoutMs);
     checks.push({ id: source.id, claim_id: source.claim_id, url: source.url, source_type: source.source_type, ...health });
   }
+  // This job records reachability only. Source trust classifier labels, when shown elsewhere
+  // as recommended source type, are review hints and must not promote candidates,
+  // create verification_events, or change claim confidence/status automatically.
   const unhealthy = checks.filter((check) => !check.ok);
   await writeAuditEvent(supabase, { action: "cron.check_source_health", metadata: { limit, timeout_ms: timeoutMs, checked: checks.length, unhealthy_count: unhealthy.length, unhealthy: unhealthy.slice(0, 50) } }, { dryRun: args.dryRun });
   return { dryRun: args.dryRun, checked: checks.length, unhealthy: unhealthy.length };

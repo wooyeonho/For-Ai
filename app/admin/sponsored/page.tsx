@@ -1,4 +1,5 @@
 "use client";
+import { readAdminCsrfToken } from "@/lib/admin-client";
 
 import type { CSSProperties, FormEvent } from "react";
 import { useCallback, useEffect, useState } from "react";
@@ -102,7 +103,7 @@ export default function AdminSponsoredPage() {
     try {
       const res = await fetch("/api/admin/sponsored", {
         method,
-        headers: { "Content-Type": "application/json", "x-admin-secret": adminSecret, "x-admin-csrf": "1" },
+        headers: { "Content-Type": "application/json", "x-admin-secret": adminSecret, "x-admin-csrf": readAdminCsrfToken() },
         body: JSON.stringify(form),
       });
       const payload = await res.json();
@@ -118,7 +119,7 @@ export default function AdminSponsoredPage() {
   async function setActive(p: Placement, isActive: boolean) {
     const res = await fetch("/api/admin/sponsored", {
       method: "PATCH",
-      headers: { "Content-Type": "application/json", "x-admin-secret": adminSecret, "x-admin-csrf": "1" },
+      headers: { "Content-Type": "application/json", "x-admin-secret": adminSecret, "x-admin-csrf": readAdminCsrfToken() },
       body: JSON.stringify({ ...p, is_active: isActive }),
     });
     const payload = await res.json();

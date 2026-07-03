@@ -65,13 +65,23 @@ Users must feel trust. AI must find structure.
 
 ## Color Semantics
 
-| Color | Meaning |
-|-------|---------|
-| Green (#15613a) | Verified, citation-ready |
-| Yellow (#7a4c00) | Needs review, uncertain |
-| Red (#9f1b1e) | Disputed, do not cite |
-| Blue (#24415f) | Accent, interactive |
-| Gray (#5f6b7a) | Metadata, secondary |
+| Color | Meaning | Token |
+|-------|---------|-------|
+| Green (#15613a) | Verified, citation-ready | `--status-verified` |
+| Yellow/Brown (#8a5a14) | Needs review, uncertain | `--status-review` |
+| Red (#9f1b1e) | Disputed, do not cite | `--status-disputed` |
+| Gray (#526276) | Candidate or low-confidence until reviewed | `--status-candidate` |
+| Blue/Navy (#24415f) | Accent, interactive only; never verified status | `--accent` |
+| Muted Gray (#5f6b7a) | Metadata, secondary | `--muted` |
+
+### Status Color Rules
+
+- Status badges must use semantic status tokens instead of ad hoc hex values.
+- Verified states use the green `--status-verified` token. Do not use cyan or bright blue for verified claims because those colors read as generic interactive accents rather than trust signals.
+- Needs-review states use `--status-review` and must remain visibly distinct from verified states.
+- Disputed or dangerous-to-cite states use `--status-disputed`.
+- Candidate, low-confidence, or unreviewed states use `--status-candidate` unless the UI explicitly marks them as needs-review.
+- Active filter controls share the same ink/paper inversion rule across ghost buttons, community chips, and admin filters.
 
 ## Typography
 

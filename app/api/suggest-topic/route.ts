@@ -6,7 +6,7 @@ import {
   hasHoneypotValue,
   inspectSubmissionText,
 } from "@/lib/submission-limits";
-import { rateLimited } from "@/lib/rate-limit";
+import { persistentRateLimited } from "@/lib/rate-limit-store";
 import { invalidPublicSourceUrl, parsePublicSourceUrl } from "@/lib/source-contributions";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
@@ -102,7 +102,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Server configuration error" }, { status: 500 });
   }
 
-  if (rateLimited("suggest-topic", contributorHash, MAX_PER_HOUR, HOUR_MS)) {
+  if ((await persistentRateLimited("suggest-topic", contributorHash, MAX_PER_HOUR, HOUR_MS)).limited) {
     return NextResponse.json({ error: "rate_limited" }, { status: 429 });
   }
 
@@ -173,5 +173,7 @@ export async function POST(request: Request) {
     status: spamCheck.status === "spam_suspected" ? "spam_suspected" : "candidate",
     admin_queue: "topic_candidates.status=new",
     raw_ip_stored: false,
+    contributor_hash: contributorHash,
+    receipt_url: `/contribute/receipt/${contributorHash}`,
   });
 }

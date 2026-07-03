@@ -53,7 +53,7 @@ export async function PATCH(request: Request) {
     return NextResponse.json({ error: 'id and valid action are required' }, { status: 400 });
   }
 
-  // Fetch the suggestion
+  // Fetch the suggestion before the guarded transition for audit metadata.
   const { data: suggestion, error: fetchErr } = await sb
     .from('source_suggestions')
     .select('*')
@@ -70,13 +70,20 @@ export async function PATCH(request: Request) {
 
   const newStatus = action === 'accept' ? 'accepted' : action === 'duplicate' ? 'duplicate' : action === 'spam' ? 'spam' : 'rejected';
 
-  // Update status
-  const { error: updateErr } = await sb
+  // Atomically transition only a pending row. This prevents two concurrent
+  // admin requests from both observing "pending" and double-awarding points.
+  const { data: transitioned, error: updateErr } = await sb
     .from('source_suggestions')
     .update({ status: newStatus, reviewed_at: new Date().toISOString() })
-    .eq('id', id);
+    .eq('id', id)
+    .eq('status', 'pending')
+    .select('id')
+    .maybeSingle();
 
   if (updateErr) return NextResponse.json({ error: updateErr.message }, { status: 500 });
+  if (!transitioned) {
+    return NextResponse.json({ error: 'Suggestion is not pending' }, { status: 409 });
+  }
 
   let claimSourceId: string | null = null;
 
@@ -86,6 +93,14 @@ export async function PATCH(request: Request) {
       referenceId: id,
       referenceType: 'source_suggestion',
     });
+
+    if (suggestion.source_type === 'official') {
+      await awardPoints(sb, suggestion.contributor_hash, 'official_source_accepted_bonus', POINT_VALUES.official_source_accepted_bonus, {
+        referenceId: id,
+        referenceType: 'source_suggestion',
+        metadata: { domain: suggestion.domain ?? null, claim_id: suggestion.claim_id ?? null },
+      });
+    }
 
     // Optionally promote to official claim_source
     if (promoteToClaimSource && suggestion.claim_id) {

@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin, requireAdmin, logAdminAuditEvent } from "@/lib/admin-api";
 
+const COMMERCIAL_INTEGRITY_NOTICE = "Business product actions are intake/monitoring only; independent human verification is still required before any factual claim becomes AI-citable.";
+
 // GET: Fetch reputation alerts for a profile (requires admin or API key auth)
 export async function GET(request: Request) {
   const adminError = await requireAdmin(request, "reputation_alerts.read");
@@ -28,7 +30,7 @@ export async function GET(request: Request) {
   const { data, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  return NextResponse.json({ alerts: data ?? [] });
+  return NextResponse.json({ product_step: "optional_reputation_alerts", integrity_notice: COMMERCIAL_INTEGRITY_NOTICE, alerts: data ?? [] });
 }
 
 // POST: Admin — create a new reputation alert (triggered by system or admin)
@@ -85,7 +87,7 @@ export async function POST(request: Request) {
     severity,
   });
 
-  return NextResponse.json({ alert: data }, { status: 201 });
+  return NextResponse.json({ product_step: "optional_reputation_alerts", integrity_notice: COMMERCIAL_INTEGRITY_NOTICE, alert: data }, { status: 201 });
 }
 
 // PATCH: Mark alerts as read or resolved

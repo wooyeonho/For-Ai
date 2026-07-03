@@ -9,6 +9,10 @@ import {
   POINT_VALUES,
 } from '../../../lib/gamification';
 import { invalidPublicSourceUrl, parsePublicSourceUrl } from '../../../lib/source-contributions';
+import { persistentRateLimited } from '../../../lib/rate-limit-store';
+
+const DAILY_PER_CLAIM_LIMIT = 20;
+const DAY_MS = 86_400_000;
 
 export async function POST(request: Request) {
   let body: Record<string, unknown>;
@@ -71,8 +75,17 @@ export async function POST(request: Request) {
   const domain = url ? extractDomain(url) : null;
   const official = url ? isOfficialDomain(url) : false;
 
-  // Rate-limit: max 20 suggestions per contributor per day per claim
-  const oneDayAgo = new Date(Date.now() - 86400000).toISOString();
+  // Rate-limit: max 20 suggestions per contributor per day per claim. The
+  // persistent (Postgres-backed) limiter increments atomically in a single
+  // round-trip, so concurrent requests from one client — even across
+  // serverless instances — cannot slip past the cap in the window between the
+  // DB count and the insert (the check-then-act TOCTOU that let macro scripts
+  // farm points). The DB count below remains as a defense-in-depth backstop.
+  if ((await persistentRateLimited('source-suggest', `${contributorHash}:${claimId}`, DAILY_PER_CLAIM_LIMIT, DAY_MS)).limited) {
+    return NextResponse.json({ error: 'Daily suggestion limit reached for this claim' }, { status: 429 });
+  }
+
+  const oneDayAgo = new Date(Date.now() - DAY_MS).toISOString();
   const { count: recentCount } = await sb
     .from('source_suggestions')
     .select('id', { count: 'exact', head: true })
@@ -80,7 +93,7 @@ export async function POST(request: Request) {
     .eq('claim_id', claimId)
     .gte('created_at', oneDayAgo);
 
-  if ((recentCount ?? 0) >= 20) {
+  if ((recentCount ?? 0) >= DAILY_PER_CLAIM_LIMIT) {
     return NextResponse.json({ error: 'Daily suggestion limit reached for this claim' }, { status: 429 });
   }
 
@@ -105,23 +118,17 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Failed to save suggestion' }, { status: 500 });
   }
 
-  // Award base points
-  let pointsAwarded = POINT_VALUES.source_submitted;
-  await awardPoints(sb, contributorHash, 'source_submitted', POINT_VALUES.source_submitted, {
+  // Award base points idempotently per saved suggestion. Official-domain
+  // submissions no longer get a submission-time bonus — that credit is only
+  // awarded at acceptance time (official_source_accepted_bonus) so pending,
+  // unreviewed submissions can't inflate the leaderboard.
+  let pointsAwarded = 0;
+  const baseAwarded = await awardPoints(sb, contributorHash, 'source_submitted', POINT_VALUES.source_submitted, {
     referenceId: suggestion.id,
     referenceType: 'source_suggestion',
     metadata: { claim_id: claimId, country },
   });
-
-  // Bonus for official domain
-  if (official) {
-    await awardPoints(sb, contributorHash, 'official_source_bonus', POINT_VALUES.official_source_bonus, {
-      referenceId: suggestion.id,
-      referenceType: 'source_suggestion',
-      metadata: { domain, claim_id: claimId, country },
-    });
-    pointsAwarded += POINT_VALUES.official_source_bonus;
-  }
+  if (baseAwarded) pointsAwarded += POINT_VALUES.source_submitted;
 
   // Check and award any newly earned badges
   const newBadges = await checkAndAwardBadges(sb, contributorHash);
@@ -132,5 +139,13 @@ export async function POST(request: Request) {
     points_awarded: pointsAwarded,
     is_official_source: official,
     new_badges: newBadges,
+    review_status: 'pending',
+    next_steps: [
+      'Moderators compare the source against the submitted claim.',
+      'Accepted sources may be attached to claim_sources for human verification.',
+      'Additional contribution credit may be awarded when the source is accepted or used for verification.',
+    ],
+    contributor_hash: contributorHash,
+    receipt_url: `/contribute/receipt/${contributorHash}`,
   });
 }

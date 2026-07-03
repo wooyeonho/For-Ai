@@ -4,12 +4,13 @@ import {
   AI_PROVIDERS,
   getAvailableProviders,
   generateWithProvider,
-  generateWithAll,
   type AIGenerateResponse,
+  providerEstimatedCostPer1kTokensUsd,
 } from "../../../../lib/ai-providers";
 import { buildConsensus, type ConsensusCandidate } from "../../../../lib/consensus";
-import { logAdminAuditEvent, missingSupabaseAdminEnv, requireAdmin, supabaseAdmin } from "@/lib/admin-api";
+import { getAdminAuthContext, logAdminAuditEvent, missingSupabaseAdminEnv, requireAdmin, supabaseAdmin } from "@/lib/admin-api";
 import { DEFAULT_LOCALE, LOCALE_CONFIG, isValidLocale } from "@/lib/i18n/locales";
+import { AI_GENERATION_LIMITS, adminActorHashFromRequest, aiGenerationKillSwitchEnabled, checkAIGenerationQuota, recordAIGenerationUsage } from "@/lib/ai-budget";
 
 function buildPrompt(topic: string, count: number, lang: string) {
   const langInstructions: Record<string, string> = {
@@ -61,6 +62,13 @@ ${instruction}
 
 ${count}개를 JSON 배열로만. 설명 없이 JSON만.
 `.trim();
+}
+
+
+function selectDefaultProvider(available: AIProviderKey[]): AIProviderKey {
+  return available.find((provider) => provider === "perplexity")
+    ?? available.find((provider) => provider.startsWith("nvidia_"))
+    ?? available[0];
 }
 
 function defaultCountryForLang(lang: string): string {
@@ -213,161 +221,64 @@ function parseCandidatesFromResponse(
   }
 }
 
-function normalizeForMatch(value: unknown): string {
-  return String(value ?? "")
-    .toLowerCase()
-    .normalize("NFKD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[^a-z0-9가-힣ぁ-んァ-ン一-龥]+/g, " ")
-    .trim();
-}
-
-function tokenize(value: unknown): Set<string> {
-  return new Set(normalizeForMatch(value).split(/\s+/).filter(Boolean));
-}
-
-function jaccard(a: Set<string>, b: Set<string>): number {
-  if (a.size === 0 || b.size === 0) return 0;
-  const intersection = [...a].filter((v) => b.has(v)).length;
-  const union = new Set([...a, ...b]).size;
-  return union === 0 ? 0 : intersection / union;
-}
-
-function candidateSimilarity(a: Record<string, unknown>, b: Record<string, unknown>): number {
-  const slugA = normalizeForMatch(a.slug).replace(/\s+/g, "-");
-  const slugB = normalizeForMatch(b.slug).replace(/\s+/g, "-");
-  const slugScore = slugA && slugA === slugB ? 1 : jaccard(tokenize(slugA.replace(/-/g, " ")), tokenize(slugB.replace(/-/g, " ")));
-  const titleScore = jaccard(tokenize(a.title), tokenize(b.title));
-  return Math.max(slugScore, titleScore * 0.92);
-}
-
-function consensusLevel(score: number): "unanimous" | "majority" | "minority" | "single" {
-  if (score >= 0.9) return "unanimous";
-  if (score >= 0.55) return "majority";
-  if (score > 0) return "minority";
-  return "single";
-}
-
-function mergeSourceHints(candidates: Record<string, unknown>[]): Record<string, string>[] {
-  const merged = new Map<string, Record<string, string>>();
-  for (const candidate of candidates) {
-    for (const hint of (candidate.source_hints as Record<string, string>[] | undefined) ?? []) {
-      const url = String(hint.url ?? "").trim();
-      if (!url || merged.has(url)) continue;
-      merged.set(url, { url, title: String(hint.title ?? url) });
-    }
-  }
-  return [...merged.values()];
-}
-
-function applyConsensus(
-  candidates: Record<string, unknown>[],
-  providerCount: number
-): { candidates: Record<string, unknown>[]; summary: Record<string, unknown> } {
-  const groups: Record<string, unknown>[][] = [];
-
-  for (const candidate of candidates) {
-    const best = groups
-      .map((group, index) => ({ index, score: Math.max(...group.map((existing) => candidateSimilarity(candidate, existing))) }))
-      .sort((a, b) => b.score - a.score)[0];
-
-    if (best && best.score >= 0.5) groups[best.index].push(candidate);
-    else groups.push([candidate]);
-  }
-
-  const enriched = groups.flatMap((group) => {
-    const providers = [...new Set(group.map((c) => String(c.generation_model ?? "").split("/")[0]).filter(Boolean))];
-    const supportRatio = providerCount > 0 ? providers.length / providerCount : 0;
-    const similarity = group.length > 1
-      ? group.reduce((sum, current, index) => sum + (index === 0 ? 1 : candidateSimilarity(group[0], current)), 0) / group.length
-      : 0;
-    const score = Math.min(1, Math.round((supportRatio * 0.7 + similarity * 0.3) * 100) / 100);
-    const level = consensusLevel(score);
-    const sourceHints = mergeSourceHints(group);
-
-    return group.map((candidate) => ({
-      ...candidate,
-      consensus_score: score,
-      consensus_level: level,
-      consensus_sources: providers,
-      source_hints: sourceHints,
-    }));
-  });
-
-  const levels = enriched.reduce<Record<string, number>>((acc, candidate) => {
-    const level = String(candidate.consensus_level ?? "low");
-    acc[level] = (acc[level] ?? 0) + 1;
-    return acc;
-  }, {});
-
-  return {
-    candidates: enriched,
-    summary: {
-      provider_count: providerCount,
-      candidate_count: candidates.length,
-      consensus_group_count: groups.length,
-      levels,
-    },
-  };
-}
-
 async function generateCandidateBatch(
   providers: AIProviderKey[],
-  aiRequest: { systemPrompt: string; userPrompt: string; temperature: number },
+  aiRequest: { systemPrompt: string; userPrompt: string; temperature: number; adminContext: "admin" },
   lang: string,
   crossVerify: boolean
 ): Promise<{
   candidates: Record<string, unknown>[];
-  providerResults: Record<string, { generated: number; error?: string; parse_error?: string }>;
+  providerResults: Record<string, { generated: number; error?: string; parse_error?: string; estimated_cost_usd?: number; duration_ms?: number; success?: boolean; role?: "primary" | "escalation" | "consensus" }>;
   consensusResults: ConsensusCandidate[] | null;
-  consensusSummary: Record<string, unknown> | null;
 }> {
-  const providerResults: Record<string, { generated: number; error?: string; parse_error?: string }> = {};
+  const providerResults: Record<string, { generated: number; error?: string; parse_error?: string; estimated_cost_usd?: number; duration_ms?: number; success?: boolean; role?: "primary" | "escalation" | "consensus" }> = {};
   let allCandidates: Record<string, unknown>[] = [];
   let consensusResults: ConsensusCandidate[] | null = null;
-  let consensusSummary: Record<string, unknown> | null = null;
 
-  if (crossVerify && providers.length >= 2) {
-    const responses = await generateWithAll(providers, aiRequest);
-    const candidatesByProvider = new Map<string, Record<string, unknown>[]>();
+  const orderedProviders = [...providers].sort(
+    (a, b) => providerEstimatedCostPer1kTokensUsd(a) - providerEstimatedCostPer1kTokensUsd(b)
+  );
 
-    for (const resp of responses) {
-      const { candidates, parseError } = parseCandidatesFromResponse(resp, lang);
-      providerResults[resp.provider] = {
-        generated: candidates.length,
-        error: resp.error || undefined,
-        parse_error: parseError,
-      };
-      if (candidates.length > 0) {
-        candidatesByProvider.set(resp.provider, candidates);
-      }
-    }
-
-    if (candidatesByProvider.size >= 2) {
-      consensusResults = buildConsensus(candidatesByProvider, providers.length);
-      allCandidates = consensusResults;
-    } else {
-      for (const candidates of candidatesByProvider.values()) {
-        allCandidates.push(...candidates);
-      }
-    }
-
-    const consensus = applyConsensus(allCandidates, providers.length);
-    allCandidates = consensus.candidates;
-    consensusSummary = consensus.summary;
-  } else {
-    const primaryProvider = providers[0];
-    const response = await generateWithProvider(primaryProvider, aiRequest);
+  for (let index = 0; index < orderedProviders.length; index += 1) {
+    const provider = orderedProviders[index];
+    const response = await generateWithProvider(provider, aiRequest);
     const { candidates, parseError } = parseCandidatesFromResponse(response, lang);
-    providerResults[primaryProvider] = {
+    providerResults[provider] = {
       generated: candidates.length,
       error: response.error || undefined,
       parse_error: parseError,
+      estimated_cost_usd: response.estimated_cost_usd,
+      duration_ms: response.duration_ms,
+      success: response.success,
+      role: index === 0 ? "primary" : (crossVerify ? "consensus" : "escalation"),
     };
-    allCandidates = candidates;
+
+    if (candidates.length > 0) {
+      allCandidates.push(...candidates);
+    }
+
+    const hasEnoughPrimaryCandidates = !crossVerify && allCandidates.length >= 1;
+    const hasUsableConsensusPanel = crossVerify && Object.values(providerResults).filter((r) => r.generated > 0).length >= 2;
+    if (hasEnoughPrimaryCandidates || hasUsableConsensusPanel) break;
   }
 
-  return { candidates: allCandidates, providerResults, consensusResults, consensusSummary };
+  // Single source of truth for cross-provider agreement: the weighted,
+  // vendor-capped engine in lib/consensus.ts. (A second, unweighted-Jaccard
+  // consensus pass used to run here too and silently replace this candidate
+  // list — see git history for the removed `applyConsensus` duplicate.)
+  if (crossVerify && Object.values(providerResults).filter((r) => r.generated > 0).length >= 2) {
+    const candidatesByProvider = new Map<string, Record<string, unknown>[]>();
+    for (const provider of Object.keys(providerResults)) {
+      const providerCandidates = allCandidates.filter((candidate) =>
+        String(candidate.generation_model ?? "").startsWith(`${provider}/`)
+      );
+      if (providerCandidates.length > 0) candidatesByProvider.set(provider, providerCandidates);
+    }
+    consensusResults = buildConsensus(candidatesByProvider, Object.keys(providerResults).length);
+    allCandidates = consensusResults;
+  }
+
+  return { candidates: allCandidates, providerResults, consensusResults };
 }
 
 async function filterDuplicateCandidates(
@@ -390,7 +301,38 @@ async function filterDuplicateCandidates(
   };
 }
 
-function toTopicCandidateDbRows(candidates: Record<string, unknown>[]): Record<string, unknown>[] {
+function sumProviderCost(providerResults: Record<string, { estimated_cost_usd?: number }>): number {
+  return Number(Object.values(providerResults).reduce((sum, r) => sum + (r.estimated_cost_usd ?? 0), 0).toFixed(6));
+}
+
+async function createGenerationRun(
+  client: ReturnType<typeof supabaseAdmin>,
+  payload: Record<string, unknown>
+): Promise<string | null> {
+  if (!client) return null;
+  const { data, error } = await client
+    .from("candidate_generation_runs")
+    .insert(payload)
+    .select("id")
+    .single();
+  if (error) {
+    console.warn("[admin/generate-candidates] generation run insert skipped", error.message);
+    return null;
+  }
+  return data?.id ?? null;
+}
+
+async function updateGenerationRun(
+  client: ReturnType<typeof supabaseAdmin>,
+  runId: string | null,
+  payload: Record<string, unknown>
+): Promise<void> {
+  if (!client || !runId) return;
+  const { error } = await client.from("candidate_generation_runs").update(payload).eq("id", runId);
+  if (error) console.warn("[admin/generate-candidates] generation run update skipped", error.message);
+}
+
+function toTopicCandidateDbRows(candidates: Record<string, unknown>[], generationRunId: string | null): Record<string, unknown>[] {
   return candidates.map((c) => {
     const row = { ...c } as Record<string, unknown>;
     delete row.merged_source_hints;
@@ -398,6 +340,7 @@ function toTopicCandidateDbRows(candidates: Record<string, unknown>[]): Record<s
     delete row.total_providers;
     delete row.consensus_sources;
     delete row.agreed_providers;
+    if (generationRunId) row.generation_run_id = generationRunId;
     return row;
   });
 }
@@ -408,14 +351,35 @@ export async function POST(request: Request) {
 
   const body = await request.json();
   const topic = String(body.topic ?? body.category ?? "").trim();
-  const count = Math.min(Math.max(parseInt(body.count ?? "10"), 1), 50);
+  const requestedCount = parseInt(body.count ?? "10", 10);
+  const count = Math.min(Math.max(Number.isFinite(requestedCount) ? requestedCount : 10, 1), AI_GENERATION_LIMITS.maxCount);
   const lang = String(body.lang ?? DEFAULT_LOCALE).trim() || DEFAULT_LOCALE;
   const saveToDb = body.save !== false;
   const requestedProviders = body.providers as AIProviderKey[] | undefined;
   const crossVerify = body.cross_verify === true;
+  const requestId = crypto.randomUUID();
+  const client = supabaseAdmin();
+  const authContext = getAdminAuthContext(request);
+  const adminActorHash = adminActorHashFromRequest(request, authContext?.adminUserHash ?? "unknown-admin");
 
   if (!topic) {
     return NextResponse.json({ error: "topic 필드가 필요합니다" }, { status: 400 });
+  }
+
+  const killSwitch = await aiGenerationKillSwitchEnabled(client);
+  if (killSwitch.disabled) {
+    return NextResponse.json({ error: "AI generation is disabled", reason: killSwitch.reason }, { status: 503 });
+  }
+
+  const quota = await checkAIGenerationQuota(client, adminActorHash);
+  if (!quota.allowed) {
+    return NextResponse.json({
+      error: "AI generation quota exceeded",
+      reason: quota.reason,
+      daily_used: quota.dailyUsed,
+      monthly_used: quota.monthlyUsed,
+      limits: AI_GENERATION_LIMITS,
+    }, { status: 429 });
   }
 
   const available = getAvailableProviders();
@@ -426,7 +390,7 @@ export async function POST(request: Request) {
   // Determine which providers to use
   let providers: AIProviderKey[];
   if (requestedProviders && requestedProviders.length > 0) {
-    providers = requestedProviders.filter((p) => available.includes(p));
+    providers = [...new Set(requestedProviders)].filter((p) => available.includes(p)).slice(0, AI_GENERATION_LIMITS.maxProviders);
     if (providers.length === 0) {
       return NextResponse.json({
         error: "Requested providers not available",
@@ -445,14 +409,25 @@ export async function POST(request: Request) {
 
   const systemPrompt = buildSystemPrompt(lang);
   const userPrompt = buildPrompt(topic, count, lang);
-  const aiRequest = { systemPrompt, userPrompt, temperature: 0.3 };
+  const aiRequest = { systemPrompt, userPrompt, temperature: 0.3, maxOutputTokens: AI_GENERATION_LIMITS.maxOutputTokens, adminContext: "admin" as const };
 
   const {
     candidates: allCandidates,
     providerResults,
     consensusResults,
-    consensusSummary,
   } = await generateCandidateBatch(providers, aiRequest, lang, crossVerify);
+
+  await Promise.all(Object.entries(providerResults).map(([provider, result]) => recordAIGenerationUsage(client, {
+    provider: provider as AIProviderKey,
+    model: AI_PROVIDERS[provider as AIProviderKey].model,
+    requestedCount: count,
+    generatedCount: result.generated,
+    maxOutputTokens: AI_GENERATION_LIMITS.maxOutputTokens,
+    adminActorHash,
+    requestId,
+    status: result.error || result.parse_error ? "failed" : "completed",
+    error: result.error ?? result.parse_error ?? null,
+  })));
 
   if (allCandidates.length === 0) {
     const parseErrors = Object.entries(providerResults)
@@ -470,7 +445,7 @@ export async function POST(request: Request) {
       error: reason,
       provider_results: providerResults,
       providers_used: Object.keys(providerResults),
-      fallback_used: fallbackUsed,
+      fallback_used: false,
     }, { status: 502 });
   }
 
@@ -479,17 +454,38 @@ export async function POST(request: Request) {
   let saveError: string | null = null;
   let saveErrorDetails: Record<string, unknown> | null = null;
   let skippedDuplicates = 0;
-  const client = supabaseAdmin();
+  const totalEstimatedCostUsd = sumProviderCost(providerResults);
+  const generationRunId = await createGenerationRun(client, {
+    topic,
+    lang,
+    requested_count: count,
+    cross_verify: crossVerify,
+    requested_providers: providers,
+    providers_used: Object.keys(providerResults),
+    provider_results: providerResults,
+    consensus_summary: consensusResults ? {
+      total_unique: consensusResults.length,
+      unanimous: consensusResults.filter((c) => c.consensus_level === "unanimous").length,
+      majority: consensusResults.filter((c) => c.consensus_level === "majority").length,
+      minority: consensusResults.filter((c) => c.consensus_level === "minority").length,
+      single: consensusResults.filter((c) => c.consensus_level === "single").length,
+    } : null,
+    total_generated: allCandidates.length,
+    saved_count: 0,
+    estimated_cost_usd: totalEstimatedCostUsd,
+    status: allCandidates.length > 0 ? "generated" : "failed",
+  });
 
   if (saveToDb && client) {
     const duplicateFilter = await filterDuplicateCandidates(allCandidates, client);
     const deduped = duplicateFilter.deduped;
     skippedDuplicates = duplicateFilter.skippedDuplicates;
 
-    const dbRows = toTopicCandidateDbRows(deduped);
+    const dbRows = toTopicCandidateDbRows(deduped, generationRunId);
 
     if (dbRows.length === 0) {
       saved = [];
+      await updateGenerationRun(client, generationRunId, { saved_count: 0, skipped_duplicates: skippedDuplicates, status: "duplicates" });
       await logAdminAuditEvent(client, request, "admin.generate_candidates", {
         topic, lang, saved_count: 0, skipped_duplicates: skippedDuplicates,
         providers_used: Object.keys(providerResults), cross_verify: crossVerify,
@@ -498,9 +494,13 @@ export async function POST(request: Request) {
         topic, lang,
         providers_used: Object.keys(providerResults),
         available_providers: available.map((p) => ({ key: p, label: AI_PROVIDERS[p].label })),
+        limits: AI_GENERATION_LIMITS,
+        quota,
+        effective_count: count,
         cross_verify: crossVerify,
         provider_results: providerResults,
-        fallback_used: fallbackUsed,
+        generation_run: { id: generationRunId, cost_usd: totalEstimatedCostUsd, provider_count: Object.keys(providerResults).length, accepted_count: 0, promoted_count: 0, accepted_promoted_ratio: 0 },
+        fallback_used: false,
         total_generated: allCandidates.length,
         saved: 0,
         skipped_duplicates: skippedDuplicates,
@@ -521,6 +521,7 @@ export async function POST(request: Request) {
         details: error.details,
         hint: error.hint,
       };
+      await updateGenerationRun(client, generationRunId, { saved_count: 0, skipped_duplicates: skippedDuplicates, status: "save_failed", save_error: saveError });
       console.error("[admin/generate-candidates] Supabase insert failed", {
         message: error.message,
         code: error.code,
@@ -530,6 +531,7 @@ export async function POST(request: Request) {
       });
     } else {
       saved = data ?? [];
+      await updateGenerationRun(client, generationRunId, { saved_count: saved.length, skipped_duplicates: skippedDuplicates, status: "saved" });
       await logAdminAuditEvent(client, request, "admin.generate_candidates", {
         topic,
         lang,
@@ -551,10 +553,13 @@ export async function POST(request: Request) {
     lang,
     providers_used: Object.keys(providerResults),
     available_providers: available.map((p) => ({ key: p, label: AI_PROVIDERS[p].label })),
+    limits: AI_GENERATION_LIMITS,
+    quota,
+    effective_count: count,
     cross_verify: crossVerify,
     provider_results: providerResults,
-    fallback_used: fallbackUsed,
-    ...(consensusSummary ? { consensus_summary: consensusSummary } : {}),
+    generation_run: { id: generationRunId, cost_usd: totalEstimatedCostUsd, provider_count: Object.keys(providerResults).length, accepted_count: 0, promoted_count: 0, accepted_promoted_ratio: 0 },
+    fallback_used: false,
     total_generated: allCandidates.length,
     saved: saved.length,
     ...(saveToDb ? { skipped_duplicates: skippedDuplicates } : {}),
@@ -589,6 +594,11 @@ export async function POST(request: Request) {
 export async function GET(request: Request) {
   const adminError = await requireAdmin(request, "candidates.generate_metadata");
   if (adminError) return adminError;
+  const client = supabaseAdmin();
+  const authContext = getAdminAuthContext(request);
+  const adminActorHash = adminActorHashFromRequest(request, authContext?.adminUserHash ?? "unknown-admin");
+  const killSwitch = await aiGenerationKillSwitchEnabled(client);
+  const quota = await checkAIGenerationQuota(client, adminActorHash);
   const available = getAvailableProviders();
   return NextResponse.json({
     available_providers: available.map((p) => ({
@@ -598,5 +608,8 @@ export async function GET(request: Request) {
       supports_web_search: AI_PROVIDERS[p].supportsWebSearch,
     })),
     supported_languages: ["ko", "en", "hi", "ar", "es", "ja", "zh"],
+    limits: AI_GENERATION_LIMITS,
+    kill_switch: killSwitch,
+    quota,
   });
 }

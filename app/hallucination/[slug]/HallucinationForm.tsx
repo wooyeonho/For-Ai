@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { HALLUCINATION_FIELD_MAX_LENGTHS } from "@/lib/submission-limits";
-import { isValidLocale } from "@/lib/i18n/locales";
 
 export function HallucinationForm({
   documentId,
@@ -63,14 +62,6 @@ export function HallucinationForm({
   }
 
   if (submitted) {
-    const requestedReturn = searchParams.get("return");
-    const lang = searchParams.get("lang");
-    const returnHref = requestedReturn?.startsWith("/") && !requestedReturn.startsWith("//")
-      ? requestedReturn
-      : isValidLocale(lang ?? "")
-        ? `/${lang}/wiki/${slug}`
-        : `/en/wiki/${slug}`;
-
     return (
       <div className="submission-success">
         <p>AI 오답 신고가 접수되었습니다. 검토 후 반영됩니다.</p>

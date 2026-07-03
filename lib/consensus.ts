@@ -1,8 +1,67 @@
 // lib/consensus.ts
 // Cross-verification consensus algorithm for multi-AI candidate generation.
 // Given candidates from multiple providers, finds agreement and scores reliability.
+// Consensus output is a topic_candidates triage signal only: it must not write
+// directly to claims, claim_sources, or verification_events, and it cannot
+// promote anything to verified without human source review.
+//
+// Scoring is weighted, not a raw head count: each provider carries a trust
+// `weight` (web-search-grounded > frontier > small parametric) and belongs to a
+// `vendorGroup` whose total contribution is capped. This defends the "majority"
+// signal against a single vendor's correlated errors (e.g. four NVIDIA models
+// agreeing on the same hallucination). A candidate can only reach majority /
+// unanimous if at least two distinct vendors agree, and the level is downgraded
+// one step when no web-search-grounded provider is among the agreeing set.
 
-interface RawCandidate {
+import {
+  cappedGroupWeight,
+  providerVendorGroup,
+  providerSupportsWebSearch,
+} from "./ai-providers";
+
+export interface CandidateEmbeddingInput {
+  title: string;
+  slug: string;
+  category: string;
+  claims?: { question?: string }[];
+}
+
+export interface CandidateEmbeddingRecord {
+  embedding_model: string;
+  embedding_text: string;
+  embedding: number[];
+}
+
+export interface CandidateEmbeddingProvider {
+  embedCandidate(input: CandidateEmbeddingInput): Promise<CandidateEmbeddingRecord>;
+}
+
+export function buildCandidateEmbeddingText(candidate: CandidateEmbeddingInput): string {
+  const claimQuestions = (candidate.claims ?? [])
+    .map((claim) => claim.question?.trim())
+    .filter((question): question is string => Boolean(question));
+
+  return [candidate.title, candidate.slug, candidate.category, ...claimQuestions]
+    .map((part) => part.trim())
+    .filter(Boolean)
+    .join("\n");
+}
+
+interface CandidateSimilarityOptions {
+  embeddingSimilarity?: number;
+  embeddingThreshold?: number;
+}
+
+export interface CandidateSimilarityDecision {
+  isSimilar: boolean;
+  matchedBy: "slug" | "title" | "embedding" | "none";
+  slugSimilarity: number;
+  titleSimilarity: number;
+  embeddingSimilarity?: number;
+  reviewSignal: "merge_candidate" | "possible_duplicate" | "none";
+}
+
+export interface RawCandidate {
   title: string;
   slug: string;
   category: string;
@@ -56,12 +115,48 @@ function titleSimilarity(a: string, b: string): number {
   return total > 0 ? common.length / total : 0;
 }
 
-function areSimilarCandidates(a: RawCandidate, b: RawCandidate): boolean {
-  if (normalizeSlug(a.slug) === normalizeSlug(b.slug)) return true;
-  const ss = slugSimilarity(a.slug, b.slug);
-  if (ss >= 0.6) return true;
+export function getCandidateSimilarityDecision(
+  a: RawCandidate,
+  b: RawCandidate,
+  options: CandidateSimilarityOptions = {}
+): CandidateSimilarityDecision {
+  const ss = normalizeSlug(a.slug) === normalizeSlug(b.slug) ? 1 : slugSimilarity(a.slug, b.slug);
   const ts = titleSimilarity(a.title, b.title);
-  return ts >= 0.5;
+  if (ss >= 0.6) {
+    return { isSimilar: true, matchedBy: "slug", slugSimilarity: ss, titleSimilarity: ts, reviewSignal: "merge_candidate" };
+  }
+  if (ts >= 0.5) {
+    return { isSimilar: true, matchedBy: "title", slugSimilarity: ss, titleSimilarity: ts, reviewSignal: "merge_candidate" };
+  }
+
+  const threshold = options.embeddingThreshold ?? 0.86;
+  if (typeof options.embeddingSimilarity === "number" && options.embeddingSimilarity >= threshold) {
+    return {
+      isSimilar: false,
+      matchedBy: "embedding",
+      slugSimilarity: ss,
+      titleSimilarity: ts,
+      embeddingSimilarity: options.embeddingSimilarity,
+      reviewSignal: "possible_duplicate",
+    };
+  }
+
+  return {
+    isSimilar: false,
+    matchedBy: "none",
+    slugSimilarity: ss,
+    titleSimilarity: ts,
+    embeddingSimilarity: options.embeddingSimilarity,
+    reviewSignal: "none",
+  };
+}
+
+function areSimilarCandidates(a: RawCandidate, b: RawCandidate, embeddingSimilarity?: number): boolean {
+  const decision = getCandidateSimilarityDecision(a, b, { embeddingSimilarity });
+  // Embedding-only matches intentionally do not merge consensus groups. They are
+  // possible-duplicate review signals because semantic closeness can hide
+  // materially different facts, languages, jurisdictions, or claim scopes.
+  return decision.reviewSignal === "merge_candidate";
 }
 
 function mergeSourceHints(groups: RawCandidate[]): { url: string; title: string }[] {
@@ -91,6 +186,8 @@ function mergeClaims(
       } else {
         claimMap.set(key, {
           question: claim.question,
+          // AI harness candidates carry unknown placeholders only; factual
+          // values are filled later by human verification workflows.
           placeholder_value: "확인 필요",
           required_source_type: claim.required_source_type,
           count: 1,
@@ -104,10 +201,47 @@ function mergeClaims(
     .sort((a, b) => b.provider_count - a.provider_count);
 }
 
+type ConsensusLevel = ConsensusCandidate["consensus_level"];
+
+function downgradeLevel(level: ConsensusLevel): ConsensusLevel {
+  // single/minority are already the floor for their situations.
+  if (level === "unanimous") return "majority";
+  if (level === "majority") return "minority";
+  return level;
+}
+
+function computeConsensusLevel(
+  agreedProviderCount: number,
+  vendorGroupCount: number,
+  weightedScore: number,
+  hasWebSearch: boolean
+): ConsensusLevel {
+  let level: ConsensusLevel;
+  if (agreedProviderCount <= 1) {
+    level = "single";
+  } else if (vendorGroupCount < 2) {
+    // Multiple models but a single vendor — treat correlated agreement as weak.
+    level = "minority";
+  } else if (weightedScore >= 0.99) {
+    level = "unanimous";
+  } else if (weightedScore >= 0.5) {
+    level = "majority";
+  } else {
+    level = "minority";
+  }
+
+  // Parametric-only agreement (no web-search grounding) is weaker evidence.
+  return hasWebSearch ? level : downgradeLevel(level);
+}
+
 export function buildConsensus(
   candidatesByProvider: Map<string, Record<string, unknown>[]>,
   totalProviders: number
 ): ConsensusCandidate[] {
+  // Weighted denominator: the full panel of providers that contributed
+  // comparable output, with each vendor group capped.
+  const panelProviders = [...candidatesByProvider.keys()];
+  const panelWeight = cappedGroupWeight(panelProviders);
   const allCandidates: (RawCandidate & { _provider: string })[] = [];
   for (const [provider, candidates] of candidatesByProvider) {
     for (const c of candidates) {
@@ -144,15 +278,11 @@ export function buildConsensus(
   return groups
     .map((group) => {
       const providers = [...new Set(group.map((c) => c._provider))];
-      const score = providers.length / totalProviders;
-      const level: ConsensusCandidate["consensus_level"] =
-        providers.length === totalProviders
-          ? "unanimous"
-          : providers.length > totalProviders / 2
-            ? "majority"
-            : providers.length > 1
-              ? "minority"
-              : "single";
+      const agreedWeight = cappedGroupWeight(providers);
+      const score = panelWeight > 0 ? Math.min(1, agreedWeight / panelWeight) : 0;
+      const vendorGroupCount = new Set(providers.map(providerVendorGroup)).size;
+      const hasWebSearch = providers.some(providerSupportsWebSearch);
+      const level = computeConsensusLevel(providers.length, vendorGroupCount, score, hasWebSearch);
 
       // Use the candidate from the most reliable source (prefer web-search provider)
       const primary =

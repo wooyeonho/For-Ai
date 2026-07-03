@@ -1,96 +1,10 @@
 import { SupabaseClient } from '@supabase/supabase-js';
+import { awardPoints, POINT_VALUES } from './point-awards';
+export { awardPoints, POINT_VALUES };
 
-export const POINT_VALUES = {
-  topic_submitted: 2,
-  topic_accepted: 20,
-  source_submitted: 5,
-  official_source_bonus: 5,       // stacked on top of source_submitted for official domains
-  source_accepted: 30,
-  source_used_in_verified_claim: 100,
-  hallucination_reported: 5,
-  hallucination_accepted: 50,
-  new_country_contribution: 50,   // first contribution to a previously untouched country
-  stale_claim_fixed: 80,
-} as const;
-
-export interface Badge {
-  slug: string;
-  name: string;
-  description: string;
-  icon: string;  // two-letter abbreviation for display
-}
-
-export const BADGES: Record<string, Badge> = {
-  first_source: {
-    slug: 'first_source',
-    name: 'First Source',
-    description: 'Submitted your first source candidate',
-    icon: '1S',
-  },
-  source_finder: {
-    slug: 'source_finder',
-    name: 'Source Finder',
-    description: 'Submitted 10 source candidates',
-    icon: 'SF',
-  },
-  official_source_hunter: {
-    slug: 'official_source_hunter',
-    name: 'Official Source Hunter',
-    description: '10 official-domain sources accepted',
-    icon: 'OS',
-  },
-  country_scout: {
-    slug: 'country_scout',
-    name: 'Country Scout',
-    description: 'Contributed sources for 20 claims in one country',
-    icon: 'CS',
-  },
-  global_contributor: {
-    slug: 'global_contributor',
-    name: 'Global Contributor',
-    description: 'Contributed to 5 or more countries',
-    icon: 'GC',
-  },
-  hallucination_spotter: {
-    slug: 'hallucination_spotter',
-    name: 'Hallucination Spotter',
-    description: '10 AI hallucination reports accepted',
-    icon: 'HS',
-  },
-  stale_fixer: {
-    slug: 'stale_fixer',
-    name: 'Stale Fixer',
-    description: 'Fixed 10 stale claim sources',
-    icon: 'SX',
-  },
-  high_trust: {
-    slug: 'high_trust',
-    name: 'High Trust Contributor',
-    description: '80%+ source acceptance rate (minimum 10 submissions)',
-    icon: 'HT',
-  },
-};
-
-export async function awardPoints(
-  sb: SupabaseClient,
-  contributorHash: string,
-  eventType: string,
-  points: number,
-  opts?: {
-    referenceId?: string;
-    referenceType?: string;
-    metadata?: Record<string, unknown>;
-  }
-): Promise<void> {
-  await sb.from('contributor_point_events').insert({
-    contributor_hash: contributorHash,
-    event_type: eventType,
-    points,
-    reference_id: opts?.referenceId ?? null,
-    reference_type: opts?.referenceType ?? null,
-    metadata: opts?.metadata ?? {},
-  });
-}
+import { BADGES } from "./badges";
+export { BADGES };
+export type { Badge } from "./badges";
 
 export async function awardBadgeIfNew(
   sb: SupabaseClient,
@@ -142,7 +56,7 @@ export async function checkAndAwardBadges(
     { slug: 'source_finder', condition: (counts['source_submitted'] ?? 0) >= 10 },
     {
       slug: 'official_source_hunter',
-      condition: (counts['official_source_bonus'] ?? 0) >= 10,
+      condition: (counts['official_source_accepted_bonus'] ?? 0) >= 10,
     },
     { slug: 'hallucination_spotter', condition: (counts['hallucination_accepted'] ?? 0) >= 10 },
     { slug: 'stale_fixer', condition: (counts['stale_claim_fixed'] ?? 0) >= 10 },

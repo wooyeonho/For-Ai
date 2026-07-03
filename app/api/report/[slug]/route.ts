@@ -10,8 +10,8 @@ import {
   inspectSubmissionText,
 } from '../../../../lib/submission-limits';
 import { recordDocumentAnalyticsEvent } from '@/lib/analytics';
-import { invalidPublicSourceUrl, normalizeSourceUrl, parsePublicSourceUrl, pointEventForSubmission } from '@/lib/source-contributions';
-import { recordContributionEvent } from '@/lib/contributions';
+import { invalidPublicSourceUrl, normalizeSourceUrl, parsePublicSourceUrl } from '@/lib/source-contributions';
+import { awardPoints, extractDomain, POINT_VALUES } from '@/lib/gamification';
 
 export async function POST(
   request: Request,
@@ -65,7 +65,7 @@ export async function POST(
   if (isSupabaseConfigured()) {
     try {
       const supabase = createServerClient();
-      const limit = contributorSubmissionRateLimited(contributorHash);
+      const limit = await contributorSubmissionRateLimited(contributorHash);
       if (limit) {
         return NextResponse.json(
           { error: 'submission rate limit exceeded', code: `RATE_LIMIT_${limit.toUpperCase()}` },
@@ -77,7 +77,6 @@ export async function POST(
       const sourceTitle = typeof body.source_title === 'string' ? body.source_title.trim() : '';
       const citation = typeof body.citation === 'string' ? body.citation.trim() : '';
       const claimId = typeof body.claim_id === 'string' && body.claim_id.trim() ? body.claim_id.trim() : null;
-      const fieldPath = typeof body.field_path === 'string' && body.field_path.trim() ? body.field_path.trim() : null;
       const parsedSourceUrl = sourceUrl ? parsePublicSourceUrl(sourceUrl) : null;
       if (parsedSourceUrl && !parsedSourceUrl.ok) {
         const invalidUrl = invalidPublicSourceUrl();
@@ -96,76 +95,27 @@ export async function POST(
       });
 
       let pointsAwarded = 0;
-      let sourceCandidateId: string | null = null;
+      let sourceSuggestionId: string | null = null;
       if (!error && (publicSourceUrl || sourceTitle || citation)) {
-        const { data: contributor, error: contributorError } = await supabase
-          .from('contributors')
-          .upsert({ contributor_hash: contributorHash, updated_at: new Date().toISOString() }, { onConflict: 'contributor_hash' })
-          .select('id,total_points')
-          .single();
-        if (contributorError) throw new Error(`contributor upsert failed: ${contributorError.message}`);
-
-        const { data: duplicate } = normalizedUrl
-          ? await supabase
-              .from('source_candidates')
-              .select('id')
-              .eq('normalized_url', normalizedUrl)
-              .neq('status', 'spam')
-              .limit(1)
-              .maybeSingle()
-          : { data: null } as { data: null };
-        const isDuplicate = Boolean(duplicate?.id);
-        const pointEvent = spamCheck.status === 'spam_suspected'
-          ? { eventType: 'source_spam_rejected', points: 0 }
-          : pointEventForSubmission(isDuplicate);
-        pointsAwarded = pointEvent.points;
-
-        const { data: candidate, error: sourceError } = await supabase.from('source_candidates').insert({
-          document_id: documentId,
-          entity_id: entityId,
+        const { data: suggestion, error: suggestionError } = await supabase.from('source_suggestions').insert({
           claim_id: claimId,
-          field_path: fieldPath,
-          title: sourceTitle || null,
+          contributor_hash: contributorHash,
+          source_type: body.report_type === 'source_candidate' ? 'official' : 'web',
           url: publicSourceUrl || null,
-          normalized_url: normalizedUrl,
+          title: sourceTitle || null,
           citation: citation || null,
-          source_type: body.report_type === 'source_candidate' ? 'official' : 'unknown',
-          source_authority: body.report_type === 'source_candidate' ? 'official' : 'unknown',
-          message,
-          contributor_hash: contributorHash,
-          contributor_id: contributor.id,
-          duplicate_of: duplicate?.id ?? null,
-          status: spamCheck.status,
-          review_status: spamCheck.status === 'spam_suspected' ? 'spam' : 'pending',
-          points_awarded: pointsAwarded,
+          domain: normalizedUrl ? extractDomain(normalizedUrl) : null,
+          status: spamCheck.status === 'spam_suspected' ? 'spam' : 'pending',
         }).select('id').single();
-        if (sourceError) throw new Error(`source candidate insert failed: ${sourceError.message}`);
-        sourceCandidateId = candidate.id;
+        if (suggestionError) throw new Error(`source suggestion insert failed: ${suggestionError.message}`);
+        sourceSuggestionId = suggestion.id;
 
-        const { data: event, error: eventError } = await supabase.from('contribution_events').insert({
-          contributor_id: contributor.id,
-          contributor_hash: contributorHash,
-          source_candidate_id: sourceCandidateId,
-          claim_id: claimId,
-          event_type: pointEvent.eventType,
-          points_delta: pointsAwarded,
-          metadata: { duplicate: isDuplicate, spam_status: spamCheck.status, points_do_not_determine_truth: true },
-        }).select('id').single();
-        if (eventError) throw new Error(`contribution event insert failed: ${eventError.message}`);
-
-        if (pointsAwarded > 0) {
-          const { error: pointsError } = await supabase.from('contributor_points').insert({
-            contributor_id: contributor.id,
-            contributor_hash: contributorHash,
-            contribution_event_id: event.id,
-            points: pointsAwarded,
-            reason: pointEvent.eventType,
+        if (spamCheck.status !== 'spam_suspected') {
+          pointsAwarded = POINT_VALUES.source_submitted;
+          await awardPoints(supabase, contributorHash, 'source_submitted', pointsAwarded, {
+            referenceId: sourceSuggestionId ?? undefined,
+            referenceType: 'source_suggestion',
           });
-          if (pointsError) throw new Error(`contributor points insert failed: ${pointsError.message}`);
-          await supabase.from('contributors').update({
-            total_points: Number(contributor.total_points ?? 0) + pointsAwarded,
-            updated_at: new Date().toISOString(),
-          }).eq('id', contributor.id);
         }
       }
 
@@ -177,7 +127,7 @@ export async function POST(
           lang: resolvedDocument.lang,
           category: resolvedDocument.category,
           reason: message,
-          aiContext: `Public correction report for document_id=${documentId ?? 'unknown'}, entity_id=${entityId ?? 'unknown'}, report_type=${body.report_type ?? 'correction'}, source_candidate_id=${sourceCandidateId ?? 'none'}`,
+          aiContext: `Public correction report for document_id=${documentId ?? 'unknown'}, entity_id=${entityId ?? 'unknown'}, report_type=${body.report_type ?? 'correction'}, source_suggestion_id=${sourceSuggestionId ?? 'none'}`,
           sourceUrls: [publicSourceUrl || null],
           contributorHash,
           claimQuestion: `Which claim on ${resolvedDocument.title} needs correction?`,
@@ -185,17 +135,6 @@ export async function POST(
         if (topicCandidateError) console.warn('[report] topic_candidates insert skipped:', topicCandidateError.message);
       }
 
-
-      if (!error && publicSourceUrl) {
-        await recordContributionEvent(supabase, {
-          contributor_hash: contributorHash,
-          event_type: 'source_submitted',
-          country: resolvedDocument.country,
-          source_type: 'web',
-          claim_id: body.claim_id?.trim() || null,
-          document_id: documentId,
-        });
-      }
 
       if (error) {
         console.error('[report] Supabase insert error:', error.message);
@@ -205,7 +144,7 @@ export async function POST(
         );
       }
       await recordDocumentAnalyticsEvent(supabase, request, slug, 'report_submission');
-      responsePayload = { success: true, slug, points_awarded: pointsAwarded, source_candidate_id: sourceCandidateId };
+      responsePayload = { success: true, slug, points_awarded: pointsAwarded, source_suggestion_id: sourceSuggestionId };
     } catch (err) {
       console.error('[report] Unexpected error:', err);
       return NextResponse.json({ error: 'Server error' }, { status: 500 });

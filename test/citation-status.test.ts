@@ -24,6 +24,13 @@ import type {
 
 const NOW = new Date("2026-06-27T00:00:00.000Z");
 
+// getDocumentCitationStatus computes freshness against the real system clock, so
+// TTL-boundary assertions must use dates relative to *now* rather than fixed
+// literals (a hardcoded date silently crosses the TTL boundary as time passes).
+function isoDaysAgo(days: number): string {
+  return new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
+}
+
 function source(overrides: Partial<ClaimWithSources["sources"][number]> = {}): ClaimWithSources["sources"][number] {
   return {
     id: "src-1",
@@ -349,14 +356,16 @@ test("getFreshnessPolicy uses document update_frequency metadata", () => {
 });
 
 test("getDocumentCitationStatus applies metadata TTL unless explicitly overridden", () => {
-  const oldStatic = bundle([claim({ last_verified_at: "2025-07-01" })], {
+  // Verified within the 365-day static window but well past a 180-day override.
+  const oldStatic = bundle([claim({ last_verified_at: isoDaysAgo(200) })], {
     document: document({ data: { update_frequency: "static" } }),
   });
   assert.equal(getDocumentCitationStatus(oldStatic, undefined).freshness, "fresh");
   assert.equal(getDocumentCitationStatus(oldStatic, undefined).freshnessWindowDays, 365);
   assert.equal(getDocumentCitationStatus(oldStatic, 180).freshness, "stale");
 
-  const explicitTtl = bundle([claim({ last_verified_at: "2026-03-01" })], {
+  // Explicit 30-day TTL, verified 60 days ago → stale regardless of run date.
+  const explicitTtl = bundle([claim({ last_verified_at: isoDaysAgo(60) })], {
     document: document({ data: { update_frequency: "static", freshness_ttl_days: 30 } }),
   });
   assert.equal(getDocumentCitationStatus(explicitTtl, undefined).freshnessWindowDays, 30);
@@ -388,4 +397,27 @@ test("business-submitted pending claims stay citation-ready false even if they l
   assert.equal(documentStatus.isVerifiedDocument, false);
   assert.equal(documentStatus.verifiedClaims, 1);
   assert.equal(documentStatus.unverifiedClaims, 1);
+});
+
+test("high-risk machine translations are not citation-ready until human translation review", () => {
+  const status = getClaimCitationStatus(claim({
+    id: "claim-translated-high-risk",
+    risk_tier: "high",
+    original_claim_id: "claim-source-1",
+    translation_status: "machine_translated",
+  }), 180, NOW, "finance");
+
+  assert.equal(status.isCitationReady, false);
+  assert.match(status.reason, /human-reviewed translation/);
+});
+
+test("high-risk human translated claims can be citation-ready when other verification signals pass", () => {
+  const status = getClaimCitationStatus(claim({
+    id: "claim-translated-high-risk",
+    risk_tier: "high",
+    original_claim_id: "claim-source-1",
+    translation_status: "human_translated",
+  }), 180, NOW, "finance");
+
+  assert.equal(status.isCitationReady, true);
 });

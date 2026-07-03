@@ -1,4 +1,5 @@
 "use client";
+import { readAdminCsrfToken } from "@/lib/admin-client";
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
@@ -10,7 +11,7 @@ import type { AdminRecommendation } from "@/lib/admin-recommendations";
 
 type SourceRow = { id: string; title?: string | null; url?: string | null; source_type?: string | null; source_authority?: string | null; citation?: string | null; observed_at?: string | null };
 type VerificationEventRow = { id: string; note?: string | null; created_at?: string | null; new_status?: string | null };
-type SourceCandidate = { id?: string; title?: string; url?: string; source_type?: string; citation?: string; status?: string | null; created_at?: string | null; contributor_hash?: string | null };
+type SourceCandidate = { id?: string; title?: string; url?: string; source_type?: string; citation?: string; status?: string | null; created_at?: string | null; contributor_hash?: string | null; source_domain?: string | null; detected_language?: string | null; page_type?: string | null };
 type ClaimRow = {
   id: string;
   field_path: string;
@@ -206,6 +207,7 @@ export default function VerifyClaimPage() {
     const params = new URLSearchParams(window.location.search);
     const slug = params.get("slug");
     const claimId = params.get("claim_id");
+    const stale = params.get("stale") === "true";
     if (slug) {
       setTargetSlug(slug);
       const staleParam = params.get("stale");
@@ -282,7 +284,7 @@ export default function VerifyClaimPage() {
     try {
       const res = await fetch("/api/admin/check-source", {
         method: "POST",
-        headers: { "Content-Type": "application/json", "x-admin-csrf": "1", ...(adminActor.trim() ? { "x-admin-actor": adminActor.trim() } : {}) },
+        headers: { "Content-Type": "application/json", "x-admin-csrf": readAdminCsrfToken(), ...(adminActor.trim() ? { "x-admin-actor": adminActor.trim() } : {}) },
         body: JSON.stringify({
           url: url.trim(),
           match: claimValue.trim(),
@@ -308,7 +310,7 @@ export default function VerifyClaimPage() {
     }
     const res = await fetch("/api/admin/verify-claim", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-admin-csrf": "1", ...(adminActor.trim() ? { "x-admin-actor": adminActor.trim() } : {}) },
+      headers: { "Content-Type": "application/json", "x-admin-csrf": readAdminCsrfToken(), ...(adminActor.trim() ? { "x-admin-actor": adminActor.trim() } : {}) },
       body: JSON.stringify({
         action,
         claim_id: selectedClaim.id,
@@ -346,7 +348,7 @@ export default function VerifyClaimPage() {
     if (!actionReason?.trim()) return;
     const res = await fetch("/api/admin/verify-claim", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-admin-csrf": "1", ...(adminActor.trim() ? { "x-admin-actor": adminActor.trim() } : {}) },
+      headers: { "Content-Type": "application/json", "x-admin-csrf": readAdminCsrfToken(), ...(adminActor.trim() ? { "x-admin-actor": adminActor.trim() } : {}) },
       body: JSON.stringify({ action, claim_id: claim.id, reason: actionReason.trim() }),
     });
     const data = await res.json();
@@ -367,7 +369,7 @@ export default function VerifyClaimPage() {
     }
     const res = await fetch("/api/admin/verify-claim", {
       method: "POST",
-      headers: { "Content-Type": "application/json", "x-admin-csrf": "1", ...(adminActor.trim() ? { "x-admin-actor": adminActor.trim() } : {}) },
+      headers: { "Content-Type": "application/json", "x-admin-csrf": readAdminCsrfToken(), ...(adminActor.trim() ? { "x-admin-actor": adminActor.trim() } : {}) },
       body: JSON.stringify({ action: "bulk_needs_verification", claim_ids: selectedClaimIds, reason: reason.trim() }),
     });
     const data = await res.json();
@@ -638,7 +640,7 @@ export default function VerifyClaimPage() {
                   <p className="meta-label">submitter: {claim.submitter ?? claim.contributor_hash ?? "-"} · AI: {[claim.ai_provider, claim.ai_model].filter(Boolean).join(" / ") || "-"}</p>
                 </AdminDbDetails>
                 {(claim.source_candidates?.length ?? 0) > 0 && (
-                  <div><strong>출처 후보</strong><ul>{claim.source_candidates?.map((source, i) => <li key={`${source.url ?? source.title ?? i}`}>{source.source_type ?? "web"} · trust {trustScore(source.source_type, source.url, source.citation)} · {source.url ? <a href={source.url}>{source.title ?? source.url}</a> : (source.title ?? source.citation)}</li>)}</ul></div>
+                  <div><strong>출처 후보</strong><ul>{claim.source_candidates?.map((source, i) => <li key={`${source.url ?? source.title ?? i}`}>recommended source type: {classifyRecommendedSourceType({ url: source.url, title: source.title, domain: source.source_domain, detected_language: source.detected_language, page_type: source.page_type }).recommended_source_type} · submitted: {source.source_type ?? "web"} · trust {trustScore(source.source_type, source.url, source.citation)} · {source.url ? <a href={source.url}>{source.title ?? source.url}</a> : (source.title ?? source.citation)}</li>)}</ul></div>
                 )}
                 {(claim.claim_sources?.length ?? 0) > 0 && (
                   <ul style={{ margin: "4px 0", paddingLeft: 16, fontSize: 13 }}>

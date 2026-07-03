@@ -1,7 +1,18 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin, requireAdmin, logAdminAuditEvent } from "@/lib/admin-api";
 import { makeContributorHashForRequest } from "@/lib/contributor-hash";
-import { calculateBusinessProfileCompletenessScore, getEntityProfile } from "@/lib/entity-profile";
+import { calculateBusinessProfileCompletenessScore, getBusinessProfileRiskDashboard, getEntityProfile } from "@/lib/entity-profile";
+
+const BUSINESS_PRODUCT_FLOW = [
+  "claim_or_join_waitlist",
+  "ownership_review",
+  "risk_dashboard",
+  "submit_corrections_with_sources",
+  "independent_human_verification",
+  "optional_reputation_alerts",
+] as const;
+
+const COMMERCIAL_INTEGRITY_NOTICE = "Verified business profiles, corrections, reputation alerts, and sponsored placements are separate products. None of them can directly verify a factual claim or change citation readiness.";
 
 // GET: List business profiles. Public callers only see verified profiles;
 // admins may pass ?status=pending|verified|rejected|suspended for review queues.
@@ -44,10 +55,12 @@ export async function GET(request: Request) {
     return {
       ...publicProfile,
       completeness: calculateBusinessProfileCompletenessScore(entityProfile?.documents ?? [], profile),
+      risk_dashboard: getBusinessProfileRiskDashboard(entityProfile?.documents ?? []),
+      product_flow: BUSINESS_PRODUCT_FLOW,
     };
   }));
 
-  return NextResponse.json({ profiles });
+  return NextResponse.json({ product_flow: BUSINESS_PRODUCT_FLOW, integrity_notice: COMMERCIAL_INTEGRITY_NOTICE, profiles });
 }
 
 // POST: Submit a new business profile claim (public, goes to pending)
@@ -55,7 +68,11 @@ export async function POST(request: Request) {
   const sb = supabaseAdmin();
   if (!sb) return NextResponse.json({ error: "Database not configured" }, { status: 500 });
 
-  const body = await request.json();
+  const contentType = request.headers.get("content-type") ?? "";
+  const isJsonRequest = contentType.includes("application/json");
+  const body = isJsonRequest
+    ? await request.json()
+    : Object.fromEntries((await request.formData()).entries());
   const entityId = String(body.entity_id ?? "").trim();
   const businessName = String(body.business_name ?? "").trim();
   const businessEmail = String(body.business_email ?? "").trim();
@@ -63,8 +80,11 @@ export async function POST(request: Request) {
   const country = String(body.country ?? "").trim();
   const industry = String(body.industry ?? "").trim() || null;
   const contactName = String(body.contact_name ?? "").trim() || null;
-  const contactEmailConsent = body.contact_email_consent === true;
+  const contactEmailConsent = body.contact_email_consent === true || body.contact_email_consent === "true";
   const contactEmailPurpose = String(body.contact_email_purpose ?? "business_profile_verification").trim();
+  const demandIntent = String(body.intent ?? "claim_profile").trim();
+  const requestedPlan = String(body.requested_plan ?? "unknown").trim();
+  const painPoint = String(body.pain_point ?? "").trim() || null;
   const verificationMethod = String(body.verification_method ?? "email").trim();
   const verificationReviewUrl = String(body.verification_review_url ?? "").trim() || null;
 
@@ -144,13 +164,27 @@ export async function POST(request: Request) {
       status: "pending",
       tier: "free",
       contributor_hash: contributorHash,
+      metadata: {
+        product_flow: BUSINESS_PRODUCT_FLOW,
+        demand_intent: demandIntent === "waitlist" ? "waitlist" : "claim_profile",
+        requested_plan: requestedPlan,
+        pain_point: painPoint,
+        integrity_notice: COMMERCIAL_INTEGRITY_NOTICE,
+      },
     })
     .select("id, entity_id, business_name, status, created_at")
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  return NextResponse.json({ profile, message: "Profile submitted for verification" }, { status: 201 });
+  if (!isJsonRequest) {
+    const redirectUrl = new URL("/business", request.url);
+    redirectUrl.searchParams.set("submitted", "1");
+    redirectUrl.searchParams.set("entity_id", entityId);
+    return NextResponse.redirect(redirectUrl, { status: 303 });
+  }
+
+  return NextResponse.json({ profile, product_flow: BUSINESS_PRODUCT_FLOW, integrity_notice: COMMERCIAL_INTEGRITY_NOTICE, message: demandIntent === "waitlist" ? "Waitlist/contact captured for pre-payment demand validation" : "Profile submitted for verification" }, { status: 201 });
 }
 
 // PATCH: Admin-only — verify/reject/suspend a business profile
@@ -160,7 +194,11 @@ export async function PATCH(request: Request) {
   const sb = supabaseAdmin();
   if (!sb) return NextResponse.json({ error: "Database not configured" }, { status: 500 });
 
-  const body = await request.json();
+  const contentType = request.headers.get("content-type") ?? "";
+  const isJsonRequest = contentType.includes("application/json");
+  const body = isJsonRequest
+    ? await request.json()
+    : Object.fromEntries((await request.formData()).entries());
   const profileId = String(body.profile_id ?? "").trim();
   const action = String(body.action ?? "").trim();
   const newStatus = String(body.status ?? "").trim();

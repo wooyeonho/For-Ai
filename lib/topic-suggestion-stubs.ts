@@ -1,3 +1,4 @@
+import { DataSourceKind } from "./data-source";
 import type { SubmissionStubResult } from "./submission-stubs";
 import { STUB_CONTRIBUTOR_HASH } from "./submission-stubs";
 
@@ -34,7 +35,7 @@ export function createTopicSuggestionStub(input: {
     status: "new",
     created_at: null,
     accepted: true,
-    storage: "stub",
+    storage: DataSourceKind.Stub,
     raw_ip_stored: false,
   };
 }

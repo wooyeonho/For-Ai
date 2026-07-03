@@ -99,25 +99,26 @@ export default function HomeSearch({ docs, locale }: { docs: DocItem[]; locale: 
       {merged.length === 0 ? (
         <div>
           {query ? (
-            <p className="home-search-muted">
-              &quot;{query}&quot; — {t.home.noResults}.{" "}
-              <Link
-                href={`/suggest-topic?q=${encodeURIComponent(query)}`}
-                className="home-search-link"
-              >
-                {t.home.suggestFirst}
-              </Link>{" "}
-              <button
-                onClick={() => setQuery("")}
-                className="home-search-reset"
-              >
-                {t.home.resetSearch}
-              </button>
-            </p>
+            <div className="home-search-empty">
+              <p className="home-search-muted">
+                &quot;{query}&quot; — {t.home.noResults}. If For-Ai does not have this answer yet, send it for review.
+              </p>
+              <div className="home-search-empty-actions">
+                <Link href={suggestHref} className="btn btn-primary">
+                  이 질문을 For-Ai에 등록하기
+                </Link>
+                <button
+                  onClick={() => setQuery("")}
+                  className="home-search-reset"
+                >
+                  {t.home.resetSearch}
+                </button>
+              </div>
+            </div>
           ) : (
             <p className="home-search-muted">
               {t.home.noDocs}{" "}
-              <Link href="/suggest-topic" className="home-search-link">
+              <Link href={suggestHref} className="home-search-link">
                 {t.home.suggestFirst}
               </Link>
             </p>

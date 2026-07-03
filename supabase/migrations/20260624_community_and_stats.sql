@@ -1,4 +1,4 @@
--- Community posts: users, AI (aiai), and admins can all leave posts.
+-- Community posts: public users can submit user posts; AI/admin posts are service-role only.
 -- Posts can optionally link to a document.
 create table community_posts (
   id              uuid primary key default gen_random_uuid(),
@@ -21,10 +21,10 @@ create index community_posts_author_type_idx on community_posts(author_type);
 
 alter table community_posts enable row level security;
 
--- Public anon: can submit user/ai posts for review and read published posts.
+-- Public anon: can submit user posts for review and read published posts.
 create policy community_posts_public_insert
   on community_posts for insert to anon
-  with check (status = 'pending' and author_type in ('user', 'ai'));
+  with check (status = 'pending' and author_type = 'user');
 
 create policy community_posts_public_select
   on community_posts for select to anon

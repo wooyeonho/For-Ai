@@ -2,6 +2,7 @@ import { createHash, createHmac, randomBytes, timingSafeEqual } from "crypto";
 import { NextResponse } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { createServiceRoleClient, isServiceRoleKeyConfigured } from "./supabase-server";
+import { persistentRateLimited } from "./rate-limit-store";
 
 const ADMIN_SECRET = process.env.ADMIN_SECRET ?? "";
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
@@ -9,7 +10,17 @@ const ADMIN_CSRF_SECRET = process.env.ADMIN_CSRF_SECRET ?? "";
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_MAX = 60;
 const ADMIN_SESSION_COOKIE = "for_ai_admin_session";
+const ADMIN_CSRF_COOKIE = "for_ai_admin_csrf";
 const ADMIN_SESSION_TTL_SECONDS = 30 * 60;
+const ALLOW_BREAK_GLASS_ADMIN = process.env.ALLOW_BREAK_GLASS_ADMIN === "true";
+
+export function productionAdminSecretFallbackDisabled(): boolean {
+  return process.env.NODE_ENV === "production" && !ALLOW_BREAK_GLASS_ADMIN;
+}
+
+function adminSecretFallbackAllowed(): boolean {
+  return !productionAdminSecretFallbackDisabled();
+}
 
 export const ADMIN_AUDIT_TABLE = "admin_audit_events";
 export const ADMIN_USERS_TABLE = "admin_users";
@@ -29,11 +40,12 @@ const FORBIDDEN_AUDIT_METADATA_KEYS = new Set([
 type AdminAuditValue = string | number | boolean | null | string[];
 type AdminAuditMetadata = Record<string, AdminAuditValue>;
 
-type AdminAuthContext = {
+export type AdminAuthContext = {
   adminUserId: string | null;
   adminUserHash: string;
   role: AdminRole;
   authMethod: "supabase" | "admin_session" | "admin_secret";
+  breakGlass?: boolean;
 };
 
 type AdminUserRow = {
@@ -60,7 +72,6 @@ const ACTION_REQUIRED_ROLES: Array<[RegExp, AdminRole]> = [
 ];
 
 const authContexts = new WeakMap<Request, AdminAuthContext>();
-const buckets = new Map<string, { count: number; resetAt: number }>();
 
 function hashSafe(value: string): string {
   return createHash("sha256").update(value).digest("hex");
@@ -84,16 +95,10 @@ function clientKey(request: Request): string {
   return `ip:${shortHash(ip)}`;
 }
 
-function rateLimited(request: Request): boolean {
-  const now = Date.now();
+async function rateLimited(request: Request): Promise<boolean> {
   const key = clientKey(request);
-  const bucket = buckets.get(key);
-  if (!bucket || bucket.resetAt <= now) {
-    buckets.set(key, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
-    return false;
-  }
-  bucket.count += 1;
-  return bucket.count > RATE_LIMIT_MAX;
+  const outcome = await persistentRateLimited("admin-api", key, RATE_LIMIT_MAX, RATE_LIMIT_WINDOW_MS);
+  return outcome.limited;
 }
 
 // Reject browser-originated cross-site requests. Browsers set Sec-Fetch-Site
@@ -117,12 +122,43 @@ function sameOriginOk(request: Request): boolean {
   return true;
 }
 
+function csrfCookieToken(request: Request): string | null {
+  const cookie = request.headers.get("cookie") ?? "";
+  const token = cookie
+    .split(";")
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(`${ADMIN_CSRF_COOKIE}=`))
+    ?.slice(ADMIN_CSRF_COOKIE.length + 1);
+  return token ? decodeURIComponent(token) : null;
+}
+
+// The double-submit token is `${rand}.${HMAC(ADMIN_CSRF_SECRET, rand)}`. A
+// subdomain attacker able to set the (non-httpOnly) cookie still cannot produce
+// a valid signature without the server secret.
+function csrfTokenSignatureValid(token: string): boolean {
+  const [rand, signature] = token.split(".");
+  if (!rand || !signature) return false;
+  const expected = createHmac("sha256", ADMIN_CSRF_SECRET).update(rand).digest("base64url");
+  return safeEqual(signature, expected);
+}
+
 function csrfValid(request: Request): boolean {
   if (request.method === "GET" || request.method === "HEAD" || request.method === "OPTIONS") return true;
+  // CSRF is a browser-only attack. Non-browser callers (CLI / server-to-server
+  // authenticated via x-admin-secret) send neither Origin nor Sec-Fetch-Site
+  // and are exempt from the browser double-submit check.
+  if (!isBrowserOriginRequest(request)) return true;
   if (!sameOriginOk(request)) return false;
-  const token = request.headers.get("x-admin-csrf") ?? "";
-  if (ADMIN_CSRF_SECRET) return safeSecretEqual(ADMIN_CSRF_SECRET, token);
-  return token.length > 0;
+  // Double-submit: the browser echoes the JS-readable for_ai_admin_csrf cookie
+  // (minted at login) in the x-admin-csrf header. Require an exact match and a
+  // valid signature. ADMIN_CSRF_SECRET is mandatory — there is no permissive
+  // "any non-empty token" fallback.
+  if (!ADMIN_CSRF_SECRET) return false;
+  const header = request.headers.get("x-admin-csrf") ?? "";
+  const cookieToken = csrfCookieToken(request);
+  if (!header || !cookieToken) return false;
+  if (!safeSecretEqual(header, cookieToken)) return false;
+  return csrfTokenSignatureValid(cookieToken);
 }
 
 function safeEqual(a: string, b: string): boolean {
@@ -177,6 +213,20 @@ export function issueAdminSessionCookie(response: NextResponse): void {
     name: ADMIN_SESSION_COOKIE,
     value: `${payload}.${signSessionPayload(payload)}`,
     httpOnly: true,
+    secure: true,
+    sameSite: "strict",
+    path: "/",
+    maxAge: ADMIN_SESSION_TTL_SECONDS,
+  });
+
+  // Double-submit CSRF token. httpOnly:false so the admin client can read it
+  // and echo it in the x-admin-csrf header; signed so it cannot be forged.
+  const csrfRand = randomBytes(16).toString("base64url");
+  const csrfToken = `${csrfRand}.${createHmac("sha256", ADMIN_CSRF_SECRET).update(csrfRand).digest("base64url")}`;
+  response.cookies.set({
+    name: ADMIN_CSRF_COOKIE,
+    value: csrfToken,
+    httpOnly: false,
     secure: true,
     sameSite: "strict",
     path: "/",
@@ -238,39 +288,37 @@ async function supabaseAuthContext(request: Request): Promise<AdminAuthContext |
   };
 }
 
-function adminSessionContext(request: Request): AdminAuthContext | null {
-  if (!adminSessionValid(request)) return null;
-  return {
-    adminUserId: null,
-    adminUserHash: hashSafe(`admin_session:${ADMIN_SECRET}`),
-    role: "admin",
-    authMethod: "admin_session",
-  };
-}
-
 function fallbackSecretContext(request: Request): AdminAuthContext | null {
+  if (!adminSecretFallbackAllowed()) return null;
   if (!internalSecretValid(request)) return null;
   return {
     adminUserId: null,
     adminUserHash: hashSafe(`admin_secret:${ADMIN_SECRET}`),
     role: "admin",
     authMethod: "admin_secret",
+    breakGlass: process.env.NODE_ENV === "production",
   };
 }
 
 function fallbackSessionContext(request: Request): AdminAuthContext | null {
+  if (!adminSecretFallbackAllowed()) return null;
   if (!adminSessionValid(request)) return null;
   return {
     adminUserId: null,
     adminUserHash: hashSafe(`admin_session:${ADMIN_SECRET}`),
     role: "admin",
     authMethod: "admin_session",
+    breakGlass: process.env.NODE_ENV === "production",
   };
+}
+
+export function getAdminAuthContext(request: Request): AdminAuthContext | null {
+  return authContexts.get(request) ?? null;
 }
 
 export async function authorized(request: Request): Promise<boolean> {
   if (browserSentAdminSecret(request)) return false;
-  return (await supabaseAuthContext(request)) !== null || adminSessionContext(request) !== null || fallbackSecretContext(request) !== null;
+  return (await supabaseAuthContext(request)) !== null || fallbackSessionContext(request) !== null || fallbackSecretContext(request) !== null;
 }
 
 export function safeRequestMetadata(request: Request): AdminAuditMetadata {
@@ -307,6 +355,7 @@ export async function logAdminAuditEvent(
       ...safeRequestMetadata(request),
       admin_role: context?.role ?? null,
       auth_method: context?.authMethod ?? "unknown",
+      ...(context?.breakGlass ? { break_glass: true } : {}),
       ...sanitizeAdminAuditMetadata(metadata),
     },
   });
@@ -358,7 +407,7 @@ export function adminErrorResponse(
 }
 
 export async function requireAdmin(request: Request, action: string): Promise<NextResponse | null> {
-  if (rateLimited(request)) {
+  if (await rateLimited(request)) {
     console.info("[admin-audit]", JSON.stringify({ action, allowed: false, reason: "rate_limited", at: new Date().toISOString() }));
     return NextResponse.json({ error: "rate_limited" }, { status: 429 });
   }
@@ -368,7 +417,7 @@ export async function requireAdmin(request: Request, action: string): Promise<Ne
     return NextResponse.json({ error: "browser_admin_secret_forbidden" }, { status: 403 });
   }
 
-  const context = await supabaseAuthContext(request) ?? adminSessionContext(request) ?? fallbackSecretContext(request);
+  const context = await supabaseAuthContext(request) ?? fallbackSessionContext(request) ?? fallbackSecretContext(request);
   if (!context) {
     console.info("[admin-audit]", JSON.stringify({ action, allowed: false, reason: "unauthorized", at: new Date().toISOString() }));
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });

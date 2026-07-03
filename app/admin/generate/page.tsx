@@ -1,4 +1,5 @@
 "use client";
+import { readAdminCsrfToken } from "@/lib/admin-client";
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { AdminSecretField, useAdminSecret } from "../AdminSecretProvider";
@@ -67,6 +68,14 @@ function formatProviderLabel(provider: ProviderOption): string {
   return provider.label;
 }
 
+interface GenerationLimits {
+  maxCount: number;
+  maxProviders: number;
+  maxOutputTokens: number;
+  dailyRequests: number;
+  monthlyRequests: number;
+}
+
 interface GenerateResult {
   topic: string;
   lang: string;
@@ -74,7 +83,8 @@ interface GenerateResult {
   total_generated: number;
   saved: number;
   preview: (Record<string, unknown> & ConsensusInfo)[];
-  provider_results?: Record<string, { generated: number; error?: string; parse_error?: string; role?: "primary" | "cross_verify" | "fallback" }>;
+  provider_results?: Record<string, { generated: number; error?: string; parse_error?: string; role?: "primary" | "cross_verify" | "fallback" | "escalation" | "consensus"; estimated_cost_usd?: number; success?: boolean }>;
+  generation_run?: { id: string | null; cost_usd: number; provider_count: number; accepted_count: number; promoted_count: number; accepted_promoted_ratio: number };
   fallback_used?: boolean;
   skipped_duplicates?: number;
   consensus_summary?: {
@@ -88,6 +98,8 @@ interface GenerateResult {
   save_status?: "saved" | "failed" | "skipped" | "skipped_all_duplicates";
   save_error?: string;
   save_error_details?: Record<string, unknown>;
+  limits?: GenerationLimits;
+  effective_count?: number;
 }
 
 export default function AdminGeneratePage() {
@@ -98,6 +110,7 @@ export default function AdminGeneratePage() {
   const [providersLoading, setProvidersLoading] = useState(true);
   const [providersError, setProvidersError] = useState("");
   const [selectedProviders, setSelectedProviders] = useState<string[]>(["perplexity"]);
+  const [limits, setLimits] = useState<GenerationLimits>({ maxCount: 10, maxProviders: 3, maxOutputTokens: 4096, dailyRequests: 25, monthlyRequests: 300 });
   const [crossVerify, setCrossVerify] = useState(false);
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<GenerateResult | null>(null);
@@ -111,6 +124,7 @@ export default function AdminGeneratePage() {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
         const providers = (data.available_providers ?? []) as ProviderOption[];
+        if (data.limits) setLimits(data.limits as GenerationLimits);
         setAvailableProviders(providers);
         if (providers.length > 0) setSelectedProviders([providers[0].key]);
       } catch (e) {
@@ -124,13 +138,16 @@ export default function AdminGeneratePage() {
   }, [adminSecret]);
 
   function toggleProvider(key: string) {
-    setSelectedProviders((prev) =>
-      prev.includes(key) ? prev.filter((p) => p !== key) : [...prev, key]
-    );
+    setSelectedProviders((prev) => {
+      if (prev.includes(key)) return prev.filter((p) => p !== key);
+      return [...prev, key].slice(0, limits.maxProviders);
+    });
   }
 
   async function handleGenerate() {
     if (!topic.trim()) return;
+    const providerCalls = crossVerify ? selectedProviders.length : Math.min(selectedProviders.length, 1);
+    if (!window.confirm(`AI provider ${providerCalls}개를 호출합니다. 최대 출력 토큰은 provider당 ${limits.maxOutputTokens}개이며 비용이 발생할 수 있습니다. 계속할까요?`)) return;
     setLoading(true);
     setError("");
     setResult(null);
@@ -140,7 +157,7 @@ export default function AdminGeneratePage() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          "x-admin-csrf": "1",
+          "x-admin-csrf": readAdminCsrfToken(),
         },
         body: JSON.stringify({
           topic: topic.trim(),
@@ -286,6 +303,9 @@ export default function AdminGeneratePage() {
           <p style={{ marginTop: 8, fontSize: 12, color: "#6b7280" }}>
             NVIDIA 항목은 같은 NVIDIA_API_KEY와 endpoint를 공유하며, 라벨로만 Llama/Nemotron 모델을 구분합니다.
           </p>
+          <p style={{ marginTop: 8, fontSize: 12, color: "#b45309", fontWeight: 600 }}>
+            비용 위험 경고: 요청 전 확인창이 표시됩니다. 서버 상한은 후보 {limits.maxCount}개, provider {limits.maxProviders}개, provider당 최대 출력 토큰 {limits.maxOutputTokens}개입니다. 현재 예상 provider 호출 수: {crossVerify ? selectedProviders.length : Math.min(selectedProviders.length, 1)}개.
+          </p>
           {providersLoading && <p style={{ marginTop: 8, fontSize: 12, color: "#6b7280" }}>사용 가능한 provider 확인 중...</p>}
           {!providersLoading && availableProviders.length === 0 && (
             <p style={{ marginTop: 8, fontSize: 12, color: "#b45309" }}>
@@ -304,8 +324,8 @@ export default function AdminGeneratePage() {
             <input
               type="number"
               value={count}
-              onChange={(e) => setCount(Math.min(50, Math.max(1, parseInt(e.target.value) || 1)))}
-              min={1} max={50}
+              onChange={(e) => setCount(Math.min(limits.maxCount, Math.max(1, parseInt(e.target.value) || 1)))}
+              min={1} max={limits.maxCount}
               style={{ width: 80, padding: "8px 12px", border: "1px solid #d1d5db", borderRadius: 6, fontSize: 14 }}
             />
           </div>
@@ -317,7 +337,7 @@ export default function AdminGeneratePage() {
                 onChange={(e) => setCrossVerify(e.target.checked)}
                 style={{ marginRight: 6 }}
               />
-              교차검증 (선택된 AI 전부 동시 호출)
+              교차검증 (cheap-first로 필요한 provider까지만 순차 호출)
             </label>
           </div>
         </div>
@@ -337,7 +357,7 @@ export default function AdminGeneratePage() {
             cursor: loading || !topic.trim() || selectedProviders.length === 0 || availableProviders.length === 0 ? "not-allowed" : "pointer",
           }}
         >
-          {loading ? "생성 중..." : `후보 ${count}개 생성`}
+          {loading ? "생성 중..." : `후보 ${Math.min(count, limits.maxCount)}개 생성 · provider ${crossVerify ? selectedProviders.length : Math.min(selectedProviders.length, 1)}개 호출`}
         </button>
       </div>
 
@@ -362,10 +382,24 @@ export default function AdminGeneratePage() {
               <div style={{ fontSize: 12, color: "#6b7280" }}>DB 저장</div>
             </div>
             <div style={{ padding: 12, background: "#faf5ff", borderRadius: 8, textAlign: "center" }}>
-              <div style={{ fontSize: 24, fontWeight: 700 }}>{result.providers_used?.length ?? 0}</div>
+              <div style={{ fontSize: 24, fontWeight: 700 }}>{result.generation_run?.provider_count ?? result.providers_used?.length ?? 0}</div>
               <div style={{ fontSize: 12, color: "#6b7280" }}>AI 사용</div>
             </div>
+            <div style={{ padding: 12, background: "#fff7ed", borderRadius: 8, textAlign: "center" }}>
+              <div style={{ fontSize: 24, fontWeight: 700 }}>${(result.generation_run?.cost_usd ?? 0).toFixed(4)}</div>
+              <div style={{ fontSize: 12, color: "#6b7280" }}>예상 비용</div>
+            </div>
+            <div style={{ padding: 12, background: "#f0fdfa", borderRadius: 8, textAlign: "center" }}>
+              <div style={{ fontSize: 24, fontWeight: 700 }}>{Math.round((result.generation_run?.accepted_promoted_ratio ?? 0) * 100)}%</div>
+              <div style={{ fontSize: 12, color: "#6b7280" }}>accepted/promoted</div>
+            </div>
           </div>
+
+          {result.generation_run && (
+            <div style={{ padding: 12, background: "#f9fafb", border: "1px solid #e5e7eb", borderRadius: 8, marginBottom: 16, fontSize: 13, color: "#374151" }}>
+              <strong>Generation run:</strong> {result.generation_run.id ?? "DB 미저장"} · cost ${result.generation_run.cost_usd.toFixed(6)} · providers {result.generation_run.provider_count} · accepted {result.generation_run.accepted_count} · promoted {result.generation_run.promoted_count}
+            </div>
+          )}
 
           {result.fallback_used && (
             <div style={{ padding: 12, background: "#fffbeb", border: "1px solid #fde68a", borderRadius: 8, marginBottom: 16, fontSize: 13, color: "#92400e" }}>
@@ -389,6 +423,7 @@ export default function AdminGeneratePage() {
               {Object.entries(result.provider_results).map(([provider, r]) => (
                 <div key={provider} style={{ padding: "4px 0" }}>
                   <strong>{provider}</strong>{r.role && <span style={{ color: "#6b7280" }}> ({r.role})</span>}: {r.generated}개 생성
+                  {r.estimated_cost_usd !== undefined && <span style={{ color: "#6b7280" }}> · ${r.estimated_cost_usd.toFixed(6)} · {r.success ? "success" : "failed"}</span>}
                   {r.error && <span style={{ color: "#dc2626" }}> — {r.error}</span>}
                   {r.parse_error && <span style={{ color: "#b45309" }}> — 파싱 실패: {r.parse_error}</span>}
                 </div>

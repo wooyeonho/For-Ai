@@ -1,4 +1,5 @@
 "use client";
+import { readAdminCsrfToken } from "@/lib/admin-client";
 
 import Link from "next/link";
 import { useCallback, useMemo, useState } from "react";
@@ -31,7 +32,7 @@ export default function AdminInboxPage() {
 
   const act = useCallback(async (item: InboxItem, action: string) => {
     setMessage(null);
-    const res = await fetch("/api/admin/inbox", { method: "PATCH", headers: { "Content-Type": "application/json", "x-admin-secret": adminSecret, "x-admin-csrf": "admin-inbox" }, body: JSON.stringify({ id: item.id, type: item.type, action }) });
+    const res = await fetch("/api/admin/inbox", { method: "PATCH", headers: { "Content-Type": "application/json", "x-admin-secret": adminSecret, "x-admin-csrf": readAdminCsrfToken() }, body: JSON.stringify({ id: item.id, type: item.type, action }) });
     const payload = await res.json(); setMessage({ ok: res.ok, text: res.ok ? `${TYPE_LABELS[item.type] ?? item.type} ${action} 처리 완료` : payload.error ?? "처리 실패" }); if (res.ok) await load();
   }, [adminSecret, load]);
 

@@ -84,6 +84,33 @@ Use `disputed` when credible sources disagree, the official source conflicts wit
 
 Resolve unknown or disputed claims only after a human reviewer verifies acceptable evidence. Record the accepted source in `claim_sources`, record the action in `verification_events`, set `last_verified_at` to the review time, and choose the confidence level according to the evidence quality above.
 
-## 6. AI-generated candidate rule
+## 6. AI candidate generation harness policy
 
 AI may help identify candidates, draft placeholders, summarize pages, suggest field paths, or prepare review queues. AI may not approve facts. A human reviewer must perform the final source check before any AI-generated candidate, imported candidate, or generated draft becomes `verified`.
+
+The AI generation harness is restricted to `topic_candidates` only. Harness output must never write directly to the canonical factual tables: `claims`, `claim_sources`, or `verification_events`. Those tables are populated only by imports or workflows that include human source review and explicit verification actions.
+
+All AI-generated `topic_candidates.claims` values must be placeholders by default. The only acceptable placeholder values are `확인 필요` for Korean-facing candidates and `Needs verification` for English/global candidates. The harness may propose questions, required source types, source hints, and review metadata, but it must not fill factual answers, inferred values, or confident-looking defaults into candidate claim values.
+
+Consensus is a triage signal, not verification evidence. A high `consensus_score`, `majority`, or `unanimous` consensus may prioritize review, but it must not promote a candidate to `verified` without human review, acceptable source evidence in `claim_sources`, and a recorded `verification_events` action.
+
+The topic-candidate triage job should preserve this boundary by treating harness signals as review routing inputs. Candidates with no source hints, high-risk domains, or only one agreeing provider should be routed for careful review or rejection according to local policy; none of these signals can create verified claims automatically.
+
+## 7. Source trust classifier policy
+
+The source trust classifier is an intake and review aid only. It accepts the following fields from a `source_candidates` row, admin review form, health-check result, or digest input: source URL, source title, normalized/extracted domain, detected source language, and page type. Its output is limited to one auxiliary label: `official`, `primary`, `secondary`, `user_generated`, `commercial`, or `unknown`.
+
+These labels are intentionally narrower than the canonical `claim_sources.source_type` enum. They are recommendations, not evidence decisions:
+
+- `official` means the source appears to be an entity owner, government, regulator, standards body, institution, official policy, filing, notice, law, or regulation page.
+- `primary` means the source appears to be a primary platform, registry, database, operator listing, app-store/product listing, or system of record that directly publishes the fact but is not necessarily the entity owner.
+- `secondary` means the source appears to be news, reference, report, article, blog, or dataset evidence that is not the direct owner of the fact.
+- `user_generated` means the source appears to be a review, forum, social, community, comment, or other crowd-supplied page.
+- `commercial` means the source appears to be sponsored, affiliate, checkout, marketplace, booking, store, pricing, coupon, or other commerce-driven content.
+- `unknown` means the classifier lacks enough reliable signal or the page does not fit the allowed auxiliary labels.
+
+The classifier must not automatically promote `source_candidates` into `claim_sources`, create `verification_events`, mark candidates as accepted, set `last_verified_at`, or change claim `status`/`confidence`. Automated jobs such as `scripts/jobs/check-source-health.mjs` may record reachability or recommendation metadata for admin review, but health or classifier success never means verified truth.
+
+Admin surfaces may show the classifier output only as **recommended source type** beside the original candidate/source metadata. Reviewers must still inspect the source and choose the canonical `claim_sources.source_type` and `source_authority` manually when they accept evidence.
+
+A claim may not be raised to `high` confidence unless at least one human-reviewed source or reviewed candidate is official/regulator/law-level evidence. If no official source candidate or accepted official source exists, keep confidence at `medium` or `low` even when secondary or user-generated evidence is reachable and relevant.
