@@ -22,6 +22,7 @@ create type notification_preference as enum ('none', 'in_app', 'email_digest', '
 create type watch_event_type as enum ('claim_stale', 'source_update_needed', 'verified_fix');
 create type mission_status as enum ('open', 'in_progress', 'resolved', 'expired');
 create type reward_badge as enum ('stale_claim_fixer', 'source_updater', 'topic_steward');
+create type hallucination_match_target_type as enum ('claim', 'topic_candidate');
 
 create table entities (
   id text primary key,
@@ -93,6 +94,7 @@ create table claims (
   translation_status translation_status,
   confidence confidence_level not null default 'low',
   status claim_status not null default 'needs_review',
+  review_priority_score numeric(6,2) not null default 0,
   last_verified_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
@@ -211,6 +213,13 @@ create table hallucination_reports (
   model_version text not null default 'rule-based-v1',
   claim_id text references claims(id) on delete set null,
   wrong_answer_type text,
+  extracted_entity_text text,
+  extracted_domain text,
+  extracted_claim_like_phrase text,
+  report_embedding jsonb,
+  pii_redaction_status text not null default 'pending'
+    check (pii_redaction_status in ('pending', 'redacted', 'not_needed', 'purged')),
+  raw_text_expires_at timestamptz,
   correction_prompt text,
   share_card jsonb not null default '{}'::jsonb,
   moderation_note text,
@@ -235,6 +244,8 @@ create table verification_events (
 create index hallucination_reports_claim_id_idx on hallucination_reports (claim_id);
 create index hallucination_reports_status_idx on hallucination_reports (status);
 create index hallucination_reports_review_priority_idx on hallucination_reports (review_priority_score desc, created_at asc);
+create index hallucination_reports_extracted_domain_idx on hallucination_reports (extracted_domain);
+create index hallucination_reports_raw_text_expires_idx on hallucination_reports (raw_text_expires_at);
 
 create index verification_events_claim_id_idx on verification_events (claim_id);
 
@@ -490,6 +501,75 @@ create policy topic_candidates_public_insert
 -- No public SELECT/UPDATE policies: topic candidates are review-queue
 -- intake records and are readable only through admin/service-role API routes
 -- (/api/admin/*) gated by x-admin-secret.
+
+-- hallucination_report_clusters: admin-only clustering hints derived from
+-- hallucination_reports/reports text. Clusters and matches are review signals,
+-- not canonical facts, and must never update claims automatically.
+create table hallucination_report_clusters (
+  id uuid primary key default gen_random_uuid(),
+  cluster_key text not null unique,
+  entity_id text references entities(id) on delete set null,
+  domain text not null default 'unknown',
+  claim_like_phrase text not null,
+  report_count integer not null default 0 check (report_count >= 0),
+  repeated_signal_score numeric(6,2) not null default 0,
+  review_priority_score numeric(6,2) not null default 0,
+  status submission_status not null default 'new',
+  extraction_metadata jsonb not null default '{}'::jsonb,
+  retention_expires_at timestamptz,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now()
+);
+
+create table hallucination_report_cluster_members (
+  cluster_id uuid not null references hallucination_report_clusters(id) on delete cascade,
+  hallucination_report_id uuid references hallucination_reports(id) on delete cascade,
+  report_id uuid references reports(id) on delete cascade,
+  normalized_text_hash text not null,
+  created_at timestamptz not null default now(),
+  primary key (cluster_id, normalized_text_hash),
+  constraint hallucination_cluster_member_one_source check (
+    (hallucination_report_id is not null and report_id is null)
+    or (hallucination_report_id is null and report_id is not null)
+  )
+);
+
+create table hallucination_report_possible_matches (
+  id uuid primary key default gen_random_uuid(),
+  cluster_id uuid not null references hallucination_report_clusters(id) on delete cascade,
+  target_type hallucination_match_target_type not null,
+  claim_id text references claims(id) on delete cascade,
+  topic_candidate_id uuid references topic_candidates(id) on delete cascade,
+  similarity_score numeric(5,4) not null check (similarity_score >= 0 and similarity_score <= 1),
+  match_reason text not null,
+  review_status submission_status not null default 'new',
+  reviewed_by text,
+  reviewed_at timestamptz,
+  created_at timestamptz not null default now(),
+  constraint hallucination_possible_match_one_target check (
+    (target_type = 'claim' and claim_id is not null and topic_candidate_id is null)
+    or (target_type = 'topic_candidate' and topic_candidate_id is not null and claim_id is null)
+  )
+);
+
+comment on table hallucination_report_clusters is 'Admin-only clustering hints from user report text. Repeated reports may raise review priority but must not modify claims automatically.';
+comment on table hallucination_report_possible_matches is 'Possible matches to existing claims or topic_candidates shown only in admin review queues; human review is required before any claim/source change.';
+comment on column hallucination_reports.report_embedding is 'Embedding payload for similarity search metadata only; do not expose publicly and purge with raw report text retention.';
+comment on column hallucination_reports.raw_text_expires_at is 'Deadline for deleting or anonymizing raw prompt/answer/correction text because it may contain personal data.';
+
+create index hallucination_clusters_entity_idx on hallucination_report_clusters(entity_id);
+create index hallucination_clusters_priority_idx on hallucination_report_clusters(review_priority_score desc, report_count desc);
+create index hallucination_cluster_members_hreport_idx on hallucination_report_cluster_members(hallucination_report_id);
+create index hallucination_cluster_members_report_idx on hallucination_report_cluster_members(report_id);
+create index hallucination_possible_matches_cluster_idx on hallucination_report_possible_matches(cluster_id);
+create index hallucination_possible_matches_claim_idx on hallucination_report_possible_matches(claim_id);
+create index hallucination_possible_matches_topic_candidate_idx on hallucination_report_possible_matches(topic_candidate_id);
+
+alter table hallucination_report_clusters enable row level security;
+alter table hallucination_report_cluster_members enable row level security;
+alter table hallucination_report_possible_matches enable row level security;
+-- No public SELECT/INSERT policies: clustering, embeddings, and possible matches
+-- are service-role/admin-only because they are derived from private report text.
 
 -- community_posts: public users can submit user posts; AI/admin posts are service-role only.
 create table community_posts (
