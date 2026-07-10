@@ -1,0 +1,32 @@
+<!doctype html>
+<html lang="{{lang}}">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>{{title}}</title>
+{{style}}
+</head>
+<body>
+<main>
+  <article class="sheet">
+    <header>
+      <div class="stamp">{{labels.sampleStamp}}</div>
+      <p class="eyebrow">FA-VIS v1 · {{formId}}</p>
+      <h1>{{title}}</h1>
+      <p>{{segment.hero_question}}</p>
+      <div class="meta-grid">
+        <div class="meta"><span>{{labels.entity}}</span><strong>{{entity.name}}</strong></div>
+        <div class="meta"><span>{{labels.category}}</span><strong>{{segment.category_label}}</strong></div>
+        <div class="meta"><span>{{labels.region}}</span><strong>{{segment.region}}</strong></div>
+        <div class="meta"><span>{{labels.specimenId}}</span><strong>{{specimenId}}</strong></div>
+      </div>
+    </header>
+    {{body}}
+    <section>
+      <h2>{{labels.disclaimer}}</h2>
+      <p class="notice">{{segment.disclaimer}}</p>
+    </section>
+  </article>
+</main>
+</body>
+</html>

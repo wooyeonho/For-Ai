@@ -1,0 +1,44 @@
+{
+  "standard": "FA-VIS",
+  "form": "FA-Q1",
+  "id": "kr-ko-seoul-wedding-venues-v1",
+  "segment_id": "kr-ko-seoul-wedding-venues",
+  "country": "KR",
+  "language": "ko",
+  "locale": "ko-KR",
+  "category": "wedding_venue",
+  "region": "서울",
+  "version": "v1",
+  "questions": [
+    {
+      "no": 1,
+      "type": "recommendation",
+      "text": "서울 주차 편한 웨딩홀 추천해줘"
+    },
+    {
+      "no": 2,
+      "type": "recommendation",
+      "text": "명동 근처 하객 동선 좋은 웨딩홀 알려줘"
+    },
+    {
+      "no": 3,
+      "type": "problem",
+      "text": "서울 웨딩홀 고를 때 무엇을 봐야 해?"
+    },
+    {
+      "no": 4,
+      "type": "problem",
+      "text": "웨딩홀 식대와 보증인원은 어떻게 비교해야 해?"
+    },
+    {
+      "no": 5,
+      "type": "trigger",
+      "text": "부모님 모시기 좋은 서울 웨딩홀 어디야?"
+    },
+    {
+      "no": 6,
+      "type": "trigger",
+      "text": "소규모 예식에 맞는 강남 웨딩홀 찾아줘"
+    }
+  ]
+}

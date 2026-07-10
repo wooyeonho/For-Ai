@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>For AI Segment Statistics Report</title>
+<style>
+  :root { color-scheme: light; --navy:#0f2742; --teal:#0f766e; --muted:#64748b; --line:#d8e1ea; --ok:#0f766e; --warn:#b45309; --bad:#b91c1c; }
+  body { margin:0; background:#f4f7fb; color:#102033; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  main { max-width:780px; margin:0 auto; padding:28px 18px 48px; }
+  .sheet { background:#fff; border:1px solid var(--line); border-radius:18px; box-shadow:0 18px 50px rgba(15,39,66,.08); overflow:hidden; }
+  header { padding:28px 30px; border-bottom:1px solid var(--line); background:linear-gradient(135deg,#f8fbff,#eefdfa); position:relative; }
+  .stamp { position:absolute; right:24px; top:20px; border:2px solid var(--teal); color:var(--teal); padding:5px 12px; border-radius:999px; font-weight:800; letter-spacing:.08em; transform:rotate(4deg); }
+  h1 { color:var(--navy); margin:8px 0 10px; font-size:30px; line-height:1.15; }
+  h2 { color:var(--navy); margin:0 0 14px; font-size:19px; }
+  h3 { color:var(--navy); margin:16px 0 8px; font-size:15px; }
+  .eyebrow { color:var(--teal); font-weight:800; text-transform:uppercase; letter-spacing:.08em; font-size:12px; margin:0; }
+  section { padding:24px 30px; border-bottom:1px solid var(--line); }
+  .meta-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+  .meta { border:1px solid var(--line); border-radius:12px; padding:10px; background:#fff; }
+  .meta span, .metric-card span { display:block; color:var(--muted); font-size:12px; margin-bottom:3px; }
+  .meta strong, .metric-card strong { font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+  .metrics { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:10px; }
+  .metric-card { border:1px solid var(--line); border-radius:14px; padding:12px; background:#fbfdff; min-height:70px; }
+  .metric-card strong { color:var(--navy); font-size:20px; }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  th, td { text-align:left; padding:10px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.04em; }
+  ul { margin:0; padding-left:20px; }
+  .notice { background:#fff7ed; border:1px solid #fed7aa; color:#7c2d12; border-radius:12px; padding:12px; }
+  .cta { display:inline-block; background:var(--navy); color:#fff; padding:11px 16px; border-radius:10px; text-decoration:none; font-weight:800; }
+  .mono { font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+  @media (max-width:700px) { .metrics, .meta-grid { grid-template-columns:1fr; } main { padding:12px; } section, header { padding:20px; } table { display:block; overflow-x:auto; white-space:nowrap; } }
+</style>
+
+</head>
+<body>
+<main>
+  <article class="sheet">
+    <header>
+      <div class="stamp">Sample</div>
+      <p class="eyebrow">FA-VIS v1 · FORM FA-S1</p>
+      <h1>For AI Segment Statistics Report</h1>
+      <p>Can AI find and cite your firm accurately?</p>
+      <div class="meta-grid">
+        <div class="meta"><span>Entity</span><strong>us-en-nyc-immigration-lawyers</strong></div>
+        <div class="meta"><span>Category</span><strong>Immigration Lawyer</strong></div>
+        <div class="meta"><span>Region</span><strong>New York City</strong></div>
+        <div class="meta"><span>Specimen ID</span><strong>us-en-nyc-immigration-lawyers:FA-S1</strong></div>
+      </div>
+    </header>
+    
+<section><h2>Segment Title</h2><p>us-en-nyc-immigration-lawyers</p></section>
+<section><h2>Sample Size</h2><p class="mono">3 Entity · 6 Question</p></section>
+<section><h2>Median / Top 25% / Bottom 25%</h2><table><tr><th>Metric</th><th>Bottom 25%</th><th>Median</th><th>Top 25%</th></tr>
+    <tr><td>Direct Mention Rate</td><td>50%</td><td>50%</td><td>75%</td></tr>
+    <tr><td>Source Citation Rate</td><td>25%</td><td>50%</td><td>50%</td></tr>
+    <tr><td>Competitor First Rate</td><td>17%</td><td>17%</td><td>17%</td></tr>
+    <tr><td>Criteria Connection Rate</td><td>30%</td><td>40%</td><td>50%</td></tr>
+    <tr><td>Information Accuracy</td><td>0%</td><td>0%</td><td>0%</td></tr></table></section>
+<section><h2>Source Domain Distribution</h2><ul><li>queens-visa.example.com</li><li>justia.example.com</li><li>hudson-immigration.example.com</li><li>avvo.example.com</li><li>legal-directory.example.com</li><li>google.com</li></ul><table><tr><th>Platform</th><th>Observation</th></tr><tr><td>google_maps</td><td>sample</td></tr><tr><td>avvo</td><td>sample</td></tr><tr><td>justia</td><td>sample</td></tr><tr><td>official_site</td><td>sample</td></tr><tr><td>legal_directories</td><td>sample</td></tr></table></section>
+<section><p class="notice">This is not a public ranking, and low-scoring entity names are not disclosed publicly.</p></section>
+    <section>
+      <h2>Disclaimer</h2>
+      <p class="notice">For AI does not guarantee AI answer visibility. This report reflects observations under the stated date, question pack, and measurement provider. AI answers may vary by time, model, and source conditions.</p>
+    </section>
+  </article>
+</main>
+</body>
+</html>

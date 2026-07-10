@@ -1,0 +1,52 @@
+{
+  "standard": "FA-VIS",
+  "standard_version": "1.0",
+  "segment_id": "kr-ko-mapo-clinics",
+  "country": "KR",
+  "language": "ko",
+  "locale": "ko-KR",
+  "region": "마포구",
+  "entity_type": "business",
+  "category": "clinic",
+  "category_label": "병의원",
+  "customer_label": "원장님 병원",
+  "entity_label": "병의원",
+  "inspection_title": "AI 답변 노출검사",
+  "hero_question": "AI가 원장님 병원을 정확히 찾고 설명하나요?",
+  "reference_scope_label": "2026년 7월 기준 공개 검색으로 확인 가능한 마포구 병의원 측정 분포 기준",
+  "question_pack_size": {
+    "sample": 10,
+    "full": 30
+  },
+  "question_types": [
+    "recommendation",
+    "problem",
+    "trigger"
+  ],
+  "criteria_keywords": [
+    "진료과",
+    "야간진료",
+    "검진",
+    "비급여",
+    "예약",
+    "공덕"
+  ],
+  "source_platforms": [
+    "naver_place",
+    "google_maps",
+    "blogs",
+    "official_site",
+    "medical_directories"
+  ],
+  "measurement_providers": [
+    "mock"
+  ],
+  "metrics": [
+    "direct_mention_rate",
+    "source_citation_rate",
+    "competitor_first_rate",
+    "criteria_connection_rate",
+    "information_accuracy"
+  ],
+  "disclaimer": "For AI는 AI 답변 노출을 보장하지 않습니다. 본 결과는 명시된 측정일·질문팩·측정채널 기준의 관찰 결과이며, AI 응답은 시점과 조건에 따라 달라질 수 있습니다."
+}

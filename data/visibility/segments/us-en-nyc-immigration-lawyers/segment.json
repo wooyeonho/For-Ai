@@ -1,0 +1,51 @@
+{
+  "standard": "FA-VIS",
+  "standard_version": "1.0",
+  "segment_id": "us-en-nyc-immigration-lawyers",
+  "country": "US",
+  "language": "en",
+  "locale": "en-US",
+  "region": "New York City",
+  "entity_type": "business",
+  "category": "immigration_lawyer",
+  "category_label": "Immigration Lawyer",
+  "customer_label": "your firm",
+  "entity_label": "law firm",
+  "inspection_title": "AI Visibility Inspection",
+  "hero_question": "Can AI find and cite your firm accurately?",
+  "reference_scope_label": "Reference range based on publicly discoverable NYC immigration law firms measured in July 2026",
+  "question_pack_size": {
+    "sample": 10,
+    "full": 30
+  },
+  "question_types": [
+    "recommendation",
+    "problem",
+    "trigger"
+  ],
+  "criteria_keywords": [
+    "visa denial",
+    "green card",
+    "asylum",
+    "work visa",
+    "consultation fee"
+  ],
+  "source_platforms": [
+    "google_maps",
+    "avvo",
+    "justia",
+    "official_site",
+    "legal_directories"
+  ],
+  "measurement_providers": [
+    "mock"
+  ],
+  "metrics": [
+    "direct_mention_rate",
+    "source_citation_rate",
+    "competitor_first_rate",
+    "criteria_connection_rate",
+    "information_accuracy"
+  ],
+  "disclaimer": "For AI does not guarantee AI answer visibility. This report reflects observations under the stated date, question pack, and measurement provider. AI answers may vary by time, model, and source conditions."
+}

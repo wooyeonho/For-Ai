@@ -1,0 +1,4 @@
+entity_id,entity_name,grade,direct_mention_rate,source_citation_rate,competitor_first_rate,criteria_connection_rate,information_accuracy,mentioned_count,cited_count,total_measurements
+tax-mapo-001,커넥트 세무회계,sample,0.5,0.5,0.1667,0.6,sample,3,3,6
+tax-mapo-002,공덕택스파트너스,sample,1,0.25,0.1667,0.6,sample,3,2,6
+tax-mapo-003,합정세무사무소,sample,0.5,0.25,0.1667,0.4,sample,2,1,6

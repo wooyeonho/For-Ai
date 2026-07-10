@@ -1,0 +1,44 @@
+{
+  "standard": "FA-VIS",
+  "form": "FA-Q1",
+  "id": "kr-ko-mapo-clinics-v1",
+  "segment_id": "kr-ko-mapo-clinics",
+  "country": "KR",
+  "language": "ko",
+  "locale": "ko-KR",
+  "category": "clinic",
+  "region": "마포구",
+  "version": "v1",
+  "questions": [
+    {
+      "no": 1,
+      "type": "recommendation",
+      "text": "마포구 야간진료 병원 추천해줘"
+    },
+    {
+      "no": 2,
+      "type": "recommendation",
+      "text": "공덕 근처 검진 가능한 의원 알려줘"
+    },
+    {
+      "no": 3,
+      "type": "problem",
+      "text": "병원 고를 때 비급여와 예약 정보를 어떻게 확인해?"
+    },
+    {
+      "no": 4,
+      "type": "problem",
+      "text": "마포구 병의원 진료과 정보는 어디서 봐야 해?"
+    },
+    {
+      "no": 5,
+      "type": "trigger",
+      "text": "퇴근 후 갈 수 있는 공덕 병원 어디야?"
+    },
+    {
+      "no": 6,
+      "type": "trigger",
+      "text": "건강검진 상담 가능한 마포 내과 찾아줘"
+    }
+  ]
+}

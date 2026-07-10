@@ -1,0 +1,4 @@
+entity_id,entity_name,grade,direct_mention_rate,source_citation_rate,competitor_first_rate,criteria_connection_rate,information_accuracy,mentioned_count,cited_count,total_measurements
+clinic-mapo-001,공덕서울의원,sample,1,0.25,0.1667,0.5,sample,3,2,6
+clinic-mapo-002,마포연세내과,sample,0.5,0.5,0.1667,0.5,sample,3,3,6
+clinic-mapo-003,합정가정의학과,sample,0,0.25,0.1667,0.1667,sample,1,1,6

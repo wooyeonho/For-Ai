@@ -1,0 +1,53 @@
+{
+  "standard": "FA-VIS",
+  "standard_version": "1.0",
+  "segment_id": "kr-ko-seoul-wedding-venues",
+  "country": "KR",
+  "language": "ko",
+  "locale": "ko-KR",
+  "region": "서울",
+  "entity_type": "place",
+  "category": "wedding_venue",
+  "category_label": "웨딩홀",
+  "customer_label": "우리 웨딩홀",
+  "entity_label": "웨딩홀",
+  "inspection_title": "AI 답변 노출검사",
+  "hero_question": "AI가 우리 웨딩홀을 정확히 추천하고 있나요?",
+  "reference_scope_label": "2026년 7월 기준 공개 검색으로 확인 가능한 서울 주요 웨딩홀 측정 분포 기준",
+  "question_pack_size": {
+    "sample": 10,
+    "full": 30
+  },
+  "question_types": [
+    "recommendation",
+    "problem",
+    "trigger"
+  ],
+  "criteria_keywords": [
+    "주차",
+    "하객 동선",
+    "식대",
+    "보증인원",
+    "소규모",
+    "명동",
+    "강남"
+  ],
+  "source_platforms": [
+    "naver_place",
+    "google_maps",
+    "blogs",
+    "wedding_platforms",
+    "official_site"
+  ],
+  "measurement_providers": [
+    "mock"
+  ],
+  "metrics": [
+    "direct_mention_rate",
+    "source_citation_rate",
+    "competitor_first_rate",
+    "criteria_connection_rate",
+    "information_accuracy"
+  ],
+  "disclaimer": "For AI는 AI 답변 노출을 보장하지 않습니다. 본 결과는 명시된 측정일·질문팩·측정채널 기준의 관찰 결과이며, AI 응답은 시점과 조건에 따라 달라질 수 있습니다."
+}

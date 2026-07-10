@@ -32,7 +32,8 @@
     "job:generate-admin-digest": "node scripts/jobs/generate-admin-digest.mjs",
     "job:check-security-baseline": "node scripts/jobs/check-security-baseline.mjs",
     "admin:digest": "node scripts/jobs/generate-admin-digest.mjs",
-    "db:migrate": "npx supabase db push --db-url \"$SUPABASE_DB_URL\""
+    "db:migrate": "npx supabase db push --db-url \"$SUPABASE_DB_URL\"",
+    "visibility:batch": "node scripts/visibility/run-batch.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.8",

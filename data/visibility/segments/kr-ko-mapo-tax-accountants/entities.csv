@@ -1,0 +1,4 @@
+id,name,representative,address,postal_code,homepage,primary_platform_url,secondary_platform_url,aliases,grade
+tax-mapo-001,커넥트 세무회계,한지훈,서울 마포구 샘플로 20,04150,https://connect-tax.example.kr,https://naver.example/connect-tax,,커넥트세무|커넥트 세무사,sample
+tax-mapo-002,공덕택스파트너스,윤서진,서울 마포구 샘플로 21,04151,https://gongdeok-tax.example.kr,https://naver.example/gongdeok-tax,,공덕택스|공덕 세무회계,sample
+tax-mapo-003,합정세무사무소,장도현,서울 마포구 샘플로 22,04010,https://hapjeong-tax.example.kr,https://naver.example/hapjeong-tax,,합정 세무|합정세무,sample

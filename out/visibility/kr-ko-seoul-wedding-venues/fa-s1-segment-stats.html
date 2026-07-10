@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>For AI 세그먼트 통계 리포트</title>
+<style>
+  :root { color-scheme: light; --navy:#0f2742; --teal:#0f766e; --muted:#64748b; --line:#d8e1ea; --ok:#0f766e; --warn:#b45309; --bad:#b91c1c; }
+  body { margin:0; background:#f4f7fb; color:#102033; font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+  main { max-width:780px; margin:0 auto; padding:28px 18px 48px; }
+  .sheet { background:#fff; border:1px solid var(--line); border-radius:18px; box-shadow:0 18px 50px rgba(15,39,66,.08); overflow:hidden; }
+  header { padding:28px 30px; border-bottom:1px solid var(--line); background:linear-gradient(135deg,#f8fbff,#eefdfa); position:relative; }
+  .stamp { position:absolute; right:24px; top:20px; border:2px solid var(--teal); color:var(--teal); padding:5px 12px; border-radius:999px; font-weight:800; letter-spacing:.08em; transform:rotate(4deg); }
+  h1 { color:var(--navy); margin:8px 0 10px; font-size:30px; line-height:1.15; }
+  h2 { color:var(--navy); margin:0 0 14px; font-size:19px; }
+  h3 { color:var(--navy); margin:16px 0 8px; font-size:15px; }
+  .eyebrow { color:var(--teal); font-weight:800; text-transform:uppercase; letter-spacing:.08em; font-size:12px; margin:0; }
+  section { padding:24px 30px; border-bottom:1px solid var(--line); }
+  .meta-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+  .meta { border:1px solid var(--line); border-radius:12px; padding:10px; background:#fff; }
+  .meta span, .metric-card span { display:block; color:var(--muted); font-size:12px; margin-bottom:3px; }
+  .meta strong, .metric-card strong { font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+  .metrics { display:grid; grid-template-columns:repeat(5,minmax(0,1fr)); gap:10px; }
+  .metric-card { border:1px solid var(--line); border-radius:14px; padding:12px; background:#fbfdff; min-height:70px; }
+  .metric-card strong { color:var(--navy); font-size:20px; }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  th, td { text-align:left; padding:10px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.04em; }
+  ul { margin:0; padding-left:20px; }
+  .notice { background:#fff7ed; border:1px solid #fed7aa; color:#7c2d12; border-radius:12px; padding:12px; }
+  .cta { display:inline-block; background:var(--navy); color:#fff; padding:11px 16px; border-radius:10px; text-decoration:none; font-weight:800; }
+  .mono { font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
+  @media (max-width:700px) { .metrics, .meta-grid { grid-template-columns:1fr; } main { padding:12px; } section, header { padding:20px; } table { display:block; overflow-x:auto; white-space:nowrap; } }
+</style>
+
+</head>
+<body>
+<main>
+  <article class="sheet">
+    <header>
+      <div class="stamp">예시</div>
+      <p class="eyebrow">FA-VIS v1 · FORM FA-S1</p>
+      <h1>For AI 세그먼트 통계 리포트</h1>
+      <p>AI가 우리 웨딩홀을 정확히 추천하고 있나요?</p>
+      <div class="meta-grid">
+        <div class="meta"><span>엔티티</span><strong>kr-ko-seoul-wedding-venues</strong></div>
+        <div class="meta"><span>카테고리</span><strong>웨딩홀</strong></div>
+        <div class="meta"><span>지역</span><strong>서울</strong></div>
+        <div class="meta"><span>표본 ID</span><strong>kr-ko-seoul-wedding-venues:FA-S1</strong></div>
+      </div>
+    </header>
+    
+<section><h2>세그먼트 제목</h2><p>kr-ko-seoul-wedding-venues</p></section>
+<section><h2>샘플 크기</h2><p class="mono">3 엔티티 · 6 질문</p></section>
+<section><h2>중앙값 / 상위 25% / 하위 25%</h2><table><tr><th>지표</th><th>하위 25%</th><th>중앙값</th><th>상위 25%</th></tr>
+    <tr><td>직접 언급률</td><td>50%</td><td>50%</td><td>75%</td></tr>
+    <tr><td>출처 인용률</td><td>25%</td><td>25%</td><td>38%</td></tr>
+    <tr><td>경쟁 선노출률</td><td>8%</td><td>17%</td><td>25%</td></tr>
+    <tr><td>선택기준 연결률</td><td>50%</td><td>50%</td><td>50%</td></tr>
+    <tr><td>정보 정확도</td><td>0%</td><td>0%</td><td>0%</td></tr></table></section>
+<section><h2>출처 도메인 분포</h2><ul><li>light-hall.example.kr</li><li>naver.com</li><li>wedding.example.kr</li><li>blog.example.kr</li><li>grand-garden.example.kr</li><li>small-venue.example.kr</li></ul><table><tr><th>플랫폼</th><th>관찰값</th></tr><tr><td>naver_place</td><td>예시</td></tr><tr><td>google_maps</td><td>예시</td></tr><tr><td>blogs</td><td>예시</td></tr><tr><td>wedding_platforms</td><td>예시</td></tr><tr><td>official_site</td><td>예시</td></tr></table></section>
+<section><p class="notice">공개 순위표가 아니며 낮은 점수 엔티티의 실명을 공개하지 않습니다.</p></section>
+    <section>
+      <h2>고지</h2>
+      <p class="notice">For AI는 AI 답변 노출을 보장하지 않습니다. 본 결과는 명시된 측정일·질문팩·측정채널 기준의 관찰 결과이며, AI 응답은 시점과 조건에 따라 달라질 수 있습니다.</p>
+    </section>
+  </article>
+</main>
+</body>
+</html>
