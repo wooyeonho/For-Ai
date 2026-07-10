@@ -1,0 +1,44 @@
+{
+  "standard": "FA-VIS",
+  "form": "FA-Q1",
+  "id": "kr-ko-mapo-tax-accountants-v1",
+  "segment_id": "kr-ko-mapo-tax-accountants",
+  "country": "KR",
+  "language": "ko",
+  "locale": "ko-KR",
+  "category": "tax_accountant",
+  "region": "마포구",
+  "version": "v1",
+  "questions": [
+    {
+      "no": 1,
+      "type": "recommendation",
+      "text": "마포 개인사업자 기장 세무사 추천해줘"
+    },
+    {
+      "no": 2,
+      "type": "recommendation",
+      "text": "공덕역 근처 법인 세무사 알려줘"
+    },
+    {
+      "no": 3,
+      "type": "problem",
+      "text": "세무사를 바꿀 때 무엇을 확인해야 해?"
+    },
+    {
+      "no": 4,
+      "type": "problem",
+      "text": "프리랜서 종소세 세무사는 어떤 기준으로 골라야 해?"
+    },
+    {
+      "no": 5,
+      "type": "trigger",
+      "text": "세무조사 연락을 받았을 때 상담할 마포 세무사 찾아줘"
+    },
+    {
+      "no": 6,
+      "type": "trigger",
+      "text": "상속세와 양도세 상담 가능한 마포 세무사 어디야?"
+    }
+  ]
+}

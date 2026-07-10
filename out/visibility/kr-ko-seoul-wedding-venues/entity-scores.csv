@@ -1,0 +1,4 @@
+entity_id,entity_name,grade,direct_mention_rate,source_citation_rate,competitor_first_rate,criteria_connection_rate,information_accuracy,mentioned_count,cited_count,total_measurements
+wv-seoul-001,라이트홀 명동,sample,1,0.25,0,0.5,sample,3,3,6
+wv-seoul-002,그랜드가든 강남,sample,0.5,0.5,0.3333,0.5,sample,3,2,6
+wv-seoul-003,스몰베뉴 성수,sample,0.5,0.25,0.1667,0.5,sample,2,1,6

@@ -1,0 +1,4 @@
+id,name,representative,address,postal_code,homepage,primary_platform_url,secondary_platform_url,aliases,grade
+wv-seoul-001,라이트홀 명동,김하나,서울 중구 샘플로 1,04500,https://light-hall.example.kr,https://naver.example/light-hall,,라이트홀|명동 라이트홀,sample
+wv-seoul-002,그랜드가든 강남,이도윤,서울 강남구 샘플로 2,06000,https://grand-garden.example.kr,https://naver.example/grand-garden,,그랜드가든|강남 그랜드가든,sample
+wv-seoul-003,스몰베뉴 성수,박서연,서울 성동구 샘플로 3,04700,https://small-venue.example.kr,https://naver.example/small-venue,,스몰베뉴|성수 스몰베뉴,sample

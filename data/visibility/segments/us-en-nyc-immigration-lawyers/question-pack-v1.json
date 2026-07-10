@@ -1,0 +1,44 @@
+{
+  "standard": "FA-VIS",
+  "form": "FA-Q1",
+  "id": "us-en-nyc-immigration-lawyers-v1",
+  "segment_id": "us-en-nyc-immigration-lawyers",
+  "country": "US",
+  "language": "en",
+  "locale": "en-US",
+  "category": "immigration_lawyer",
+  "region": "New York City",
+  "version": "v1",
+  "questions": [
+    {
+      "no": 1,
+      "type": "recommendation",
+      "text": "Best immigration lawyer in Queens"
+    },
+    {
+      "no": 2,
+      "type": "recommendation",
+      "text": "NYC green card lawyer recommendations"
+    },
+    {
+      "no": 3,
+      "type": "problem",
+      "text": "How do I choose an immigration lawyer after a visa denial?"
+    },
+    {
+      "no": 4,
+      "type": "problem",
+      "text": "What should I check before paying an immigration consultation fee?"
+    },
+    {
+      "no": 5,
+      "type": "trigger",
+      "text": "I received a visa denial, who should I talk to?"
+    },
+    {
+      "no": 6,
+      "type": "trigger",
+      "text": "Need a work visa lawyer in New York City"
+    }
+  ]
+}

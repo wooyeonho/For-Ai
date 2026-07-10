@@ -1,0 +1,4 @@
+id,name,representative,address,postal_code,homepage,primary_platform_url,secondary_platform_url,aliases,grade
+law-nyc-001,Hudson Immigration Law,Maria Chen,100 Sample Ave New York NY,10001,https://hudson-immigration.example.com,https://maps.example/hudson,,Hudson Immigration|Hudson Law,sample
+law-nyc-002,Queens Visa Counsel,David Rivera,200 Sample St Queens NY,11101,https://queens-visa.example.com,https://maps.example/queens-visa,,Queens Visa|QVC Law,sample
+law-nyc-003,Brooklyn Asylum Advocates,Amina Patel,300 Sample Rd Brooklyn NY,11201,https://brooklyn-asylum.example.com,https://maps.example/brooklyn-asylum,,Brooklyn Asylum|BA Advocates,sample

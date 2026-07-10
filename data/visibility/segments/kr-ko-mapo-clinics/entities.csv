@@ -1,0 +1,4 @@
+id,name,representative,address,postal_code,homepage,primary_platform_url,secondary_platform_url,aliases,grade
+clinic-mapo-001,공덕서울의원,정민수,서울 마포구 샘플로 10,04100,https://gongdeok-clinic.example.kr,https://naver.example/gongdeok,,공덕 서울의원|서울의원,sample
+clinic-mapo-002,마포연세내과,최지은,서울 마포구 샘플로 11,04101,https://mapo-yonsei.example.kr,https://naver.example/yonsei,,연세내과|마포 연세내과,sample
+clinic-mapo-003,합정가정의학과,오준호,서울 마포구 샘플로 12,04000,https://hapjeong-family.example.kr,https://naver.example/hapjeong,,합정 가정의학과,sample
