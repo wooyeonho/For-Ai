@@ -200,7 +200,6 @@ export default async function LeaderboardPage({ params }: { params: Promise<Lead
           <li>Claim verified from contribution: 20 points after admin verification approval.</li>
           <li>Hallucination report accepted: 10 points after admin acceptance.</li>
         </ul>
-        <p><Link href={`/${locale}/quests`}>{t.leaderboard.viewQuests}</Link></p>
       </section>
 
       <nav className="registry-panel" aria-labelledby="leaderboard-actions">
