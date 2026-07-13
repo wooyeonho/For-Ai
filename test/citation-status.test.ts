@@ -309,7 +309,7 @@ test("getDocumentCitationStatus uses short commerce policy TTL by default", () =
       category: "commerce",
       template: "commerce_policy",
     }),
-  }));
+  }), undefined, NOW);
 
   assert.equal(commerce.freshness, "stale");
 
@@ -317,7 +317,7 @@ test("getDocumentCitationStatus uses short commerce policy TTL by default", () =
     claim({ last_verified_at: "2026-05-27" }),
   ], {
     document: document({ data: { freshness_ttl_days: 45 } }),
-  }));
+  }), undefined, NOW);
 
   assert.equal(explicitTtl.freshness, "fresh");
 });
