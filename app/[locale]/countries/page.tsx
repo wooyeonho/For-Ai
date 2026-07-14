@@ -130,7 +130,6 @@ export default async function CountriesRegistryPage({ params }: { params: Promis
           <ul className="link-list">
             {countries.map((country) => {
               const countryHref = `/${locale}/country/${country.code.toLowerCase()}`;
-              const questHref = `/${locale}/quests#country-quests`;
               const coverageHref = `/suggest-topic?country=${encodeURIComponent(country.code)}&lang=${encodeURIComponent(locale)}`;
 
               return (
@@ -148,7 +147,6 @@ export default async function CountriesRegistryPage({ params }: { params: Promis
                   </div>
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 10 }}>
                     <Link className="button button-secondary" href={countryHref}>View coverage</Link>
-                    <Link className="button button-secondary" href={questHref}>Join quest</Link>
                     <Link className="button" href={coverageHref}>Submit source</Link>
                   </div>
                   {country.needsReviewClaimCount > 0 ? (

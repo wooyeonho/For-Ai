@@ -51,6 +51,13 @@ const SLUGS = [
 
 const ROUTES = [
   "/",
+  // Task 0-A legacy gamification redirect targets must be real 200s
+  // regardless of ENABLE_EXPERIMENTAL_GAMIFICATION — a permanent 308 must
+  // never point at a route that can 404.
+  "/en/contributors",
+  "/ko/contributors",
+  "/en/leaderboard",
+  "/ko/leaderboard",
   ...SLUGS.flatMap((s) => [
     `/ko/wiki/${s}`,
     `/api/documents/${s}`,

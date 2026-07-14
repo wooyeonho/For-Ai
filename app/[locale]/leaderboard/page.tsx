@@ -111,12 +111,12 @@ export async function generateMetadata({ params }: { params: Promise<Leaderboard
 
 export default async function LeaderboardPage({ params }: { params: Promise<LeaderboardParams> }) {
   const { locale } = await params;
-  if (!experimentalGamificationEnabled()) notFound();
   if (!isValidLocale(locale)) notFound();
 
   const t = getTranslations(locale as SupportedLocale);
-  const leaderboard = await getLeaderboard();
-  const hasLiveData = isServiceRoleConfigured();
+  const rankingEnabled = experimentalGamificationEnabled();
+  const leaderboard = rankingEnabled ? await getLeaderboard() : [];
+  const hasLiveData = rankingEnabled && isServiceRoleConfigured();
 
   return (
     <article>
@@ -137,7 +137,11 @@ export default async function LeaderboardPage({ params }: { params: Promise<Lead
       <section className="registry-panel" aria-labelledby="leaderboard-ranking">
         <p className="eyebrow">{t.leaderboard.rankingEyebrow}</p>
         <h2 id="leaderboard-ranking">{t.leaderboard.currentRanking}</h2>
-        {!hasLiveData ? (
+        {!rankingEnabled ? (
+          <p className="stat-note">
+            {t.leaderboard.rankingNotYetEnabled}
+          </p>
+        ) : !hasLiveData ? (
           <p className="stat-note">
             {t.leaderboard.liveDataRequired}
           </p>
@@ -200,7 +204,6 @@ export default async function LeaderboardPage({ params }: { params: Promise<Lead
           <li>Claim verified from contribution: 20 points after admin verification approval.</li>
           <li>Hallucination report accepted: 10 points after admin acceptance.</li>
         </ul>
-        <p><Link href={`/${locale}/quests`}>{t.leaderboard.viewQuests}</Link></p>
       </section>
 
       <nav className="registry-panel" aria-labelledby="leaderboard-actions">
