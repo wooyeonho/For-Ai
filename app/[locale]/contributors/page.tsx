@@ -14,7 +14,7 @@ export function generateStaticParams() {
 
 export async function generateMetadata({ params }: { params: Promise<ContributorsParams> }): Promise<Metadata> {
   const { locale } = await params;
-  if (!isValidLocale(locale)) return { title: getTranslations("en").leaderboard.notFound };
+  if (!isValidLocale(locale)) return { title: getTranslations("en").contributors.notFound };
   const t = getTranslations(locale as SupportedLocale);
 
   return {
