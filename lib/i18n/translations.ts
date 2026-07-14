@@ -119,7 +119,7 @@ governmentFeeDisclaimer: string;
   aiWrongAbout: { [key: string]: string; title: string; };
   contributors: {
     [key: string]: string;
-    metadataTitle: string; metadataDescription: string; eyebrow: string; title: string; description: string; viewLeaderboard: string; submitMissingFact: string;
+    notFound: string; metadataTitle: string; metadataDescription: string; eyebrow: string; title: string; description: string; viewLeaderboard: string; submitMissingFact: string;
   };
   footer: {
     tagline: string;
@@ -161,7 +161,7 @@ const PAGE_TRANSLATIONS_EN = {
   quests: { title: "Country quests and badges" },
   compare: { title: "Compare facts" },
   aiWrongAbout: { title: "AI wrong-answer correction route" },
-  contributors: { metadataTitle: "Contributors | For-Ai", metadataDescription: "How For-Ai contributors submit sources, fix stale claims, and earn ranked, abuse-resistant credit for accepted work.", eyebrow: "For-Ai contributor program", title: "Contributors", description: "For-Ai facts stay accurate because contributors submit sources, flag stale claims, and report hallucinated answers. Every credited action is accepted-work only — raw submission volume never counts.", viewLeaderboard: "View the contributor leaderboard", submitMissingFact: "Submit a missing fact" },
+  contributors: { notFound: "Contributors page not found", metadataTitle: "Contributors | For-Ai", metadataDescription: "How For-Ai contributors submit sources, fix stale claims, and earn ranked, abuse-resistant credit for accepted work.", eyebrow: "For-Ai contributor program", title: "Contributors", description: "For-Ai facts stay accurate because contributors submit sources, flag stale claims, and report hallucinated answers. Every credited action is accepted-work only — raw submission volume never counts.", viewLeaderboard: "View the contributor leaderboard", submitMissingFact: "Submit a missing fact" },
 };
 
 const PAGE_TRANSLATIONS_KO = {
