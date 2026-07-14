@@ -1,4 +1,6 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import path from "node:path";
 import test from "node:test";
 
 import { SUPPORTED_LOCALES } from "../lib/i18n/locales";
@@ -72,4 +74,41 @@ test("locale pattern is exactly the supported locale list", () => {
     assert.ok(m);
     assert.deepEqual(m[1].split("|"), [...SUPPORTED_LOCALES]);
   }
+});
+
+// A permanent (308) redirect is cached by browsers indefinitely, so every
+// destination must be reachable (HTTP 200) independent of runtime feature
+// flags. This was manually verified end-to-end with `next start` under both
+// ENABLE_EXPERIMENTAL_GAMIFICATION unset and ="true"; these source-level
+// guards keep that invariant from silently regressing.
+test("contributors redirect target has no feature-flag gate", () => {
+  const source = readFileSync(
+    // __dirname resolves inside the compiled .tmp/tests mirror, which sits
+    // two levels below the real repo root; page.tsx is never copied there
+    // since it isn't part of the tsc test-compile file list.
+    path.join(__dirname, "..", "..", "..", "app", "[locale]", "contributors", "page.tsx"),
+    "utf8",
+  );
+  assert.doesNotMatch(
+    source,
+    /experimentalGamificationEnabled/,
+    "contributors index must render for every supported locale regardless of any feature flag",
+  );
+});
+
+test("leaderboard redirect target never notFound()s on the experimental flag", () => {
+  const source = readFileSync(
+    path.join(__dirname, "..", "..", "..", "app", "[locale]", "leaderboard", "page.tsx"),
+    "utf8",
+  );
+  assert.doesNotMatch(
+    source,
+    /if\s*\(!experimentalGamificationEnabled\(\)\)\s*notFound\(\)/,
+    "leaderboard must render 200 with the ranking section hidden, not notFound(), when the flag is off",
+  );
+  assert.match(
+    source,
+    /rankingNotYetEnabled/,
+    "leaderboard must show a stable, flag-off explanation instead of empty/missing content",
+  );
 });
