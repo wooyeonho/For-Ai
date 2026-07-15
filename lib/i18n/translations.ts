@@ -19,6 +19,7 @@ export interface UITranslations {
     contribute: string;
     suggestTopic: string;
     admin: string;
+    check: string;
   };
   home: {
     heroTitle: string;
@@ -125,6 +126,14 @@ governmentFeeDisclaimer: string;
     [key: string]: string;
     title: string; current: string; longest: string; activeToday: string; continueToday: string; startToday: string; maxed: string; timezoneNote: string;
   };
+  citation: {
+    [key: string]: string;
+    citationStatusVerified: string; citationStatusNeedsReview: string; citationStatusDisputed: string; citationStatusUnknownValue: string; citationStatusUnavailable: string;
+  };
+  check: {
+    [key: string]: string;
+    title: string; description: string; inputLabel: string; inputPlaceholder: string; privacyNote: string; submit: string; submitting: string; cancel: string; resultsHeading: string; summaryVerified: string; summaryNeedsReview: string; summaryDisputed: string; summaryNotFound: string; noMatchNoCandidates: string; noMatchBelowThreshold: string; noMatchNegationMismatch: string; noMatchQuantityMismatch: string; noMatchPolarityMismatch: string; viewSource: string; copySummary: string; copySuccess: string; copyFailure: string; statusIdle: string; statusChecking: string; statusDone: string; errorGeneric: string; errorTextTooLong: string; errorTooManySentences: string; errorNoAnalyzableSentences: string; errorRateLimited: string;
+  };
   footer: {
     tagline: string;
     forHumans: string;
@@ -167,6 +176,8 @@ const PAGE_TRANSLATIONS_EN = {
   aiWrongAbout: { title: "AI wrong-answer correction route" },
   contributors: { notFound: "Contributors page not found", metadataTitle: "Contributors | For-Ai", metadataDescription: "How For-Ai contributors submit sources, fix stale claims, and earn ranked, abuse-resistant credit for accepted work.", eyebrow: "For-Ai contributor program", title: "Contributors", description: "For-Ai facts stay accurate because contributors submit sources, flag stale claims, and report hallucinated answers. Every credited action is accepted-work only — raw submission volume never counts.", viewLeaderboard: "View the contributor leaderboard", submitMissingFact: "Submit a missing fact" },
   streak: { title: "Your accepted-contribution streak", current: "{days}-day current streak", longest: "{days}-day longest streak", activeToday: "Active today", continueToday: "Continue your streak today", startToday: "Start a streak today", maxed: "Milestone maxed out", timezoneNote: "Streak days are counted by UTC calendar date, not your local time." },
+  citation: { citationStatusVerified: "Verified", citationStatusNeedsReview: "Needs review", citationStatusDisputed: "Disputed", citationStatusUnknownValue: "Unknown", citationStatusUnavailable: "Unavailable" },
+  check: { title: "Check an AI answer", description: "Paste text from an AI answer to see which sentences match a registry claim and what its current verification status is. This does not judge whether a sentence is true — it only matches sentences against existing registry claims.", inputLabel: "Text to check", inputPlaceholder: "Paste one or more sentences here...", privacyNote: "Your text and the sentences extracted from it are never stored or logged.", submit: "Check text", submitting: "Checking...", cancel: "Cancel", resultsHeading: "Results", summaryVerified: "{count} verified", summaryNeedsReview: "{count} needs review", summaryDisputed: "{count} disputed", summaryNotFound: "{count} not found", noMatchNoCandidates: "No related registry claim was found.", noMatchBelowThreshold: "No registry claim matched closely enough to connect safely.", noMatchNegationMismatch: "A negation difference kept this from being safely connected.", noMatchQuantityMismatch: "A numeric difference kept this from being safely connected.", noMatchPolarityMismatch: "An increase/decrease difference kept this from being safely connected.", viewSource: "View source claim", copySummary: "Copy summary", copySuccess: "Copied", copyFailure: "Copy failed", statusIdle: "Ready", statusChecking: "Checking your text...", statusDone: "Check complete", errorGeneric: "Something went wrong. Please try again.", errorTextTooLong: "Text is too long. Please shorten it and try again.", errorTooManySentences: "Too many sentences. Please check a shorter passage.", errorNoAnalyzableSentences: "No checkable sentences were found in this text.", errorRateLimited: "Too many checks in a short time. Please wait and try again." },
 };
 
 const PAGE_TRANSLATIONS_KO = {
@@ -175,6 +186,8 @@ const PAGE_TRANSLATIONS_KO = {
   country: { ...PAGE_TRANSLATIONS_EN.country, countryRegistry: "국가 레지스트리", verifiedFacts: "검증된 facts", needsReviewFacts: "검토 필요 facts", staleFacts: "오래된 facts", targetFacts: "목표 facts", categoryProgress: "카테고리 진행률", topNeededSources: "필요한 주요 출처", recentContributors: "최근 기여자", recentlyVerifiedFacts: "최근 검증된 facts", popularQuestions: "인기 질문", documents: "문서", submitSource: "출처 제출", needsVerification: "확인 필요" },
   bounties: { ...PAGE_TRANSLATIONS_EN.bounties, notFound: "바운티를 찾을 수 없음", eyebrow: "Claim-level 출처 바운티", title: "검증 가능한 facts를 위한 출처 바운티", open: "진행 중", sponsoredLabeled: "스폰서 표시됨", otherLanguages: "다른 언어" },
   streak: { ...PAGE_TRANSLATIONS_EN.streak, title: "내 accepted-contribution 스트릭", current: "현재 {days}일 연속", longest: "최장 {days}일 연속", activeToday: "오늘 활동함", continueToday: "오늘 스트릭을 이어가세요", startToday: "오늘 스트릭을 시작하세요", maxed: "마일스톤 최대 달성", timezoneNote: "스트릭 일수는 로컬 시간이 아닌 UTC 기준 날짜로 계산됩니다." },
+  citation: { ...PAGE_TRANSLATIONS_EN.citation, citationStatusVerified: "검증됨", citationStatusNeedsReview: "검토 필요", citationStatusDisputed: "이의 제기됨", citationStatusUnknownValue: "알 수 없음", citationStatusUnavailable: "확인 불가" },
+  check: { ...PAGE_TRANSLATIONS_EN.check, title: "AI 답변 확인", description: "AI 답변의 문장을 붙여넣으면 레지스트리의 claim과 일치하는지, 현재 검증 상태가 무엇인지 보여줍니다. 문장이 사실인지 판정하지 않습니다 — 기존 레지스트리 claim과의 매칭만 수행합니다.", inputLabel: "확인할 텍스트", inputPlaceholder: "문장을 여기에 붙여넣으세요...", privacyNote: "입력하신 텍스트와 추출된 문장은 저장되거나 기록되지 않습니다.", submit: "텍스트 확인", submitting: "확인 중...", cancel: "취소", resultsHeading: "결과", summaryVerified: "검증됨 {count}건", summaryNeedsReview: "검토 필요 {count}건", summaryDisputed: "이의 제기 {count}건", summaryNotFound: "찾지 못함 {count}건", noMatchNoCandidates: "관련된 레지스트리 claim을 찾지 못했습니다.", noMatchBelowThreshold: "안전하게 연결할 만큼 일치하는 claim이 없습니다.", noMatchNegationMismatch: "부정 표현 차이로 안전하게 연결하지 못했습니다.", noMatchQuantityMismatch: "숫자 표현이 달라 안전하게 연결하지 못했습니다.", noMatchPolarityMismatch: "증가/감소 방향 차이로 안전하게 연결하지 못했습니다.", viewSource: "출처 claim 보기", copySummary: "요약 복사", copySuccess: "복사됨", copyFailure: "복사 실패", statusIdle: "대기 중", statusChecking: "텍스트 확인 중...", statusDone: "확인 완료", errorGeneric: "오류가 발생했습니다. 다시 시도해 주세요.", errorTextTooLong: "텍스트가 너무 깁니다. 줄여서 다시 시도해 주세요.", errorTooManySentences: "문장이 너무 많습니다. 더 짧은 텍스트로 시도해 주세요.", errorNoAnalyzableSentences: "확인할 수 있는 문장을 찾지 못했습니다.", errorRateLimited: "짧은 시간 안에 너무 많이 확인했습니다. 잠시 후 다시 시도해 주세요." },
 };
 
 const ko: UITranslations = {
@@ -192,6 +205,7 @@ const ko: UITranslations = {
     contribute: "기여",
     suggestTopic: "토픽 제안",
     admin: "관리자",
+    check: "AI 답변 확인",
   },
   home: {
     heroTitle: "AI가 인용할 facts. 사람이 검증할 claims.",
@@ -319,6 +333,7 @@ const en: UITranslations = {
     contribute: "Contribute",
     suggestTopic: "Suggest Topic",
     admin: "Admin",
+    check: "Check an AI answer",
   },
   home: {
     heroTitle: "Facts AI can cite. Claims humans can verify.",
@@ -446,6 +461,7 @@ const hi: UITranslations = {
     contribute: "योगदान दें",
     suggestTopic: "विषय सुझाएँ",
     admin: "प्रशासक",
+    check: "AI उत्तर जाँचें",
   },
   home: {
     heroTitle: "एक रजिस्ट्री जहाँ AI, खोज और मानव समान तथ्य उद्धृत करते हैं",
@@ -564,6 +580,7 @@ const ar: UITranslations = {
     contribute: "المساهمة",
     suggestTopic: "اقتراح موضوع",
     admin: "المسؤول",
+    check: "تحقق من إجابة AI",
   },
   home: {
     heroTitle: "سجل حيث يستشهد الذكاء الاصطناعي والبحث والبشر بنفس الحقائق",
@@ -682,6 +699,7 @@ const es: UITranslations = {
     contribute: "Contribuir",
     suggestTopic: "Sugerir tema",
     admin: "Administrador",
+    check: "Verificar respuesta de IA",
   },
   home: {
     heroTitle: "Un registro donde la IA, la búsqueda y los humanos citan los mismos hechos",
@@ -800,6 +818,7 @@ const ja: UITranslations = {
     contribute: "貢献",
     suggestTopic: "トピック提案",
     admin: "管理者",
+    check: "AI回答をチェック",
   },
   home: {
     heroTitle: "AI・検索・人間が同じ事実を引用するレジストリ",
@@ -918,6 +937,7 @@ const zh: UITranslations = {
     contribute: "贡献",
     suggestTopic: "建议主题",
     admin: "管理员",
+    check: "核查AI答案",
   },
   home: {
     heroTitle: "AI、搜索和人类引用相同事实的注册表",

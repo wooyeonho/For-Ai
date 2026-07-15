@@ -292,6 +292,20 @@ export default function ApiDocsPage() {
             </p>
           </div>
 
+          {/* POST /api/check */}
+          <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
+            <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>
+              POST /api/check
+            </p>
+            <p style={{ margin: "8px 0", fontSize: "0.9rem", color: "var(--muted)" }}>
+              Splits submitted text into sentences and matches each against registry claims, returning each
+              sentence&apos;s matched claim (if any) and its current verification status. This is a claim-matcher,
+              not a truth judge — it never determines whether a sentence is factually correct. Body:{" "}
+              <code>{"{ text: string; locale?: string }"}</code>, max 5,000 characters. The submitted text and
+              extracted sentences are never stored or logged.
+            </p>
+          </div>
+
           {/* GET/POST /api/posts */}
           <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
             <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>GET /api/posts</p>

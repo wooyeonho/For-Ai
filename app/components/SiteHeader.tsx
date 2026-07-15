@@ -6,6 +6,7 @@ import { getLocaleFromPathname, getTranslations, withLocaleLink } from "../../li
 import { LanguageSelector } from "./LanguageSelector";
 import { DEFAULT_LOCALE, isValidLocale } from "../../lib/i18n/locales";
 import type { SupportedLocale } from "../../lib/i18n/locales";
+import { checkAnswerPublicNavEnabled } from "../../lib/feature-flags";
 
 
 function localeHref(locale: string, path: string): string {
@@ -27,6 +28,7 @@ export function SiteHeader() {
     { href: localeHref(locale, "/community"), label: t.nav.community },
     { href: localeHref(locale, "/contribute"), label: t.nav.contribute },
     { href: localeHref(locale, "/suggest-topic"), label: t.nav.suggestTopic },
+    ...(checkAnswerPublicNavEnabled() ? [{ href: localeHref(locale, "/check"), label: t.nav.check }] : []),
   ];
 
   return (
