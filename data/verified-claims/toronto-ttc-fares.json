@@ -26,7 +26,8 @@
           "publisher": "Toronto Transit Commission (TTC)",
           "url": "https://www.ttc.ca/Fares-and-passes",
           "observed_at": "2026-06-29",
-          "note": "Official TTC fares page states the TTC adult fare is $3.30 when tapping Interac debit/credit or mobile wallet."
+          "note": "Official TTC fares page states the TTC adult fare is $3.30 when tapping Interac debit/credit or mobile wallet.",
+          "source_authority": "official"
         }
       ],
       "verification_event": {
@@ -34,7 +35,12 @@
         "actor": "ai-source-fetch",
         "verified_at": "2026-06-29",
         "note": "Read directly from Toronto Transit Commission (TTC) official fare page on 2026-06-29. Final human approval pending."
-      }
+      },
+      "jurisdiction": "CA-ON",
+      "country": "CA",
+      "risk_tier": "low",
+      "update_frequency": "event_based",
+      "disclaimer_type": "check_official_source"
     },
     {
       "claim_id": "ttc-adult-monthly-pass",
@@ -51,7 +57,8 @@
           "publisher": "Toronto Transit Commission (TTC)",
           "url": "https://www.ttc.ca/Fares-and-passes",
           "observed_at": "2026-06-29",
-          "note": "Official TTC monthly pass table lists Adult monthly pass as $156.00."
+          "note": "Official TTC monthly pass table lists Adult monthly pass as $156.00.",
+          "source_authority": "official"
         }
       ],
       "verification_event": {
@@ -59,7 +66,12 @@
         "actor": "ai-source-fetch",
         "verified_at": "2026-06-29",
         "note": "Read directly from Toronto Transit Commission (TTC) official fare page on 2026-06-29. Final human approval pending."
-      }
+      },
+      "jurisdiction": "CA-ON",
+      "country": "CA",
+      "risk_tier": "low",
+      "update_frequency": "event_based",
+      "disclaimer_type": "check_official_source"
     },
     {
       "claim_id": "ttc-youth-senior-monthly-pass",
@@ -76,7 +88,8 @@
           "publisher": "Toronto Transit Commission (TTC)",
           "url": "https://www.ttc.ca/Fares-and-passes",
           "observed_at": "2026-06-29",
-          "note": "Official TTC monthly pass table lists Youth (13-19) or Senior (65+) monthly pass as $128.15."
+          "note": "Official TTC monthly pass table lists Youth (13-19) or Senior (65+) monthly pass as $128.15.",
+          "source_authority": "official"
         }
       ],
       "verification_event": {
@@ -84,7 +97,12 @@
         "actor": "ai-source-fetch",
         "verified_at": "2026-06-29",
         "note": "Read directly from Toronto Transit Commission (TTC) official fare page on 2026-06-29. Final human approval pending."
-      }
+      },
+      "jurisdiction": "CA-ON",
+      "country": "CA",
+      "risk_tier": "low",
+      "update_frequency": "event_based",
+      "disclaimer_type": "check_official_source"
     },
     {
       "claim_id": "ttc-adult-twelve-month-pass",
@@ -101,7 +119,8 @@
           "publisher": "Toronto Transit Commission (TTC)",
           "url": "https://www.ttc.ca/Fares-and-passes",
           "observed_at": "2026-06-29",
-          "note": "Official TTC monthly pass table lists Adult 12 Month Pass as $143.00."
+          "note": "Official TTC monthly pass table lists Adult 12 Month Pass as $143.00.",
+          "source_authority": "official"
         }
       ],
       "verification_event": {
@@ -109,7 +128,17 @@
         "actor": "ai-source-fetch",
         "verified_at": "2026-06-29",
         "note": "Read directly from Toronto Transit Commission (TTC) official fare page on 2026-06-29. Final human approval pending."
-      }
+      },
+      "jurisdiction": "CA-ON",
+      "country": "CA",
+      "risk_tier": "low",
+      "update_frequency": "event_based",
+      "disclaimer_type": "check_official_source"
     }
-  ]
+  ],
+  "canonical_slug": "toronto-ttc-fares",
+  "localized_title": {
+    "en": "Toronto TTC fares (2026)"
+  },
+  "translation_status": "source_language"
 }

@@ -149,7 +149,8 @@
           "title": "정부24 — 주민등록증 재발급 신청 민원안내",
           "url": "https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=13100000018",
           "observed_at": "2026-06-28",
-          "note": "정부24 주민등록증 재발급 신청 공식 민원안내 페이지."
+          "note": "정부24 주민등록증 재발급 신청 공식 민원안내 페이지.",
+          "source_authority": "official"
         }
       ],
       "verification_event": {
