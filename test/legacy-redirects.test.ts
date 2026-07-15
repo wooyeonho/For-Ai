@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import path from "node:path";
 import test from "node:test";
 
@@ -111,4 +111,15 @@ test("leaderboard redirect target never notFound()s on the experimental flag", (
     /rankingNotYetEnabled/,
     "leaderboard must show a stable, flag-off explanation instead of empty/missing content",
   );
+});
+
+// Task 0-B: the legacy gamification page files are removed once Task 0-A's
+// 308 redirects are the only way to reach these routes. Direct route files
+// must never come back, or they would shadow the config-level redirect.
+test("Task 0-B: legacy gamification route files no longer exist", () => {
+  const repoRoot = path.join(__dirname, "..", "..", "..");
+  for (const from of ["quests", "missions", "bounties", "challenges", "campaigns"]) {
+    const routeDir = path.join(repoRoot, "app", "[locale]", from);
+    assert.equal(existsSync(routeDir), false, `app/[locale]/${from} must be deleted (Task 0-B)`);
+  }
 });

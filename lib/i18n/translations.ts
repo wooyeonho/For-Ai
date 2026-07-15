@@ -121,6 +121,10 @@ governmentFeeDisclaimer: string;
     [key: string]: string;
     notFound: string; metadataTitle: string; metadataDescription: string; eyebrow: string; title: string; description: string; viewLeaderboard: string; submitMissingFact: string;
   };
+  streak: {
+    [key: string]: string;
+    title: string; current: string; longest: string; activeToday: string; continueToday: string; startToday: string; maxed: string; timezoneNote: string;
+  };
   footer: {
     tagline: string;
     forHumans: string;
@@ -162,6 +166,7 @@ const PAGE_TRANSLATIONS_EN = {
   compare: { title: "Compare facts" },
   aiWrongAbout: { title: "AI wrong-answer correction route" },
   contributors: { notFound: "Contributors page not found", metadataTitle: "Contributors | For-Ai", metadataDescription: "How For-Ai contributors submit sources, fix stale claims, and earn ranked, abuse-resistant credit for accepted work.", eyebrow: "For-Ai contributor program", title: "Contributors", description: "For-Ai facts stay accurate because contributors submit sources, flag stale claims, and report hallucinated answers. Every credited action is accepted-work only — raw submission volume never counts.", viewLeaderboard: "View the contributor leaderboard", submitMissingFact: "Submit a missing fact" },
+  streak: { title: "Your accepted-contribution streak", current: "{days}-day current streak", longest: "{days}-day longest streak", activeToday: "Active today", continueToday: "Continue your streak today", startToday: "Start a streak today", maxed: "Milestone maxed out", timezoneNote: "Streak days are counted by UTC calendar date, not your local time." },
 };
 
 const PAGE_TRANSLATIONS_KO = {
@@ -169,6 +174,7 @@ const PAGE_TRANSLATIONS_KO = {
   topics: { ...PAGE_TRANSLATIONS_EN.topics, claimLevelTopicRegistry: "Claim-level 토픽 레지스트리", factsSuffix: "facts", documents: "문서", verified: "검증됨", needsReview: "검토 필요", stale: "오래됨", countryIndex: "국가 인덱스", popularFactsByCountry: "국가별 인기 facts", otherLanguages: "다른 언어", topicNotFound: "토픽을 찾을 수 없음" },
   country: { ...PAGE_TRANSLATIONS_EN.country, countryRegistry: "국가 레지스트리", verifiedFacts: "검증된 facts", needsReviewFacts: "검토 필요 facts", staleFacts: "오래된 facts", targetFacts: "목표 facts", categoryProgress: "카테고리 진행률", topNeededSources: "필요한 주요 출처", recentContributors: "최근 기여자", recentlyVerifiedFacts: "최근 검증된 facts", popularQuestions: "인기 질문", documents: "문서", submitSource: "출처 제출", needsVerification: "확인 필요" },
   bounties: { ...PAGE_TRANSLATIONS_EN.bounties, notFound: "바운티를 찾을 수 없음", eyebrow: "Claim-level 출처 바운티", title: "검증 가능한 facts를 위한 출처 바운티", open: "진행 중", sponsoredLabeled: "스폰서 표시됨", otherLanguages: "다른 언어" },
+  streak: { ...PAGE_TRANSLATIONS_EN.streak, title: "내 accepted-contribution 스트릭", current: "현재 {days}일 연속", longest: "최장 {days}일 연속", activeToday: "오늘 활동함", continueToday: "오늘 스트릭을 이어가세요", startToday: "오늘 스트릭을 시작하세요", maxed: "마일스톤 최대 달성", timezoneNote: "스트릭 일수는 로컬 시간이 아닌 UTC 기준 날짜로 계산됩니다." },
 };
 
 const ko: UITranslations = {

@@ -22,7 +22,7 @@ test("all supported locales have stable primary route shapes", () => {
       `/${locale}/wiki/${I18N_SMOKE_TEST_SLUG}`,
       `/${locale}/topics`,
       `/${locale}/countries`,
-      `/${locale}/bounties`,
+      `/${locale}/leaderboard`,
     ]);
   }
 });
@@ -33,7 +33,8 @@ test("LanguageSelector helper swaps locale prefixes without changing route ident
     assert.equal(getLocalePath("/ko/wiki/myungdong-laluce-parking", locale), `/${locale}/wiki/myungdong-laluce-parking`);
     assert.equal(getLocalePath("/ko/topics", locale), `/${locale}/topics`);
     assert.equal(getLocalePath("/ko/countries", locale), `/${locale}/countries`);
-    assert.equal(getLocalePath("/ko/bounties", locale), `/${locale}/bounties`);
+    assert.equal(getLocalePath("/ko/contributors", locale), `/${locale}/contributors`);
+    assert.equal(getLocalePath("/ko/leaderboard", locale), `/${locale}/leaderboard`);
   }
 });
 

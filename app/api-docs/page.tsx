@@ -280,6 +280,18 @@ export default function ApiDocsPage() {
             </p>
           </div>
 
+          {/* GET /api/contributions/streak */}
+          <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
+            <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>
+              GET /api/contributions/streak
+            </p>
+            <p style={{ margin: "8px 0", fontSize: "0.9rem", color: "var(--muted)" }}>
+              The caller&apos;s own accepted-contribution streak (current/longest day counts), derived from the
+              same server-side contributor hash as /api/contributions/mine. Returns <code>{"{ streak: null }"}</code>{" "}
+              when the caller has no streak history or the service-role Supabase connection is not configured.
+            </p>
+          </div>
+
           {/* GET/POST /api/posts */}
           <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
             <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>GET /api/posts</p>

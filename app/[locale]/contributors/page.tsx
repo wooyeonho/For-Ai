@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SUPPORTED_LOCALES, getTranslations, isValidLocale } from "../../../lib/i18n";
 import type { SupportedLocale } from "../../../lib/i18n";
+import ContributorStreakWidget from "./ContributorStreakWidget";
 
 export const revalidate = 3600;
 
@@ -34,6 +35,7 @@ export default async function ContributorsPage({ params }: { params: Promise<Con
 
   return (
     <article>
+      <ContributorStreakWidget locale={locale as SupportedLocale} />
       <header className="registry-panel">
         <p className="eyebrow">{t.contributors.eyebrow}</p>
         <h1>{t.contributors.title}</h1>
