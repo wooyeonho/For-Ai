@@ -3247,3 +3247,87 @@ body {
   gap: 12px;
   margin-top: 12px;
 }
+
+.streak-widget-header {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: space-between;
+}
+
+.streak-status {
+  align-items: center;
+  display: inline-flex;
+  gap: 6px;
+}
+
+.streak-status-dot {
+  background: var(--line);
+  border-radius: 50%;
+  display: inline-block;
+  height: 10px;
+  width: 10px;
+}
+
+.streak-status-dot[data-active="true"] {
+  background: var(--success, #2e7d32);
+}
+
+.streak-progress-track {
+  background: var(--line);
+  border-radius: 999px;
+  height: 8px;
+  margin-top: 8px;
+  overflow: hidden;
+  width: 100%;
+}
+
+.streak-progress-fill {
+  background: var(--success, #2e7d32);
+  border-radius: 999px;
+  height: 100%;
+  transition: width 0.3s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .streak-progress-fill {
+    transition: none;
+  }
+}
+
+.streak-tooltip {
+  display: inline-block;
+  position: relative;
+}
+
+.streak-tooltip summary {
+  color: var(--muted, #6b7280);
+  cursor: pointer;
+  font-size: 12px;
+  list-style: none;
+}
+
+.streak-tooltip summary::-webkit-details-marker {
+  display: none;
+}
+
+.streak-tooltip-note {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  font-size: 12px;
+  margin-top: 4px;
+  padding: 8px 10px;
+  position: absolute;
+  width: max-content;
+  max-width: 240px;
+  z-index: 10;
+}
+
+@media (prefers-color-scheme: dark) {
+  .streak-tooltip-note {
+    background: var(--bg, #1a1a1a);
+  }
+}

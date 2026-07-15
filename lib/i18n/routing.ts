@@ -9,7 +9,7 @@ export const I18N_PRIMARY_ROUTE_BUILDERS = [
   (locale: SupportedLocale, slug = I18N_SMOKE_TEST_SLUG) => `/${locale}/wiki/${slug}`,
   (locale: SupportedLocale) => `/${locale}/topics`,
   (locale: SupportedLocale) => `/${locale}/countries`,
-  (locale: SupportedLocale) => `/${locale}/bounties`,
+  (locale: SupportedLocale) => `/${locale}/leaderboard`,
 ] as const;
 
 export function getCurrentLocaleFromPath(pathname: string): SupportedLocale {
@@ -26,7 +26,7 @@ export function getLocalePath(pathname: string, locale: SupportedLocale | string
       return "/" + [locale, ...segments.slice(1)].join("/");
     }
 
-    if (segments.length === 1 || ["topics", "countries", "bounties"].includes(route ?? "")) {
+    if (segments.length === 1 || ["topics", "countries", "contributors", "leaderboard"].includes(route ?? "")) {
       return "/" + [locale, ...segments.slice(1)].join("/");
     }
   }

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SUPPORTED_LOCALES, getTranslations, isValidLocale } from "../../../lib/i18n";
 import type { SupportedLocale } from "../../../lib/i18n";
+import ContributorStreakWidget from "./ContributorStreakWidget";
 
 export const revalidate = 3600;
 
@@ -39,6 +40,7 @@ export default async function ContributorsPage({ params }: { params: Promise<Con
         <h1>{t.contributors.title}</h1>
         <p style={{ maxWidth: 780 }}>{t.contributors.description}</p>
       </header>
+      <ContributorStreakWidget locale={locale as SupportedLocale} />
 
       <nav className="registry-panel" aria-labelledby="contributors-actions">
         <h2 id="contributors-actions">{t.contributors.title}</h2>

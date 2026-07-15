@@ -104,6 +104,21 @@ function calculateOneStreak(type: ContributorStreakType, days: Set<string>, asOf
   return { type, currentDays, longestDays, activeOn, reward: rewardFor(type, currentDays, longestDays) };
 }
 
+export const STREAK_MILESTONES = [3, 7, 30, 100] as const;
+
+export type StreakMilestoneProgress = {
+  next: number | null;
+  progressPercent: number;
+  maxed: boolean;
+};
+
+export function streakMilestoneProgress(currentDays: number): StreakMilestoneProgress {
+  const next = STREAK_MILESTONES.find((milestone) => milestone > currentDays) ?? null;
+  const prev = [...STREAK_MILESTONES].reverse().find((milestone) => milestone <= currentDays) ?? 0;
+  const progressPercent = next ? Math.round(((currentDays - prev) / (next - prev)) * 100) : 100;
+  return { next, progressPercent, maxed: !next };
+}
+
 export function calculateContributorStreaks(
   contributorHash: string,
   events: ContributionEvent[],

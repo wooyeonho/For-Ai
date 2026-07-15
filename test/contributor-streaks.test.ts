@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { calculateContributorStreaks, type ContributionEvent } from "../lib/contributor-streaks";
+import { calculateContributorStreaks, streakMilestoneProgress, type ContributionEvent } from "../lib/contributor-streaks";
 
 test("calculates differentiated contributor streak rewards", () => {
   const events: ContributionEvent[] = [
@@ -35,4 +35,15 @@ test("excludes rejected and spam submissions from submission streaks", () => {
   assert.equal(summary.streaks.submission.currentDays, 0);
   assert.equal(summary.streaks.submission.longestDays, 1);
   assert.equal(summary.totalPoints, 0);
+});
+
+test("streak milestone progress matches 3/7/30/100 boundaries", () => {
+  assert.deepEqual(streakMilestoneProgress(0), { next: 3, progressPercent: 0, maxed: false });
+  assert.deepEqual(streakMilestoneProgress(2), { next: 3, progressPercent: 67, maxed: false });
+  assert.deepEqual(streakMilestoneProgress(3), { next: 7, progressPercent: 0, maxed: false });
+  assert.deepEqual(streakMilestoneProgress(7), { next: 30, progressPercent: 0, maxed: false });
+  assert.deepEqual(streakMilestoneProgress(8), { next: 30, progressPercent: 4, maxed: false });
+  assert.deepEqual(streakMilestoneProgress(30), { next: 100, progressPercent: 0, maxed: false });
+  assert.deepEqual(streakMilestoneProgress(100), { next: null, progressPercent: 100, maxed: true });
+  assert.deepEqual(streakMilestoneProgress(101), { next: null, progressPercent: 100, maxed: true });
 });
