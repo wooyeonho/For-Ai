@@ -35,12 +35,12 @@ export default async function ContributorsPage({ params }: { params: Promise<Con
 
   return (
     <article>
-      <ContributorStreakWidget locale={locale as SupportedLocale} />
       <header className="registry-panel">
         <p className="eyebrow">{t.contributors.eyebrow}</p>
         <h1>{t.contributors.title}</h1>
         <p style={{ maxWidth: 780 }}>{t.contributors.description}</p>
       </header>
+      <ContributorStreakWidget locale={locale as SupportedLocale} />
 
       <nav className="registry-panel" aria-labelledby="contributors-actions">
         <h2 id="contributors-actions">{t.contributors.title}</h2>

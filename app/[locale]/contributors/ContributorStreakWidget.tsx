@@ -78,7 +78,7 @@ export default function ContributorStreakWidget({ locale }: { locale: SupportedL
           aria-valuemax={100}
           aria-label={t.title}
         >
-          <div className="streak-progress-fill" style={{ width: `${progressPercent}%` }} />
+          <div className="streak-progress-fill" style={{ inlineSize: `${progressPercent}%` }} />
         </div>
       )}
     </section>

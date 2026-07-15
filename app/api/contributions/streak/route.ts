@@ -40,15 +40,22 @@ export async function GET(request: Request) {
     return NextResponse.json<ContributorStreakResponse>({ streak: null }, { headers: { "Cache-Control": "no-store" } });
   }
 
-  const { data, error } = await supabase
-    .from("contribution_events")
-    .select("event_type, created_at, submission_status")
-    .eq("contributor_hash", contributorHash)
-    .eq("event_type", "accepted_contribution")
-    .order("created_at", { ascending: true })
-    .limit(EVENT_LIMIT);
-
-  if (error) {
+  let data: { created_at: string }[] | null;
+  try {
+    // Most-recent-first + limit: currentDays/activeOn are anchored on "today",
+    // so a contributor with more than EVENT_LIMIT lifetime events must keep
+    // their newest rows, not their oldest (ascending order silently drops
+    // recent activity once the cap is hit).
+    const result = await supabase
+      .from("contribution_events")
+      .select("created_at")
+      .eq("contributor_hash", contributorHash)
+      .eq("event_type", "accepted_contribution")
+      .order("created_at", { ascending: false })
+      .limit(EVENT_LIMIT);
+    if (result.error) throw result.error;
+    data = result.data;
+  } catch (error) {
     console.error("[contributions/streak] Query failed:", error);
     return NextResponse.json<ContributorStreakResponse>({ streak: null }, { headers: { "Cache-Control": "no-store" } });
   }
@@ -56,7 +63,7 @@ export async function GET(request: Request) {
   const events: ContributionEvent[] = (data ?? []).map((row) => ({
     contributor_hash: contributorHash,
     event_type: "accepted_contribution",
-    created_at: row.created_at as string,
+    created_at: row.created_at,
   }));
 
   const summary = calculateContributorStreaks(contributorHash, events);

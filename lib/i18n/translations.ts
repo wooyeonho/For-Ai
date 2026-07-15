@@ -1037,16 +1037,11 @@ export function getLocaleFromPathname(pathname: string): SupportedLocale {
 
 const LOCALE_ROUTE_ROOTS = new Set([
   "ai-wrong-about",
-  "bounties",
-  "campaigns",
-  "challenges",
   "compare",
   "contributors",
   "country",
   "entity",
   "leaderboard",
-  "missions",
-  "quests",
   "topics",
   "wiki",
 ]);

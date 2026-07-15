@@ -4,8 +4,10 @@ import { SUPPORTED_LOCALES } from "./lib/i18n/locales";
 const LOCALE_PATTERN = SUPPORTED_LOCALES.join("|");
 
 // Task 0-A: legacy gamification routes permanently redirect (HTTP 308) for
-// supported locales only. Page files stay in place until Task 0-B so this
-// array can be reverted on its own for an immediate rollback.
+// supported locales only. As of Task 0-B, the source page files
+// (app/[locale]/{quests,missions,bounties,challenges,campaigns}) no longer
+// exist, so reverting this array alone is not a full rollback — restoring
+// those directories from git history is also required.
 export const LEGACY_GAMIFICATION_REDIRECTS = [
   { from: "quests", to: "contributors" },
   { from: "missions", to: "contributors" },
