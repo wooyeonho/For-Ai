@@ -4,7 +4,7 @@ import { detectContradictionReasons } from "./similarity";
 import type { CheckResponse, CheckSummary, ContradictionGate, NoMatchReason, SentenceCheckResult } from "./types";
 import { CHECK_LIMITS } from "./types";
 
-// Bible v7 §6.5: evaluate every top-ranked candidate (not just the single
+// Bible v7 section 6.5: evaluate every top-ranked candidate (not just the single
 // best lexical match) before deciding no-match, so a lower-ranked but
 // contradiction-free candidate can still win over a higher-ranked one that
 // fails the gate.

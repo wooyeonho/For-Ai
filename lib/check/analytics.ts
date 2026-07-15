@@ -1,6 +1,6 @@
 import type { CheckResponse, NoMatchReason } from "./types";
 
-// Bible v7 §6.8: allowed fields only — sentence count, processing duration,
+// Bible v7 section 6.8: allowed fields only — sentence count, processing duration,
 // match/not-found counts, gate counts, error code. Never the input text,
 // sentence text, claim query text, raw IP, or request body.
 export type CheckAnalyticsEvent = {

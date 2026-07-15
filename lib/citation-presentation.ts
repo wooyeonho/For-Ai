@@ -1,6 +1,6 @@
 import type { ClaimStatus } from "./types";
 
-// Bible v7 §6.1: reuse the repo's existing ClaimStatus enum as "CitationStatus"
+// Bible v7 section 6.1: reuse the repo's existing ClaimStatus enum as "CitationStatus"
 // rather than introducing a duplicate type with the same meaning.
 export type CitationStatus = ClaimStatus;
 export type CitationStatusLabelKey =
