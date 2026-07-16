@@ -1,7 +1,7 @@
 import type { ClaimStatus } from "./types";
 
-// Bible v7 section 6.1: reuse the repo's existing ClaimStatus enum as "CitationStatus"
-// rather than introducing a duplicate type with the same meaning.
+// Reuse the schema's ClaimStatus rather than introducing a parallel status
+// enum for citation surfaces.
 export type CitationStatus = ClaimStatus;
 export type CitationStatusLabelKey =
   | "citationStatusVerified"
@@ -16,10 +16,6 @@ export type CitationPresentation = {
   color: string;
 };
 
-// Exhaustive over the schema-level ClaimStatus values only. "unknown" here is
-// the schema's own status value (claim exists but has no determined status),
-// distinct from the display-only "not found in registry" / "lookup failed"
-// states handled by presentationForUnknown().
 const SCHEMA_PRESENTATION = {
   verified: { machineLabel: "Verified", labelKey: "citationStatusVerified", color: "var(--success, #2e7d32)" },
   needs_review: { machineLabel: "Needs review", labelKey: "citationStatusNeedsReview", color: "var(--warning, #b45309)" },
@@ -39,9 +35,6 @@ export function presentationForStatus(status: CitationStatus): CitationPresentat
   return SCHEMA_PRESENTATION[status];
 }
 
-// For values arriving as untyped strings (query params, external data, a
-// document/claim lookup that failed). Never returns undefined; unrecognized
-// input degrades to "unavailable" rather than throwing or silently mislabeling.
 export function presentationForUnknown(status: string | null | undefined): CitationPresentation {
   if (status && status in SCHEMA_PRESENTATION) {
     return SCHEMA_PRESENTATION[status as CitationStatus];

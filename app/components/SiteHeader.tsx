@@ -17,6 +17,7 @@ function localeHref(locale: string, path: string): string {
 export function SiteHeader() {
   const [open, setOpen] = useState(false);
   const pathname = usePathname();
+  if (pathname.startsWith("/embed/")) return null;
   const locale = getLocaleFromPathname(pathname);
   const t = getTranslations(locale);
   const close = () => setOpen(false);

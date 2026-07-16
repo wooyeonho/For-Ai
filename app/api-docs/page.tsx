@@ -235,6 +235,24 @@ export default function ApiDocsPage() {
             </p>
           </div>
 
+          {/* GET /api/badge/:slug */}
+          <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
+            <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>
+              GET /api/badge/<span style={{ color: "var(--accent)" }}>{"{slug}"}</span>
+            </p>
+            <p style={{ margin: "8px 0", fontSize: "0.9rem", color: "var(--muted)" }}>
+              Cacheable SVG fact-status badge. Existing, missing, and temporarily unavailable states
+              all return a valid image with a whitelisted status label; inspect <code>X-For-Ai-Can-Cite</code>
+              before treating any linked record as citation-ready.
+            </p>
+            <p style={{ margin: "6px 0 0", fontFamily: "monospace", fontSize: "0.82rem", overflowWrap: "anywhere" }}>
+              {`[![For-Ai fact status](${BASE}/api/badge/{slug})](${BASE}/en/wiki/{slug})`}
+            </p>
+            <p style={{ margin: "6px 0 0", fontFamily: "monospace", fontSize: "0.82rem", overflowWrap: "anywhere" }}>
+              {`<iframe src="${BASE}/embed/{slug}" width="360" height="140" title="For-Ai fact status" loading="lazy" sandbox="allow-popups allow-popups-to-escape-sandbox" referrerpolicy="strict-origin-when-cross-origin"></iframe>`}
+            </p>
+          </div>
+
           {/* GET /api/entities/:id */}
           <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
             <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>
@@ -352,6 +370,7 @@ export default function ApiDocsPage() {
             <p style={{ margin: "6px 0 0", fontFamily: "monospace", fontWeight: 700 }}>GET /api/gamification/contributor/<span style={{ color: "var(--accent)" }}>{"{hash}"}</span></p>
             <p style={{ margin: "6px 0 0", fontFamily: "monospace", fontWeight: 700 }}>GET /api/gamification/country-quest</p>
             <p style={{ margin: "6px 0 0", fontFamily: "monospace", fontWeight: 700 }}>GET /api/gamification/leaderboard</p>
+            <p style={{ margin: "6px 0 0", fontFamily: "monospace", fontWeight: 700 }}>GET /api/contributor-receipt/<span style={{ color: "var(--accent)" }}>{"{hash}"}</span></p>
             <p style={{ margin: "8px 0", fontSize: "0.9rem", color: "var(--muted)" }}>
               Public verification participation endpoints for bounties, contributor progress, country quests, and leaderboard views.
             </p>
