@@ -103,6 +103,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     console.warn("Failed to load entity refs for sitemap; skipping entity pages.", error);
   }
 
+  // Bible v7 section 9.4: check and changelog are included in the sitemap;
+  // feed.xml/changelog.xml are discovery-only surfaces and are deliberately
+  // excluded (they're advertised via robots.txt-adjacent alternates.types
+  // and the footer instead).
+  const checkPages: MetadataRoute.Sitemap = SUPPORTED_LOCALES.map((locale) => ({
+    url: siteUrl(`/${locale}/check`),
+    lastModified: new Date().toISOString(),
+    changeFrequency: "monthly",
+    priority: locale === DEFAULT_LOCALE ? 0.6 : 0.5,
+  }));
+
   return [
     {
       url: siteUrl("/"),
@@ -116,6 +127,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "weekly",
       priority: 0.5,
     },
+    {
+      url: siteUrl("/changelog"),
+      lastModified: new Date().toISOString(),
+      changeFrequency: "daily",
+      priority: 0.5,
+    },
+    ...checkPages,
     ...documentPages,
     ...entityPages,
   ];

@@ -31,6 +31,8 @@ export function SiteFooter() {
           <Link href={localize("/api-docs")}>{t.footer.apiDocs}</Link>
           <Link href={localize("/sitemap.xml")}>{t.footer.sitemap}</Link>
           <Link href={localize("/robots.txt")}>{t.footer.robots}</Link>
+          <Link href={localize("/feed.xml")}>{t.footer.feed}</Link>
+          <Link href={localize("/changelog")}>{t.footer.changelog}</Link>
         </div>
 
         <div className="footer-col">

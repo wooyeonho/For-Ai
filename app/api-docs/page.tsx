@@ -332,6 +332,21 @@ export default function ApiDocsPage() {
             </p>
           </div>
 
+          {/* GET /api/changelog */}
+          <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
+            <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>
+              GET /api/changelog
+            </p>
+            <p style={{ margin: "8px 0", fontSize: "0.9rem", color: "var(--muted)" }}>
+              Claim-level verification status transitions (verified, needs_review, disputed), newest first.
+              Query params: repeatable <code>status</code>, <code>limit</code> (max 100), and an opaque{" "}
+              <code>cursor</code> from a previous response&apos;s <code>nextCursor</code>. Each event&apos;s{" "}
+              <code>previous_status</code> is computed across that claim&apos;s full history before any status
+              filter or pagination is applied. See also the RSS equivalents at{" "}
+              <code>/feed.xml</code> (verified-only) and <code>/changelog.xml</code> (all three statuses).
+            </p>
+          </div>
+
           {/* GET/POST /api/posts */}
           <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
             <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>GET /api/posts</p>

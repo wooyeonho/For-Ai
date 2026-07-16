@@ -17,6 +17,14 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_US",
   },
+  alternates: {
+    types: {
+      "application/rss+xml": [
+        { url: siteUrl("/feed.xml"), title: "For-Ai verified claims" },
+        { url: siteUrl("/changelog.xml"), title: "For-Ai claim changelog" },
+      ],
+    },
+  },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

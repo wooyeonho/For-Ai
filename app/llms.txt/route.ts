@@ -49,6 +49,8 @@ export async function GET() {
   lines.push("");
   lines.push(`- [Sitemap](${siteUrl("/sitemap.xml")})`);
   lines.push(`- [Robots](${siteUrl("/robots.txt")})`);
+  lines.push(`- [Verified-claims RSS feed](${siteUrl("/feed.xml")})`);
+  lines.push(`- [Claim changelog](${siteUrl("/changelog")}) / [Changelog RSS](${siteUrl("/changelog.xml")})`);
   lines.push(`- Search / discovery index (JSON): \`${apiIndexUrl("q=<query>&type=<type>&country=<cc>&cite=true")}\``);
   lines.push(`- Per-document JSON: \`${apiDocumentUrl("<slug>")}\``);
   lines.push(`- Per-document Markdown: \`${rawMarkdownUrl("<slug>")}\``);
