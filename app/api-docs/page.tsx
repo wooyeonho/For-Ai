@@ -83,6 +83,14 @@ export default function ApiDocsPage() {
       safety: "Badges and points are contribution metadata; claim citation safety remains source and verification based.",
     },
     {
+      methods: ["GET /api/contributor-receipt/:hash"],
+      description: "Contributor receipt for public submissions associated with a contributor hash.",
+      auth: "No auth required; contributor hash must be 8-64 hex characters.",
+      rateLimit: "No dedicated public limiter.",
+      response: '{ "contributor_hash": "...", "totals": { "points": 0, "pending": 0, "accepted": 0, "rejected": 0, "verified-linked": 0 }, "items": [], "privacy": { "raw_ip_stored": false } }',
+      safety: "Receipts expose contribution metadata only; they never make pending submissions or claims citation-ready.",
+    },
+    {
       methods: ["GET /api/business/submitted-claims"],
       description: "Review queue for claims submitted through verified business workflows.",
       auth: "Admin authorization required.",
@@ -277,6 +285,17 @@ export default function ApiDocsPage() {
               Status of topic suggestions, correction reports, hallucination reports, and source suggestions
               submitted from the caller&apos;s own network address. No identifier is accepted or required — the
               contributor hash is derived server-side, so this can only ever return the caller&apos;s own submissions.
+            </p>
+          </div>
+
+          {/* GET /api/contributor-receipt/:hash */}
+          <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
+            <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>
+              GET /api/contributor-receipt/<span style={{ color: "var(--accent)" }}>{"{hash}"}</span>
+            </p>
+            <p style={{ margin: "8px 0", fontSize: "0.9rem", color: "var(--muted)" }}>
+              Public contributor receipt for a hash returned by submission flows. The receipt summarizes review status,
+              point totals, and privacy metadata without exposing raw IP addresses or making pending facts citable.
             </p>
           </div>
 

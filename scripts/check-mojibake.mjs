@@ -20,6 +20,15 @@ const EXTENSIONS = new Set([
   ".txt",
 ]);
 const MOJIBAKE_PATTERN = new RegExp("[\u00e2\u0080\ufffd]|(?:[\u00ec\u00ed\u00ea\u00eb][\u0080-\u00ff])", "u");
+const INTENTIONAL_EXAMPLE_PATTERNS = [
+  /MOJIBAKE_(?:PATTERN|ALLOWLIST)/,
+  /not "íì¸ íì"/,
+  /의도적으로 mojibake 예시/,
+];
+
+function isIntentionalExample(line) {
+  return INTENTIONAL_EXAMPLE_PATTERNS.some((pattern) => pattern.test(line));
+}
 
 function hasTrackedExtension(path) {
   return [...EXTENSIONS].some((extension) => path.endsWith(extension));
@@ -44,7 +53,7 @@ function walk(dir) {
     const text = readFileSync(path, "utf8");
     const lines = text.split("\n");
     lines.forEach((line, index) => {
-      if (MOJIBAKE_PATTERN.test(line)) {
+      if (MOJIBAKE_PATTERN.test(line) && !isIntentionalExample(line)) {
         findings.push(`${path.replace(`${ROOT}/`, "")}:${index + 1}: ${line.trim()}`);
       }
     });
