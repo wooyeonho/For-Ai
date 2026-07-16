@@ -387,7 +387,7 @@ export type Task5Settings = {
 };
 
 // --- Task 5-A: demand signals -----------------------------------------------
-// Mirrors supabase/migrations/20260717090000_task5_a_demand_signals.sql.
+// Mirrors supabase/migrations/20260716210425_task5_a_demand_signals.sql.
 
 export type WantedClaimStatus =
   | "observing"

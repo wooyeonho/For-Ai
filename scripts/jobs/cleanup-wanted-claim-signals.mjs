@@ -2,7 +2,7 @@
 import { requireServiceRoleClient, runJob, writeAuditEvent } from "../lib/cron-job-utils.mjs";
 
 // Bible v7 Task 5-A: wanted_claim_demand_signals rows carry an 8-day
-// expires_at (see supabase/migrations/20260717090000_task5_a_demand_signals.sql).
+// expires_at (see supabase/migrations/20260716210425_task5_a_demand_signals.sql).
 // wanted_claim_suggesters is never touched here -- suggesters are retained.
 await runJob("cleanup-wanted-claim-signals", async () => {
   const args = process.argv.slice(2);

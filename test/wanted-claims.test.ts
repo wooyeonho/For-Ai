@@ -19,6 +19,12 @@ test("checkForPiiOrSecrets flags phone numbers", () => {
   assert.equal(result.reason, "phone");
 });
 
+test("checkForPiiOrSecrets flags seven-digit local phone numbers", () => {
+  const result = checkForPiiOrSecrets("call 555-0132 for details");
+  assert.equal(result.containsPii, true);
+  assert.equal(result.reason, "phone");
+});
+
 test("checkForPiiOrSecrets flags secret-key-shaped tokens", () => {
   const result = checkForPiiOrSecrets("my key is sk-abcdefghijklmnopqrstuvwx1234");
   assert.equal(result.containsPii, true);
@@ -72,6 +78,12 @@ test("validateWantedClaimText accepts ordinary text with riskFlag=false", () => 
 
 test("validateWantedClaimText accepts reputation-risk text but marks riskFlag=true", () => {
   const result = validateWantedClaimText("is it true that the mayor was indicted for fraud");
+  assert.equal(result.ok, true);
+  if (result.ok) assert.equal(result.riskFlag, true);
+});
+
+test("validateWantedClaimText normalizes whitespace before reputation-risk matching", () => {
+  const result = validateWantedClaimText("is there a criminal\n\nrecord for this person");
   assert.equal(result.ok, true);
   if (result.ok) assert.equal(result.riskFlag, true);
 });

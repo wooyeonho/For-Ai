@@ -360,6 +360,14 @@ function guardDatabasePrivileges() {
       pattern: /revoke execute on function public\.set_task5_phase\(integer, text, uuid, text\)[\s\S]*?from public, anon, authenticated;/i,
     },
     {
+      label: "Task 5-A promotion helper must exclude browser roles",
+      pattern: /revoke execute on function (?:public\.)?wanted_claim_maybe_promote\(uuid, date, boolean\)[\s\S]*?from public, anon, authenticated;/i,
+    },
+    {
+      label: "Task 5-A normalization helpers must exclude browser roles",
+      pattern: /revoke execute on function (?:public\.)?wanted_claim_normalize_v1\(text\)[\s\S]*?from public, anon, authenticated;[\s\S]*?revoke execute on function (?:public\.)?wanted_claim_normalized_hash\(text, integer\)[\s\S]*?from public, anon, authenticated;/i,
+    },
+    {
       label: "browser roles must never receive TRUNCATE",
       pattern: /revoke truncate on all tables in schema public from anon, authenticated;/i,
     },
