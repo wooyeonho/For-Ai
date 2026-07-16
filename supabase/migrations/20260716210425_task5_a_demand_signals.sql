@@ -310,13 +310,3 @@ drop policy if exists wanted_claim_demand_signals_public_select on wanted_claim_
 drop policy if exists wanted_claim_suggesters_public_select on wanted_claim_suggesters;
 -- No policies created: default-deny for anon and authenticated on all four
 -- tables. All access is service-role via SECURITY DEFINER functions above.
-
--- Defense-in-depth: this project has an org-level `ALTER DEFAULT PRIVILEGES
--- FOR ROLE postgres/supabase_admin IN SCHEMA public GRANT ... TO anon,
--- authenticated` that auto-grants full CRUD (including TRUNCATE, which RLS
--- does NOT protect against in Postgres) to every newly created table,
--- regardless of what a migration itself grants (confirmed via pg_default_acl;
--- tracked project-wide in issue #469 for claims/documents/verification_events).
--- Revoke it explicitly here so RLS is not the only thing standing between
--- anon/authenticated and these rows.
-revoke all on contributors, wanted_claims, wanted_claim_demand_signals, wanted_claim_suggesters from anon, authenticated;

@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { createServerClient, isSupabaseConfigured } from "../../../lib/supabase-server";
+import { createServiceRoleClient } from "../../../lib/supabase-server";
 import { makeContributorHashForRequest } from "../../../lib/contributor-hash";
 import { persistentRateLimited } from "../../../lib/rate-limit-store";
 import { isValidLocale } from "../../../lib/i18n/locales";
@@ -16,8 +16,12 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "invalid_json" }, { status: 400 });
   }
 
-  const locale = String(body.locale ?? "").trim();
-  const text = String(body.text ?? "");
+  if (typeof body.locale !== "string" || typeof body.text !== "string") {
+    return NextResponse.json({ error: "invalid_payload" }, { status: 400 });
+  }
+
+  const locale = body.locale.trim();
+  const text = body.text;
 
   if (!isValidLocale(locale)) {
     return NextResponse.json({ error: "invalid_locale" }, { status: 400 });
@@ -38,6 +42,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "server_configuration_error" }, { status: 500 });
   }
 
+  const sb = createServiceRoleClient();
+  if (!sb) {
+    return NextResponse.json({ error: "submission_storage_unavailable" }, { status: 503 });
+  }
+
   const rateLimit = await persistentRateLimited("wanted-claims-suggest", contributorHash, DAILY_SUGGESTION_LIMIT, DAY_MS);
   if (rateLimit.limited) {
     return NextResponse.json(
@@ -46,11 +55,6 @@ export async function POST(request: Request) {
     );
   }
 
-  if (!isSupabaseConfigured()) {
-    return NextResponse.json({ error: "submission_storage_unavailable" }, { status: 503 });
-  }
-
-  const sb = createServerClient();
   const { data, error } = await sb.rpc("submit_wanted_claim_signal", {
     p_locale: locale,
     p_raw_text: text.trim(),

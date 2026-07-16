@@ -1594,7 +1594,7 @@ create policy verification_policies_public_select on verification_policies for s
 create policy task5_settings_public_select on task5_settings for select to anon using (true);
 
 -- =============================================================================
--- 9. Task 5-A — demand signals (mirrors supabase/migrations/20260717090000_task5_a_demand_signals.sql)
+-- 9. Task 5-A — demand signals (mirrors the 20260716210425/20260716211201 migrations)
 -- =============================================================================
 -- Bible v7 Book IV section 14 / Task 5-A: demand signals.
 --
@@ -1713,6 +1713,11 @@ begin
 end;
 $$;
 
+revoke execute on function wanted_claim_normalize_v1(text) from public, anon, authenticated;
+revoke execute on function wanted_claim_normalized_hash(text, integer) from public, anon, authenticated;
+grant execute on function wanted_claim_normalize_v1(text) to service_role;
+grant execute on function wanted_claim_normalized_hash(text, integer) to service_role;
+
 -- Promotion only ever moves 'observing' -> 'open'. p_risk_flag=true permanently
 -- blocks automatic promotion -- a risk-flagged wanted_claim simply never leaves
 -- 'observing', which is itself the "route to operator queue": 'observing' rows
@@ -1746,6 +1751,9 @@ begin
   end if;
 end;
 $$;
+
+revoke execute on function wanted_claim_maybe_promote(uuid, date, boolean) from public, anon, authenticated;
+grant execute on function wanted_claim_maybe_promote(uuid, date, boolean) to service_role;
 
 -- submit_wanted_claim_signal: sole writer for all three tables. Callers pass
 -- already-hashed identifiers (contributor_hash, actor_key) -- raw IPs never

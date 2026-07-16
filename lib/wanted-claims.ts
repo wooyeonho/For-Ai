@@ -7,7 +7,10 @@ export const WANTED_CLAIM_TEXT_MAX_LENGTH = 500;
 export const WANTED_CLAIM_TEXT_MIN_LENGTH = 3;
 
 const EMAIL_PATTERN = /[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}/i;
-const PHONE_PATTERN = /(?:\+?\d[\s.-]?){7,15}\d/;
+// Seven to fifteen digits with common separators. The previous pattern
+// accidentally required at least eight digits, allowing local numbers such
+// as 555-0132 through the persistence boundary.
+const PHONE_PATTERN = /(?<!\d)(?:\+?\d[\s().-]?){6,14}\d(?!\d)/;
 const CREDIT_CARD_PATTERN = /\b(?:\d[ -]?){13,19}\b/;
 // Common API/secret key shapes: sk-..., AKIA..., ghp_..., long base64/hex runs
 // that look like tokens rather than natural-language claim text.
@@ -70,5 +73,6 @@ export function validateWantedClaimText(rawText: string): WantedClaimValidationE
   const pii = checkForPiiOrSecrets(trimmed);
   if (pii.containsPii) return { ok: false, error: "contains_pii", piiReason: pii.reason };
 
-  return { ok: true, riskFlag: isReputationOrCrimeRisk(trimmed.toLowerCase()) };
+  const normalizedLowerText = trimmed.toLowerCase().replace(/\s+/g, " ");
+  return { ok: true, riskFlag: isReputationOrCrimeRisk(normalizedLowerText) };
 }
