@@ -1150,8 +1150,11 @@ create policy challenge_progress_public_select
 -- watch_subscriptions, contributors, source_candidates, claim_bounties,
 -- bounty_submissions) were found NOT to be applied to the live production
 -- database despite being documented here and having migration files in
--- supabase/migrations/. This Task 5-0 section IS confirmed applied and live
--- (verified against the actual database, not assumed from this file).
+-- supabase/migrations/. Rate limiting was recovered by the Task 5-A security
+-- work, and the admin identity/audit shape was recovered by migration
+-- 20260716221957. The remaining entries still require live-schema review. This
+-- Task 5-0 section IS confirmed applied and live (verified against the actual
+-- database, not assumed from this file).
 -- =============================================================================
 
 -- Task 5-0: structural foundation (Bible v7 Book IV section 13, Book V).
@@ -1393,6 +1396,8 @@ as $$
 declare
   current_row public.task5_settings;
   result_row public.task5_settings;
+  resolved_admin_user_id uuid;
+  resolved_admin_user_hash text;
 begin
   if p_reason is null or length(trim(p_reason)) = 0 then
     raise exception 'set_task5_phase: reason is required';
@@ -1412,6 +1417,15 @@ begin
   -- Downgrades (p_phase < current_row.phase) are allowed immediately.
   -- Same-phase calls (p_phase = current_row.phase) are idempotent.
 
+  select user_id into resolved_admin_user_id
+  from public.admin_users
+  where user_id = p_admin_user_id and active = true;
+
+  resolved_admin_user_hash := case
+    when p_admin_user_hash ~ '^[0-9a-fA-F]{64}$' then lower(p_admin_user_hash)
+    else encode(sha256('unknown-admin'::bytea), 'hex')
+  end;
+
   update public.task5_settings
   set phase = p_phase,
       updated_at = now(),
@@ -1419,23 +1433,19 @@ begin
   where id = true
   returning * into result_row;
 
-  -- admin_audit_events on this project currently only has (id, action, metadata,
-  -- created_at) -- the admin_user_id/admin_user_hash/target_id columns that
-  -- schema-v3.sql documents and migration 20260629_admin_roles_and_audit.sql
-  -- would add have never actually been applied to this database (a pre-existing,
-  -- much wider migration-drift gap discovered while writing this function --
-  -- flagged separately, not fixed here). Insert only into columns confirmed to
-  -- exist; carry the admin identity fields inside metadata instead so no
-  -- information is lost, and this function keeps working once the drift is
-  -- eventually corrected (a future catch-up migration can backfill these out of
-  -- metadata into the real columns).
-  insert into public.admin_audit_events (action, metadata)
+  insert into public.admin_audit_events (
+    admin_user_id,
+    admin_user_hash,
+    action,
+    target_id,
+    metadata
+  )
   values (
+    resolved_admin_user_id,
+    resolved_admin_user_hash,
     'task5.phase_changed',
+    'task5_settings',
     jsonb_build_object(
-      'target_id', 'task5_settings',
-      'admin_user_id', p_admin_user_id,
-      'admin_user_hash', coalesce(p_admin_user_hash, 'unknown-admin'),
       'previous_phase', current_row.phase,
       'new_phase', p_phase,
       'reason', p_reason
@@ -1446,7 +1456,7 @@ begin
 end;
 $$;
 
-comment on function set_task5_phase is 'Sole writer of task5_settings.phase. Service-role only (called from an admin-gated Next.js API route, matching the app''s ADMIN_SECRET-based admin auth model, not Supabase Auth JWT roles). Enforces +1-max upgrade, unrestricted downgrade, idempotent same-phase, mandatory reason, and audits into admin_audit_events in the same transaction.';
+comment on function set_task5_phase is 'Sole writer of task5_settings.phase. Service-role only. Enforces bounded upgrades, immediate downgrade, mandatory reason, and an atomic structured admin audit row.';
 
 revoke all on task5_settings from anon, authenticated;
 grant select on task5_settings to anon, authenticated;
