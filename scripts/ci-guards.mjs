@@ -33,7 +33,7 @@ const SCAN_ROOTS = ["app", "lib"];
 const API_DOCS_PAGE = "app/api-docs/page.tsx";
 const API_ROUTES_ROOT = "app/api";
 const DOC_CHECK_METHODS = new Set(["GET", "POST"]);
-const PROTECTED_API_PREFIXES = ["/api/admin/"];
+const PROTECTED_API_PREFIXES = ["/api/admin/", "/api/cron/"];
 const PROTECTED_API_ENDPOINTS = new Set([
   "GET /api/business/alerts",
   "POST /api/business/alerts",

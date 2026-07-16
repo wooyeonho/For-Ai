@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { logAdminAuditEvent, requireAdmin, supabaseAdmin } from "@/lib/admin-api";
+import { getAdminAuthContext, logAdminAuditEvent, requireAdmin, supabaseAdmin } from "@/lib/admin-api";
 
 // Bible v7 Book IV section 11: task5_settings.phase is a single-row DB SSOT.
 // The only writer is the set_task5_phase RPC (service-role only). This route
@@ -62,4 +62,36 @@ export async function GET(request: Request) {
     { phase: data.phase, draft_enabled: data.draft_enabled, updated_at: data.updated_at, configured: true },
     { headers: { "Cache-Control": "no-store" } },
   );
+}
+
+export async function PATCH(request: Request) {
+  const denied = await requireAdmin(request, "task5.set_draft_enabled");
+  if (denied) return denied;
+
+  let body: { draft_enabled?: unknown; reason?: unknown };
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "invalid_json" }, { status: 400 });
+  }
+  if (typeof body.draft_enabled !== "boolean") {
+    return NextResponse.json({ error: "invalid_draft_enabled" }, { status: 400 });
+  }
+  if (typeof body.reason !== "string" || body.reason.trim().length === 0) {
+    return NextResponse.json({ error: "reason_required" }, { status: 400 });
+  }
+
+  const sb = supabaseAdmin();
+  if (!sb) return NextResponse.json({ error: "supabase_not_configured" }, { status: 503 });
+  const authContext = getAdminAuthContext(request);
+  const { data, error } = await sb.rpc("set_task5_draft_enabled", {
+    p_enabled: body.draft_enabled,
+    p_reason: body.reason.trim(),
+    p_admin_user_id: authContext?.adminUserId ?? null,
+    p_admin_user_hash: authContext?.adminUserHash ?? null,
+  });
+  if (error) {
+    return NextResponse.json({ error: "draft_toggle_rejected" }, { status: 400 });
+  }
+  return NextResponse.json({ settings: data }, { headers: { "Cache-Control": "no-store" } });
 }

@@ -446,3 +446,47 @@ export type WantedClaimSuggester = {
   created_at: string;
   notification_sent_at: string | null;
 };
+
+export type Task5RunState = "running" | "completed" | "partial" | "failed" | "skipped";
+export type DraftAttemptState =
+  | "leased"
+  | "source_discovery"
+  | "structuring"
+  | "risk_assessment"
+  | "completed"
+  | "retryable_failed"
+  | "permanent_failed";
+
+export type Task5Run = {
+  id: string;
+  run_type: "shadow_draft";
+  scheduled_for: string;
+  started_at: string;
+  completed_at: string | null;
+  state: Task5RunState;
+  leased_count: number;
+  success_count: number;
+  failure_count: number;
+  correlation_id: string;
+  error_code: string | null;
+};
+
+export type DraftAttempt = {
+  id: string;
+  wanted_claim_id: string;
+  run_id: string;
+  worker_id: string;
+  prompt_version: string;
+  risk_prompt_version: string;
+  idempotency_key: string;
+  state: DraftAttemptState;
+  attempt_number: number;
+  lease_expires_at: string;
+  model_provenance: Array<Record<string, unknown>>;
+  claim_id: string | null;
+  source_snapshot_id: string | null;
+  error_class: string | null;
+  error_code: string | null;
+  started_at: string;
+  completed_at: string | null;
+};
