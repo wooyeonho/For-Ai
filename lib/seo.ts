@@ -99,6 +99,13 @@ export function buildDocumentMetadata(
       siteName: "For-Ai",
       type: "article",
       locale: ogLocaleMap[lang] ?? "en_US",
+      images: [{ url: `/${lang}/wiki/${document.slug}/opengraph-image`, width: 1200, height: 630, alt: `${document.title} — For-Ai` }],
+    },
+    twitter: {
+      card: "summary_large_image",
+      title: ogTitle,
+      description,
+      images: [`/${lang}/wiki/${document.slug}/twitter-image`],
     },
     other: {
       "api-url": apiDocumentUrl(document.slug),

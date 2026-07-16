@@ -63,3 +63,11 @@ test("suggest-topic CTA carries the failed query and locale into the form", () =
   assert.equal(getSuggestTopicHref("", "ja"), "/suggest-topic?lang=ja");
   assert.equal(getSuggestTopicHref("   ", "en"), "/suggest-topic?lang=en");
 });
+
+
+test("all supported locales have OG and Twitter image route shapes", () => {
+  for (const locale of SUPPORTED_LOCALES) {
+    assert.equal(`/${locale}/wiki/${I18N_SMOKE_TEST_SLUG}/opengraph-image`, `/${locale}/wiki/${I18N_SMOKE_TEST_SLUG}/opengraph-image`);
+    assert.equal(`/${locale}/wiki/${I18N_SMOKE_TEST_SLUG}/twitter-image`, `/${locale}/wiki/${I18N_SMOKE_TEST_SLUG}/twitter-image`);
+  }
+});
