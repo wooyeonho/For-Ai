@@ -100,6 +100,11 @@ export function buildDocumentMetadata(
       type: "article",
       locale: ogLocaleMap[lang] ?? "en_US",
     },
+    twitter: {
+      card: "summary_large_image",
+      title: ogTitle,
+      description,
+    },
     other: {
       "api-url": apiDocumentUrl(document.slug),
       "raw-markdown-url": rawMarkdownUrl(document.slug),

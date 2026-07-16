@@ -13,6 +13,9 @@
 
 const BASE = (process.argv[2] || "http://localhost:3000").replace(/\/+$/, "");
 
+const LOCALES = ["ko", "en", "hi", "ar", "es", "ja", "zh"];
+const I18N_SMOKE_SLUG = "myungdong-laluce-parking";
+
 const SLUGS = [
   "myungdong-laluce-parking",
   "cj-logistics-jeju-delivery",
@@ -58,6 +61,11 @@ const ROUTES = [
   "/ko/contributors",
   "/en/leaderboard",
   "/ko/leaderboard",
+  ...LOCALES.flatMap((locale) => [
+    `/${locale}/wiki/${I18N_SMOKE_SLUG}`,
+    `/${locale}/wiki/${I18N_SMOKE_SLUG}/opengraph-image`,
+    `/${locale}/wiki/${I18N_SMOKE_SLUG}/twitter-image`,
+  ]),
   ...SLUGS.flatMap((s) => [
     `/ko/wiki/${s}`,
     `/api/documents/${s}`,

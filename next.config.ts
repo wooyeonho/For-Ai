@@ -2,6 +2,11 @@ import type { NextConfig } from "next";
 import { SUPPORTED_LOCALES } from "./lib/i18n/locales";
 
 const LOCALE_PATTERN = SUPPORTED_LOCALES.join("|");
+const SOCIAL_IMAGE_FONT_FILES = [
+  "./node_modules/@fontsource/nanum-gothic/files/nanum-gothic-latin-400-normal.woff",
+  "./assets/fonts/nanum-gothic-for-ai-hangul.woff",
+  "./assets/fonts/nanum-gothic-for-ai-hangul.glyphs.txt",
+];
 
 // Task 0-A: legacy gamification routes permanently redirect (HTTP 308) for
 // supported locales only. As of Task 0-B, the source page files
@@ -25,6 +30,10 @@ export function buildLegacyGamificationRedirects() {
 }
 
 const nextConfig: NextConfig = {
+  outputFileTracingIncludes: {
+    "/**/opengraph-image": SOCIAL_IMAGE_FONT_FILES,
+    "/**/twitter-image": SOCIAL_IMAGE_FONT_FILES,
+  },
   async headers() {
     return [
       {
