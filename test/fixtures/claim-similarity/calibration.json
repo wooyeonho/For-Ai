@@ -1,0 +1,18 @@
+{
+  "description": "Threshold calibration pairs only. MATCH_THRESHOLD (lib/check/candidates.ts) must be chosen so every expectMatch:true case scores >= threshold and every expectMatch:false case scores < threshold. Never used to compute reported precision/recall metrics — see holdout.json for that.",
+  "cases": [
+    { "id": "cal-en-1", "locale": "en", "sentence": "The Seoul Metro base fare is 1400 won for adults using a transit card.", "candidateText": "Seoul Metro base fare is 1400 won for adults with a transit card.", "expectMatch": true, "tags": ["en", "high-overlap"] },
+    { "id": "cal-en-2", "locale": "en", "sentence": "Passport reissue costs 53000 won at the district office.", "candidateText": "The passport reissue fee is 53000 won when applied at a district office.", "expectMatch": true, "tags": ["en", "high-overlap"] },
+    { "id": "cal-en-3", "locale": "en", "sentence": "You must report your move-in within 14 days of moving.", "candidateText": "Move-in reports must be filed within 14 days of the move.", "expectMatch": true, "tags": ["en", "high-overlap"] },
+    { "id": "cal-en-4", "locale": "en", "sentence": "The weather in Seoul today is sunny with a light breeze.", "candidateText": "Seoul Metro base fare is 1400 won for adults with a transit card.", "expectMatch": false, "tags": ["en", "unrelated"] },
+    { "id": "cal-en-5", "locale": "en", "sentence": "Passport photos must be taken within the last six months.", "candidateText": "Move-in reports must be filed within 14 days of the move.", "expectMatch": false, "tags": ["en", "unrelated"] },
+    { "id": "cal-ko-1", "locale": "ko", "sentence": "서울 지하철 기본요금은 교통카드 기준 성인 1400원이다.", "candidateText": "서울 지하철 기본요금은 성인 교통카드 기준 1400원입니다.", "expectMatch": true, "tags": ["ko", "high-overlap"] },
+    { "id": "cal-ko-2", "locale": "ko", "sentence": "여권 재발급 수수료는 주민센터에서 53000원이다.", "candidateText": "여권 재발급 수수료는 주민센터 신청 기준 53000원입니다.", "expectMatch": true, "tags": ["ko", "high-overlap"] },
+    { "id": "cal-ko-3", "locale": "ko", "sentence": "오늘 서울 날씨는 맑고 바람이 약하다.", "candidateText": "서울 지하철 기본요금은 성인 교통카드 기준 1400원입니다.", "expectMatch": false, "tags": ["ko", "unrelated"] },
+    { "id": "cal-ja-1", "locale": "ja", "sentence": "パスポート再発行の手数料は区役所で16000円です。", "candidateText": "パスポート再発行手数料は区役所で16000円です。", "expectMatch": true, "tags": ["ja", "smoke"] },
+    { "id": "cal-zh-1", "locale": "zh", "sentence": "护照补发费用在区役所为16000日元。", "candidateText": "护照补发的费用在区役所是16000日元。", "expectMatch": true, "tags": ["zh", "smoke"] },
+    { "id": "cal-hi-1", "locale": "hi", "sentence": "सियोल मेट्रो का बेस किराया वयस्कों के लिए 1400 वॉन है।", "candidateText": "सियोल मेट्रो बेस किराया वयस्कों के लिए 1400 वॉन है।", "expectMatch": true, "tags": ["hi", "smoke"] },
+    { "id": "cal-ar-1", "locale": "ar", "sentence": "أجرة مترو سيول الأساسية للبالغين هي 1400 وون.", "candidateText": "أجرة مترو سيول الأساسية للبالغين هي 1400 وون بالضبط.", "expectMatch": true, "tags": ["ar", "smoke"] },
+    { "id": "cal-es-1", "locale": "es", "sentence": "La tarifa base del metro de Seúl es de 1400 wones para adultos.", "candidateText": "La tarifa base del metro de Seúl es 1400 wones para adultos con tarjeta.", "expectMatch": true, "tags": ["es", "smoke"] }
+  ]
+}

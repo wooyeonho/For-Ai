@@ -1,0 +1,13 @@
+{
+  "description": "Held-out pairs for reporting final precision only. MUST NOT be used to choose MATCH_THRESHOLD (see calibration.json for that) — this set exists purely to catch threshold overfitting to the calibration set.",
+  "cases": [
+    { "id": "hold-en-1", "locale": "en", "sentence": "Adults using a transit card pay 1400 won as the base Seoul Metro fare.", "candidateText": "The Seoul Metro base fare is 1400 won for adults with a transit card.", "expectMatch": true, "tags": ["en"] },
+    { "id": "hold-en-2", "locale": "en", "sentence": "District offices charge 53000 won to reissue a passport.", "candidateText": "The passport reissue fee is 53000 won when applied at a district office.", "expectMatch": true, "tags": ["en"] },
+    { "id": "hold-en-3", "locale": "en", "sentence": "A new resident has 14 days to file a move-in report after relocating.", "candidateText": "Move-in reports must be filed within 14 days of the move.", "expectMatch": true, "tags": ["en"] },
+    { "id": "hold-en-4", "locale": "en", "sentence": "Cherry blossoms bloom in Seoul during early April.", "candidateText": "The Seoul Metro base fare is 1400 won for adults with a transit card.", "expectMatch": false, "tags": ["en", "unrelated"] },
+    { "id": "hold-en-5", "locale": "en", "sentence": "Passport photos must show a neutral facial expression.", "candidateText": "Move-in reports must be filed within 14 days of the move.", "expectMatch": false, "tags": ["en", "unrelated"] },
+    { "id": "hold-ko-1", "locale": "ko", "sentence": "교통카드를 쓰는 성인은 서울 지하철 기본요금으로 1400원을 낸다.", "candidateText": "서울 지하철 기본요금은 성인 교통카드 기준 1400원입니다.", "expectMatch": true, "tags": ["ko"] },
+    { "id": "hold-ko-2", "locale": "ko", "sentence": "주민센터에서 여권을 재발급하려면 53000원이 든다.", "candidateText": "여권 재발급 수수료는 주민센터 신청 기준 53000원입니다.", "expectMatch": true, "tags": ["ko"] },
+    { "id": "hold-ko-3", "locale": "ko", "sentence": "봄에는 서울에 벚꽃이 핀다.", "candidateText": "서울 지하철 기본요금은 성인 교통카드 기준 1400원입니다.", "expectMatch": false, "tags": ["ko", "unrelated"] }
+  ]
+}

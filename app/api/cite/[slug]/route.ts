@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { siteUrl, apiDocumentUrl, rawMarkdownUrl } from "../../../../lib/urls";
-import { buildCitationPresentation } from "../../../../lib/citation-presentation";
+import { buildCitationDocumentPresentation } from "../../../../lib/citation-badge";
 import { recordDocumentAnalyticsEvent } from "@/lib/analytics";
 import { supabaseAdmin } from "@/lib/admin-api";
 
@@ -18,7 +18,7 @@ export async function GET(
     });
   }
 
-  const presentation = await buildCitationPresentation(slug);
+  const presentation = await buildCitationDocumentPresentation(slug);
   if (!presentation) {
     return NextResponse.json(
       { error: "Document not found", slug },

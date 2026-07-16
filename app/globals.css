@@ -74,6 +74,12 @@ pre {
   padding: 24px 16px 48px;
 }
 
+.page-shell:has(> [data-embed-root]) {
+  width: 100%;
+  margin: 0;
+  padding: 0;
+}
+
 /* Panels */
 .registry-panel,
 .claim-card,

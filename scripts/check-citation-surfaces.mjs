@@ -87,7 +87,8 @@ function assertRuntimeUsesCanonicalRenderer() {
     "app/[locale]/wiki/[slug]/page.tsx": "normalizeCitationSurface",
     "lib/seo.ts": "normalizeCitationSurface",
     "app/api/documents/[slug]/route.ts": "renderDocumentJson",
-    "app/api/cite/[slug]/route.ts": "normalizeCitationSurface",
+    "app/api/cite/[slug]/route.ts": "buildCitationDocumentPresentation",
+    "lib/citation-badge.ts": "normalizeCitationSurface",
     "app/raw/[...path]/route.ts": "renderDocumentMarkdown",
     "app/sitemap.ts": "normalizeCitationSurface",
   };

@@ -26,7 +26,8 @@
           "publisher": "Transport for NSW",
           "url": "https://transportnsw.info/tickets-fares/fares/adult-opal-fares",
           "observed_at": "2026-06-29",
-          "note": "Official Adult Opal fares page states adult travel is capped at $19.30 a day on Mondays to Thursdays."
+          "note": "Official Adult Opal fares page states adult travel is capped at $19.30 a day on Mondays to Thursdays.",
+          "source_authority": "official"
         }
       ],
       "verification_event": {
@@ -34,7 +35,12 @@
         "actor": "ai-source-fetch",
         "verified_at": "2026-06-29",
         "note": "Read directly from Transport for NSW official fare page on 2026-06-29. Final human approval pending."
-      }
+      },
+      "jurisdiction": "AU-NSW",
+      "country": "AU",
+      "risk_tier": "low",
+      "update_frequency": "event_based",
+      "disclaimer_type": "check_official_source"
     },
     {
       "claim_id": "nsw-adult-opal-daily-cap-fri-weekend-holiday",
@@ -51,7 +57,8 @@
           "publisher": "Transport for NSW",
           "url": "https://transportnsw.info/tickets-fares/fares/adult-opal-fares",
           "observed_at": "2026-06-29",
-          "note": "Official Adult Opal fares page states adult travel is capped at $9.65 on Fridays, Saturdays, Sundays and public holidays."
+          "note": "Official Adult Opal fares page states adult travel is capped at $9.65 on Fridays, Saturdays, Sundays and public holidays.",
+          "source_authority": "official"
         }
       ],
       "verification_event": {
@@ -59,7 +66,12 @@
         "actor": "ai-source-fetch",
         "verified_at": "2026-06-29",
         "note": "Read directly from Transport for NSW official fare page on 2026-06-29. Final human approval pending."
-      }
+      },
+      "jurisdiction": "AU-NSW",
+      "country": "AU",
+      "risk_tier": "low",
+      "update_frequency": "event_based",
+      "disclaimer_type": "check_official_source"
     },
     {
       "claim_id": "nsw-adult-opal-weekly-cap",
@@ -76,7 +88,8 @@
           "publisher": "Transport for NSW",
           "url": "https://transportnsw.info/tickets-fares/fares/adult-opal-fares",
           "observed_at": "2026-06-29",
-          "note": "Official Adult Opal fares page states adult travel is capped at $50 a week."
+          "note": "Official Adult Opal fares page states adult travel is capped at $50 a week.",
+          "source_authority": "official"
         }
       ],
       "verification_event": {
@@ -84,7 +97,12 @@
         "actor": "ai-source-fetch",
         "verified_at": "2026-06-29",
         "note": "Read directly from Transport for NSW official fare page on 2026-06-29. Final human approval pending."
-      }
+      },
+      "jurisdiction": "AU-NSW",
+      "country": "AU",
+      "risk_tier": "low",
+      "update_frequency": "event_based",
+      "disclaimer_type": "check_official_source"
     },
     {
       "claim_id": "nsw-adult-opal-offpeak-discount",
@@ -101,7 +119,8 @@
           "publisher": "Transport for NSW",
           "url": "https://transportnsw.info/tickets-fares/fares/adult-opal-fares",
           "observed_at": "2026-06-29",
-          "note": "Official Adult Opal fares page states customers receive a 30% fare discount on metro/train, bus and light rail services when travelling on Fridays, weekends, public holidays and outside peak times."
+          "note": "Official Adult Opal fares page states customers receive a 30% fare discount on metro/train, bus and light rail services when travelling on Fridays, weekends, public holidays and outside peak times.",
+          "source_authority": "official"
         }
       ],
       "verification_event": {
@@ -109,7 +128,17 @@
         "actor": "ai-source-fetch",
         "verified_at": "2026-06-29",
         "note": "Read directly from Transport for NSW official fare page on 2026-06-29. Final human approval pending."
-      }
+      },
+      "jurisdiction": "AU-NSW",
+      "country": "AU",
+      "risk_tier": "low",
+      "update_frequency": "event_based",
+      "disclaimer_type": "check_official_source"
     }
-  ]
+  ],
+  "canonical_slug": "sydney-adult-opal-fares",
+  "localized_title": {
+    "en": "Sydney and NSW Adult Opal fares (2026)"
+  },
+  "translation_status": "source_language"
 }

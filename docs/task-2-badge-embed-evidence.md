@@ -1,28 +1,41 @@
-# Task 2 — Badge Embed Evidence
+# Task 2 — Badge and embed evidence
 
-## Branch sequencing
+## Sequencing and reuse
 
-- Requested branch: `task/2-badge-embed`.
-- Local note: this container has no `origin` remote configured, so `git fetch origin main` could not verify the remote production-smoke/merge state. Work continued on a fresh local `task/2-badge-embed` branch from the repository's current checked-out state.
+- Rebased onto `main` after Task 1 was merged at `7946553`.
+- Kept the client-safe schema presentation map in `lib/citation-presentation.ts`.
+- Added the server-only static-first/Supabase-fallback loader and citation aggregation in `lib/citation-badge.ts`; `/api/cite`, `/api/badge`, and `/embed` reuse it.
+- This split prevents the client-side Task 1 check UI from importing Supabase/server-only modules.
 
-## Existing citation/document loader review
+## Badge contract
 
-- KEEP: `lib/data.ts#getRegistryBundleBySlug` remains the static-first in-repo loader for seed/verified bundles.
-- KEEP: `lib/supabase-documents.ts#getRegistryBundleFromSupabase` remains the runtime database fallback loader.
-- KEEP: `lib/render.ts#normalizeCitationSurface` and `lib/render.ts#getCitationPolicyBlock` remain the canonical presentation helpers for machine-readable citation policy and normalized claim-level citation surfaces.
-- WRAP: `lib/citation-presentation.ts#loadCitationDocumentBundle` wraps static-first plus Supabase fallback loading so `/api/cite`, `/api/badge`, and `/embed` resolve documents identically.
-- WRAP: `lib/citation-presentation.ts#buildCitationPresentation` centralizes derived citation status, claim buckets, source labels, and recommended citation copy so badge/embed surfaces do not fork citation logic.
+- `GET /api/badge/[slug]` always returns HTTP 200 and valid `image/svg+xml`.
+- Existing documents use a schema-backed presentation key.
+- Missing documents render the whitelisted `Unknown` label and cache for 300 seconds.
+- Loader failures render the whitelisted `Unavailable` label with `Cache-Control: no-store`.
+- Normal badges cache for 600 seconds.
+- The SVG renderer accepts only the closed presentation-key union; document titles and request strings are never interpolated into SVG.
+- Responses include `X-Content-Type-Options: nosniff`, `X-For-Ai-Status`, and `X-For-Ai-Can-Cite`.
 
-## Frame policy review
+## Embed and frame policy
 
-- No pre-existing global `X-Frame-Options` header was found in `next.config.ts`, `middleware.ts`, or route code.
-- No pre-existing global CSP `frame-ancestors` header was found in `next.config.ts`, `middleware.ts`, or route code.
-- Minimal exception added only for `/embed/:path*`: `Content-Security-Policy: frame-ancestors *`.
-- Other routes are untouched, and the badge JSON API remains a normal API response rather than an embeddable document.
+- `/embed/[slug]` lives outside locale layout and is server-rendered without the site header/footer.
+- Existing cards show status, up to two representative claims, and a popup-safe registry link.
+- Missing and loader-error states render `Unknown`/`Unavailable` cards rather than a default 404 iframe.
+- Metadata and response headers set `noindex, nofollow`.
+- The only frame exception is `/embed/:path*`, with exactly one `Content-Security-Policy: frame-ancestors *` header.
+- Embed responses also receive `X-Content-Type-Options: nosniff` and `Permissions-Policy: camera=(), microphone=(), geolocation=()`.
+- No `X-Frame-Options` header or global `frame-ancestors 'self'` rule exists.
+- Middleware explicitly bypasses locale handling for `/embed/` while leaving the remaining security middleware behavior unchanged.
 
-## Smoke evidence checklist
+## Snippet safety
 
-- `GET /api/badge/[slug]` returns badge metadata, citation status, canonical URL, and an iframe snippet.
-- `/embed/[slug]` renders a static-first badge page using the shared citation presentation wrapper.
-- `/embed-fixture/[slug]` is an external-iframe-style fixture page that renders the user snippet.
-- The user snippet includes `sandbox`, `loading`, and `referrerpolicy`.
+- Iframe snippets use a 360×140 frame, lazy loading, strict-origin referrer policy, and `sandbox="allow-popups allow-popups-to-escape-sandbox"`.
+- Slugs are URL-encoded and HTML attribute values are escaped.
+- Markdown and iframe examples are published in `/api-docs`.
+- The old same-origin `embed-fixture` route was removed: it neither proved an external-origin frame nor belonged on the production surface.
+
+## Verification gate
+
+- Unit coverage includes all presentation keys, SVG output, missing/error behavior, cache policy, frame headers, middleware non-redirect, snippet injection resistance, and Markdown output.
+- Production smoke must still verify the deployed headers, a known badge, a missing badge, an embed card, and a real different-origin iframe before this task is marked PASS.

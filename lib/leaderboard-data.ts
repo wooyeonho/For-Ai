@@ -1,0 +1,255 @@
+import "server-only";
+
+import { createServiceRoleClient, isServiceRoleConfigured } from "./supabase-server";
+
+// Read-only leaderboard aggregation over moderation/verification tables.
+// This module is listed in READ_ONLY_SERVICE_HELPER_FILES in
+// scripts/ci-guards.mjs: it may create a server client for reads, but any
+// insert/update/upsert/delete here fails the secrets guard.
+
+export type ContributionMetric =
+  | "accepted_sources"
+  | "verified_claims"
+  | "stale_fixes"
+  | "accepted_hallucinations"
+  | "country_coverage"
+  | "category_contributions";
+
+export type ContributorScore = {
+  contributorHash: string;
+  acceptedSources: number;
+  verifiedClaims: number;
+  staleFixes: number;
+  acceptedHallucinations: number;
+  countryCoverage: number;
+  categoryContributions: number;
+  rejectedOrSpam: number;
+  duplicateUrlOverflow: number;
+  score: number;
+  countries: string[];
+  categories: string[];
+};
+
+type ClaimRelation = {
+  document_id?: string | null;
+  documents?: {
+    country?: string | null;
+    category?: string | null;
+  } | null;
+};
+
+type SourceRow = {
+  id?: string | null;
+  claim_id?: string | null;
+  url?: string | null;
+  citation?: string | null;
+  source_check_status?: string | null;
+  contributor_hash?: string | null;
+  claims?: ClaimRelation | null;
+};
+
+type VerificationRow = {
+  id?: string | null;
+  claim_id?: string | null;
+  event_type?: string | null;
+  new_status?: string | null;
+  previous_status?: string | null;
+  previous_confidence?: string | null;
+  new_confidence?: string | null;
+  note?: string | null;
+  contributor_hash?: string | null;
+  claims?: ClaimRelation | null;
+};
+
+type HallucinationRow = {
+  id?: string | null;
+  status?: string | null;
+  contributor_hash?: string | null;
+  claims?: ClaimRelation | null;
+  documents?: {
+    country?: string | null;
+    category?: string | null;
+  } | null;
+};
+
+type SubmissionModerationRow = {
+  status?: string | null;
+  contributor_hash?: string | null;
+};
+
+export const WEIGHTS: Record<ContributionMetric, number> = {
+  accepted_sources: 5,
+  verified_claims: 8,
+  stale_fixes: 10,
+  accepted_hallucinations: 6,
+  country_coverage: 3,
+  category_contributions: 2,
+};
+
+export const DUPLICATE_URL_FREE_LIMIT = 2;
+export const REJECTED_OR_SPAM_PENALTY = 6;
+
+export function hasLiveLeaderboardData(): boolean {
+  return isServiceRoleConfigured();
+}
+
+export function displayContributor(hash: string): string {
+  return `contributor-${hash.slice(0, 8)}`;
+}
+
+export async function getLeaderboard(): Promise<ContributorScore[]> {
+  const sb = createServiceRoleClient();
+  if (!sb) return [];
+
+  const [sourcesResult, eventsResult, hallucinationsResult, editsResult, reportsResult] = await Promise.all([
+    sb.from("claim_sources").select("id,claim_id,url,citation,source_check_status,contributor_hash,claims(document_id,documents(country,category))").not("contributor_hash", "is", null).limit(2000),
+    sb.from("verification_events").select("id,claim_id,event_type,previous_status,new_status,previous_confidence,new_confidence,note,contributor_hash,claims(document_id,documents(country,category))").not("contributor_hash", "is", null).limit(2000),
+    sb.from("hallucination_reports").select("id,status,contributor_hash,claims(document_id,documents(country,category)),documents(country,category)").eq("status", "accepted").not("contributor_hash", "is", null).limit(1000),
+    sb.from("edits").select("status,contributor_hash").in("status", ["rejected", "spam"]).not("contributor_hash", "is", null).limit(1000),
+    sb.from("reports").select("status,contributor_hash").in("status", ["rejected", "spam"]).not("contributor_hash", "is", null).limit(1000),
+  ]);
+
+  const contributors = new Map<string, MutableContributorScore>();
+  const urlCredits = new Map<string, number>();
+
+  for (const row of rows<SourceRow>(sourcesResult.data)) {
+    const hash = normalizedHash(row.contributor_hash);
+    if (!hash || !isAcceptedSource(row)) continue;
+    const contributor = getMutableContributor(contributors, hash);
+    const urlKey = normalizedUrl(row.url ?? row.citation);
+    if (urlKey) {
+      const compoundKey = `${hash}:${urlKey}`;
+      const count = urlCredits.get(compoundKey) ?? 0;
+      urlCredits.set(compoundKey, count + 1);
+      if (count >= DUPLICATE_URL_FREE_LIMIT) {
+        contributor.duplicateUrlOverflow += 1;
+        continue;
+      }
+    }
+    contributor.acceptedSources += 1;
+    addCoverage(contributor, row.claims?.documents);
+  }
+
+  for (const row of rows<VerificationRow>(eventsResult.data)) {
+    const hash = normalizedHash(row.contributor_hash);
+    if (!hash) continue;
+    const contributor = getMutableContributor(contributors, hash);
+    if (isVerifiedClaimEvent(row)) contributor.verifiedClaims += 1;
+    if (isStaleFixEvent(row)) contributor.staleFixes += 1;
+    addCoverage(contributor, row.claims?.documents);
+  }
+
+  for (const row of rows<HallucinationRow>(hallucinationsResult.data)) {
+    const hash = normalizedHash(row.contributor_hash);
+    if (!hash || row.status !== "accepted") continue;
+    const contributor = getMutableContributor(contributors, hash);
+    contributor.acceptedHallucinations += 1;
+    addCoverage(contributor, row.claims?.documents ?? row.documents);
+  }
+
+  for (const row of [...rows<SubmissionModerationRow>(editsResult.data), ...rows<SubmissionModerationRow>(reportsResult.data)]) {
+    const hash = normalizedHash(row.contributor_hash);
+    if (!hash || (row.status !== "rejected" && row.status !== "spam")) continue;
+    getMutableContributor(contributors, hash).rejectedOrSpam += 1;
+  }
+
+  return [...contributors.values()]
+    .map(finalizeContributor)
+    .filter((entry) => entry.score > 0)
+    .sort((a, b) => b.score - a.score || b.verifiedClaims - a.verifiedClaims || b.acceptedSources - a.acceptedSources)
+    .slice(0, 50);
+}
+
+type MutableContributorScore = Omit<ContributorScore, "countries" | "categories" | "countryCoverage" | "categoryContributions" | "score"> & {
+  countries: Set<string>;
+  categories: Set<string>;
+};
+
+function getMutableContributor(contributors: Map<string, MutableContributorScore>, hash: string): MutableContributorScore {
+  const existing = contributors.get(hash);
+  if (existing) return existing;
+  const created: MutableContributorScore = {
+    contributorHash: hash,
+    acceptedSources: 0,
+    verifiedClaims: 0,
+    staleFixes: 0,
+    acceptedHallucinations: 0,
+    rejectedOrSpam: 0,
+    duplicateUrlOverflow: 0,
+    countries: new Set<string>(),
+    categories: new Set<string>(),
+  };
+  contributors.set(hash, created);
+  return created;
+}
+
+function finalizeContributor(entry: MutableContributorScore): ContributorScore {
+  const countryCoverage = entry.countries.size;
+  const categoryContributions = entry.categories.size;
+  const score = Math.max(0,
+    entry.acceptedSources * WEIGHTS.accepted_sources +
+    entry.verifiedClaims * WEIGHTS.verified_claims +
+    entry.staleFixes * WEIGHTS.stale_fixes +
+    entry.acceptedHallucinations * WEIGHTS.accepted_hallucinations +
+    countryCoverage * WEIGHTS.country_coverage +
+    categoryContributions * WEIGHTS.category_contributions -
+    entry.rejectedOrSpam * REJECTED_OR_SPAM_PENALTY,
+  );
+
+  return {
+    ...entry,
+    countries: [...entry.countries].sort(),
+    categories: [...entry.categories].sort(),
+    countryCoverage,
+    categoryContributions,
+    score,
+  };
+}
+
+function rows<T>(data: unknown): T[] {
+  return Array.isArray(data) ? data as T[] : [];
+}
+
+function normalizedHash(value: string | null | undefined): string | null {
+  const trimmed = value?.trim();
+  return trimmed ? trimmed : null;
+}
+
+function normalizedUrl(value: string | null | undefined): string | null {
+  if (!value) return null;
+  try {
+    const url = new URL(value);
+    url.hash = "";
+    url.search = "";
+    return url.toString().replace(/\/$/, "").toLowerCase();
+  } catch {
+    return value.trim().toLowerCase() || null;
+  }
+}
+
+function isAcceptedSource(row: SourceRow): boolean {
+  return row.source_check_status === "passed" || Boolean(row.claim_id);
+}
+
+function isVerifiedClaimEvent(row: VerificationRow): boolean {
+  return row.new_status === "verified" || (row.event_type === "reviewed" && row.new_confidence === "high");
+}
+
+function isStaleFixEvent(row: VerificationRow): boolean {
+  const note = row.note?.toLowerCase() ?? "";
+  return row.event_type === "reviewed" && row.new_status === "verified" && (
+    row.previous_status === "unknown" ||
+    row.previous_status === "disputed" ||
+    row.previous_confidence === "low" ||
+    note.includes("stale") ||
+    note.includes("outdated") ||
+    note.includes("freshness")
+  );
+}
+
+function addCoverage(contributor: MutableContributorScore, document: { country?: string | null; category?: string | null } | null | undefined) {
+  const country = document?.country?.trim();
+  const category = document?.category?.trim();
+  if (country) contributor.countries.add(country.toUpperCase());
+  if (category) contributor.categories.add(category);
+}

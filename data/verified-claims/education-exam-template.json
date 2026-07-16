@@ -24,7 +24,12 @@
       "claim_value": "확인 필요",
       "confidence": "low",
       "status": "needs_review",
-      "sources": []
+      "sources": [],
+      "jurisdiction": "REQUIRED_COUNTRY_CODE",
+      "country": "REQUIRED_COUNTRY_CODE",
+      "risk_tier": "high",
+      "update_frequency": "weekly",
+      "disclaimer_type": "check_official_source"
     },
     {
       "claim_id": "education-exam-registration-deadline-template",
@@ -33,7 +38,12 @@
       "claim_value": "확인 필요",
       "confidence": "low",
       "status": "needs_review",
-      "sources": []
+      "sources": [],
+      "jurisdiction": "REQUIRED_COUNTRY_CODE",
+      "country": "REQUIRED_COUNTRY_CODE",
+      "risk_tier": "high",
+      "update_frequency": "weekly",
+      "disclaimer_type": "check_official_source"
     },
     {
       "claim_id": "education-exam-test-dates-template",
@@ -42,7 +52,12 @@
       "claim_value": "확인 필요",
       "confidence": "low",
       "status": "needs_review",
-      "sources": []
+      "sources": [],
+      "jurisdiction": "REQUIRED_COUNTRY_CODE",
+      "country": "REQUIRED_COUNTRY_CODE",
+      "risk_tier": "high",
+      "update_frequency": "weekly",
+      "disclaimer_type": "check_official_source"
     },
     {
       "claim_id": "education-score-validity-template",
@@ -51,7 +66,12 @@
       "claim_value": "확인 필요",
       "confidence": "low",
       "status": "needs_review",
-      "sources": []
+      "sources": [],
+      "jurisdiction": "REQUIRED_COUNTRY_CODE",
+      "country": "REQUIRED_COUNTRY_CODE",
+      "risk_tier": "high",
+      "update_frequency": "weekly",
+      "disclaimer_type": "check_official_source"
     },
     {
       "claim_id": "education-reschedule-fee-template",
@@ -60,7 +80,12 @@
       "claim_value": "확인 필요",
       "confidence": "low",
       "status": "needs_review",
-      "sources": []
+      "sources": [],
+      "jurisdiction": "REQUIRED_COUNTRY_CODE",
+      "country": "REQUIRED_COUNTRY_CODE",
+      "risk_tier": "high",
+      "update_frequency": "weekly",
+      "disclaimer_type": "check_official_source"
     },
     {
       "claim_id": "education-cancellation-refund-template",
@@ -69,7 +94,12 @@
       "claim_value": "확인 필요",
       "confidence": "low",
       "status": "needs_review",
-      "sources": []
+      "sources": [],
+      "jurisdiction": "REQUIRED_COUNTRY_CODE",
+      "country": "REQUIRED_COUNTRY_CODE",
+      "risk_tier": "high",
+      "update_frequency": "weekly",
+      "disclaimer_type": "check_official_source"
     },
     {
       "claim_id": "education-official-registration-url-template",
@@ -78,7 +108,17 @@
       "claim_value": "확인 필요",
       "confidence": "low",
       "status": "needs_review",
-      "sources": []
+      "sources": [],
+      "jurisdiction": "REQUIRED_COUNTRY_CODE",
+      "country": "REQUIRED_COUNTRY_CODE",
+      "risk_tier": "high",
+      "update_frequency": "weekly",
+      "disclaimer_type": "check_official_source"
     }
-  ]
+  ],
+  "canonical_slug": "education-exam-template",
+  "localized_title": {
+    "en": "Education Exam Fact Template"
+  },
+  "translation_status": "source_language"
 }
