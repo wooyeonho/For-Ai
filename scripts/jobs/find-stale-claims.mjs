@@ -214,8 +214,25 @@ await runJob("find-stale-claims", async () => {
     }
   }
 
-  if (!args.dryRun && watchRows.length > 0) {
-    const { error: insertError } = await supabase.from("watch_subscriptions").insert(watchRows);
+  let newWatchRows = watchRows;
+  if (watchRows.length > 0) {
+    // This job runs daily and re-scores the same stale claims on every run, so
+    // without this check a claim that stays stale across N runs would get N
+    // duplicate open missions/notifications for the same adopter instead of one.
+    const staleClaimIds = [...new Set(watchRows.map((row) => row.claim_id))];
+    const { data: existingOpen, error: existingError } = await supabase
+      .from("watch_subscriptions")
+      .select("topic_adoption_id,claim_id")
+      .eq("event_type", "source_update_needed")
+      .eq("mission_status", "open")
+      .in("claim_id", staleClaimIds);
+    if (existingError) throw new Error(`Failed to read existing watch subscriptions: ${existingError.message}`);
+    const openKeys = new Set((existingOpen || []).map((row) => `${row.topic_adoption_id}:${row.claim_id}`));
+    newWatchRows = watchRows.filter((row) => !openKeys.has(`${row.topic_adoption_id}:${row.claim_id}`));
+  }
+
+  if (!args.dryRun && newWatchRows.length > 0) {
+    const { error: insertError } = await supabase.from("watch_subscriptions").insert(newWatchRows);
     if (insertError) throw new Error(`Failed to create watch subscriptions: ${insertError.message}`);
   }
 
@@ -229,9 +246,10 @@ await runJob("find-stale-claims", async () => {
       policy: "reverification_priority_score is advisory only for admin review queue/digest; it never mutates claims.status or claims.claim_value without source-backed human review.",
       scanned: claims.length,
       stale_claims: staleClaims,
-      watch_missions: watchRows.length,
+      watch_missions: newWatchRows.length,
+      watch_missions_deduped: watchRows.length - newWatchRows.length,
       admin_queue: "/admin/review stale claims",
     },
   }, { dryRun: args.dryRun });
-  return { dryRun: args.dryRun, staleClaims: staleClaims.length, watchMissions: watchRows.length, queue: "/admin/review stale claims", scoring: "rule_based_v1" };
+  return { dryRun: args.dryRun, staleClaims: staleClaims.length, watchMissions: newWatchRows.length, watchMissionsDeduped: watchRows.length - newWatchRows.length, queue: "/admin/review stale claims", scoring: "rule_based_v1" };
 });
