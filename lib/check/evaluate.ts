@@ -85,14 +85,21 @@ export class CheckTimeoutError extends Error {
   }
 }
 
-// signal is checked between sentences (not mid-sentence, since candidate
-// search/scoring is synchronous) so a request with many sentences can still
-// bail out early once the deadline passes, rather than only via the
-// top-level Promise.race in the route handler.
-export function evaluateSentences(sentences: string[], locale: SupportedLocale, signal?: AbortSignal): CheckResponse {
+// The signal and the absolute deadline are checked between sentences. The
+// absolute timestamp is required because candidate search/scoring is
+// synchronous: while that work is running, an AbortSignal timer cannot fire
+// until the event loop gets control back.
+export function evaluateSentences(
+  sentences: string[],
+  locale: SupportedLocale,
+  signal?: AbortSignal,
+  deadlineAt?: number,
+): CheckResponse {
   const results: SentenceCheckResult[] = [];
   for (const sentence of sentences) {
-    if (signal?.aborted) throw new CheckTimeoutError();
+    if (signal?.aborted || (deadlineAt !== undefined && Date.now() >= deadlineAt)) {
+      throw new CheckTimeoutError();
+    }
     results.push(evaluateSentence(sentence, locale));
   }
   return { sentences: results, summary: buildSummary(results) };

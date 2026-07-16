@@ -86,6 +86,14 @@ test("evaluateSentences throws CheckTimeoutError and stops (no partial results) 
   );
 });
 
+test("evaluateSentences enforces an absolute deadline even before an AbortSignal timer can fire", () => {
+  resetCandidateIndexForTests([candidate({ claim_id: "v1", claim_text: "The Seoul Metro base fare is 1400 won for adults." })]);
+  assert.throws(
+    () => evaluateSentences(["The Seoul Metro base fare is 1400 won for adults."], "en", undefined, Date.now() - 1),
+    CheckTimeoutError,
+  );
+});
+
 // --- Fixed-registry end-to-end Recall@5 -----------------------------------
 
 const RECALL_REGISTRY: CheckCandidate[] = [

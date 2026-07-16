@@ -128,11 +128,12 @@ export async function POST(request: Request) {
   // are ever returned: either the full response is built before the
   // deadline, or the request fails closed with 504.
   const startedAt = Date.now();
+  const deadlineAt = startedAt + CHECK_LIMITS.deadlineMs;
   const deadlineSignal = AbortSignal.timeout(CHECK_LIMITS.deadlineMs);
   let response;
   try {
     response = await Promise.race([
-      Promise.resolve().then(() => evaluateSentences(sentences, locale, deadlineSignal)),
+      Promise.resolve().then(() => evaluateSentences(sentences, locale, deadlineSignal, deadlineAt)),
       new Promise<never>((_, reject) => {
         deadlineSignal.addEventListener("abort", () => reject(new CheckTimeoutError()));
       }),
