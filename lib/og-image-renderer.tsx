@@ -165,14 +165,22 @@ export function getSocialImageSourceCount(bundle: RegistryDocumentBundle): numbe
 export function mapSocialImageStatus(
   bundle: RegistryDocumentBundle,
 ): Pick<SocialImageViewModel, "statusKey" | "statusLabel" | "statusTone"> {
-  const eligibleClaims = bundle.claims.filter(isEligibleClaim);
+  // Status is computed from the FULL, unfiltered claim set and the same
+  // isVerifiedDocument + freshness combination the wiki page and badge/embed
+  // surfaces use (see lib/citation-badge.ts's canCiteDocument) — not the
+  // sponsored/pending-business-filtered eligibleClaims used for the headline
+  // and source count below. Using the filtered set here would let a document
+  // with an unreviewed pending business claim, or a claim past its freshness
+  // TTL, still render the green "Verified" card while the wiki page itself
+  // shows it as not fully citable.
+  const docStatus = getDocumentCitationStatus(bundle);
   let statusKey: SocialImageStatusKey;
 
-  if (eligibleClaims.some((claim) => CLAIM_STATUS_TO_PRESENTATION[claim.status] === "disputed")) {
+  if (bundle.claims.some((claim) => CLAIM_STATUS_TO_PRESENTATION[claim.status] === "disputed")) {
     statusKey = "disputed";
-  } else if (getDocumentCitationStatus({ ...bundle, claims: eligibleClaims }).isVerifiedDocument) {
+  } else if (docStatus.isVerifiedDocument && docStatus.freshness !== "stale") {
     statusKey = "verified";
-  } else if (eligibleClaims.some((claim) => CLAIM_STATUS_TO_PRESENTATION[claim.status] === "needs_review" || claim.status === "verified")) {
+  } else if (bundle.claims.some((claim) => CLAIM_STATUS_TO_PRESENTATION[claim.status] === "needs_review" || claim.status === "verified")) {
     statusKey = "needs_review";
   } else {
     statusKey = "unknown";

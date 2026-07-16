@@ -194,6 +194,23 @@ test("status uses the closed schema presentation for verified, review, disputed,
   assert.deepEqual(mapSocialImageStatus(bundle({}, [])), { statusKey: "unknown", statusLabel: "Unknown", statusTone: "unknown" });
 });
 
+test("a claim past its freshness TTL is not presented as Verified, matching the badge/embed's canCiteDocument rule", () => {
+  const staleClaim = claim({ last_verified_at: "2020-01-01" });
+  const staleBundle = bundle({ data: { freshness_ttl_days: 1 } }, [staleClaim]);
+  assert.equal(mapSocialImageStatus(staleBundle).statusKey, "needs_review");
+});
+
+test("a pending business-submitted claim prevents Verified even though it's excluded from headline/source counts", () => {
+  const verifiedClaim = claim();
+  const pendingBusinessClaim = claim({
+    id: "claim-2",
+    source_of_claim: "business_submitted",
+    business_submission_status: "pending_verification",
+  });
+  const mixedBundle = bundle({}, [verifiedClaim, pendingBusinessClaim]);
+  assert.equal(mapSocialImageStatus(mixedBundle).statusKey, "needs_review");
+});
+
 test("OG and Twitter routes declare literal node runtime, cache, dimensions, content type, and alt", () => {
   for (const file of [
     "app/[locale]/wiki/[slug]/opengraph-image.tsx",
