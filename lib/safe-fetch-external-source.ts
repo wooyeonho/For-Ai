@@ -270,6 +270,9 @@ async function defaultTransport(input: TransportRequest): Promise<TransportRespo
         }
         chunks.push(Buffer.from(chunk));
       });
+      response.on("error", (error) => finish(() => reject(error instanceof SafeFetchError
+          ? error
+          : new SafeFetchError("network_error", "Source response failed", { cause: error.message }))));
       response.on("end", () => finish(() => resolve({
           status: response.statusCode ?? 0,
           headers: normalizeHeaders(response.headers),
