@@ -71,3 +71,7 @@ Migration `20260716221957_admin_audit_identity_recovery` was applied on
 - all recovered columns and indexes exist
 - a same-phase phase-0 smoke call completed atomically and wrote its structured
   `task5_settings` audit record without changing the configured phase
+
+The matching repository change updates both shared cron audit writers and the
+standalone admin digest writer in the same release, so scheduled jobs satisfy
+the recovered non-null identity contract.
