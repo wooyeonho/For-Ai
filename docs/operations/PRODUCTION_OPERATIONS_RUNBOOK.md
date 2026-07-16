@@ -32,18 +32,18 @@ Confirmed against the Vercel account directly (2026-07-16): both projects are re
 
 ### Production requirements
 
-Set these in the canonical Vercel production project only:
+Set these wherever they are actually needed — the Vercel production project for the web app, and separately in whatever external scheduler/runner executes the CLI jobs in section 3 (that runner is not part of Vercel today, since no `vercel.json` cron is committed; it will not inherit Vercel's project env vars). Rows below are marked with where each is required.
 
-| Variable | Production requirement | Notes |
-| --- | --- | --- |
-| `CRON_SECRET` | Required if any external scheduler or Vercel cron HTTP endpoint is used. | Generate with `openssl rand -hex 32`; pass as `Authorization: Bearer $CRON_SECRET` or equivalent scheduler secret. Current repo jobs are CLI scripts, so this is an external-runner secret until HTTP cron routes exist. |
-| `NEXT_PUBLIC_SUPABASE_URL` | Required. | Must point to the production Supabase project. |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Required. | Public anon key only; never use service-role key here. |
-| `SUPABASE_SERVICE_ROLE_KEY` | Required for admin APIs and jobs. | Server/job only. Must differ from anon key. |
-| `SUPABASE_DB_URL` | Deploy/operator shell only. | Do not expose to browser. Used for `npm run db:migrate`. |
-| `ADMIN_SECRET` | Required for admin operations and smoke tests. | Rotate after incidents or human sharing. |
-| `ADMIN_CSRF_SECRET` | Required for admin session CSRF protection. | Generate separately from `ADMIN_SECRET`. |
-| `CONTRIBUTOR_SALT` | Required for public submissions. | Enables `contributor_hash`; raw IP addresses must not be stored. |
+| Variable | Production requirement | Where | Notes |
+| --- | --- | --- | --- |
+| `CRON_SECRET` | Required if any external scheduler or Vercel cron HTTP endpoint is used. | External scheduler | Generate with `openssl rand -hex 32`; pass as `Authorization: Bearer $CRON_SECRET` or equivalent scheduler secret. Current repo jobs are CLI scripts, so this is an external-runner secret until HTTP cron routes exist. |
+| `NEXT_PUBLIC_SUPABASE_URL` | Required. | Vercel + job runner | Must point to the production Supabase project. |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Required. | Vercel | Public anon key only; never use service-role key here. |
+| `SUPABASE_SERVICE_ROLE_KEY` | Required for admin APIs and jobs. | Vercel + job runner | Server/job only. Must differ from anon key. `scripts/lib/cron-job-utils.mjs` throws immediately if this is missing wherever a job actually runs. |
+| `SUPABASE_DB_URL` | Deploy/operator shell only. | Operator shell | Do not expose to browser. Used for `npm run db:migrate`. |
+| `ADMIN_SECRET` | Required for admin operations and smoke tests. | Vercel + job runner (for `job:triage-topic-candidates` and the GitHub Actions candidate-generation cron in section 3) | Rotate after incidents or human sharing. |
+| `ADMIN_CSRF_SECRET` | Required for admin session CSRF protection. | Vercel + job runner | Generate separately from `ADMIN_SECRET`. Checked by `job:check-security-baseline` (`admin_csrf_secret_present`). |
+| `CONTRIBUTOR_SALT` | Required for public submissions. | Vercel | Enables `contributor_hash`; raw IP addresses must not be stored. |
 | `NEXT_PUBLIC_SITE_URL` | Required for production canonical URLs. | Must equal the canonical production origin, no trailing slash. |
 | `NEXT_PUBLIC_APP_URL` | Required/recommended for self-fetching server-rendered pages. | Must equal the canonical production origin, no trailing slash. |
 | `NEXT_PUBLIC_DEFAULT_LOCALE` | Required/recommended. | Use `en` unless product decides otherwise. |
@@ -68,15 +68,18 @@ Preview deployments must not mutate production data unless explicitly approved f
 
 ## 3. Cron and job inventory
 
-There is no committed `vercel.json`; production scheduling is therefore an external scheduler/operator responsibility until cron endpoints are added.
+There is no committed `vercel.json`; production scheduling for the five CLI jobs below is therefore an external scheduler/operator responsibility until cron endpoints are added. One job **is** already committed and live as a GitHub Actions workflow — see the last row.
+
+**Audit schema caveat:** production `admin_audit_events` currently has only `(id, action, metadata, created_at)` — the `admin_user_id`/`admin_user_hash`/`target_id` columns `schema-v3.sql` and migration `20260629_admin_roles_and_audit.sql` define have not been applied to production (tracked as migration drift in PR #486; do not attempt a catch-up migration without reviewing that PR's findings first). `scripts/lib/cron-job-utils.mjs`'s `writeAuditEvent()` only inserts `action`/`metadata`, matching production today. **If that migration is ever applied, `writeAuditEvent()` and `generate-admin-digest.mjs`'s `audit()` must be updated to supply `admin_user_hash` in the same change, or every job's audit write will start failing on the new `not null` constraint.**
 
 | Job | Command | Suggested cadence | Writes | Evidence | Alert path |
 | --- | --- | --- | --- | --- | --- |
-| Admin digest | `npm run job:generate-admin-digest` or `npm run admin:digest` | Daily at 09:00 UTC | `admin_audit_events` with `admin.digest.generated`, and delivery-failure events | Script stdout plus `admin_audit_events` rows by `run_id` | Slack via `SLACK_WEBHOOK_URL`; fallback Discord via `DISCORD_WEBHOOK_URL`; operator email is log-only until email transport exists. |
-| Source health | `npm run job:check-source-health -- --limit=50 --timeout-ms=8000` | Daily; increase cadence for high-risk domains when needed | `admin_audit_events` action `cron.check_source_health` | Audit metadata includes checked/unhealthy counts and sample unhealthy URLs | Scheduler failure alert plus admin digest. |
-| Stale claims | `npm run job:find-stale-claims -- --limit=100` | Daily | `admin_audit_events` action `cron.find_stale_claims`; may insert `watch_subscriptions` | Audit metadata includes stale claim count, scoring model, and watch mission count | Scheduler failure alert plus admin digest. |
-| Security baseline | `npm run job:check-security-baseline` | Daily and after env changes | `admin_audit_events` action `cron.check_security_baseline`; exits non-zero on failed baseline | Audit metadata contains boolean checks and failed count | Immediate Slack/Discord alert from scheduler on non-zero exit. |
+| Admin digest | `npm run job:generate-admin-digest` or `npm run admin:digest` | Daily at 09:00 UTC | `admin_audit_events` with `admin.digest.generated`, and delivery-failure events | Script stdout plus `admin_audit_events` rows by `run_id` | Slack via `SLACK_WEBHOOK_URL`; fallback Discord via `DISCORD_WEBHOOK_URL`; operator email is log-only until email transport exists. Note: this job does not implement `--dry-run` (unlike the other jobs below) — it always delivers real webhook messages and writes real audit rows when run, so do not use it for a restore-drill dry run without unsetting the webhook/email env first. |
+| Source health | `npm run job:check-source-health -- --limit=50 --timeout-ms=8000` | Daily; increase cadence for high-risk domains when needed | `admin_audit_events` action `cron.check_source_health` | Audit metadata includes checked/unhealthy counts and sample unhealthy URLs | Scheduler failure alert only. **Known gap:** the admin digest does not currently surface this job's `unhealthy_count` — it only counts audit actions matching `%source%failed%`, which this job's action name (`cron.check_source_health`) never matches even when it finds unhealthy sources, and the job itself exits 0 (success) in that case. Until the digest is updated to read this metadata, operators must check `admin_audit_events` for `cron.check_source_health` directly rather than relying on the digest to flag unhealthy sources. |
+| Stale claims | `npm run job:find-stale-claims -- --limit=100` | Daily | `admin_audit_events` action `cron.find_stale_claims`; may insert `watch_subscriptions` | Audit metadata includes stale claim count, scoring model, watch mission count, and `watch_missions_deduped` (missions skipped because an open mission for the same adoption/claim already existed) | Scheduler failure alert plus admin digest. |
+| Security baseline | `npm run job:check-security-baseline` | Daily and after env changes | `admin_audit_events` action `cron.check_security_baseline`; exits non-zero on failed baseline | Audit metadata contains boolean checks (including `admin_csrf_secret_present`) and failed count | Immediate Slack/Discord alert from scheduler on non-zero exit. |
 | Topic candidate triage | `npm run job:triage-topic-candidates -- --limit=100` | Daily or manual batch | `admin_audit_events`; candidate review queue changes if implemented by script | Script stdout and audit event | Admin digest and scheduler failure alert. |
+| Daily AI candidate generation (GitHub Actions, already live) | `.github/workflows/daily-candidate-generation.yml` — `workflow_dispatch` or the committed `0 19 * * *` schedule | Daily at 19:00 UTC | `POST /api/admin/generate-candidates` with `save: true` against `$PRODUCTION_SITE_URL` (defaults to `https://for-ai-e4mm.vercel.app`); creates `topic_candidates` rows | GitHub Actions run log (HTTP status + response body); repo secrets required: `PRODUCTION_SITE_URL`, `ADMIN_SECRET`, `ADMIN_CSRF_SECRET` | Workflow failure surfaces in the GitHub Actions tab / repo notifications, not in Slack/Discord/admin digest today. Disable by removing or editing the `schedule` trigger in the workflow file, or by removing the `ADMIN_SECRET` repo secret (the step hard-fails without it). |
 
 Failure alert rule: any non-zero exit, missing audit event for a scheduled window, or three consecutive delivery failures must page the operator channel. Three consecutive cron failures are an incident and should use the severity table below.
 
@@ -117,7 +120,7 @@ Evidence must never include raw secrets, raw IP addresses, or full private submi
 2. Restore the latest backup into staging.
 3. Apply any migrations after the backup timestamp using `npm run db:migrate` with staging `SUPABASE_DB_URL`.
 4. Point a preview deployment at staging env vars.
-5. Run smoke checks for `/`, representative wiki/raw/API routes, public submission, admin diagnostics, and the four required jobs in `--dry-run` or staging mode.
+5. Run smoke checks for `/`, representative wiki/raw/API routes, public submission, and admin diagnostics. For the jobs: `job:check-source-health`, `job:find-stale-claims`, and `job:check-security-baseline` support `--dry-run` (skips the audit write, logs what would have been recorded); `job:generate-admin-digest` does **not** support `--dry-run` — it always delivers to any configured `SLACK_WEBHOOK_URL`/`DISCORD_WEBHOOK_URL` and always writes `admin_audit_events`, so run it against staging only with staging (or unset) webhook env, never against a production webhook during a drill.
 6. Record RTO, RPO, failed steps, and whether raw IP storage remains absent.
 
 ### Recovery objectives
@@ -141,6 +144,7 @@ Kill switches and containment controls:
 - Remove or rotate `SUPABASE_SERVICE_ROLE_KEY` to stop privileged admin/job writes while keeping static-first pages online where possible.
 - Rotate `ADMIN_SECRET` and `ADMIN_CSRF_SECRET` to invalidate break-glass/admin sessions.
 - Disable external scheduler entries or remove `CRON_SECRET` when cron HTTP endpoints exist.
+- Disable the live daily AI candidate-generation GitHub Actions cron by removing its `schedule` trigger or the `ADMIN_SECRET` repo secret (see section 3's last row) if generation needs to stop immediately.
 - Set `FORAI_ENABLE_STUB_STORAGE=false` in production; never rely on stub storage for production facts.
 - Roll back to the previous Vercel deployment when code release is suspected.
 

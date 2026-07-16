@@ -10,6 +10,7 @@ await runJob("check-security-baseline", async () => {
     { name: "anon_key_present", ok: Boolean(config.anonKey) },
     { name: "service_role_differs_from_anon", ok: Boolean(config.serviceRoleKey && config.anonKey && config.serviceRoleKey !== config.anonKey) },
     { name: "admin_secret_present", ok: Boolean(process.env.ADMIN_SECRET) },
+    { name: "admin_csrf_secret_present", ok: Boolean(process.env.ADMIN_CSRF_SECRET) },
     { name: "contributor_salt_present", ok: Boolean(process.env.CONTRIBUTOR_SALT) },
   ];
   const supabase = requireServiceRoleClient();
