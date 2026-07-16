@@ -43,6 +43,14 @@ export default function ApiDocsPage() {
       safety: "Suggestions are pending evidence only; they are not verified sources until reviewed and attached to claims.",
     },
     {
+      methods: ["POST /api/wanted-claims"],
+      description: "Suggest a claim that does not exist in the registry yet; stores a contributor hash instead of raw IP.",
+      auth: "No login required.",
+      rateLimit: "Yes — 10 suggestions per contributor hash per day, with 429 on overuse.",
+      response: '{ "wanted_claim_id": "...", "status": "open" }',
+      safety: "Suggestions never auto-publish a claim; text containing PII/secret-like patterns or reputation/crime-risk phrasing is rejected or held for operator review, never auto-promoted.",
+    },
+    {
       methods: ["POST /api/documents/:slug/copy-citation"],
       description: "Record a citation-copy analytics event for one document slug.",
       auth: "No auth required.",
@@ -394,9 +402,11 @@ export default function ApiDocsPage() {
             </p>
             <p style={{ margin: "6px 0 0", fontFamily: "monospace", fontWeight: 700 }}>POST /api/suggest-topic</p>
             <p style={{ margin: "6px 0 0", fontFamily: "monospace", fontWeight: 700 }}>POST /api/source-suggest</p>
+            <p style={{ margin: "6px 0 0", fontFamily: "monospace", fontWeight: 700 }}>POST /api/wanted-claims</p>
             <p style={{ margin: "8px 0", fontSize: "0.9rem", color: "var(--muted)" }}>
-              Public submissions for corrections, hallucination reports, suggested registry topics, and claim source suggestions.
-              Submissions store contributor hashes, not raw IP addresses, and point awards are server-side/idempotent.
+              Public submissions for corrections, hallucination reports, suggested registry topics, claim source suggestions,
+              and wanted-claim demand signals. Submissions store contributor hashes, not raw IP addresses, and point awards
+              are server-side/idempotent.
             </p>
           </div>
 

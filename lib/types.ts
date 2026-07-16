@@ -385,3 +385,64 @@ export type Task5Settings = {
   updated_at: string;
   updated_by: string | null;
 };
+
+// --- Task 5-A: demand signals -----------------------------------------------
+// Mirrors supabase/migrations/20260717090000_task5_a_demand_signals.sql.
+
+export type WantedClaimStatus =
+  | "observing"
+  | "open"
+  | "drafting"
+  | "drafted"
+  | "published"
+  | "rejected_editorial"
+  | "closed_infra_failure";
+export type WantedClaimDemandSignalSource = "user_suggestion" | "search_gap";
+
+export type Contributor = {
+  id: string;
+  contributor_hash: string | null;
+  account_id: string | null;
+  total_points: number;
+  accepted_source_count: number;
+  verified_claim_link_count: number;
+  spam_submission_count: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type WantedClaim = {
+  id: string;
+  locale: string;
+  normalization_version: number;
+  normalized_text: string;
+  normalized_hash: string;
+  status: WantedClaimStatus;
+  draft_failure_count: number;
+  // Reserved for Task 5-B2/5-P1; always null until those tasks land.
+  draft_claim_id: string | null;
+  published_claim_id: string | null;
+  lease_owner: string | null;
+  lease_expires_at: string | null;
+  last_demand_at: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type WantedClaimDemandSignal = {
+  id: string;
+  wanted_claim_id: string;
+  source: WantedClaimDemandSignalSource;
+  bucket_date: string;
+  dedupe_epoch: string;
+  actor_key: string;
+  created_at: string;
+  expires_at: string;
+};
+
+export type WantedClaimSuggester = {
+  wanted_claim_id: string;
+  contributor_id: string;
+  created_at: string;
+  notification_sent_at: string | null;
+};
