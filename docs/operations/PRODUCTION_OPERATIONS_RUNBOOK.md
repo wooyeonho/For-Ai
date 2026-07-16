@@ -36,21 +36,21 @@ Set these wherever they are actually needed — the Vercel production project fo
 
 | Variable | Production requirement | Where | Notes |
 | --- | --- | --- | --- |
-| `CRON_SECRET` | Required if any external scheduler or Vercel cron HTTP endpoint is used. | External scheduler | Generate with `openssl rand -hex 32`; pass as `Authorization: Bearer $CRON_SECRET` or equivalent scheduler secret. Current repo jobs are CLI scripts, so this is an external-runner secret until HTTP cron routes exist. |
+| `CRON_SECRET` | Not read by any code today (verified via repo-wide search) — reserve the name for Task 5-B2. | N/A today | Generate with `openssl rand -hex 32` when Task 5-B2 introduces an HTTP-endpoint cron auth path. Current CLI jobs authorize solely via `SUPABASE_SERVICE_ROLE_KEY` through `requireServiceRoleClient()`; setting this variable today does not protect or authorize any job invocation — the real control is who can run the CLI/scheduler with that service-role key. |
 | `NEXT_PUBLIC_SUPABASE_URL` | Required. | Vercel + job runner | Must point to the production Supabase project. |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Required. | Vercel | Public anon key only; never use service-role key here. |
 | `SUPABASE_SERVICE_ROLE_KEY` | Required for admin APIs and jobs. | Vercel + job runner | Server/job only. Must differ from anon key. `scripts/lib/cron-job-utils.mjs` throws immediately if this is missing wherever a job actually runs. |
 | `SUPABASE_DB_URL` | Deploy/operator shell only. | Operator shell | Do not expose to browser. Used for `npm run db:migrate`. |
-| `ADMIN_SECRET` | Required for admin operations and smoke tests. | Vercel + job runner (for `job:triage-topic-candidates` and the GitHub Actions candidate-generation cron in section 3) | Rotate after incidents or human sharing. |
+| `ADMIN_SECRET` | Break-glass emergency fallback only in production, not normal admin auth. | Vercel + job runner (for `job:triage-topic-candidates` and the GitHub Actions candidate-generation cron in section 3) | `productionAdminSecretFallbackDisabled()` (`lib/admin-api.ts`) disables both `/api/admin/login`'s `x-admin-secret` fallback and `requireAdmin()`'s `fallbackSecretContext`/`fallbackSessionContext` in production unless `ALLOW_BREAK_GLASS_ADMIN=true`. The normal production admin path is Supabase Auth + `admin_users`, not this secret — see `docs/operations/EMERGENCY_SECRET_ROTATION.md`. **Open question for the owner:** the GitHub Actions candidate-generation cron (section 3) authenticates with `x-admin-secret`, which per this same gate requires `ALLOW_BREAK_GLASS_ADMIN=true` to succeed in production — confirm whether that's set (and if so, whether it's intentionally left on rather than break-glass-temporary, which would itself be worth revisiting) or whether that workflow is actually failing today. |
 | `ADMIN_CSRF_SECRET` | Required for admin session CSRF protection. | Vercel + job runner | Generate separately from `ADMIN_SECRET`. Checked by `job:check-security-baseline` (`admin_csrf_secret_present`). |
 | `CONTRIBUTOR_SALT` | Required for public submissions. | Vercel | Enables `contributor_hash`; raw IP addresses must not be stored. |
-| `NEXT_PUBLIC_SITE_URL` | Required for production canonical URLs. | Must equal the canonical production origin, no trailing slash. |
-| `NEXT_PUBLIC_APP_URL` | Required/recommended for self-fetching server-rendered pages. | Must equal the canonical production origin, no trailing slash. |
-| `NEXT_PUBLIC_DEFAULT_LOCALE` | Required/recommended. | Use `en` unless product decides otherwise. |
-| `ADMIN_DIGEST_EMAIL` | Optional until email transport exists. | Included in digest logs only; current script reports email transport as not configured. |
-| `SLACK_WEBHOOK_URL` | Required for digest failure/success alerting if Slack is the chosen alert path. | Use a private operations channel. |
-| `DISCORD_WEBHOOK_URL` | Optional alternative alert path. | Do not set both Slack and Discord unless duplicate alerts are desired. |
-| AI provider keys | Optional. | Only needed for admin candidate generation. Keep disabled if not actively used. |
+| `NEXT_PUBLIC_SITE_URL` | Required for production canonical URLs. | Vercel | Must equal the canonical production origin, no trailing slash. |
+| `NEXT_PUBLIC_APP_URL` | Required/recommended for self-fetching server-rendered pages. | Vercel | Must equal the canonical production origin, no trailing slash. |
+| `NEXT_PUBLIC_DEFAULT_LOCALE` | Required/recommended. | Vercel | Use `en` unless product decides otherwise. |
+| `ADMIN_DIGEST_EMAIL` | Optional until email transport exists. | Job runner | Included in digest logs only; current script reports email transport as not configured. |
+| `SLACK_WEBHOOK_URL` | Required for digest failure/success alerting if Slack is the chosen alert path. | Job runner | Use a private operations channel. |
+| `DISCORD_WEBHOOK_URL` | Optional alternative alert path. | Job runner | Do not set both Slack and Discord unless duplicate alerts are desired. |
+| AI provider keys | Optional. | Vercel | Only needed for admin candidate generation. Keep disabled if not actively used. |
 
 ### Preview requirements
 
