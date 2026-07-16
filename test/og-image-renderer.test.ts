@@ -123,6 +123,18 @@ test("headline uses representative claim, then verified claim, then localized do
   });
 });
 
+test("headlineSource matches the claim that actually supplied the headline, not just which one is configured", () => {
+  // A representative claim with blank text is skipped for the headline
+  // itself (falls through to the next candidate), so its recorded source
+  // must fall through the same way instead of still claiming "representative_claim".
+  const blankRepresentative = claim({ id: "claim-2", claim_text: "   " });
+  const configured = bundle({ data: { representative_claim_id: "claim-2" } }, [claim(), blankRepresentative]);
+  assert.deepEqual(getSocialImageHeadline(configured, "en"), {
+    headline: "A verified representative fact",
+    headlineSource: "verified_claim",
+  });
+});
+
 test("headline is capped at 90 characters using 87 characters plus three dots", () => {
   const longClaim = claim({ claim_text: "a".repeat(91) });
   const headline = getSocialImageHeadline(bundle({}, [longClaim]), "en").headline;

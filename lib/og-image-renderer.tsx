@@ -109,13 +109,15 @@ export function getSocialImageHeadline(
   const verifiedClaims = bundle.claims.filter((claim) => isEligibleClaim(claim) && claim.status === "verified");
   const verified = verifiedClaims.find((claim) => claim.lang === locale) ?? verifiedClaims[0];
   const localizedDocumentTitle = bundle.document.localized_title?.[locale]?.trim() || bundle.document.title.trim();
-  const rawHeadline = representative?.claim_text.trim()
-    || verified?.claim_text.trim()
-    || localizedDocumentTitle
-    || SOCIAL_IMAGE_FALLBACK_HEADLINE;
-  const rawSource: SocialImageViewModel["headlineSource"] = representative
+  // representativeText/verifiedText are computed once and reused for both the
+  // headline and its recorded source, so a representative/verified claim with
+  // blank text is never labeled as the origin of a headline it didn't supply.
+  const representativeText = representative?.claim_text.trim();
+  const verifiedText = verified?.claim_text.trim();
+  const rawHeadline = representativeText || verifiedText || localizedDocumentTitle || SOCIAL_IMAGE_FALLBACK_HEADLINE;
+  const rawSource: SocialImageViewModel["headlineSource"] = representativeText
     ? "representative_claim"
-    : verified
+    : verifiedText
       ? "verified_claim"
       : localizedDocumentTitle
         ? "document_title"
