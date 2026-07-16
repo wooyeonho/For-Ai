@@ -71,7 +71,8 @@ const SERVICE_ROLE_NAME_RE = /\b(SUPABASE_SERVICE_ROLE_KEY|serviceKey|serviceRol
 //   U+00B7 MIDDLE DOT  (·)  used as a separator in headings/admin labels
 //   U+00D7 MULTIPLICATION SIGN (×) used in seed-data dimensions
 //   U+00A9 COPYRIGHT SIGN (©) used in the site footer
-const MOJIBAKE_ALLOWLIST = new Set(["·", "×", "©", "ñ", "é", "á", "í", "ó", "ú", "ü", "Ñ", "É", "Á", "Í", "Ó", "Ú", "Ü", "¡", "¿", "Î", "î", "ê", "û", "ô", "\u00e2", "ë", "ï", "ç", "à", "è", "ù"]);
+//   U+00A3 POUND SIGN (£) and U+00A5 YEN SIGN (¥) used in lib/check/similarity.ts's CURRENCY_SYMBOLS
+const MOJIBAKE_ALLOWLIST = new Set(["·", "×", "©", "\u00a3", "\u00a5", "ñ", "é", "á", "í", "ó", "ú", "ü", "Ñ", "É", "Á", "Í", "Ó", "Ú", "Ü", "¡", "¿", "Î", "î", "ê", "û", "ô", "\u00e2", "ë", "ï", "ç", "à", "è", "ù"]);
 
 // A full-repo-rewrite PR touches most of the tree. The repo currently tracks
 // ~67 files, so a legitimate scoped change stays well under this limit. Override
