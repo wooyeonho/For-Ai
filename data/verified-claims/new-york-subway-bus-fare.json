@@ -26,7 +26,8 @@
           "publisher": "Metropolitan Transportation Authority (MTA)",
           "url": "https://www.mta.info/fares-tolls/subway-bus",
           "observed_at": "2026-06-29",
-          "note": "Official page states the fare is $3 for most riders on subways and local, limited, rush, and Select Bus Service buses."
+          "note": "Official page states the fare is $3 for most riders on subways and local, limited, rush, and Select Bus Service buses.",
+          "source_authority": "official"
         }
       ],
       "verification_event": {
@@ -34,7 +35,12 @@
         "actor": "ai-source-fetch",
         "verified_at": "2026-06-29",
         "note": "Read directly from Metropolitan Transportation Authority (MTA) official fare page on 2026-06-29. Final human approval pending."
-      }
+      },
+      "jurisdiction": "US-NY",
+      "country": "US",
+      "risk_tier": "low",
+      "update_frequency": "event_based",
+      "disclaimer_type": "check_official_source"
     },
     {
       "claim_id": "mta-express-bus-base-fare",
@@ -51,7 +57,8 @@
           "publisher": "Metropolitan Transportation Authority (MTA)",
           "url": "https://www.mta.info/fares-tolls/subway-bus",
           "observed_at": "2026-06-29",
-          "note": "Official page states express buses cost $7.25."
+          "note": "Official page states express buses cost $7.25.",
+          "source_authority": "official"
         }
       ],
       "verification_event": {
@@ -59,7 +66,12 @@
         "actor": "ai-source-fetch",
         "verified_at": "2026-06-29",
         "note": "Read directly from Metropolitan Transportation Authority (MTA) official fare page on 2026-06-29. Final human approval pending."
-      }
+      },
+      "jurisdiction": "US-NY",
+      "country": "US",
+      "risk_tier": "low",
+      "update_frequency": "event_based",
+      "disclaimer_type": "check_official_source"
     },
     {
       "claim_id": "mta-omny-weekly-cap-subway-local-bus",
@@ -76,7 +88,8 @@
           "publisher": "Metropolitan Transportation Authority (MTA)",
           "url": "https://www.mta.info/fares-tolls/subway-bus",
           "observed_at": "2026-06-29",
-          "note": "Official page states riders will not spend more than $35 a week on subway and local bus fares using the same OMNY payment method."
+          "note": "Official page states riders will not spend more than $35 a week on subway and local bus fares using the same OMNY payment method.",
+          "source_authority": "official"
         }
       ],
       "verification_event": {
@@ -84,7 +97,12 @@
         "actor": "ai-source-fetch",
         "verified_at": "2026-06-29",
         "note": "Read directly from Metropolitan Transportation Authority (MTA) official fare page on 2026-06-29. Final human approval pending."
-      }
+      },
+      "jurisdiction": "US-NY",
+      "country": "US",
+      "risk_tier": "low",
+      "update_frequency": "event_based",
+      "disclaimer_type": "check_official_source"
     },
     {
       "claim_id": "mta-free-transfer-window",
@@ -101,7 +119,8 @@
           "publisher": "Metropolitan Transportation Authority (MTA)",
           "url": "https://www.mta.info/fares-tolls/subway-bus",
           "observed_at": "2026-06-29",
-          "note": "Official page states riders get one free transfer within two hours of paying their fare."
+          "note": "Official page states riders get one free transfer within two hours of paying their fare.",
+          "source_authority": "official"
         }
       ],
       "verification_event": {
@@ -109,7 +128,17 @@
         "actor": "ai-source-fetch",
         "verified_at": "2026-06-29",
         "note": "Read directly from Metropolitan Transportation Authority (MTA) official fare page on 2026-06-29. Final human approval pending."
-      }
+      },
+      "jurisdiction": "US-NY",
+      "country": "US",
+      "risk_tier": "low",
+      "update_frequency": "event_based",
+      "disclaimer_type": "check_official_source"
     }
-  ]
+  ],
+  "canonical_slug": "new-york-subway-bus-fare",
+  "localized_title": {
+    "en": "New York City subway and bus fares (2026)"
+  },
+  "translation_status": "source_language"
 }

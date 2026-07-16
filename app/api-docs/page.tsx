@@ -83,6 +83,14 @@ export default function ApiDocsPage() {
       safety: "Badges and points are contribution metadata; claim citation safety remains source and verification based.",
     },
     {
+      methods: ["GET /api/contributor-receipt/:hash"],
+      description: "Public contribution receipt for one contributor hash: point totals plus per-item status across source suggestions, topic suggestions, community posts, and point events.",
+      auth: "No auth required; contributor hash must be 8-64 hex characters.",
+      rateLimit: "No dedicated public limiter.",
+      response: '{ "contributor_hash": "...", "totals": { "points": 0, "pending": 0, "accepted": 0, "rejected": 0, "verified-linked": 0 }, "items": [{ "id": "...", "type": "source_suggestion", "title": "...", "status": "pending", "points": 0, "created_at": "..." }], "privacy": { "raw_ip_stored": false, "message": "..." } }',
+      safety: "Receipt items are contribution metadata keyed by contributor hash only; raw IPs are never stored or exposed, and receipt status is not a claim verification signal.",
+    },
+    {
       methods: ["GET /api/business/submitted-claims"],
       description: "Review queue for claims submitted through verified business workflows.",
       auth: "Admin authorization required.",
@@ -227,6 +235,24 @@ export default function ApiDocsPage() {
             </p>
           </div>
 
+          {/* GET /api/badge/:slug */}
+          <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
+            <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>
+              GET /api/badge/<span style={{ color: "var(--accent)" }}>{"{slug}"}</span>
+            </p>
+            <p style={{ margin: "8px 0", fontSize: "0.9rem", color: "var(--muted)" }}>
+              Cacheable SVG fact-status badge. Existing, missing, and temporarily unavailable states
+              all return a valid image with a whitelisted status label; inspect <code>X-For-Ai-Can-Cite</code>
+              before treating any linked record as citation-ready.
+            </p>
+            <p style={{ margin: "6px 0 0", fontFamily: "monospace", fontSize: "0.82rem", overflowWrap: "anywhere" }}>
+              {`[![For-Ai fact status](${BASE}/api/badge/{slug})](${BASE}/en/wiki/{slug})`}
+            </p>
+            <p style={{ margin: "6px 0 0", fontFamily: "monospace", fontSize: "0.82rem", overflowWrap: "anywhere" }}>
+              {`<iframe src="${BASE}/embed/{slug}" width="360" height="140" title="For-Ai fact status" loading="lazy" sandbox="allow-popups allow-popups-to-escape-sandbox" referrerpolicy="strict-origin-when-cross-origin"></iframe>`}
+            </p>
+          </div>
+
           {/* GET /api/entities/:id */}
           <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
             <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>
@@ -292,6 +318,20 @@ export default function ApiDocsPage() {
             </p>
           </div>
 
+          {/* POST /api/check */}
+          <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
+            <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>
+              POST /api/check
+            </p>
+            <p style={{ margin: "8px 0", fontSize: "0.9rem", color: "var(--muted)" }}>
+              Splits submitted text into sentences and matches each against registry claims, returning each
+              sentence&apos;s matched claim (if any) and its current verification status. This is a claim-matcher,
+              not a truth judge — it never determines whether a sentence is factually correct. Body:{" "}
+              <code>{"{ text: string; locale?: string }"}</code>, max 5,000 characters. The submitted text and
+              extracted sentences are never stored or logged.
+            </p>
+          </div>
+
           {/* GET/POST /api/posts */}
           <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
             <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>GET /api/posts</p>
@@ -330,6 +370,7 @@ export default function ApiDocsPage() {
             <p style={{ margin: "6px 0 0", fontFamily: "monospace", fontWeight: 700 }}>GET /api/gamification/contributor/<span style={{ color: "var(--accent)" }}>{"{hash}"}</span></p>
             <p style={{ margin: "6px 0 0", fontFamily: "monospace", fontWeight: 700 }}>GET /api/gamification/country-quest</p>
             <p style={{ margin: "6px 0 0", fontFamily: "monospace", fontWeight: 700 }}>GET /api/gamification/leaderboard</p>
+            <p style={{ margin: "6px 0 0", fontFamily: "monospace", fontWeight: 700 }}>GET /api/contributor-receipt/<span style={{ color: "var(--accent)" }}>{"{hash}"}</span></p>
             <p style={{ margin: "8px 0", fontSize: "0.9rem", color: "var(--muted)" }}>
               Public verification participation endpoints for bounties, contributor progress, country quests, and leaderboard views.
             </p>

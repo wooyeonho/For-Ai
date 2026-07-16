@@ -20,6 +20,7 @@ export function middleware(request: NextRequest) {
     pathname.startsWith("/diagnostics/") ||
     pathname.startsWith("/report/") ||
     pathname.startsWith("/hallucination/") ||
+    pathname.startsWith("/embed/") ||
     pathname.startsWith("/suggest-topic") ||
     pathname.startsWith("/community") ||
     pathname.startsWith("/llms.txt") ||

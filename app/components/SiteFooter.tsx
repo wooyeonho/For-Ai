@@ -5,6 +5,7 @@ import { getLocaleFromPathname, getTranslations, withLocaleLink } from "../../li
 
 export function SiteFooter() {
   const pathname = usePathname();
+  if (pathname.startsWith("/embed/")) return null;
   const locale = getLocaleFromPathname(pathname);
   const t = getTranslations(locale);
   const localize = (href: string) => withLocaleLink(pathname, href);

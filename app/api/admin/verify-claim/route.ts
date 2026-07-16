@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 
 import { logAdminAuditEvent, requireAdmin, supabaseAdmin } from "@/lib/admin-api";
 import { recordContributionEvent } from "@/lib/contributions";
@@ -6,6 +7,7 @@ import { scoreSourceTrust } from "@/lib/source-trust";
 import { awardPoints, checkAndAwardBadges, POINT_VALUES } from "@/lib/gamification";
 import { hasOfficialOrRegulatorSource, HIGH_RISK_CATEGORIES, isHighRiskCategory } from "@/lib/risk-policy";
 import { ageInDays, getFreshnessTtlDays, isStale } from "@/lib/citation-status";
+import { SUPPORTED_LOCALES } from "@/lib/i18n/locales";
 
 const DEFAULT_STATUS = "needs_review";
 const DEFAULT_LIMIT = 50;
@@ -56,6 +58,15 @@ function boundedInt(value: string | null, fallback: number, max?: number) {
 
 function firstDocument(row: { documents?: { slug?: string; lang?: string; [k: string]: unknown } | { slug?: string; lang?: string; [k: string]: unknown }[] | null }) {
   return Array.isArray(row.documents) ? row.documents[0] : row.documents;
+}
+
+function revalidateDocumentOriginPaths(slug: string) {
+  for (const locale of SUPPORTED_LOCALES) {
+    const originPath = `/${locale}/wiki/${slug}`;
+    revalidatePath(originPath);
+    revalidatePath(`${originPath}/opengraph-image`);
+    revalidatePath(`${originPath}/twitter-image`);
+  }
 }
 
 function riskRank(category?: string | null) {
@@ -345,7 +356,7 @@ export async function POST(request: Request) {
     if (!reason) return NextResponse.json({ error: "reason is required for needs-verification actions" }, { status: 400 });
     const { data: existingClaims, error: fetchError } = await sb
       .from("claims")
-      .select("id, document_id, status, confidence")
+      .select("id, document_id, status, confidence, documents(slug)")
       .in("id", claimIds);
     if (fetchError) return NextResponse.json({ error: "claims lookup failed", detail: fetchError.message }, { status: 500 });
     if ((existingClaims ?? []).length !== claimIds.length) return NextResponse.json({ error: "one or more claims were not found" }, { status: 404 });
@@ -375,6 +386,10 @@ export async function POST(request: Request) {
       reason,
       new_status: "needs_review",
     });
+    for (const claim of existingClaims ?? []) {
+      const document = firstDocument(claim);
+      if (document?.slug) revalidateDocumentOriginPaths(document.slug);
+    }
     return NextResponse.json({ updated_claim_ids: claimIds, status: "needs_review" });
   }
 
@@ -548,6 +563,7 @@ export async function POST(request: Request) {
     }
 
     const docRow = firstDocument(existingClaim);
+    if (docRow?.slug) revalidateDocumentOriginPaths(docRow.slug);
     return NextResponse.json({
       claim: updatedClaim,
       source_id: sourceId,

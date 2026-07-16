@@ -2,6 +2,11 @@ import type { NextConfig } from "next";
 import { SUPPORTED_LOCALES } from "./lib/i18n/locales";
 
 const LOCALE_PATTERN = SUPPORTED_LOCALES.join("|");
+const SOCIAL_IMAGE_FONT_FILES = [
+  "./node_modules/@fontsource/nanum-gothic/files/nanum-gothic-latin-400-normal.woff",
+  "./assets/fonts/nanum-gothic-for-ai-hangul.woff",
+  "./assets/fonts/nanum-gothic-for-ai-hangul.glyphs.txt",
+];
 
 // Task 0-A: legacy gamification routes permanently redirect (HTTP 308) for
 // supported locales only. As of Task 0-B, the source page files
@@ -25,11 +30,22 @@ export function buildLegacyGamificationRedirects() {
 }
 
 const nextConfig: NextConfig = {
-  typescript: {
-    // Keep production builds unblocked while this legacy branch's admin/i18n
-    // type debt is cleaned up incrementally. Webpack/SWC compilation and ESLint
-    // still run during `next build`.
-    ignoreBuildErrors: true,
+  outputFileTracingIncludes: {
+    "/**/opengraph-image": SOCIAL_IMAGE_FONT_FILES,
+    "/**/twitter-image": SOCIAL_IMAGE_FONT_FILES,
+  },
+  async headers() {
+    return [
+      {
+        source: "/embed/:path*",
+        headers: [
+          { key: "Content-Security-Policy", value: "frame-ancestors *" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
+          { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=()" },
+          { key: "X-Robots-Tag", value: "noindex, nofollow" },
+        ],
+      },
+    ];
   },
   async redirects() {
     return buildLegacyGamificationRedirects();
