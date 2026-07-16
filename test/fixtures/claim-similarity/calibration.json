@@ -1,0 +1,35 @@
+[
+  {
+    "id": "cal-positive-ko",
+    "locale": "ko",
+    "kind": "positive",
+    "input": "서울 지하철 기본 요금은 1400원입니다.",
+    "expectedId": "seoul-metro-fare",
+    "candidates": [
+      { "id": "seoul-metro-fare", "entityId": "kr-transport-seoul-metro-001", "text": "서울 지하철 기본 요금은 1400원입니다." },
+      { "id": "passport-fee", "entityId": "kr-passport-001", "text": "여권 재발급 수수료는 50000원입니다." }
+    ]
+  },
+  {
+    "id": "cal-hard-negation",
+    "locale": "en",
+    "kind": "hard_negative",
+    "category": "negation",
+    "input": "The city hall permit fee is 30 dollars.",
+    "expectedId": null,
+    "candidates": [
+      { "id": "permit-negated", "entityId": "us-city-permit-001", "text": "The city hall permit fee is not 30 dollars." }
+    ]
+  },
+  {
+    "id": "cal-positive-en",
+    "locale": "en",
+    "kind": "positive",
+    "input": "Korean passport reissue fee is 50000 won.",
+    "expectedId": "passport-reissue-fee",
+    "candidates": [
+      { "id": "passport-reissue-fee", "entityId": "kr-passport-reissue-001", "text": "Korean passport reissue fee is 50000 won." },
+      { "id": "seoul-metro-fare", "entityId": "kr-transport-seoul-metro-001", "text": "Seoul subway base fare is 1400 won." }
+    ]
+  }
+]

@@ -1,0 +1,45 @@
+[
+  {
+    "id": "reg-number",
+    "locale": "en",
+    "kind": "hard_negative",
+    "category": "number",
+    "input": "The refund window is 14 days.",
+    "expectedId": null,
+    "candidates": [
+      { "id": "refund-30", "entityId": "commerce-refund-001", "text": "The refund window is 30 days." }
+    ]
+  },
+  {
+    "id": "reg-date",
+    "locale": "en",
+    "kind": "hard_negative",
+    "category": "date",
+    "input": "Applications close on 2026-07-15.",
+    "expectedId": null,
+    "candidates": [
+      { "id": "application-close-aug", "entityId": "edu-application-001", "text": "Applications close on 2026-08-15." }
+    ]
+  },
+  {
+    "id": "reg-polarity",
+    "locale": "en",
+    "kind": "hard_negative",
+    "category": "increase_decrease",
+    "input": "The service fee increased by 5 percent.",
+    "expectedId": null,
+    "candidates": [
+      { "id": "fee-decrease", "entityId": "commerce-fee-001", "text": "The service fee decreased by 5 percent." }
+    ]
+  },
+  {
+    "id": "reg-positive",
+    "locale": "en",
+    "kind": "positive",
+    "input": "The venue capacity is 200 people.",
+    "expectedId": "venue-capacity",
+    "candidates": [
+      { "id": "venue-capacity", "entityId": "venue-001", "text": "The venue capacity is 200 people." }
+    ]
+  }
+]

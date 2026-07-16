@@ -1,0 +1,45 @@
+[
+  {
+    "id": "hold-before-after",
+    "locale": "en",
+    "kind": "hard_negative",
+    "category": "before_after",
+    "input": "Check-in is allowed before 3 PM.",
+    "expectedId": null,
+    "candidates": [
+      { "id": "checkin-after", "entityId": "hotel-policy-001", "text": "Check-in is allowed after 3 PM." }
+    ]
+  },
+  {
+    "id": "hold-same-entity-different-conclusion",
+    "locale": "en",
+    "kind": "hard_negative",
+    "category": "same_entity_different_conclusion",
+    "input": "Acme Store accepts opened-item returns.",
+    "expectedId": null,
+    "candidates": [
+      { "id": "acme-opened-no", "entityId": "acme-store-001", "text": "Acme Store does not accept opened-item returns." }
+    ]
+  },
+  {
+    "id": "hold-subject-object-reversal",
+    "locale": "en",
+    "kind": "hard_negative",
+    "category": "subject_object_reversal",
+    "input": "Alpha defeated Beta",
+    "expectedId": null,
+    "candidates": [
+      { "id": "beta-defeated-alpha", "entityId": "event-001", "text": "Beta defeated Alpha" }
+    ]
+  },
+  {
+    "id": "hold-positive-ja",
+    "locale": "ja",
+    "kind": "positive",
+    "input": "営業時間は10時からです。",
+    "expectedId": "hours-ja",
+    "candidates": [
+      { "id": "hours-ja", "entityId": "jp-store-hours-001", "text": "営業時間は10時からです。" }
+    ]
+  }
+]
