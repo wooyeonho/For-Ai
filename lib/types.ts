@@ -308,7 +308,7 @@ export type WatchSubscription = {
 };
 
 // --- Task 5-0: structural foundation ----------------------------------------
-// Mirrors supabase/migrations/20260716120000_task5_structural_foundation.sql.
+// Mirrors supabase/migrations/20260716120955_task5_structural_foundation.sql.
 
 export type ContentOrigin = "legacy_manual" | "task5_ai";
 export type PublicationMode = "manual_legacy" | "assisted_operator" | "crowd_auto";

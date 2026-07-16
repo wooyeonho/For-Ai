@@ -4,7 +4,7 @@
 // cold worker keeps its own Map, so caps reset across instances and are
 // effectively bypassable. This module enforces the same fixed-window semantics
 // through the `increment_rate_limit` SQL function (see
-// supabase/migrations/20260703_rate_limit_counters.sql) so a quota holds across
+// supabase/migrations/20260716124542_rate_limit_counters.sql) so a quota holds across
 // every region/instance.
 //
 // It degrades gracefully: when Supabase is not configured (local dev, tests,

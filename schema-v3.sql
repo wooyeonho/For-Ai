@@ -1142,7 +1142,7 @@ create policy challenge_progress_public_select
 
 -- =============================================================================
 -- Task 5-0: structural foundation (added 2026-07-16)
--- Mirrors supabase/migrations/20260716120000_task5_structural_foundation.sql exactly.
+-- Mirrors supabase/migrations/20260716120955_task5_structural_foundation.sql exactly.
 -- NOTE: this file documents the intended full schema; as of 2026-07-16 several
 -- earlier-dated sections of this file (roughly 2026-06-29 onward: contributor
 -- streaks, community challenges, sponsored placements, candidate_generation_runs,
@@ -1599,3 +1599,106 @@ create policy task5_settings_public_select on task5_settings for select to anon 
 -- - Public intake submissions (edits, reports, hallucination_reports, topic_suggestions, topic_candidates) should be reviewed and deleted/anonymized within 180 days after final status, unless retained as accepted claim provenance.
 -- - Inactive topic_adoptions and resolved watch_subscriptions should be anonymized or aggregated after 365 days unless needed for contributor reward accounting.
 -- - Admin audit events should be retained for 365 days, then deleted or aggregated.
+
+-- =============================================================================
+-- Distributed rate limiting
+-- Mirrors supabase/migrations/20260716124542_rate_limit_counters.sql.
+-- =============================================================================
+
+create table if not exists public.rate_limit_counters (
+  bucket             text not null,
+  key_hash           text not null,
+  count              integer not null default 0,
+  window_started_at  timestamptz not null default now(),
+  expires_at         timestamptz not null,
+  primary key (bucket, key_hash)
+);
+
+create index if not exists rate_limit_counters_expires_idx
+  on public.rate_limit_counters (expires_at);
+
+alter table public.rate_limit_counters enable row level security;
+
+drop policy if exists rate_limit_counters_public_select on public.rate_limit_counters;
+drop policy if exists rate_limit_counters_public_insert on public.rate_limit_counters;
+drop policy if exists rate_limit_counters_public_update on public.rate_limit_counters;
+drop policy if exists rate_limit_counters_public_delete on public.rate_limit_counters;
+
+create or replace function public.increment_rate_limit(
+  p_bucket     text,
+  p_key_hash   text,
+  p_max        integer,
+  p_window_ms  bigint
+) returns jsonb
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_now   timestamptz := now();
+  v_count integer;
+  v_reset timestamptz;
+begin
+  insert into public.rate_limit_counters as r
+    (bucket, key_hash, count, window_started_at, expires_at)
+  values (
+    p_bucket,
+    p_key_hash,
+    1,
+    v_now,
+    v_now + make_interval(secs => p_window_ms / 1000.0)
+  )
+  on conflict (bucket, key_hash) do update
+    set count = case when r.expires_at <= v_now then 1 else r.count + 1 end,
+        window_started_at = case when r.expires_at <= v_now then v_now else r.window_started_at end,
+        expires_at = case when r.expires_at <= v_now
+                          then v_now + make_interval(secs => p_window_ms / 1000.0)
+                          else r.expires_at end
+  returning r.count, r.expires_at into v_count, v_reset;
+
+  return jsonb_build_object(
+    'count', v_count,
+    'limited', v_count > p_max,
+    'reset_at_ms', (extract(epoch from v_reset) * 1000)::bigint
+  );
+end;
+$$;
+
+revoke all on function public.increment_rate_limit(text, text, integer, bigint)
+  from public;
+grant execute on function public.increment_rate_limit(text, text, integer, bigint)
+  to service_role;
+
+-- =============================================================================
+-- Least-privilege recovery
+-- Mirrors supabase/migrations/20260716210327_least_privilege_recovery.sql.
+-- =============================================================================
+
+revoke execute on function public.increment_rate_limit(text, text, integer, bigint)
+  from public, anon, authenticated;
+grant execute on function public.increment_rate_limit(text, text, integer, bigint)
+  to service_role;
+
+revoke execute on function public.set_task5_phase(integer, text, uuid, text)
+  from public, anon, authenticated;
+grant execute on function public.set_task5_phase(integer, text, uuid, text)
+  to service_role;
+
+revoke truncate on all tables in schema public from anon, authenticated;
+
+revoke insert, update, delete on table
+  public.claims,
+  public.claim_sources,
+  public.documents,
+  public.verification_events
+from anon, authenticated;
+
+revoke all privileges on table
+  public.admin_audit_events,
+  public.rate_limit_counters
+from anon, authenticated;
+
+alter default privileges for role postgres in schema public
+  revoke truncate on tables from anon, authenticated;
+alter default privileges for role postgres in schema public
+  revoke execute on functions from public, anon, authenticated;
