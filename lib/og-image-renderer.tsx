@@ -26,6 +26,11 @@ export type SocialImageViewModel = {
 export const SOCIAL_IMAGE_FALLBACK_HEADLINE = "For-Ai fact registry";
 export const SOCIAL_IMAGE_MAX_HEADLINE_CHARS = 90;
 export const SOCIAL_IMAGE_FONT_ASSET_BUDGET_BYTES = 400_000;
+// ImageResponse defaults to "public, immutable, no-transform, max-age=31536000"
+// regardless of the route's `revalidate` export, so it must be overridden
+// explicitly (matches the badge route's existing 600s convention — see
+// badgeCacheControl in lib/citation-badge.ts).
+export const SOCIAL_IMAGE_CACHE_CONTROL = "public, max-age=600, s-maxage=600";
 
 const UNSUPPORTED_SCRIPT = /[^\u0000-\u024f\u2000-\u206f\u20a0-\u20cf\uac00-\ud7a3]/u;
 const HANGUL_SYLLABLE = /[\uac00-\ud7a3]/gu;
@@ -132,13 +137,26 @@ function sourceRelationIsActive(source: ClaimWithSources["sources"][number]): bo
   return relation.active !== false && relation.is_active !== false;
 }
 
+// Different claims on the same document commonly cite the same official page
+// as separate source records (each with its own id) — e.g. four fee claims
+// all pointing at the same gov.kr URL. Deduping by id would count that as 4
+// distinct sources; dedupe by normalized URL instead so the badge reflects
+// the number of actual evidence pages, not the number of claim-source rows.
+// A null/empty url can't be deduped against other sources by identity, so
+// each falls back to counting by its own id (never collapsed with another
+// source, matching the pre-dedup behavior for this edge case).
+function normalizedSourceUrl(source: ClaimWithSources["sources"][number]): string {
+  const trimmed = source.url?.trim().toLowerCase().replace(/\/+$/, "");
+  return trimmed || `no-url:${source.id}`;
+}
+
 export function getSocialImageSourceCount(bundle: RegistryDocumentBundle): number {
   return new Set(
     bundle.claims
       .filter(isEligibleClaim)
       .flatMap((claim) => claim.sources)
       .filter(sourceRelationIsActive)
-      .map((source) => source.id),
+      .map((source) => normalizedSourceUrl(source)),
   ).size;
 }
 

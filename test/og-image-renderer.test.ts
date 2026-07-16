@@ -162,6 +162,19 @@ test("source count deduplicates active source relations and excludes sponsored c
   assert.equal(getSocialImageSourceCount(bundle({}, [first, second, sponsored])), 1);
 });
 
+test("source count dedupes by URL, not by source id, when separate claims cite the same page", () => {
+  // Real registry shape (e.g. passport-reissue-fee-2025): four distinct claims,
+  // each with its own source row/id, all citing the identical official URL.
+  const feeUrl = "https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=12600000001";
+  const claims = ["a", "b", "c", "d"].map((id) =>
+    claim({ id: `claim-${id}`, sources: [source(`source-${id}`, { url: feeUrl })] }),
+  );
+  assert.equal(getSocialImageSourceCount(bundle({}, claims)), 1);
+
+  const differentUrl = claim({ id: "claim-e", sources: [source("source-e", { url: `${feeUrl}&other=1` })] });
+  assert.equal(getSocialImageSourceCount(bundle({}, [...claims, differentUrl])), 2);
+});
+
 test("status uses the closed schema presentation for verified, review, disputed, and unknown", () => {
   assert.deepEqual(mapSocialImageStatus(bundle()), { statusKey: "verified", statusLabel: "Verified", statusTone: "ready" });
   assert.deepEqual(mapSocialImageStatus(bundle({}, [claim({ status: "needs_review", confidence: "low", sources: [], verification_events: [] })])), { statusKey: "needs_review", statusLabel: "Needs review", statusTone: "review" });
@@ -180,6 +193,21 @@ test("OG and Twitter routes declare literal node runtime, cache, dimensions, con
     assert.match(route, /export const size = \{ width: 1200, height: 630 \};/);
     assert.match(route, /export const contentType = "image\/png";/);
     assert.match(route, /export const alt = "For-Ai claim verification status";/);
+  }
+});
+
+test("OG and Twitter routes reject unsupported locales and override ImageResponse's default immutable cache header", () => {
+  for (const file of [
+    "app/[locale]/wiki/[slug]/opengraph-image.tsx",
+    "app/[locale]/wiki/[slug]/twitter-image.tsx",
+  ]) {
+    const route = readFileSync(file, "utf8");
+    // ImageResponse defaults to a 1-year immutable Cache-Control regardless of
+    // `revalidate`, and the wiki page 404s for unsupported locale prefixes —
+    // this route must match both, or it becomes a crawlable endpoint for
+    // locales that don't otherwise exist.
+    assert.match(route, /if \(!isValidLocale\(locale\)\) notFound\(\);/);
+    assert.match(route, /headers:\s*\{\s*"Cache-Control":\s*SOCIAL_IMAGE_CACHE_CONTROL\s*\}/);
   }
 });
 
