@@ -1,7 +1,6 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { createServerClient, isSupabaseConfigured } from '@/lib/supabase-server';
-import { getContributorReceipt, ReceiptStatus } from '@/lib/contributor-receipt';
+import { getContributorReceiptForHash, ReceiptStatus } from '@/lib/contributor-receipt';
 
 const STATUS_LABEL: Record<ReceiptStatus, string> = {
   pending: 'pending',
@@ -21,9 +20,7 @@ export default async function ContributorReceiptPage({ params }: { params: Promi
   const { hash } = await params;
   if (!/^[a-f0-9]{8,64}$/i.test(hash)) notFound();
 
-  const receipt = isSupabaseConfigured()
-    ? await getContributorReceipt(createServerClient(), hash)
-    : { contributor_hash: hash, totals: { points: 0, pending: 0, accepted: 0, rejected: 0, 'verified-linked': 0 }, items: [], privacy: { raw_ip_stored: false, message: 'For-Ai never stores or exposes raw IP addresses for public submissions. This receipt is keyed only by contributor_hash.' } };
+  const receipt = await getContributorReceiptForHash(hash);
 
   return (
     <main className="container" style={{ padding: '32px 16px' }}>

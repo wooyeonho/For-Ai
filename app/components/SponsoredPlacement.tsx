@@ -82,7 +82,7 @@ export function SponsoredPlacement({
           </p>
           {description && <p style={{ margin: "6px 0 0", fontSize: "0.85rem", color: "var(--muted)" }}>{description}</p>}
           <p style={{ margin: "8px 0 0", fontSize: "0.75rem", color: "var(--muted)" }}>
-            Promotional placement by {businessName}. This block is separate from verified business profile data and verified claim data.
+            Promotional placement by {businessName}. This block is separate from verified claim data and verified business profile data.
           </p>
           <p style={{ margin: "6px 0 0", fontSize: "0.75rem", fontWeight: 700, color: "#92400e" }}>
             {SPONSORED_INTEGRITY_NOTICE}

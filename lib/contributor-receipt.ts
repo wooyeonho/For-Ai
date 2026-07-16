@@ -1,4 +1,10 @@
 import { SupabaseClient } from '@supabase/supabase-js';
+import { createServerClient, isSupabaseConfigured } from './supabase-server';
+
+// Read-only receipt aggregation. This module is listed in
+// READ_ONLY_SERVICE_HELPER_FILES in scripts/ci-guards.mjs: it may create a
+// server client for reads, but any insert/update/upsert/delete here fails
+// the secrets guard.
 
 export type ReceiptStatus = 'pending' | 'accepted' | 'rejected' | 'verified-linked';
 export type ReceiptItem = {
@@ -83,4 +89,18 @@ export async function getContributorReceipt(sb: SupabaseClient, contributorHash:
   }, { points: 0, pending: 0, accepted: 0, rejected: 0, 'verified-linked': 0 } as Record<ReceiptStatus | 'points', number>);
 
   return { contributor_hash: contributorHash, totals, items, privacy: { raw_ip_stored: false, message: 'For-Ai never stores or exposes raw IP addresses for public submissions. This receipt is keyed only by contributor_hash.' } };
+}
+
+export function emptyContributorReceipt(contributorHash: string) {
+  return {
+    contributor_hash: contributorHash,
+    totals: { points: 0, pending: 0, accepted: 0, rejected: 0, 'verified-linked': 0 },
+    items: [] as ReceiptItem[],
+    privacy: { raw_ip_stored: false, message: 'For-Ai never stores or exposes raw IP addresses for public submissions. This receipt is keyed only by contributor_hash.' },
+  };
+}
+
+export async function getContributorReceiptForHash(contributorHash: string) {
+  if (!isSupabaseConfigured()) return emptyContributorReceipt(contributorHash);
+  return getContributorReceipt(createServerClient(), contributorHash);
 }

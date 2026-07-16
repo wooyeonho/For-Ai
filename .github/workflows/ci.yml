@@ -25,6 +25,9 @@ jobs:
       - name: Lint
         run: npm run lint
 
+      - name: Typecheck
+        run: npm run typecheck
+
       - name: Test
         run: npm test
 
@@ -34,8 +37,20 @@ jobs:
       - name: Guard - stale route path
         run: node scripts/ci-guards.mjs route
 
+      - name: Guard - API docs sync
+        run: node scripts/ci-guards.mjs api-docs
+
       - name: Guard - mojibake / broken encoding
         run: node scripts/ci-guards.mjs mojibake
+
+      - name: Guard - repo-wide mojibake markers
+        run: npm run check:mojibake
+
+      - name: Guard - citation surfaces
+        run: npm run check:citation-surfaces
+
+      - name: Guard - schema/type sync
+        run: npm run check:schema-types
 
       - name: Guard - generated artifacts
         run: node scripts/ci-guards.mjs artifacts
