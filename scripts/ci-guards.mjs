@@ -14,9 +14,10 @@
  *   surfaces   - fail if citation surfaces drift from the normalized claim-level contract.
  *   schema-types - fail if schema-v3.sql enum/check values diverge from TypeScript unions.
  *   diff-size  - fail if a PR changes an unexpected number of files (full-repo-rewrite guard).
+ *   db-privileges - fail if the production least-privilege contract disappears from schema-v3.sql.
  *   secrets    - fail if Supabase service-role secrets leak into client or non-route mutation code.
  *   no-stub-storage - fail if public production routes can return stub storage responses.
- *   all        - run route + api-docs + mojibake + artifacts + claims + secrets + no-stub-storage + surfaces + schema-types (and diff-size when a base SHA is available).
+ *   all        - run route + api-docs + mojibake + artifacts + claims + secrets + no-stub-storage + surfaces + schema-types + db-privileges (and diff-size when a base SHA is available).
  *
  * Exit code 0 = pass, 1 = a guard failed, 2 = usage/internal error.
  */
@@ -347,6 +348,38 @@ function guardSchemaTypes() {
   }
 }
 
+function guardDatabasePrivileges() {
+  const schema = readFileSync("schema-v3.sql", "utf-8");
+  const required = [
+    {
+      label: "internal rate-limit RPC must exclude browser roles",
+      pattern: /revoke execute on function public\.increment_rate_limit\(text, text, integer, bigint\)[\s\S]*?from public, anon, authenticated;/i,
+    },
+    {
+      label: "Task 5 phase RPC must exclude browser roles",
+      pattern: /revoke execute on function public\.set_task5_phase\(integer, text, uuid, text\)[\s\S]*?from public, anon, authenticated;/i,
+    },
+    {
+      label: "browser roles must never receive TRUNCATE",
+      pattern: /revoke truncate on all tables in schema public from anon, authenticated;/i,
+    },
+    {
+      label: "future functions must require explicit browser-role grants",
+      pattern: /alter default privileges for role postgres in schema public[\s\S]*?revoke execute on functions from public, anon, authenticated;/i,
+    },
+  ];
+  const missing = required
+    .filter(({ pattern }) => !pattern.test(schema))
+    .map(({ label }) => "  - " + label);
+  if (missing.length) {
+    fail([
+      "database privilege guard FAILED: schema-v3.sql lost required least-privilege rules.",
+      ...missing,
+    ]);
+  }
+  console.log("database privilege guard: ok");
+}
+
 function guardDiffSize() {
   const base = process.env.BASE_SHA;
   if (!base) {
@@ -508,6 +541,7 @@ const guards = {
   secrets: guardSecrets,
   surfaces: guardSurfaces,
   "schema-types": guardSchemaTypes,
+  "db-privileges": guardDatabasePrivileges,
   "diff-size": guardDiffSize,
   "no-stub-storage": guardNoStubStorage,
   all() {
@@ -520,12 +554,13 @@ const guards = {
     guardNoStubStorage();
     guardSurfaces();
     guardSchemaTypes();
+    guardDatabasePrivileges();
     guardDiffSize();
   },
 };
 
 if (!guard || !guards[guard]) {
-  console.error(`Usage: node scripts/ci-guards.mjs <route|api-docs|mojibake|artifacts|claims|secrets|no-stub-storage|surfaces|schema-types|diff-size|all>`);
+  console.error("Usage: node scripts/ci-guards.mjs <route|api-docs|mojibake|artifacts|claims|secrets|no-stub-storage|surfaces|schema-types|db-privileges|diff-size|all>");
   process.exit(2);
 }
 

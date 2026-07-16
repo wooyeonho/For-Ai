@@ -59,7 +59,7 @@ create table verification_events (
   created_at timestamptz not null default now()
 );
 ```
-This is the append-only event stream Task 4's `get_claim_status_transition_events()` RPC (migration `20260716010000_claim_status_transition_events.sql`) already reads with a `LAG()` window function. Task 5-0's `risk_assessments` table is a **separate, new, append-only table** — it does not touch or extend `verification_events`. Task 5-P1's `publish_assisted_claim` will insert a `verification_events` row in the same transaction as its `claim_versions`/`risk_assessments` writes, exactly like the legacy admin route already does.
+This is the append-only event stream Task 4's `get_claim_status_transition_events()` RPC (migration `20260716082314_claim_status_transition_events.sql`) already reads with a `LAG()` window function. Task 5-0's `risk_assessments` table is a **separate, new, append-only table** — it does not touch or extend `verification_events`. Task 5-P1's `publish_assisted_claim` will insert a `verification_events` row in the same transaction as its `claim_versions`/`risk_assessments` writes, exactly like the legacy admin route already does.
 
 **Classification: `KEEP`.**
 
@@ -137,7 +137,7 @@ No `CRON_SECRET` usage exists anywhere in the codebase today (confirmed via grep
 
 ## 15. Current schema/migration tooling
 
-`schema-v3.sql` is the DB schema SSOT (1146 lines, no Task 5 content yet). `supabase/migrations/*.sql` (29 files, `YYYYMMDD_description.sql` naming, one exception `20260716010000_claim_status_transition_events.sql` which uses a full timestamp for same-day-multiple-migration disambiguation — Task 5-0's migration will follow this full-timestamp convention). `scripts/check-schema-types.mjs` cross-checks `schema-v3.sql` enum/check values against `lib/types.ts` unions — any new Task 5 enum/check constraint must be mirrored there or the guard fails CI.
+`schema-v3.sql` is the DB schema SSOT (1146 lines, no Task 5 content yet). `supabase/migrations/*.sql` (29 files, `YYYYMMDD_description.sql` naming, with full timestamps for same-day-multiple-migration disambiguation — Task 5-0 follows this convention). `scripts/check-schema-types.mjs` cross-checks `schema-v3.sql` enum/check values against `lib/types.ts` unions — any new Task 5 enum/check constraint must be mirrored there or the guard fails CI.
 
 ## 16. Summary table
 
