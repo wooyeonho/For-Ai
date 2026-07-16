@@ -53,6 +53,10 @@ export async function GET() {
   lines.push(`- Per-document JSON: \`${apiDocumentUrl("<slug>")}\``);
   lines.push(`- Per-document Markdown: \`${rawMarkdownUrl("<slug>")}\``);
   lines.push(`- Per-entity profile (all documents about one entity): \`${siteUrl("/api/entities/<entity_id>")}\``);
+  lines.push(`- Verified-only RSS feed: \`${siteUrl("/feed.xml")}\``);
+  lines.push(`- Multi-status claim changelog (RSS): \`${siteUrl("/changelog.xml")}\``);
+  lines.push(`- Multi-status claim changelog (JSON): \`${siteUrl("/api/changelog")}\``);
+  lines.push(`- Multi-status claim changelog (HTML): \`${siteUrl("/en/changelog")}\``);
   lines.push("");
   lines.push(`## Citation-ready documents (${verified.length + verifiedSupabaseDocs.length})`);
   lines.push("");

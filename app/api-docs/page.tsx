@@ -91,6 +91,14 @@ export default function ApiDocsPage() {
       safety: "Receipt items are contribution metadata keyed by contributor hash only; raw IPs are never stored or exposed, and receipt status is not a claim verification signal.",
     },
     {
+      methods: ["GET /api/changelog"],
+      description: "Multi-status claim-level verification changelog. Previous status is computed with LAG over the full per-claim event stream before any status filter or pagination is applied.",
+      auth: "No auth required.",
+      rateLimit: "No dedicated public limiter; response is revalidated for ten minutes.",
+      response: '{ "items": [{ "event_id": "...", "claim_id": "...", "slug": "...", "title": "...", "lang": "...", "entity_id": "...", "field_path": "...", "event_type": "...", "previous_status": "verified|needs_review|disputed|unknown|null", "new_status": "verified|needs_review|disputed|unknown", "note": null, "occurred_at": "..." }], "limit": 50, "next_cursor": "...|null", "lag_policy": "..." }',
+      safety: "Changelog rows are verification metadata for discovery; cite only from the target document’s own claim/source data, not from changelog descriptions.",
+    },
+    {
       methods: ["GET /api/business/submitted-claims"],
       description: "Review queue for claims submitted through verified business workflows.",
       auth: "Admin authorization required.",
