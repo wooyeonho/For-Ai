@@ -35,6 +35,14 @@ export default function ApiDocsPage() {
       safety: "Use the included citation policy as guidance; coverage counts do not make unverified facts citable.",
     },
     {
+      methods: ["POST /api/check"],
+      description: "Request-scoped claim-level citation check for user-supplied text. Raw input is not stored and unknown matches remain Needs verification.",
+      auth: "No auth required.",
+      rateLimit: "Yes — request body is limited to 32KB, text to 5,000 characters, and up to 50 analyzable sentences.",
+      response: '{ "locale": "en", "analyzed_sentence_count": 1, "truncated": false, "results": [{ "sentence": "...", "match": null, "noMatchReason": "below_threshold" }] }',
+      safety: "This endpoint suggests possible claim matches only; cite verified high-confidence claims and never treat unmatched text as factual truth.",
+    },
+    {
       methods: ["POST /api/source-suggest"],
       description: "Submit a public source suggestion for an existing claim; stores a contributor hash instead of raw IP.",
       auth: "No login required.",
