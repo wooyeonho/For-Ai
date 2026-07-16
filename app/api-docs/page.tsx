@@ -227,6 +227,17 @@ export default function ApiDocsPage() {
             </p>
           </div>
 
+          {/* GET /api/badge/:slug */}
+          <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
+            <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>
+              GET /api/badge/<span style={{ color: "var(--accent)" }}>{"{slug}"}</span>
+            </p>
+            <p style={{ margin: "8px 0", fontSize: "0.9rem", color: "var(--muted)" }}>
+              Embeddable citation badge metadata for one document, including the iframe snippet,
+              claim-readiness counts, canonical record URL, and machine-readable can_cite flag.
+            </p>
+          </div>
+
           {/* GET /api/entities/:id */}
           <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
             <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>
@@ -330,6 +341,7 @@ export default function ApiDocsPage() {
             <p style={{ margin: "6px 0 0", fontFamily: "monospace", fontWeight: 700 }}>GET /api/gamification/contributor/<span style={{ color: "var(--accent)" }}>{"{hash}"}</span></p>
             <p style={{ margin: "6px 0 0", fontFamily: "monospace", fontWeight: 700 }}>GET /api/gamification/country-quest</p>
             <p style={{ margin: "6px 0 0", fontFamily: "monospace", fontWeight: 700 }}>GET /api/gamification/leaderboard</p>
+            <p style={{ margin: "6px 0 0", fontFamily: "monospace", fontWeight: 700 }}>GET /api/contributor-receipt/<span style={{ color: "var(--accent)" }}>{"{hash}"}</span></p>
             <p style={{ margin: "8px 0", fontSize: "0.9rem", color: "var(--muted)" }}>
               Public verification participation endpoints for bounties, contributor progress, country quests, and leaderboard views.
             </p>
