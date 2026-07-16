@@ -15,6 +15,7 @@
  *   schema-types - fail if schema-v3.sql enum/check values diverge from TypeScript unions.
  *   diff-size  - fail if a PR changes an unexpected number of files (full-repo-rewrite guard).
  *   db-privileges - fail if the production least-privilege contract disappears from schema-v3.sql.
+ *   external-source-fetch - fail if untrusted source retrieval bypasses safeFetchExternalSource.
  *   secrets    - fail if Supabase service-role secrets leak into client or non-route mutation code.
  *   no-stub-storage - fail if public production routes can return stub storage responses.
  *   all        - run route + api-docs + mojibake + artifacts + claims + secrets + no-stub-storage + surfaces + schema-types + db-privileges (and diff-size when a base SHA is available).
@@ -388,6 +389,30 @@ function guardDatabasePrivileges() {
   console.log("database privilege guard: ok");
 }
 
+function guardExternalSourceFetch() {
+  const routePath = "app/api/admin/check-source/route.ts";
+  const route = readFileSync(routePath, "utf-8");
+  const safeLayer = readFileSync("lib/safe-fetch-external-source.ts", "utf-8");
+  const failures = [];
+  if (!/safeFetchExternalSource/.test(route) || /\bfetch\s*\(/.test(route)) {
+    failures.push(`  - ${routePath} must use safeFetchExternalSource and must not call fetch directly`);
+  }
+  const required = [
+    ["HTTPS-only URL validation", /url\.protocol !== "https:"/],
+    ["DNS address pinning", /pinnedAddress/],
+    ["redirect revalidation", /redirectCount <= MAX_REDIRECTS/],
+    ["decompressed size cap", /Decompressed response exceeded 5MB/],
+    ["HTML MIME enforcement", /application\/xhtml\+xml/],
+  ];
+  for (const [label, pattern] of required) {
+    if (!pattern.test(safeLayer)) failures.push(`  - safe fetch layer lost ${label}`);
+  }
+  if (failures.length) {
+    fail(["external-source-fetch guard FAILED:", ...failures]);
+  }
+  console.log("external-source-fetch guard: ok");
+}
+
 function guardDiffSize() {
   const base = process.env.BASE_SHA;
   if (!base) {
@@ -550,6 +575,7 @@ const guards = {
   surfaces: guardSurfaces,
   "schema-types": guardSchemaTypes,
   "db-privileges": guardDatabasePrivileges,
+  "external-source-fetch": guardExternalSourceFetch,
   "diff-size": guardDiffSize,
   "no-stub-storage": guardNoStubStorage,
   all() {
@@ -563,12 +589,13 @@ const guards = {
     guardSurfaces();
     guardSchemaTypes();
     guardDatabasePrivileges();
+    guardExternalSourceFetch();
     guardDiffSize();
   },
 };
 
 if (!guard || !guards[guard]) {
-  console.error("Usage: node scripts/ci-guards.mjs <route|api-docs|mojibake|artifacts|claims|secrets|no-stub-storage|surfaces|schema-types|db-privileges|diff-size|all>");
+  console.error("Usage: node scripts/ci-guards.mjs <route|api-docs|mojibake|artifacts|claims|secrets|no-stub-storage|surfaces|schema-types|db-privileges|external-source-fetch|diff-size|all>");
   process.exit(2);
 }
 

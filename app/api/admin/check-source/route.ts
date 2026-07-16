@@ -1,25 +1,8 @@
 import { NextResponse } from "next/server";
 
 import { logAdminAuditEvent, requireAdmin, supabaseAdmin } from "@/lib/admin-api";
+import { SafeFetchError, safeFetchExternalSource } from "@/lib/safe-fetch-external-source";
 import { scoreSourceTrust } from "@/lib/source-trust";
-import { siteUrl } from "@/lib/urls";
-
-const SOURCE_CHECK_UA = `For-Ai-SourceCheck/1.0 (+${siteUrl("").replace(/\/+$/, "")})`;
-const FETCH_TIMEOUT_MS = 8000;
-const MAX_BYTES = 1_500_000;
-
-function stripHtml(html: string): string {
-  return html
-    .replace(/<script[\s\S]*?<\/script>/gi, " ")
-    .replace(/<style[\s\S]*?<\/style>/gi, " ")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&nbsp;/gi, " ")
-    .replace(/&amp;/gi, "&")
-    .replace(/&lt;/gi, "<")
-    .replace(/&gt;/gi, ">")
-    .replace(/\s+/g, " ")
-    .trim();
-}
 
 function normalize(value: string): string {
   return value.toLowerCase().replace(/\s+/g, " ").trim();
@@ -58,58 +41,31 @@ export async function POST(request: Request) {
 
   if (!url) return NextResponse.json({ error: "url is required" }, { status: 400 });
 
-  let parsed: URL;
-  try {
-    parsed = new URL(url);
-  } catch {
-    return NextResponse.json({ error: "invalid url" }, { status: 400 });
-  }
-  if (parsed.protocol !== "http:" && parsed.protocol !== "https:") {
-    return NextResponse.json({ error: "only http(s) urls are allowed" }, { status: 400 });
-  }
-
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   const startedAt = Date.now();
 
   try {
-    const res = await fetch(parsed.toString(), {
-      method: "GET",
-      redirect: "follow",
-      signal: controller.signal,
-      headers: { "user-agent": SOURCE_CHECK_UA },
-    });
-    clearTimeout(timeout);
-
-    const contentType = res.headers.get("content-type") ?? "";
-    const isHtml = contentType.includes("html") || contentType.includes("text") || contentType === "";
+    const fetched = await safeFetchExternalSource(url);
 
     let exactMatch: boolean | null = null;
     let tokenMatch: { matched: string[]; missing: string[] } | null = null;
     let snippet: string | null = null;
-    let extractedTitle: string | null = null;
 
-    if (res.ok && isHtml) {
-      const raw = (await res.text()).slice(0, MAX_BYTES);
-      const titleMatch = raw.match(/<title[^>]*>([\s\S]*?)<\/title>/i);
-      extractedTitle = titleMatch ? stripHtml(titleMatch[1]) : null;
-      const text = stripHtml(raw);
-      if (match) {
-        exactMatch = normalize(text).includes(normalize(match));
-        tokenMatch = matchTokens(text, match);
-        const idx = normalize(text).indexOf(normalize(match));
-        if (idx >= 0) {
-          const start = Math.max(0, idx - 60);
-          snippet = text.slice(start, idx + match.length + 60).trim();
-        }
+    if (match) {
+      const normalizedText = normalize(fetched.canonicalText);
+      exactMatch = normalizedText.includes(normalize(match));
+      tokenMatch = matchTokens(fetched.canonicalText, match);
+      const idx = normalizedText.indexOf(normalize(match));
+      if (idx >= 0) {
+        const start = Math.max(0, idx - 60);
+        snippet = normalizedText.slice(start, idx + normalize(match).length + 60).trim();
       }
     }
 
     const trust = scoreSourceTrust({
-      url: parsed.toString(),
+      url: fetched.finalUrl,
       source_type: sourceType,
-      fetch_ok: res.ok,
-      title: suppliedTitle || extractedTitle,
+      fetch_ok: true,
+      title: suppliedTitle || fetched.title,
       observed_at: observedAt,
       claim_text: claimText || match,
     });
@@ -117,9 +73,9 @@ export async function POST(request: Request) {
     const sb = supabaseAdmin();
     if (sb) {
       await logAdminAuditEvent(sb, request, "admin.check_source", {
-        host: parsed.hostname,
-        status: res.status,
-        ok: res.ok,
+        host: new URL(fetched.finalUrl).hostname,
+        status: fetched.httpStatus,
+        ok: true,
         exact_match: exactMatch,
         source_check_status: trust.source_check_status,
         source_trust_score: trust.source_trust_score,
@@ -127,11 +83,11 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json({
-      url: parsed.toString(),
-      reachable: res.ok,
-      status: res.status,
-      content_type: contentType || null,
-      extracted_title: extractedTitle,
+      url: fetched.finalUrl,
+      reachable: true,
+      status: fetched.httpStatus,
+      content_type: fetched.contentType,
+      extracted_title: fetched.title,
       source_check_status: trust.source_check_status,
       source_trust_score: trust.source_trust_score,
       source_check_notes: trust.source_check_notes,
@@ -142,10 +98,9 @@ export async function POST(request: Request) {
       snippet,
     });
   } catch (err) {
-    clearTimeout(timeout);
-    const aborted = err instanceof Error && err.name === "AbortError";
+    const safeError = err instanceof SafeFetchError ? err : null;
     const trust = scoreSourceTrust({
-      url: parsed.toString(),
+      url,
       source_type: sourceType,
       fetch_ok: false,
       title: suppliedTitle,
@@ -153,10 +108,11 @@ export async function POST(request: Request) {
       claim_text: claimText || match,
     });
     return NextResponse.json({
-      url: parsed.toString(),
+      url,
       reachable: false,
-      status: 0,
-      error: aborted ? `시간 초과 (${FETCH_TIMEOUT_MS}ms)` : `요청 실패: ${err instanceof Error ? err.message : String(err)}`,
+      status: typeof safeError?.details.status === "number" ? safeError.details.status : 0,
+      error: safeError?.code ?? "network_error",
+      retry_after_seconds: typeof safeError?.details.retryAfterSeconds === "number" ? safeError.details.retryAfterSeconds : null,
       elapsed_ms: Date.now() - startedAt,
       source_check_status: trust.source_check_status,
       source_trust_score: trust.source_trust_score,
