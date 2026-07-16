@@ -83,6 +83,14 @@ export default function ApiDocsPage() {
       safety: "Badges and points are contribution metadata; claim citation safety remains source and verification based.",
     },
     {
+      methods: ["GET /api/contributor-receipt/:hash"],
+      description: "Public contribution receipt for one contributor hash: point totals plus per-item status across source suggestions, topic suggestions, community posts, and point events.",
+      auth: "No auth required; contributor hash must be 8-64 hex characters.",
+      rateLimit: "No dedicated public limiter.",
+      response: '{ "contributor_hash": "...", "totals": { "points": 0, "pending": 0, "accepted": 0, "rejected": 0, "verified-linked": 0 }, "items": [{ "id": "...", "type": "source_suggestion", "title": "...", "status": "pending", "points": 0, "created_at": "..." }], "privacy": { "raw_ip_stored": false, "message": "..." } }',
+      safety: "Receipt items are contribution metadata keyed by contributor hash only; raw IPs are never stored or exposed, and receipt status is not a claim verification signal.",
+    },
+    {
       methods: ["GET /api/business/submitted-claims"],
       description: "Review queue for claims submitted through verified business workflows.",
       auth: "Admin authorization required.",

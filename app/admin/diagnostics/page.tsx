@@ -85,7 +85,7 @@ export default function AdminDiagnosticsPage() {
             <div className="meta-grid">
               <div className="claim-card"><p className="eyebrow">ADMIN_SECRET</p><StatusBadge ok={data.env.admin_secret} /></div>
               <div className="claim-card"><p className="eyebrow">NEXT_PUBLIC_SUPABASE_URL</p><StatusBadge ok={data.env.next_public_supabase_url} /></div>
-              <div className="claim-card"><p className="eyebrow">SUPABASE_SERVICE_ROLE_KEY</p><StatusBadge ok={data.env.supabase_service_role_key} /></div>
+              <div className="claim-card"><p className="eyebrow">Supabase service role key</p><StatusBadge ok={data.env.supabase_service_role_key} /></div>
               <div className="claim-card"><p className="eyebrow">AI provider key</p><StatusBadge ok={data.env.ai_provider_key} /></div>
             </div>
 

@@ -1,5 +1,6 @@
 import { AI_PROVIDERS } from "@/lib/ai-providers";
 import { requireAdmin, supabaseAdmin } from "@/lib/admin-api";
+import { isServiceRoleKeyConfigured } from "@/lib/supabase-server";
 import { NextResponse } from "next/server";
 
 type SupabaseAdminClient = NonNullable<ReturnType<typeof supabaseAdmin>>;
@@ -60,7 +61,7 @@ export async function GET(request: Request) {
     env: {
       admin_secret: Boolean(process.env.ADMIN_SECRET),
       next_public_supabase_url: Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL),
-      supabase_service_role_key: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
+      supabase_service_role_key: isServiceRoleKeyConfigured(),
       ai_provider_key: hasAiProviderKey,
       ai_providers: aiProviders,
     },

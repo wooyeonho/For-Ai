@@ -55,6 +55,13 @@ const SERVER_SECRET_MODULES = new Set([
 const SERVICE_ROLE_FACTORY_FILES = new Set(["lib/supabase-server.ts"]);
 const SERVICE_ROLE_ACCESS_FILES = new Set(["lib/supabase-server.ts"]);
 const SERVER_SECRET_HELPER_FILES = new Set(["lib/supabase-server.ts", "lib/admin-api.ts", "lib/rate-limit-store.ts"]);
+// Read-only data helpers for server components: allowed to import the server
+// client factory, but any insert/update/upsert/delete inside them still fails.
+const READ_ONLY_SERVICE_HELPER_FILES = new Set([
+  "lib/contributor-receipt.ts",
+  "lib/leaderboard-data.ts",
+  "lib/sponsored-placements.ts",
+]);
 const MUTATION_METHOD_RE = /\.(insert|update|upsert|delete)\s*\(/;
 const SERVICE_ROLE_NAME_RE = /\b(SUPABASE_SERVICE_ROLE_KEY|serviceKey|serviceRoleKey|createServiceRoleClient|createServerClient|supabaseAdmin)\b/;
 
@@ -64,7 +71,7 @@ const SERVICE_ROLE_NAME_RE = /\b(SUPABASE_SERVICE_ROLE_KEY|serviceKey|serviceRol
 //   U+00B7 MIDDLE DOT  (·)  used as a separator in headings/admin labels
 //   U+00D7 MULTIPLICATION SIGN (×) used in seed-data dimensions
 //   U+00A9 COPYRIGHT SIGN (©) used in the site footer
-const MOJIBAKE_ALLOWLIST = new Set(["·", "×", "©", "ñ", "é", "á", "í", "ó", "ú", "ü", "Ñ", "É", "Á", "Í", "Ó", "Ú", "Ü", "¡", "¿", "Î", "î", "ê", "û", "ô", "â", "ë", "ï", "ç", "à", "è", "ù"]);
+const MOJIBAKE_ALLOWLIST = new Set(["·", "×", "©", "ñ", "é", "á", "í", "ó", "ú", "ü", "Ñ", "É", "Á", "Í", "Ó", "Ú", "Ü", "¡", "¿", "Î", "î", "ê", "û", "ô", "\u00e2", "ë", "ï", "ç", "à", "è", "ù"]);
 
 // A full-repo-rewrite PR touches most of the tree. The repo currently tracks
 // ~67 files, so a legitimate scoped change stays well under this limit. Override
@@ -263,7 +270,9 @@ function guardMojibake() {
   if (hits.length) {
     fail([
       `mojibake guard FAILED: broken-encoding characters found in app/ or lib/.`,
-      `(Korean text must be real UTF-8, e.g. "확인 필요", not "íì¸ íì".)`,
+      // The mojibake example below is written with \u escapes so this file's
+      // own source never contains raw mojibake bytes (check:mojibake self-match).
+      `(Korean text must be real UTF-8, e.g. "확인 필요", not "\u00ed\u00ec\u00b8 \u00ed\u00ec".)`,
       ...hits,
     ]);
   }
@@ -431,11 +440,15 @@ function guardSecrets() {
     const importsServiceRole = modules.some((m) => SERVER_SECRET_MODULES.has(m));
     if (!isApiRoute(file) && !SERVER_SECRET_HELPER_FILES.has(file) && importsServiceRole) {
       const mutationHits = linesWith(text, (line) => MUTATION_METHOD_RE.test(line));
-      if (mutationHits.length) {
-        hits.push(...mutationHits.map((h) => `  ${file}:${h} (mutation-capable service-role helpers are only allowed in app/api/**/route.ts)`));
-      }
-      if (SERVICE_ROLE_NAME_RE.test(text)) {
-        hits.push(`  ${file}: imports mutation-capable service-role helper outside app/api/**/route.ts`);
+      if (READ_ONLY_SERVICE_HELPER_FILES.has(file)) {
+        hits.push(...mutationHits.map((h) => `  ${file}:${h} (read-only service helper must not mutate; move writes into app/api/**/route.ts)`));
+      } else {
+        if (mutationHits.length) {
+          hits.push(...mutationHits.map((h) => `  ${file}:${h} (mutation-capable service-role helpers are only allowed in app/api/**/route.ts)`));
+        }
+        if (SERVICE_ROLE_NAME_RE.test(text)) {
+          hits.push(`  ${file}: imports mutation-capable service-role helper outside app/api/**/route.ts`);
+        }
       }
     }
   }
