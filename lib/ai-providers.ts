@@ -174,6 +174,9 @@ export interface AIGenerateResponse {
   model: string;
   content: string;
   citations?: string[];
+  provider_request_id?: string;
+  input_tokens?: number;
+  output_tokens?: number;
   error?: string;
   estimated_cost_usd?: number;
   duration_ms?: number;
@@ -195,7 +198,9 @@ function withMetrics(config: AIProviderConfig, req: AIGenerateRequest, startedAt
   return {
     ...response,
     duration_ms: Date.now() - startedAt,
-    estimated_cost_usd: estimateCost(config, req, response.content),
+    estimated_cost_usd: response.estimated_cost_usd ?? Number((((response.input_tokens ?? 0) + (response.output_tokens ?? 0)) > 0
+      ? ((response.input_tokens ?? 0) + (response.output_tokens ?? 0)) / 1000 * config.estimatedCostPer1kTokensUsd
+      : estimateCost(config, req, response.content)).toFixed(6)),
     success: !response.error && response.content.trim().length > 0,
   };
 }
@@ -232,6 +237,7 @@ async function callPerplexity(
       ],
       temperature: req.temperature ?? 0.3,
       return_citations: true,
+      max_tokens: Math.min(Math.max(req.maxOutputTokens ?? 4096, 256), 8192),
     }),
   });
 
@@ -246,6 +252,9 @@ async function callPerplexity(
     model: config.model,
     content: json.choices?.[0]?.message?.content ?? "",
     citations: json.citations ?? [],
+    provider_request_id: json.id,
+    input_tokens: json.usage?.prompt_tokens,
+    output_tokens: json.usage?.completion_tokens,
   });
 }
 
@@ -279,7 +288,14 @@ async function callGemini(
 
   const json = await res.json();
   const content = json.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
-  return withMetrics(config, req, startedAt, { provider: "gemini", model: config.model, content });
+  return withMetrics(config, req, startedAt, {
+    provider: "gemini",
+    model: config.model,
+    content,
+    provider_request_id: json.responseId,
+    input_tokens: json.usageMetadata?.promptTokenCount,
+    output_tokens: json.usageMetadata?.candidatesTokenCount,
+  });
 }
 
 async function callOpenAI(
@@ -317,6 +333,9 @@ async function callOpenAI(
     provider: config.key,
     model: config.model,
     content: json.choices?.[0]?.message?.content ?? "",
+    provider_request_id: json.id,
+    input_tokens: json.usage?.prompt_tokens,
+    output_tokens: json.usage?.completion_tokens,
   });
 }
 
