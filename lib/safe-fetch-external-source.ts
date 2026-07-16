@@ -243,17 +243,13 @@ function normalizeHeaders(headers: Record<string, string | string[] | undefined>
 async function defaultTransport(input: TransportRequest): Promise<TransportResponse> {
   return new Promise((resolve, reject) => {
     let settled = false;
-    let req: ReturnType<typeof httpsRequest>;
     const finish = (callback: () => void) => {
       if (settled) return;
       settled = true;
       clearTimeout(deadline);
       callback();
     };
-    const deadline = setTimeout(() => {
-      req?.destroy(new SafeFetchError("timeout", "Source fetch timed out"));
-    }, input.timeoutMs);
-    req = httpsRequest(input.url, {
+    const req = httpsRequest(input.url, {
       method: "GET",
       headers: {
         "user-agent": "For-Ai-SafeFetch/1.0",
@@ -280,6 +276,9 @@ async function defaultTransport(input: TransportRequest): Promise<TransportRespo
           body: Buffer.concat(chunks),
         })));
     });
+    const deadline = setTimeout(() => {
+      req.destroy(new SafeFetchError("timeout", "Source fetch timed out"));
+    }, input.timeoutMs);
     req.on("error", (error) => finish(() => reject(error instanceof SafeFetchError
         ? error
         : new SafeFetchError("network_error", "Source fetch failed", { cause: error.message }))));
