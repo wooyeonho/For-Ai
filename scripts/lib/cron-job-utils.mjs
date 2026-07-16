@@ -1,4 +1,5 @@
 import { createClient } from "@supabase/supabase-js";
+import { createHash } from "node:crypto";
 
 export function parseArgs(argv = process.argv.slice(2)) {
   const args = { dryRun: false };
@@ -41,6 +42,10 @@ export function isoDaysAgo(days) {
   return date.toISOString();
 }
 
+export function cronAuditIdentityHash(action) {
+  return createHash("sha256").update(`cron:${action}`).digest("hex");
+}
+
 export async function writeAuditEvent(supabase, { action, metadata }, { dryRun = false } = {}) {
   const safeMetadata = {
     ...metadata,
@@ -54,7 +59,13 @@ export async function writeAuditEvent(supabase, { action, metadata }, { dryRun =
     return { dryRun: true };
   }
 
-  const { error } = await supabase.from("admin_audit_events").insert({ action, metadata: safeMetadata });
+  const { error } = await supabase.from("admin_audit_events").insert({
+    admin_user_id: null,
+    admin_user_hash: cronAuditIdentityHash(action),
+    action,
+    target_id: typeof metadata?.target_id === "string" ? metadata.target_id : null,
+    metadata: safeMetadata,
+  });
   if (error) throw new Error(`Failed to write admin_audit_events for ${action}: ${error.message}`);
   return { dryRun: false };
 }

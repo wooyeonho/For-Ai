@@ -25,6 +25,7 @@
  */
 
 import { createClient } from "@supabase/supabase-js";
+import { cronAuditIdentityHash } from "../lib/cron-job-utils.mjs";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
@@ -268,7 +269,13 @@ async function deliverDigest(digest) {
 }
 
 async function audit(sb, action, metadata) {
-  const { error } = await sb.from("admin_audit_events").insert({ action, metadata });
+  const { error } = await sb.from("admin_audit_events").insert({
+    admin_user_id: null,
+    admin_user_hash: cronAuditIdentityHash(action),
+    action,
+    target_id: typeof metadata?.target_id === "string" ? metadata.target_id : null,
+    metadata,
+  });
   if (error) console.error("[admin-digest] audit insert failed", error.message, { action, metadata });
 }
 
