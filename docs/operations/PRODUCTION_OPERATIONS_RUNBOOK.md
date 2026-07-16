@@ -1,31 +1,32 @@
 # Production operations runbook
 
-Last updated: 2026-07-15
+Last updated: 2026-07-16
 
 This runbook records the canonical production target, required environment split, scheduled jobs, evidence paths, backup/restore steps, incident controls, operating checklist, and release-report template for For-Ai.
 
 ## 1. Canonical production URL and Vercel project decision
 
-### Current repository evidence
+### Verified Vercel state (checked directly against the Vercel account, not inferred from repo defaults)
 
-- The app package name is `for-ai`.
-- Runtime URL fallbacks currently point to `https://for-ai-e4mm.vercel.app` in `.env.example`, `lib/urls.ts`, and `scripts/production-submission-smoke.mjs`.
-- No `.vercel/project.json` or `vercel.json` is committed, so the repository alone cannot prove the linked Vercel project ID or the custom-domain assignment.
+- This GitHub repo's Vercel integration auto-deploys to **two separate real projects** on every push: `for-ai` (`prj_wgH7e3WpNZwH50pOgvK8tyAYUI82`, created 2026-06-19) and `for-ai-e4mm` (`prj_SEEimLTnZIPPACfrvwbfswDNDIY7`, created ~50 minutes later the same day). Both are independent Next.js projects under team `yeonhos-projects-691c1aa2`, not a naming artifact.
+- **Neither project has a custom domain attached** (`live: true`) — both currently resolve only via Vercel-assigned `*.vercel.app` subdomains: `for-ai-seven.vercel.app` / `for-ai-yeonhos-projects-691c1aa2.vercel.app` for `for-ai`, and `for-ai-e4mm.vercel.app` / `for-ai-e4mm-yeonhos-projects-691c1aa2.vercel.app` for `for-ai-e4mm`.
+- The repo package name (`for-ai`) and the code's URL fallbacks are not, by themselves, evidence of Vercel-side intent — they're values someone typed into source at some point.
 
 ### Canonical decision
 
-- **Canonical production origin:** `https://for-ai-e4mm.vercel.app` until a custom domain is attached and validated.
-- **Canonical production project name:** `for-ai-e4mm`.
-- **Non-canonical name:** `for-ai` is the product/repository/package identity and must not be treated as a second live production deployment unless Vercel dashboard evidence proves it is intentionally separate.
+- **Canonical production project (owner-confirmed):** `for-ai-e4mm` (`prj_SEEimLTnZIPPACfrvwbfswDNDIY7`). This matches the existing code defaults already wired through `lib/urls.ts`, `.env.example`, and `scripts/production-submission-smoke.mjs`, and is the origin all Task 1–4 production smoke evidence in this repo's PR history was collected against — keeping it canonical avoids unnecessary code churn and re-verification risk.
+- **Canonical production origin:** `https://for-ai-e4mm.vercel.app` until a custom domain is attached (see follow-up below).
+- **Non-canonical project:** `for-ai` (`prj_wgH7e3WpNZwH50pOgvK8tyAYUI82`) must not be treated as a second live production deployment. It should be demoted to preview-only (remove production environment variables and any production domain assignment) or deleted, at the owner's discretion — until then, treat any traffic or data on it as non-production.
+- **Follow-up required before a real go-live:** attach a real custom domain (not a `*.vercel.app` subdomain) to `for-ai-e4mm`, and resolve the `for-ai` duplicate (delete or demote) so exactly one project can serve production traffic. Running two independently-deploying, undifferentiated "production-like" projects off the same repo is itself an operational risk (accidental traffic/config drift, doubled attack surface) and should not persist past the MVP stage.
 
 ### Duplicate-project resolution record
 
-| Name | Current purpose | Production status | Required action |
+| Name | Vercel project ID | Production status | Required action |
 | --- | --- | --- | --- |
-| `for-ai-e4mm` | Active Vercel deployment origin referenced by app defaults and smoke scripts. | **Canonical production** | Keep production env vars, domains, cron, alerts, and smoke evidence here. |
-| `for-ai` | Product/repository/package name; possible old Vercel project name. | **Non-canonical / needs dashboard confirmation** | If it exists in Vercel and serves the same app, either delete it, redirect it, or convert it to preview/staging with separate Supabase resources and no production cron. |
+| `for-ai-e4mm` | `prj_SEEimLTnZIPPACfrvwbfswDNDIY7` | **Canonical production (owner-confirmed)** | Keep production env vars, domains, cron, alerts, and smoke evidence here. Attach a real custom domain before go-live — it currently has none. |
+| `for-ai` | `prj_wgH7e3WpNZwH50pOgvK8tyAYUI82` | **Non-canonical — resolution still pending** | Confirmed real and independently deployed (not a naming artifact). Owner to delete it, or demote it to preview/staging with separate Supabase resources and no production cron/domain. |
 
-Before go-live, the owner must confirm in Vercel dashboard that only one project serves public production traffic. Record the confirmed project ID, production deployment URL, and custom domains in the final report.
+Confirmed against the Vercel account directly (2026-07-16): both projects are real, both currently only resolve via `*.vercel.app` subdomains, neither has a custom domain. Before go-live, attach a real custom domain to `for-ai-e4mm` and resolve the `for-ai` duplicate (delete or demote) so exactly one project can serve production traffic. Record the final custom domain and the `for-ai` disposition in the release report.
 
 ## 2. Environment variables by environment
 
