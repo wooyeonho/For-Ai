@@ -17,7 +17,9 @@
  *   db-privileges - fail if the production least-privilege contract disappears from schema-v3.sql.
  *   secrets    - fail if Supabase service-role secrets leak into client or non-route mutation code.
  *   no-stub-storage - fail if public production routes can return stub storage responses.
- *   all        - run route + api-docs + mojibake + artifacts + claims + secrets + no-stub-storage + surfaces + schema-types + db-privileges (and diff-size when a base SHA is available).
+ *   external-fetch - fail if server-side code calls fetch()/http(s).request() directly instead of
+ *                     going through lib/safe-fetch.ts's safeFetchExternalSource (Task 5-B1).
+ *   all        - run route + api-docs + mojibake + artifacts + claims + secrets + no-stub-storage + surfaces + schema-types + db-privileges + external-fetch (and diff-size when a base SHA is available).
  *
  * Exit code 0 = pass, 1 = a guard failed, 2 = usage/internal error.
  */
@@ -90,6 +92,34 @@ const DUMP_MAX_BYTES = 1_000_000;
 // Paths whose deletion is a strong signal of an accidental rewrite.
 const CORE_PREFIXES = ["app/", "lib/", "scripts/"];
 const CORE_FILES = ["schema-v3.sql", "AGENTS.md", "package.json"];
+
+// Task 5-B1: lib/safe-fetch.ts's safeFetchExternalSource is the sole entry
+// point for fetching an externally-discovered (search/AI/user-supplied) URL.
+// Every other raw fetch()/http(s).request() call site in server-side code is
+// a pre-existing, individually-reviewed exception to a FIXED, operator- or
+// admin-configured target -- never an arbitrary runtime-discovered URL.
+// Client components ("use client") are excluded entirely: a browser-side
+// fetch can only reach whatever the end user's own browser can reach, which
+// is a different threat model (not server-side SSRF).
+const EXTERNAL_FETCH_SCAN_ROOTS = ["app", "lib", "scripts"];
+const EXTERNAL_FETCH_CALL_RE = /\b(?:fetch|https?\.request|https?\.get)\s*\(/;
+const EXTERNAL_FETCH_GUARD_ALLOW_RE = /task5-guard-allow/;
+const EXTERNAL_FETCH_ALLOWLIST = new Set([
+  "scripts/ci-guards.mjs", // this file's own comments/strings describe the pattern; not a real call site
+  "lib/safe-fetch.ts", // implements the primitive itself
+  "lib/webhooks.ts", // fixed, operator-configured webhook URLs
+  "lib/admin-client.ts", // same-origin relative fetch ("/api/admin/login") only
+  "lib/ai-providers.ts", // fixed, operator-configured AI provider endpoints
+  "scripts/jobs/check-source-health.mjs", // admin-curated claim_sources URLs; hardening deferred to Task 5-E, see docs/task5/TASK5_EXISTING_CODE_MAP.md
+  "scripts/jobs/generate-admin-digest.mjs", // fixed operator-configured webhook URL
+  "scripts/smoke-test-routes.mjs", // ops tooling against the app's own fixed deployment URL, not app runtime
+  "scripts/production-submission-smoke.mjs", // ops tooling against the app's own fixed deployment URL, not app runtime
+  "app/api-docs/page.tsx", // fetch(...) appears only inside documentation example text, never executed
+  "app/contribute/page.tsx", // self-fetch of the app's own /api/gamification/* routes via a computed base URL
+  "app/contribute/leaderboard/page.tsx", // self-fetch of the app's own /api/gamification/* routes via a computed base URL
+  "app/contribute/country-quest/page.tsx", // self-fetch of the app's own /api/gamification/* routes via a computed base URL
+  "app/api/admin/check-source/route.ts", // pre-existing admin-operator-typed URL checker; different threat model (trusted operator input, not AI/search-discovered), hardening deferred -- see docs/task5/TASK5_EXISTING_CODE_MAP.md
+]);
 
 // --- helpers ---------------------------------------------------------------
 
@@ -504,6 +534,33 @@ function guardSecrets() {
   console.log("secret exposure guard: ok");
 }
 
+function guardExternalFetch() {
+  const hits = [];
+  for (const root of EXTERNAL_FETCH_SCAN_ROOTS) {
+    for (const rawFile of walk(root)) {
+      const file = normalizePath(rawFile);
+      if (EXTERNAL_FETCH_ALLOWLIST.has(file)) continue;
+      const text = readFileSync(rawFile, "utf-8");
+      if (isUseClientSource(text)) continue;
+      text.split("\n").forEach((line, i) => {
+        if (EXTERNAL_FETCH_CALL_RE.test(line) && !EXTERNAL_FETCH_GUARD_ALLOW_RE.test(line)) {
+          hits.push(`  ${file}:${i + 1}: ${line.trim()}`);
+        }
+      });
+    }
+  }
+  if (hits.length) {
+    fail([
+      `external-fetch guard FAILED: direct fetch()/http(s).request() call outside lib/safe-fetch.ts.`,
+      `Externally-discovered URLs (from search/AI/user-supplied input) must go through safeFetchExternalSource().`,
+      `A known, pre-existing, fixed/operator-configured target may be added to EXTERNAL_FETCH_ALLOWLIST in`,
+      `scripts/ci-guards.mjs with a one-line justification, or the line may be marked "// task5-guard-allow".`,
+      ...hits,
+    ]);
+  }
+  console.log("external-fetch guard: ok");
+}
+
 function guardNoStubStorage() {
   const hits = [];
   for (const rawFile of walk(API_ROUTES_ROOT)) {
@@ -552,6 +609,7 @@ const guards = {
   "db-privileges": guardDatabasePrivileges,
   "diff-size": guardDiffSize,
   "no-stub-storage": guardNoStubStorage,
+  "external-fetch": guardExternalFetch,
   all() {
     guardRoute();
     guardApiDocsRoutes();
@@ -563,12 +621,13 @@ const guards = {
     guardSurfaces();
     guardSchemaTypes();
     guardDatabasePrivileges();
+    guardExternalFetch();
     guardDiffSize();
   },
 };
 
 if (!guard || !guards[guard]) {
-  console.error("Usage: node scripts/ci-guards.mjs <route|api-docs|mojibake|artifacts|claims|secrets|no-stub-storage|surfaces|schema-types|db-privileges|diff-size|all>");
+  console.error("Usage: node scripts/ci-guards.mjs <route|api-docs|mojibake|artifacts|claims|secrets|no-stub-storage|surfaces|schema-types|db-privileges|external-fetch|diff-size|all>");
   process.exit(2);
 }
 
