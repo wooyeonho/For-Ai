@@ -132,6 +132,17 @@ export type Claim = {
   business_submission_status?: "pending_verification" | "accepted" | "rejected" | null;
   submitted_by_business_name?: string | null;
   contributor_hash?: string | null;
+  // Task 5-0 publication boundary fields (optional: most existing call sites
+  // select specific columns and predate these; always present on a real DB row).
+  content_origin?: ContentOrigin;
+  current_claim_version_id?: string | null;
+  published_claim_version_id?: string | null;
+  publication_mode?: PublicationMode;
+  publication_state?: ClaimPublicationState;
+  published_at?: string | null;
+  freshness_profile?: string | null;
+  valid_from?: string | null;
+  valid_until?: string | null;
 };
 
 export type ClaimSource = {
@@ -294,4 +305,83 @@ export type WatchSubscription = {
   awarded_badge: RewardBadge | null;
   awarded_points: number;
   created_at: string;
+};
+
+// --- Task 5-0: structural foundation ----------------------------------------
+// Mirrors supabase/migrations/20260716120000_task5_structural_foundation.sql.
+
+export type ContentOrigin = "legacy_manual" | "task5_ai";
+export type PublicationMode = "manual_legacy" | "assisted_operator" | "crowd_auto";
+export type ClaimPublicationState = "active" | "quarantined" | "withdrawn";
+export type RiskResult = "unknown" | "normal" | "high";
+export type ClaimEvidenceRelation = "supports" | "qualifies" | "contradicts";
+export type VerificationPolicyMode = "assisted_operator" | "crowd";
+
+export type ClaimVersion = {
+  id: string;
+  claim_id: string;
+  version: number;
+  text: string;
+  text_hash: string;
+  created_by: string | null;
+  created_at: string;
+};
+
+export type RiskAssessment = {
+  id: string;
+  claim_version_id: string;
+  deterministic_result: RiskResult;
+  model_result: RiskResult;
+  final_result: RiskResult;
+  deterministic_policy_version: string;
+  model_id: string | null;
+  prompt_version: string | null;
+  failure_reason: string | null;
+  created_at: string;
+};
+
+export type SourceSnapshot = {
+  id: string;
+  source_id: string | null;
+  canonical_url: string;
+  final_url: string;
+  retrieved_at: string;
+  http_status: number;
+  content_type: string;
+  content_hash: string;
+  normalized_text_hash: string;
+  // normalized_text/storage_path are server-only; never included in a public API shape.
+  etag: string | null;
+  last_modified: string | null;
+  created_at: string;
+};
+
+export type ClaimEvidence = {
+  id: string;
+  claim_version_id: string;
+  source_snapshot_id: string;
+  quote_start: number;
+  quote_end: number;
+  quote_hash: string;
+  context_hash: string | null;
+  relation: ClaimEvidenceRelation;
+  is_required: boolean;
+  created_at: string;
+};
+
+export type VerificationPolicy = {
+  version: number;
+  mode: VerificationPolicyMode;
+  rules: Record<string, unknown>;
+  effective_from: string;
+  created_by: string | null;
+  created_at: string;
+};
+
+export type Task5Settings = {
+  id: true;
+  phase: 0 | 1 | 2 | 3 | 4;
+  draft_enabled: boolean;
+  updated_at: string;
+  updated_by: string | null;
 };
