@@ -411,6 +411,21 @@ export type NotificationOutboxRow = {
   next_attempt_at: string;
   created_at: string;
   delivered_at: string | null;
+  worker_id: string | null;
+  locked_at: string | null;
+  lock_expires_at: string | null;
+  last_error_code: string | null;
+  dead_at: string | null;
+};
+
+export type Task5Notification = {
+  id: string;
+  recipient_id: string;
+  event_id: string;
+  reasons: string[];
+  claim_id: string;
+  created_at: string;
+  read_at: string | null;
 };
 
 // --- Task 5-A: demand signals -----------------------------------------------

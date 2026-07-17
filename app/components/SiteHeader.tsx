@@ -7,6 +7,7 @@ import { LanguageSelector } from "./LanguageSelector";
 import { DEFAULT_LOCALE, isValidLocale } from "../../lib/i18n/locales";
 import type { SupportedLocale } from "../../lib/i18n/locales";
 import { checkAnswerPublicNavEnabled } from "../../lib/feature-flags";
+import { NotificationBell } from "./NotificationBell";
 
 
 function localeHref(locale: string, path: string): string {
@@ -43,6 +44,7 @@ export function SiteHeader() {
           {navLinks.map((link) => (
             <Link key={link.href} href={localize(link.href)}>{link.label}</Link>
           ))}
+          <NotificationBell />
           <Suspense fallback={null}><LanguageSelector /></Suspense>
         </nav>
         <button
@@ -62,6 +64,7 @@ export function SiteHeader() {
           {navLinks.map((link) => (
             <Link key={link.href} href={localize(link.href)} onClick={close}>{link.label}</Link>
           ))}
+          <NotificationBell onNavigate={close} />
           <div className="site-nav-mobile-lang"><Suspense fallback={null}><LanguageSelector /></Suspense></div>
         </nav>
       )}

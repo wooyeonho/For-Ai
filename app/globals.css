@@ -39,6 +39,45 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 
+.notification-bell {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 38px;
+  min-height: 38px;
+  border-radius: 999px;
+  text-decoration: none;
+}
+
+.notification-bell:hover,
+.notification-bell:focus-visible {
+  background: #f3f4f6;
+}
+
+.notification-unread-dot {
+  position: absolute;
+  top: 6px;
+  right: 5px;
+  width: 9px;
+  height: 9px;
+  border: 2px solid #fff;
+  border-radius: 999px;
+  background: #dc2626;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 a {
   color: var(--accent);
   text-decoration-thickness: 1px;
