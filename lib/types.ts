@@ -386,6 +386,33 @@ export type Task5Settings = {
   updated_by: string | null;
 };
 
+export type Task5AssistedReviewEvent = {
+  id: string;
+  claim_id: string;
+  claim_version_id: string;
+  action: "published" | "rejected" | "escalated" | "refetch_requested" | "held" | "version_created";
+  reason: string;
+  admin_user_id: string;
+  admin_user_hash: string;
+  verification_policy_version: number | null;
+  risk_assessment_id: string | null;
+  idempotency_key: string;
+  metadata: Record<string, unknown>;
+  created_at: string;
+};
+
+export type NotificationOutboxRow = {
+  id: string;
+  event_id: string;
+  recipient_id: string;
+  reasons: string[];
+  status: "pending" | "processing" | "delivered" | "dead";
+  attempts: number;
+  next_attempt_at: string;
+  created_at: string;
+  delivered_at: string | null;
+};
+
 // --- Task 5-A: demand signals -----------------------------------------------
 // Mirrors supabase/migrations/20260716210425_task5_a_demand_signals.sql.
 

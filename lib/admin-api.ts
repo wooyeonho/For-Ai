@@ -66,6 +66,7 @@ const ROLE_RANK: Record<AdminRole, number> = {
 const ACTION_REQUIRED_ROLES: Array<[RegExp, AdminRole]> = [
   [/^claims\.withdraw$/, "admin"],
   [/^claims\.(quarantine|restore)$/, "moderator"],
+  [/^claims\.(publish_assisted|edit_assisted|review_assisted)$/, "editor"],
   [/^admin\.import$|^api_keys\.|^webhooks\.|^business_profiles\./, "admin"],
   [/^posts\.|^business_corrections\.|^reputation_alerts\./, "moderator"],
   [/^claims\.verify$|^candidates\.promote$|^source_suggestions\.review$|^admin\.review\./, "verifier"],

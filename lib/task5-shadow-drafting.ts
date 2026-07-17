@@ -315,7 +315,7 @@ export async function runTask5ShadowDraftBatch(
     .select("phase, draft_enabled")
     .eq("id", true)
     .maybeSingle();
-  if (settingsError || !settings || settings.phase !== 0 || settings.draft_enabled !== true) {
+  if (settingsError || !settings || ![0, 1].includes(settings.phase) || settings.draft_enabled !== true) {
     return { enabled: false, runId: null, leased: 0, completed: 0, failed: 0, errors: [] };
   }
 

@@ -3,7 +3,7 @@
 ## Implemented contract
 
 - The internal cron endpoint requires a configured 32+ character `CRON_SECRET`, accepts only a bounded batch of 1–5, and has a deny-only `TASK5_EMERGENCY_DISABLE=1` switch.
-- Drafting runs only while the database single source of truth remains at Phase 0 with `draft_enabled=true`.
+- B2 originally restricted drafting to Phase 0. Task 5-P1 extends the same fail-closed lease to Phase 0 or 1 with `draft_enabled=true`, so assisted publication does not exhaust a fixed backlog; later phases remain blocked without a new migration.
 - Provider budgets are independently enabled and atomically reserved before every paid call. Reservations are idempotent per attempt/stage, then reconciled with actual provider usage.
 - Work leasing uses `FOR UPDATE SKIP LOCKED`, a bounded lease, unique attempt keys, retry counts, and expired-lease recovery.
 - Source URLs come only from provider search citations. Every candidate goes through Task 5-B1 safe fetch; model-authored URL fields are rejected.

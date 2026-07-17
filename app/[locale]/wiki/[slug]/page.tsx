@@ -8,7 +8,7 @@ import { SUPPORTED_LOCALES, LOCALE_CONFIG, isValidLocale, getTranslations } from
 import type { SupportedLocale } from "../../../../lib/i18n";
 import { getEntityLabels } from "../../../../lib/i18n/entity-labels";
 import type { RegistryDocumentBundle } from "../../../../lib/types";
-import { getPublicCorrectionEvents, loadRegistryBundleWithPublicationState } from "../../../../lib/registry-publication";
+import { getPublicAssistedPublicationReceipts, getPublicCorrectionEvents, loadRegistryBundleWithPublicationState } from "../../../../lib/registry-publication";
 import { getDocumentCitationStatus, getCitationSafetyBlock } from "../../../../lib/citation-status";
 import { getRenderedDirectAnswer, normalizeCitationSurface, getCitationPolicyBlock } from "../../../../lib/render";
 import { SponsoredPlacement } from "../../../components/SponsoredPlacement";
@@ -124,6 +124,7 @@ export default async function WikiDocumentPage({
   const hasSponsoredClaims = claims.some((claim) => claim.source_of_claim === "sponsored");
   const publicationBlockedClaims = claims.filter((claim) => claim.publication_state === "quarantined" || claim.publication_state === "withdrawn");
   const correctionEvents = await getPublicCorrectionEvents(document.slug, claims.map((claim) => claim.id));
+  const assistedPublicationReceipts = await getPublicAssistedPublicationReceipts(document.slug, claims.map((claim) => claim.id));
 
   return (
     <article>
@@ -184,6 +185,28 @@ export default async function WikiDocumentPage({
             ))}
           </ul>
           <Link href={`/report/${document.slug}?intent=reply&lang=${locale}&return=${encodeURIComponent(documentReturnUrl)}`}>Submit a right of reply →</Link>
+        </section>
+      )}
+
+      {assistedPublicationReceipts.length > 0 && (
+        <section
+          className="registry-panel"
+          aria-labelledby="ai-origin-transparency"
+          style={{ background: "#eff6ff", border: "2px solid #2563eb", borderInlineStart: "6px solid #1d4ed8" }}
+        >
+          <p className="eyebrow" style={{ color: "#1d4ed8" }}>AI-ORIGIN · HUMAN-ASSISTED PUBLICATION</p>
+          <h2 id="ai-origin-transparency" style={{ marginTop: 0 }}>This claim began as an AI draft</h2>
+          <p>
+            The AI-origin label is permanent. A designated human editor reviewed immutable source evidence and published the normal-risk claim through the audited assisted workflow; this was not automatic publication.
+          </p>
+          <ul className="link-list">
+            {assistedPublicationReceipts.map((receipt) => (
+              <li key={receipt.event_id}>
+                <strong>{receipt.claim_id}</strong> · policy v{receipt.verification_policy_version} · {receipt.evidence_count} evidence record(s) · published {receipt.published_at}
+              </li>
+            ))}
+          </ul>
+          <Link href={`/api/publication-receipts/${encodeURIComponent(document.slug)}`}>Open machine-readable transparency receipts →</Link>
         </section>
       )}
 

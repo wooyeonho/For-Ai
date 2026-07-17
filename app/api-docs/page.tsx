@@ -11,6 +11,14 @@ export default function ApiDocsPage() {
   const BASE = siteUrl("").replace(/\/+$/, "");
   const publicApiEndpoints = [
     {
+      methods: ["GET /api/publication-receipts/:slug"],
+      description: "Public AI-origin transparency receipts for human-assisted Task 5 claim publication.",
+      auth: "No auth required.",
+      rateLimit: "Yes — standard public API limiter; response is origin-cached for 60 seconds.",
+      response: '{ "document_slug": "...", "receipts": [{ "claim_id": "...", "content_origin": "task5_ai", "publication_mode": "assisted_operator", "risk_result": "normal" }] }',
+      safety: "Operator identity, private review notes, provider request IDs, and full source snapshot text are never returned.",
+    },
+    {
       methods: ["GET /api/corrections/:slug"],
       description: "Public-safe claim publication states and immutable correction history for one document slug.",
       auth: "No auth required.",
@@ -256,6 +264,16 @@ export default function ApiDocsPage() {
             <p style={{ margin: "8px 0", fontSize: "0.9rem", color: "var(--muted)" }}>
               Lightweight citation-ready dataset for one document, including citable claims,
               source summaries, and machine-readable links.
+            </p>
+          </div>
+
+          {/* GET /api/publication-receipts/:slug */}
+          <div style={{ borderLeft: "3px solid var(--accent)", paddingLeft: 16 }}>
+            <p style={{ margin: 0, fontFamily: "monospace", fontWeight: 700 }}>
+              GET /api/publication-receipts/<span style={{ color: "var(--accent)" }}>{"{slug}"}</span>
+            </p>
+            <p style={{ margin: "8px 0", fontSize: "0.9rem", color: "var(--muted)" }}>
+              Permanent AI-origin transparency receipts for Task 5 claims that a designated human editor published through the assisted workflow. Includes safe model/policy/source provenance, never private operator identity or full snapshot text.
             </p>
           </div>
 
