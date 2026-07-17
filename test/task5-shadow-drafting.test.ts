@@ -38,7 +38,10 @@ test("cron secret validation is constant-shape and emergency disable is deny-onl
   assert.equal(task5EmergencyDisabled("0"), false);
 });
 
-function enabledClient(rpcCalls: Array<{ name: string; args: Record<string, unknown> }>): SupabaseClient {
+function enabledClient(
+  rpcCalls: Array<{ name: string; args: Record<string, unknown> }>,
+  phase = 0,
+): SupabaseClient {
   const lease = {
     run_id: "run-1",
     attempt_id: "attempt-1",
@@ -51,7 +54,7 @@ function enabledClient(rpcCalls: Array<{ name: string; args: Record<string, unkn
   const client = {
     from(table: string) {
       if (table === "task5_settings") {
-        return { select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { phase: 0, draft_enabled: true }, error: null }) }) }) };
+        return { select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { phase, draft_enabled: true }, error: null }) }) }) };
       }
       if (table === "draft_attempts") {
         return { update: () => ({ eq: () => ({ eq: async () => ({ error: null }) }) }) };
@@ -101,6 +104,34 @@ test("shadow batch uses provider citations only, verifies quote offsets, and com
   assert.equal(calls.some((call) => /publish/i.test(call.name)), false);
   assert.equal(calls.filter((call) => call.name === "reserve_task5_budget").length, 3);
   assert.equal(calls.filter((call) => call.name === "record_task5_model_call").length, 3);
+});
+
+test("shadow drafting remains available in Phase 1 for the assisted-publication pipeline", async () => {
+  const calls: Array<{ name: string; args: Record<string, unknown> }> = [];
+  let generation = 0;
+  const result = await runTask5ShadowDraftBatch(enabledClient(calls, 1), {
+    workerId: "worker-phase-1",
+    dependencies: {
+      uuid: () => "correlation-phase-1",
+      async generate(provider) {
+        generation += 1;
+        if (generation === 1) {
+          return { provider, model: "search-model", content: "grounded", citations: ["https://example.com/source"] };
+        }
+        if (generation === 2) {
+          return { provider, model: "draft-model", content: '{"answer":"42","quote":"The value is 42."}' };
+        }
+        return { provider, model: "risk-model", content: '{"risk":"normal"}' };
+      },
+      async fetchAndStore() {
+        return { id: "snapshot-1", normalized_text: "The value is 42.", storage_path: null };
+      },
+    },
+  });
+
+  assert.equal(result.enabled, true);
+  assert.equal(result.completed, 1);
+  assert.equal(calls.some((call) => call.name === "lease_task5_wanted_claims"), true);
 });
 
 test("classifier provider failure stores unknown risk instead of failing open", async () => {

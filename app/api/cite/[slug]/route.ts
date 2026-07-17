@@ -3,6 +3,7 @@ import { siteUrl, apiDocumentUrl, rawMarkdownUrl } from "../../../../lib/urls";
 import { buildCitationDocumentPresentation } from "../../../../lib/citation-badge";
 import { recordDocumentAnalyticsEvent } from "@/lib/analytics";
 import { supabaseAdmin } from "@/lib/admin-api";
+import { getPublicAssistedPublicationReceipts } from "@/lib/registry-publication";
 
 export const revalidate = 60;
 
@@ -63,6 +64,7 @@ export async function GET(
     })),
   };
 
+  const aiOriginReceipts = await getPublicAssistedPublicationReceipts(document.slug, verifiedClaims.map((claim) => claim.claim_id));
   const citation = {
     citation_policy_block: citationPolicyBlock,
     canonical_url: canonicalUrl,
@@ -115,6 +117,7 @@ export async function GET(
     },
     license: "forai-data-license-v0.1",
     normalized_citation: normalizedCitation,
+    ai_origin_transparency_receipts: aiOriginReceipts,
   };
 
   return NextResponse.json(citation, {

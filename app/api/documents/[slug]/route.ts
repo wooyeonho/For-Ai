@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { loadRegistryBundleWithPublicationState } from "../../../../lib/registry-publication";
+import { getPublicAssistedPublicationReceipts, loadRegistryBundleWithPublicationState } from "../../../../lib/registry-publication";
 import { renderDocumentJson } from "../../../../lib/render";
 import { checkRateLimit, rateLimitHeaders, rateLimitResponse } from "../../../../lib/api-rate-limit";
 
@@ -15,7 +15,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
   }
 
   const rendered = renderDocumentJson(bundle);
-  return NextResponse.json(rendered, {
+  const aiOriginReceipts = await getPublicAssistedPublicationReceipts(slug, bundle.claims.map((claim) => claim.id));
+  return NextResponse.json({ ...rendered, ai_origin_transparency_receipts: aiOriginReceipts }, {
     headers: {
       "Cache-Control": "public, s-maxage=60, stale-while-revalidate=300",
       "X-For-Ai-Can-Cite": rendered.citation_guidance.can_cite ? "true" : "false",

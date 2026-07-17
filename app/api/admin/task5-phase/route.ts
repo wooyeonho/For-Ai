@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getAdminAuthContext, logAdminAuditEvent, requireAdmin, supabaseAdmin } from "@/lib/admin-api";
+import { getAdminAuthContext, requireAdmin, supabaseAdmin } from "@/lib/admin-api";
 
 // Bible v7 Book IV section 11: task5_settings.phase is a single-row DB SSOT.
 // The only writer is the set_task5_phase RPC (service-role only). This route
@@ -30,16 +30,17 @@ export async function POST(request: Request) {
   const sb = supabaseAdmin();
   if (!sb) return NextResponse.json({ error: "supabase_not_configured" }, { status: 503 });
 
+  const authContext = getAdminAuthContext(request);
   const { data, error } = await sb.rpc("set_task5_phase", {
     p_phase: phase,
-    p_reason: reason,
+    p_reason: reason.trim(),
+    p_admin_user_id: authContext?.adminUserId ?? null,
+    p_admin_user_hash: authContext?.adminUserHash ?? null,
   });
 
   if (error) {
     return NextResponse.json({ error: "phase_transition_rejected", detail: error.message }, { status: 400 });
   }
-
-  await logAdminAuditEvent(sb, request, "task5.phase_changed", { new_phase: phase, reason });
 
   return NextResponse.json({ settings: data }, { headers: { "Cache-Control": "no-store" } });
 }

@@ -73,6 +73,14 @@ export default function AdminDashboardPage() {
 
   const cards = useMemo(() => [
     {
+      title: "AI 초안 근거 검토",
+      count: null,
+      href: "/admin/task5-publication",
+      cta: "Task 5-P1 검토 큐 열기",
+      detail: "AI 초안의 버전·위험·snapshot quote·중복 후보를 검토합니다. Phase 1 승인 전 발행은 DB에서 차단됩니다.",
+      tone: "#1d4ed8",
+    },
+    {
       title: "Claim 격리·정정",
       count: null,
       href: "/admin/claim-corrections",

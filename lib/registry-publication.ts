@@ -3,6 +3,10 @@ import "server-only";
 import { getRegistryBundleBySlug } from "./data";
 import { getRegistryBundleFromSupabase } from "./supabase-documents";
 import { createServiceRoleClient } from "./supabase-server";
+import {
+  publicTask5ModelProvenance,
+  type PublicAssistedPublicationReceipt,
+} from "./task5-assisted-publication";
 import type { ClaimPublicationState, RegistryDocumentBundle } from "./types";
 
 type PublicationOverrideRow = {
@@ -91,4 +95,103 @@ export async function getPublicCorrectionEvents(
   const { data, error } = await query;
   if (error || !data) return [];
   return data as PublicCorrectionEvent[];
+}
+
+export async function getPublicAssistedPublicationReceipts(
+  slug: string,
+  claimIds?: string[],
+): Promise<PublicAssistedPublicationReceipt[]> {
+  const sb = createServiceRoleClient();
+  if (!sb) return [];
+
+  let claimsQuery = sb
+    .from("claims")
+    .select("id,published_claim_version_id,publication_mode,content_origin,published_at,documents!inner(slug)")
+    .eq("documents.slug", slug)
+    .eq("content_origin", "task5_ai")
+    .eq("publication_mode", "assisted_operator")
+    .not("published_claim_version_id", "is", null);
+  if (claimIds?.length) claimsQuery = claimsQuery.in("id", claimIds);
+  const { data: claimRows, error: claimError } = await claimsQuery;
+  if (claimError || !claimRows?.length) return [];
+
+  const claims = claimRows as Array<Record<string, unknown>>;
+  const publishedClaimIds = claims.map((row) => String(row.id));
+  const versionIds = claims.map((row) => String(row.published_claim_version_id));
+  const [eventsResult, evidenceResult, attemptsResult] = await Promise.all([
+    sb.from("assisted_review_events")
+      .select("id,claim_id,claim_version_id,verification_policy_version,risk_assessment_id,metadata,created_at,risk_assessments(deterministic_policy_version,final_result)")
+      .eq("action", "published")
+      .in("claim_id", publishedClaimIds)
+      .in("claim_version_id", versionIds)
+      .order("created_at", { ascending: false }),
+    sb.from("claim_evidence")
+      .select("claim_version_id,source_snapshots(final_url,retrieved_at,content_type)")
+      .eq("relation", "supports")
+      .in("claim_version_id", versionIds),
+    sb.from("draft_attempts")
+      .select("claim_id,model_provenance,completed_at")
+      .eq("state", "completed")
+      .in("claim_id", publishedClaimIds)
+      .order("completed_at", { ascending: false }),
+  ]);
+  if (eventsResult.error || evidenceResult.error || attemptsResult.error) return [];
+
+  const eventByClaim = new Map<string, Record<string, unknown>>();
+  for (const row of (eventsResult.data ?? []) as Array<Record<string, unknown>>) {
+    const claimId = String(row.claim_id);
+    if (!eventByClaim.has(claimId)) eventByClaim.set(claimId, row);
+  }
+  const attemptByClaim = new Map<string, Record<string, unknown>>();
+  for (const row of (attemptsResult.data ?? []) as Array<Record<string, unknown>>) {
+    const claimId = String(row.claim_id);
+    if (!attemptByClaim.has(claimId)) attemptByClaim.set(claimId, row);
+  }
+
+  return claims.flatMap((claim) => {
+    const claimId = String(claim.id);
+    const versionId = String(claim.published_claim_version_id);
+    const event = eventByClaim.get(claimId);
+    if (!event || String(event.claim_version_id) !== versionId) return [];
+    const metadata = event.metadata && typeof event.metadata === "object" && !Array.isArray(event.metadata)
+      ? event.metadata as Record<string, unknown>
+      : {};
+    const riskRelation = Array.isArray(event.risk_assessments)
+      ? event.risk_assessments[0]
+      : event.risk_assessments;
+    if (!riskRelation || typeof riskRelation !== "object") return [];
+    const publishedRisk = riskRelation as Record<string, unknown>;
+    if (publishedRisk.final_result !== "normal" || typeof publishedRisk.deterministic_policy_version !== "string") return [];
+    const sources = ((evidenceResult.data ?? []) as Array<Record<string, unknown>>)
+      .filter((row) => String(row.claim_version_id) === versionId)
+      .flatMap((row) => {
+        const relation = Array.isArray(row.source_snapshots)
+          ? row.source_snapshots[0]
+          : row.source_snapshots;
+        if (!relation || typeof relation !== "object") return [];
+        const source = relation as Record<string, unknown>;
+        if (typeof source.final_url !== "string" || typeof source.retrieved_at !== "string") return [];
+        return [{
+          url: source.final_url,
+          retrieved_at: source.retrieved_at,
+          content_type: typeof source.content_type === "string" ? source.content_type : "unknown",
+        }];
+      });
+    const attempt = attemptByClaim.get(claimId);
+    return [{
+      event_id: String(event.id),
+      claim_id: claimId,
+      claim_version_id: versionId,
+      publication_mode: "assisted_operator" as const,
+      content_origin: "task5_ai" as const,
+      verification_policy_version: Number(event.verification_policy_version),
+      deterministic_policy_version: publishedRisk.deterministic_policy_version,
+      risk_result: "normal" as const,
+      evidence_count: Number(metadata.evidence_count ?? sources.length),
+      source_count: Number(metadata.source_count ?? sources.length),
+      published_at: String(claim.published_at ?? event.created_at),
+      model_provenance: publicTask5ModelProvenance(attempt?.model_provenance),
+      sources,
+    }];
+  });
 }
