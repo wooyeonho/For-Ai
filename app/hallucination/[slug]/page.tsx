@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { getRegistryBundleBySlug } from "../../../lib/data";
-import { getRegistryBundleFromSupabase } from "../../../lib/supabase-documents";
+import { loadRegistryBundleWithPublicationState } from "../../../lib/registry-publication";
 import { HallucinationForm } from "./HallucinationForm";
 
 export const metadata: Metadata = {
@@ -18,7 +17,7 @@ export default async function HallucinationPage({
 }) {
   const { slug } = await params;
   const { submitted } = await searchParams;
-  const bundle = getRegistryBundleBySlug(slug) ?? await getRegistryBundleFromSupabase(slug);
+  const bundle = await loadRegistryBundleWithPublicationState(slug);
 
   if (!bundle) {
     return (

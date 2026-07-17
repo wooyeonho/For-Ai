@@ -11,7 +11,7 @@ type ClaimOption = {
   claim_text: string;
 };
 
-type ReportIntent = "correction" | "source" | "notify";
+type ReportIntent = "correction" | "source" | "notify" | "reply";
 
 export function ReportForm({
   documentId,
@@ -56,6 +56,16 @@ export function ReportForm({
         success: "알림 요청이 접수되었습니다. 검토 큐에 안전하게 기록됩니다.",
       };
     }
+    if (intent === "reply") {
+      return {
+        typeLabel: "Right of reply",
+        messageLabel: "Your response",
+        sourceLabel: "Optional supporting source URL",
+        placeholder: "Identify the claim and provide a factual response for operator review. Do not include secrets or unrelated personal data.",
+        button: "Submit right of reply",
+        success: "Your right-of-reply request was received for private operator review.",
+      };
+    }
     return {
       typeLabel: "Correction report",
       messageLabel: "정정 요청 내용",
@@ -92,12 +102,15 @@ export function ReportForm({
           document_id: documentId,
           entity_id: entityId,
           report_type: formData.get("report_type"),
+          issue_category: formData.get("issue_category"),
           field_path: formData.get("field_path"),
           claim_id: formData.get("claim_id"),
           source_url: formData.get("source_url"),
           source_title: formData.get("source_title"),
           citation: formData.get("citation"),
           message: formData.get("message"),
+          reporter_contact: formData.get("reporter_contact"),
+          contact_consent: formData.get("contact_consent") === "on",
           honeypot: formData.get("website"),
         }),
       });
@@ -136,7 +149,7 @@ export function ReportForm({
 
   return (
     <form className="report-form registry-form" onSubmit={handleSubmit}>
-      <input type="hidden" name="report_type" value={intent === "source" ? "source_candidate" : intent} />
+      <input type="hidden" name="report_type" value={intent === "source" ? "source_candidate" : intent === "reply" ? "right_of_reply" : intent} />
       <label className="visually-hidden" aria-hidden="true">
         Website
         <input name="website" tabIndex={-1} autoComplete="off" />
@@ -144,7 +157,7 @@ export function ReportForm({
 
       <div className="form-field">
         <label htmlFor="claim_id">Claim 선택</label>
-        <select id="claim_id" name="claim_id" defaultValue="">
+        <select id="claim_id" name="claim_id" defaultValue="" required={intent === "correction" || intent === "reply"}>
           <option value="">전체 문서 또는 직접 설명</option>
           {claims.map((claim) => (
             <option value={claim.id} key={claim.id}>{claim.field_path}</option>
@@ -152,10 +165,48 @@ export function ReportForm({
         </select>
       </div>
 
+      {(intent === "correction" || intent === "reply") && (
+        <div className="form-field">
+          <label htmlFor="issue_category">Issue category</label>
+          <select id="issue_category" name="issue_category" defaultValue={intent === "reply" ? "right_of_reply" : "incorrect"}>
+            <option value="incorrect">Incorrect</option>
+            <option value="outdated">Outdated</option>
+            <option value="unsupported">Unsupported by the cited source</option>
+            <option value="harmful">Potentially harmful</option>
+            <option value="privacy">Privacy concern</option>
+            <option value="legal">Legal concern</option>
+            <option value="right_of_reply">Right of reply</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+      )}
+
       <div className="form-field">
         <label htmlFor="field_path">Field path</label>
         <input id="field_path" name="field_path" placeholder="예: parking.fee" />
       </div>
+
+      {(intent === "correction" || intent === "reply") && (
+        <>
+          <div className="form-field">
+            <label htmlFor="reporter_contact">Private contact (optional)</label>
+            <input
+              id="reporter_contact"
+              name="reporter_contact"
+              type="text"
+              maxLength={254}
+              autoComplete="email"
+              placeholder="Email or another contact method"
+            />
+          </div>
+          <label style={{ display: "flex", gap: 8, alignItems: "flex-start" }}>
+            <input type="checkbox" name="contact_consent" />
+            <span className="meta-label">
+              If I provide contact details, I consent to private storage for up to 90 days so an operator can follow up. Contact details are never public.
+            </span>
+          </label>
+        </>
+      )}
 
       <div className="form-field">
         <label htmlFor="source_url">{copy.sourceLabel}</label>
@@ -185,7 +236,7 @@ export function ReportForm({
         />
       </div>
 
-      <p className="meta-label">점수는 기여 활동 보상일 뿐이며 claim truth, confidence, verified status를 결정하지 않습니다.</p>
+      <p className="meta-label">Reports never change publication or verification status automatically. An authorized operator must review and act.</p>
 
       {error && (
         <div className="semantic-alert semantic-alert-danger">{error}</div>

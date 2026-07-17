@@ -11,6 +11,14 @@ export default function ApiDocsPage() {
   const BASE = siteUrl("").replace(/\/+$/, "");
   const publicApiEndpoints = [
     {
+      methods: ["GET /api/corrections/:slug"],
+      description: "Public-safe claim publication states and immutable correction history for one document slug.",
+      auth: "No auth required.",
+      rateLimit: "No dedicated limiter; response is origin-cached for 60 seconds.",
+      response: '{ "document_slug": "...", "publication_states": [{ "claim_id": "...", "publication_state": "active|quarantined|withdrawn" }], "correction_events": [] }',
+      safety: "Reporter contact and operator identity are never returned. External social/search caches may retain older previews until those platforms refresh them.",
+    },
+    {
       methods: ["GET /api/search"],
       description: "Search published documents and verified claims by query text, with optional language and limit filters.",
       auth: "No auth required.",

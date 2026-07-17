@@ -1,7 +1,6 @@
 import "server-only";
 
-import { getRegistryBundleBySlug } from "./data";
-import { getRegistryBundleFromSupabase } from "./supabase-documents";
+import { loadRegistryBundleWithPublicationState } from "./registry-publication";
 import { getClaimCitationStatus, getDocumentCitationStatus } from "./citation-status";
 import { presentationForKey, type PresentationKey } from "./citation-presentation";
 import { documentPageUrl, siteUrl } from "./urls";
@@ -11,7 +10,7 @@ import type { ClaimSource, RegistryDocumentBundle } from "./types";
 export type CitationDocumentPresentation = Awaited<ReturnType<typeof buildCitationDocumentPresentation>>;
 
 export async function loadCitationDocumentBundle(slug: string): Promise<RegistryDocumentBundle | null> {
-  return getRegistryBundleBySlug(slug) ?? await getRegistryBundleFromSupabase(slug);
+  return loadRegistryBundleWithPublicationState(slug);
 }
 
 function publisherName(source: ClaimSource): string | null {

@@ -24,14 +24,18 @@ export function ClaimCard({ claim, locale }: { claim: ClaimWithSources; locale?:
       ? t.wiki.translationStatusMachine
       : null;
   const citationStatus = getClaimCitationStatus(claim);
+  const publicationState = claim.publication_state ?? "active";
+  const publicationBlocked = publicationState === "quarantined" || publicationState === "withdrawn";
   const stale = citationStatus.isCitationReady ? isStale(claim.last_verified_at) : true;
   const statusTone = citationStatus.isCitationReady && !stale ? "is-citation-ready" : "needs-verification";
   const copyLabel = locale === "ko" ? "AI 인용 문장 복사" : "Copy AI-citable sentence";
-  const readinessLabel = citationStatus.isCitationReady && !stale
-    ? "Citation-ready"
-    : stale && citationStatus.isCitationReady
-      ? "Stale"
-      : "Needs verification";
+  const readinessLabel = publicationBlocked
+    ? publicationState === "quarantined" ? "Quarantined" : "Withdrawn"
+    : citationStatus.isCitationReady && !stale
+      ? "Citation-ready"
+      : stale && citationStatus.isCitationReady
+        ? "Stale"
+        : "Needs verification";
   const unverifiedCitationWarning = citationStatus.isCitationReady && !stale
     ? undefined
     : locale === "ko"
@@ -48,6 +52,15 @@ export function ClaimCard({ claim, locale }: { claim: ClaimWithSources; locale?:
         <p className="claim-text-primary">{claim.claim_text}</p>
       )}
 
+      {publicationBlocked && (
+        <div className="semantic-alert semantic-alert-danger" role="alert">
+          <strong>{publicationState === "quarantined" ? "Quarantined pending review" : "Withdrawn"}</strong>
+          <p style={{ marginBottom: 0 }}>
+            This historical value remains visible for transparency, but it is not citation-ready and must not be reused as verified.
+          </p>
+        </div>
+      )}
+
       <p className="claim-value">{displayValue}</p>
 
       {claim.sources.length > 0 && (
@@ -61,7 +74,7 @@ export function ClaimCard({ claim, locale }: { claim: ClaimWithSources; locale?:
       <div className="claim-card-header">
         <div className="claim-badges" aria-label="Claim verification signals">
           <span className={citationStatus.isCitationReady && !stale ? "claim-readiness claim-readiness-ready" : "claim-readiness claim-readiness-review"}>
-            {citationStatus.isCitationReady && !stale ? "Citation-ready" : stale && citationStatus.isCitationReady ? "Stale" : "Needs verification"}
+            {readinessLabel}
           </span>
           <ClaimStatusBadge status={claim.status} locale={locale} />
           <VerificationLevelBadge level={citationStatus.verificationLevel} />
@@ -77,6 +90,7 @@ export function ClaimCard({ claim, locale }: { claim: ClaimWithSources; locale?:
           <ClaimStatusBadge status={claim.status} locale={locale} />
           <VerificationLevelBadge level={citationStatus.verificationLevel} />
           <span className="badge">jurisdiction: {claim.jurisdiction ?? "global/unspecified"}</span>
+          <span className={publicationBlocked ? "badge badge-review" : "badge"}>publication: {publicationState}</span>
           {translationStatusLabel && <span className="badge">{translationStatusLabel}</span>}
           <span className={stale ? "badge badge-review" : "badge badge-verified"}>freshness: {stale ? "stale" : "fresh"}</span>
           <span className="badge">{t.claims.verificationDate}: {claim.last_verified_at ?? t.claims.needsReview}</span>

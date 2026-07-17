@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getRegistryBundleBySlug } from "../../../lib/data";
 import { calculateBundleDocumentQuality } from "../../../lib/document-quality";
 import { getRegistryDocumentPaths } from "../../../lib/seo";
-import { getRegistryBundleFromSupabase } from "../../../lib/supabase-documents";
+import { loadRegistryBundleWithPublicationState } from "../../../lib/registry-publication";
 
 export const metadata: Metadata = {
   title: "AI-readiness 진단",
@@ -13,7 +12,7 @@ export const metadata: Metadata = {
 
 export default async function DiagnosticsPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const bundle = getRegistryBundleBySlug(slug) ?? await getRegistryBundleFromSupabase(slug);
+  const bundle = await loadRegistryBundleWithPublicationState(slug);
 
   if (!bundle) {
     notFound();

@@ -8,7 +8,7 @@ import { SUPPORTED_LOCALES, LOCALE_CONFIG, isValidLocale, getTranslations } from
 import type { SupportedLocale } from "../../../../lib/i18n";
 import { getEntityLabels } from "../../../../lib/i18n/entity-labels";
 import type { RegistryDocumentBundle } from "../../../../lib/types";
-import { getRegistryBundleFromSupabase } from "../../../../lib/supabase-documents";
+import { getPublicCorrectionEvents, loadRegistryBundleWithPublicationState } from "../../../../lib/registry-publication";
 import { getDocumentCitationStatus, getCitationSafetyBlock } from "../../../../lib/citation-status";
 import { getRenderedDirectAnswer, normalizeCitationSurface, getCitationPolicyBlock } from "../../../../lib/render";
 import { SponsoredPlacement } from "../../../components/SponsoredPlacement";
@@ -35,9 +35,7 @@ export async function generateStaticParams() {
 }
 
 async function getMetadataBundle(slug: string): Promise<RegistryDocumentBundle | null> {
-  const staticBundle = getRegistryBundleBySlug(slug);
-  if (staticBundle) return staticBundle;
-  return getRegistryBundleFromSupabase(slug);
+  return loadRegistryBundleWithPublicationState(slug);
 }
 
 export async function generateMetadata({
@@ -60,8 +58,7 @@ export default async function WikiDocumentPage({
   const { locale, slug } = await params;
   if (!isValidLocale(locale)) notFound();
 
-  let bundle: RegistryDocumentBundle | null = getRegistryBundleBySlug(slug);
-  if (!bundle) bundle = await getRegistryBundleFromSupabase(slug);
+  const bundle: RegistryDocumentBundle | null = await loadRegistryBundleWithPublicationState(slug);
   if (!bundle) notFound();
 
   const { entity, document, claims } = bundle;
@@ -125,6 +122,8 @@ export default async function WikiDocumentPage({
   const totalSources = claims.reduce((sum, claim) => sum + claim.sources.length, 0);
   const hasBusinessSubmittedClaims = claims.some((claim) => claim.source_of_claim === "business_submitted");
   const hasSponsoredClaims = claims.some((claim) => claim.source_of_claim === "sponsored");
+  const publicationBlockedClaims = claims.filter((claim) => claim.publication_state === "quarantined" || claim.publication_state === "withdrawn");
+  const correctionEvents = await getPublicCorrectionEvents(document.slug, claims.map((claim) => claim.id));
 
   return (
     <article>
@@ -168,6 +167,25 @@ export default async function WikiDocumentPage({
         docTitle={document.title}
         locale={locale}
       />
+
+      {publicationBlockedClaims.length > 0 && (
+        <section
+          className="registry-panel"
+          role="alert"
+          aria-labelledby="publication-state-warning"
+          style={{ background: "#fff1f2", border: "2px solid #be123c", borderInlineStart: "6px solid #9f1239" }}
+        >
+          <p className="eyebrow" style={{ color: "#9f1239" }}>CORRECTION IN PROGRESS · DO NOT CITE AFFECTED CLAIMS</p>
+          <h2 id="publication-state-warning" style={{ marginTop: 0 }}>A claim on this page is quarantined or withdrawn</h2>
+          <p>The page remains available to preserve the public record. Affected historical values are not citation-ready and badge/API outputs exclude them from verified claims.</p>
+          <ul className="link-list">
+            {publicationBlockedClaims.map((claim) => (
+              <li key={claim.id}><strong>{claim.field_path}</strong>: {claim.publication_state}</li>
+            ))}
+          </ul>
+          <Link href={`/report/${document.slug}?intent=reply&lang=${locale}&return=${encodeURIComponent(documentReturnUrl)}`}>Submit a right of reply →</Link>
+        </section>
+      )}
 
       {riskDisclaimer && (
         <section
@@ -357,6 +375,23 @@ export default async function WikiDocumentPage({
         <ClaimTable claims={claims} locale={locale} />
       )}
 
+      {correctionEvents.length > 0 && (
+        <section className="registry-panel" aria-labelledby="correction-history">
+          <p className="eyebrow">Immutable public record</p>
+          <h2 id="correction-history">Correction history</h2>
+          <p className="meta-label">Reporter contact and operator identity are private and never appear in this history.</p>
+          <ol className="link-list">
+            {correctionEvents.map((event) => (
+              <li key={event.id}>
+                <strong>{event.event_type}</strong> · claim <code>{event.claim_id}</code> · {new Date(event.created_at).toISOString()}
+                <p style={{ margin: "4px 0" }}>{event.public_reason}</p>
+                <span className="meta-label">{event.previous_publication_state} → {event.new_publication_state}</span>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
+
 
       {directAnswer.related_questions.length > 0 && (
         <section className="registry-panel" aria-labelledby="related-questions">
@@ -407,6 +442,7 @@ export default async function WikiDocumentPage({
           <li><Link href={apiUrl}>JSON API ({apiUrl})</Link></li>
           <li><Link href={rawUrl}>Raw Markdown ({rawUrl})</Link></li>
           <li><Link href={reportActionUrl}>{t.wiki.correctionReport}</Link></li>
+          <li><Link href={`/report/${document.slug}?intent=reply&lang=${locale}&return=${encodeURIComponent(documentReturnUrl)}`}>Right of reply</Link></li>
           <li><Link href={hallucinationActionUrl}>{t.wiki.hallucinationReport}</Link></li>
           <li><Link href={`/diagnostics/${document.slug}`}>{t.wiki.diagnostics}</Link></li>
         </ul>

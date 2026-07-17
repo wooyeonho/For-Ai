@@ -73,6 +73,14 @@ export default function AdminDashboardPage() {
 
   const cards = useMemo(() => [
     {
+      title: "Claim 격리·정정",
+      count: null,
+      href: "/admin/claim-corrections",
+      cta: "신뢰 운영 큐 열기",
+      detail: "claim-bound 신고를 검토하고 quarantine, restore, withdraw를 감사 가능한 RPC로 처리합니다.",
+      tone: "#be123c",
+    },
+    {
       title: "통합 Inbox",
       count: dashboardCounts?.new_hallucination_reports ?? fallbackCounts?.candidates_new,
       href: "/admin/inbox",

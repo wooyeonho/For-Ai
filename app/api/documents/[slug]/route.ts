@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { getRegistryBundleBySlug } from "../../../../lib/data";
-import { getRegistryBundleFromSupabase } from "../../../../lib/supabase-documents";
+import { loadRegistryBundleWithPublicationState } from "../../../../lib/registry-publication";
 import { renderDocumentJson } from "../../../../lib/render";
 import { checkRateLimit, rateLimitHeaders, rateLimitResponse } from "../../../../lib/api-rate-limit";
 
@@ -9,7 +8,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
   if (!rateLimit.allowed) return rateLimitResponse(rateLimit);
 
   const { slug } = await params;
-  const bundle = getRegistryBundleBySlug(slug) ?? await getRegistryBundleFromSupabase(slug);
+  const bundle = await loadRegistryBundleWithPublicationState(slug);
 
   if (!bundle) {
     return NextResponse.json({ error: "Document not found" }, { status: 404, headers: rateLimitHeaders(rateLimit) });

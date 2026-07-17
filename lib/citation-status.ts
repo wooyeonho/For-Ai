@@ -2,6 +2,7 @@ import type { ClaimWithSources, RegistryDocumentBundle, UpdateFrequency as Regis
 import { hasOfficialOrRegulatorSource, isHighRiskCategory } from "./risk-policy";
 import { SUPPORTED_LOCALES } from "./i18n/locales";
 import { documentPageUrl } from "./urls";
+import { publicationStateBlocksCitation } from "./task5-corrections";
 
 export const UNKNOWN_FACT_TEXT = "확인 필요";
 
@@ -264,6 +265,24 @@ export function getClaimCitationStatus(
   now: Date = new Date(),
   category?: string | null,
 ): ClaimCitationStatus {
+  if (publicationStateBlocksCitation(claim.publication_state)) {
+    const state = claim.publication_state;
+    return {
+      isCitationReady: false,
+      label: "unverified",
+      reason: state === "quarantined"
+        ? "claim is quarantined pending operator review; do not cite its previous verified status"
+        : "claim was withdrawn; do not cite its previous verified status",
+      freshness: "unknown",
+      freshnessWindowDays: ttlDays,
+      lastVerifiedAt: claim.last_verified_at ?? null,
+      warning: state === "quarantined"
+        ? "Quarantined pending review. The historical value remains visible for transparency but is not citation-ready."
+        : "Withdrawn. The historical value remains visible for correction history but is not citation-ready.",
+      verificationLevel: getClaimVerificationLevel(claim, ttlDays, now),
+    };
+  }
+
   if (claim.source_of_claim === "business_submitted" && claim.business_submission_status === "pending_verification") {
     return {
       isCitationReady: false,

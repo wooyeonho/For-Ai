@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { getRegistryBundleBySlug } from "../../../lib/data";
-import { getRegistryBundleFromSupabase } from "../../../lib/supabase-documents";
+import { loadRegistryBundleWithPublicationState } from "../../../lib/registry-publication";
 import { ReportForm } from "./ReportForm";
 
 export const metadata: Metadata = {
@@ -18,7 +17,7 @@ export default async function ReportPage({
 }) {
   const { slug } = await params;
   const { intent, submitted } = await searchParams;
-  const bundle = getRegistryBundleBySlug(slug) ?? await getRegistryBundleFromSupabase(slug);
+  const bundle = await loadRegistryBundleWithPublicationState(slug);
 
   if (!bundle) {
     return (
@@ -33,16 +32,21 @@ export default async function ReportPage({
   const { entity, document, claims } = bundle;
   const isSourceIntent = intent === "source";
   const isNotifyIntent = intent === "notify";
+  const isReplyIntent = intent === "reply";
   const formTitle = isSourceIntent
     ? "Submit an official source."
     : isNotifyIntent
       ? "Get notified when verified."
-      : "정정 요청";
+      : isReplyIntent
+        ? "Right of reply"
+        : "정정 요청";
   const formDescription = isSourceIntent
     ? "Submit an official source URL or citation for human review. This public correction flow does not immediately verify the claim."
     : isNotifyIntent
       ? "Leave a note that you want updates for this claim. The current MVP stores this as a queued correction request, not as a verified fact."
-      : "확인이 필요한 claim에 대해 정정 요청을 남겨주세요. 로그인은 필요하지 않습니다.";
+      : isReplyIntent
+        ? "Respond to a specific claim without logging in. Your contact details remain private and nothing is published automatically."
+        : "확인이 필요한 claim에 대해 정정 요청을 남겨주세요. 로그인은 필요하지 않습니다.";
 
 
   return (
@@ -76,7 +80,7 @@ export default async function ReportPage({
             documentId={document.id}
             entityId={entity.id}
             slug={document.slug}
-            intent={isSourceIntent ? "source" : isNotifyIntent ? "notify" : "correction"}
+            intent={isSourceIntent ? "source" : isNotifyIntent ? "notify" : isReplyIntent ? "reply" : "correction"}
             claims={claims.map((claim) => ({ id: claim.id, field_path: claim.field_path, claim_text: claim.claim_text }))}
           />
         </Suspense>
@@ -84,7 +88,7 @@ export default async function ReportPage({
 
       <section className="notice-box" aria-labelledby="privacy-notice">
         <h2 id="privacy-notice">Privacy notice</h2>
-        <p>Raw IP addresses are never stored. This MVP uses contributor_hash only and does not expose public read access to reports.</p>
+        <p>Raw IP addresses are never stored. Reports and optional contact details are private. Contact is retained for at most 90 days; public correction history never includes it.</p>
       </section>
     </article>
   );
