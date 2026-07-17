@@ -19,7 +19,7 @@ export type EvidenceFreshnessResult =
   | "blocked"
   | "fetch_error";
 
-type LeasedEvidence = {
+export type LeasedEvidence = {
   claim_evidence_id: string;
   claim_id: string;
   claim_version_id: string;
@@ -30,7 +30,7 @@ type LeasedEvidence = {
   valid_until: string | null;
 };
 
-type FreshnessCompletion = {
+export type FreshnessCompletion = {
   result: EvidenceFreshnessResult;
   finalUrl: string | null;
   normalizedTextHash: string | null;
@@ -149,10 +149,16 @@ export async function runEvidenceFreshnessBatch(
   if (error) throw new Error(`lease_evidence_freshness failed: ${error.message}`);
 
   const leased = (data ?? []) as LeasedEvidence[];
-  const results = Object.fromEntries([
-    "healthy", "redirected", "content_changed", "evidence_missing", "not_found",
-    "temporarily_unavailable", "blocked", "fetch_error",
-  ].map((key) => [key, 0])) as Record<EvidenceFreshnessResult, number>;
+  const results: Record<EvidenceFreshnessResult, number> = {
+    healthy: 0,
+    redirected: 0,
+    content_changed: 0,
+    evidence_missing: 0,
+    not_found: 0,
+    temporarily_unavailable: 0,
+    blocked: 0,
+    fetch_error: 0,
+  };
 
   let completed = 0;
   for (const evidence of leased) {
