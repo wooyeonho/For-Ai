@@ -21,16 +21,14 @@ const resolveHost = async () => [{ address: "93.184.216.34", family: 4 as const 
 type MockResponse = { status: number; headers: Record<string, string>; body: Buffer };
 function request(status: number, html: string, finalLocation?: string): () => Promise<MockResponse> {
   let calls = 0;
-  return async () => {
+  return async (): Promise<MockResponse> => {
     calls += 1;
     if (calls === 1 && finalLocation) {
-      return { status: 302, headers: { location: finalLocation }, body: Buffer.alloc(0) };
+      const headers: Record<string, string> = { location: finalLocation };
+      return { status: 302, headers, body: Buffer.alloc(0) };
     }
-    return {
-      status,
-      headers: { "content-type": "text/html" },
-      body: Buffer.from(html),
-    };
+    const headers: Record<string, string> = { "content-type": "text/html" };
+    return { status, headers, body: Buffer.from(html) };
   };
 }
 
