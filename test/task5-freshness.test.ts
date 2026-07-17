@@ -18,7 +18,8 @@ const evidence = {
 };
 
 const resolveHost = async () => [{ address: "93.184.216.34", family: 4 as const }];
-function request(status: number, html: string, finalLocation?: string) {
+type MockResponse = { status: number; headers: Record<string, string>; body: Buffer };
+function request(status: number, html: string, finalLocation?: string): () => Promise<MockResponse> {
   let calls = 0;
   return async () => {
     calls += 1;
