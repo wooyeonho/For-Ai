@@ -63,6 +63,7 @@ const READ_ONLY_SERVICE_HELPER_FILES = new Set([
   "lib/contributor-receipt.ts",
   "lib/leaderboard-data.ts",
   "lib/sponsored-placements.ts",
+  "lib/registry-publication.ts",
 ]);
 const MUTATION_METHOD_RE = /\.(insert|update|upsert|delete)\s*\(/;
 const SERVICE_ROLE_NAME_RE = /\b(SUPABASE_SERVICE_ROLE_KEY|serviceKey|serviceRoleKey|createServiceRoleClient|createServerClient|supabaseAdmin)\b/;

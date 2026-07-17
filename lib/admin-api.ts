@@ -64,6 +64,8 @@ const ROLE_RANK: Record<AdminRole, number> = {
 };
 
 const ACTION_REQUIRED_ROLES: Array<[RegExp, AdminRole]> = [
+  [/^claims\.withdraw$/, "admin"],
+  [/^claims\.(quarantine|restore)$/, "moderator"],
   [/^admin\.import$|^api_keys\.|^webhooks\.|^business_profiles\./, "admin"],
   [/^posts\.|^business_corrections\.|^reputation_alerts\./, "moderator"],
   [/^claims\.verify$|^candidates\.promote$|^source_suggestions\.review$|^admin\.review\./, "verifier"],
@@ -149,6 +151,11 @@ function csrfValid(request: Request): boolean {
   // and are exempt from the browser double-submit check.
   if (!isBrowserOriginRequest(request)) return true;
   if (!sameOriginOk(request)) return false;
+  // A validated Supabase Bearer token is attached explicitly by same-origin
+  // JavaScript and is not ambient browser state, so it is not vulnerable to
+  // cookie-based CSRF. supabaseAuthContext() has already verified the token and
+  // active admin role before this function is reached.
+  if (/^Bearer\s+\S+$/i.test(request.headers.get("authorization") ?? "")) return true;
   // Double-submit: the browser echoes the JS-readable for_ai_admin_csrf cookie
   // (minted at login) in the x-admin-csrf header. Require an exact match and a
   // valid signature. ADMIN_CSRF_SECRET is mandatory — there is no permissive

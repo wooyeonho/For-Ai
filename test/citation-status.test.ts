@@ -193,6 +193,18 @@ test("getClaimCitationStatus marks fully sourced verified claims as citation-rea
   assert.equal(status.label, "verified");
 });
 
+test("publication quarantine and withdrawal override historical verified status", () => {
+  const quarantined = getClaimCitationStatus(claim({ publication_state: "quarantined" }), 180, NOW);
+  assertUnverified(quarantined);
+  assert.match(quarantined.reason, /quarantined/);
+  assert.match(quarantined.warning ?? "", /not citation-ready/);
+
+  const withdrawn = getClaimCitationStatus(claim({ publication_state: "withdrawn" }), 180, NOW);
+  assertUnverified(withdrawn);
+  assert.match(withdrawn.reason, /withdrawn/);
+  assert.match(withdrawn.warning ?? "", /correction history/);
+});
+
 test("getClaimCitationStatus keeps claims without sources out of citation-ready", () => {
   const status = getClaimCitationStatus(claim({ sources: [] }), 180, NOW);
 

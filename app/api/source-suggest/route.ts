@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { createServerClient, isSupabaseConfigured } from '../../../lib/supabase-server';
+import { createServiceRoleClient } from '../../../lib/supabase-server';
 import { makeContributorHashForRequest } from '../../../lib/contributor-hash';
 import {
   awardPoints,
@@ -10,17 +10,20 @@ import {
 } from '../../../lib/gamification';
 import { invalidPublicSourceUrl, parsePublicSourceUrl } from '../../../lib/source-contributions';
 import { persistentRateLimited } from '../../../lib/rate-limit-store';
+import { readBoundedJsonObject } from '../../../lib/task5-report-server';
 
 const DAILY_PER_CLAIM_LIMIT = 20;
 const DAY_MS = 86_400_000;
 
 export async function POST(request: Request) {
-  let body: Record<string, unknown>;
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 });
+  const parsedBody = await readBoundedJsonObject(request);
+  if (!parsedBody.ok) {
+    return NextResponse.json(
+      { error: parsedBody.error },
+      { status: parsedBody.error === 'body_too_large' ? 413 : 400 },
+    );
   }
+  const body = parsedBody.body;
 
   const claimId = String(body.claim_id ?? '').trim();
   const rawUrl = String(body.url ?? '').trim();
@@ -55,11 +58,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
   }
 
-  if (!isSupabaseConfigured()) {
+  const sb = createServiceRoleClient();
+  if (!sb) {
     return NextResponse.json({ error: 'submission_storage_unavailable' }, { status: 503 });
   }
-
-  const sb = createServerClient();
 
   // Verify claim exists
   const { data: claim, error: claimErr } = await sb

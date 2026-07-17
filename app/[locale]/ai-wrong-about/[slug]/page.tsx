@@ -1,8 +1,8 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getAllRegistryBundles, getRegistryBundleBySlug, isVerifiedClaim } from "../../../../lib/data";
-import { getRegistryBundleFromSupabase } from "../../../../lib/supabase-documents";
+import { getAllRegistryBundles, isVerifiedClaim } from "../../../../lib/data";
+import { loadRegistryBundleWithPublicationState } from "../../../../lib/registry-publication";
 import { SUPPORTED_LOCALES, isValidLocale } from "../../../../lib/i18n";
 import { siteUrl } from "../../../../lib/urls";
 import type { ClaimWithSources, RegistryDocumentBundle } from "../../../../lib/types";
@@ -18,7 +18,7 @@ export async function generateStaticParams() {
 }
 
 async function getBundle(slug: string): Promise<RegistryDocumentBundle | null> {
-  return getRegistryBundleBySlug(slug) ?? await getRegistryBundleFromSupabase(slug);
+  return loadRegistryBundleWithPublicationState(slug);
 }
 
 type AcceptedHallucinationReport = {

@@ -9,6 +9,7 @@ import { getDocumentCitationStatus } from "./citation-status";
 import { presentationForKey, type PresentationKey } from "./citation-presentation";
 import { DEFAULT_LOCALE, isValidLocale, type SupportedLocale } from "./i18n";
 import type { ClaimStatus, ClaimWithSources, RegistryDocumentBundle } from "./types";
+import { publicationStateBlocksCitation } from "./task5-corrections";
 
 export type SocialImageKind = "opengraph" | "twitter";
 export type SocialImageStatusKey = Exclude<PresentationKey, "unavailable">;
@@ -61,7 +62,8 @@ const TONE_COLORS: Record<SocialImageViewModel["statusTone"], { bg: string; fg: 
 };
 
 function isEligibleClaim(claim: ClaimWithSources): boolean {
-  return claim.source_of_claim !== "sponsored"
+  return !publicationStateBlocksCitation(claim.publication_state)
+    && claim.source_of_claim !== "sponsored"
     && !(claim.source_of_claim === "business_submitted" && claim.business_submission_status === "pending_verification");
 }
 

@@ -6,9 +6,9 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
  * Creates a Supabase client for server-side Route Handlers.
  *
  * Prefers SUPABASE_SERVICE_ROLE_KEY (bypasses RLS, never expose to client).
- * Falls back to NEXT_PUBLIC_SUPABASE_ANON_KEY when service role is not set.
- * This is safe because our RLS already restricts anon to insert-only on
- * submission tables (reports, hallucination_reports, edits).
+ * `createServerClient()` below may fall back to the public anon key for older
+ * RLS-mediated routes. Private queues such as reports and source_suggestions
+ * must use `createServiceRoleClient()` and fail closed when it is unavailable.
  *
  * Usage in Route Handlers (app/api/[resource]/route.ts):
  *   const supabase = createServerClient();
