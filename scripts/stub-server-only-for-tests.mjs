@@ -12,10 +12,16 @@
 // this shadows the real package for the test sandbox without touching the
 // actual dependency the production Next.js build relies on to catch
 // accidental client-component imports.
+// Accepts an optional target directory (relative to cwd) as argv[2] so the
+// same stub can shadow "server-only" inside any plain-tsc compile output,
+// not just .tmp/tests — e.g. .tmp/jobs, used by
+// `npm run job:check-evidence-freshness` to compile
+// lib/safe-fetch-external-source.ts for a cron script.
 import { mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 
-const stubDir = join(process.cwd(), ".tmp", "tests", "node_modules", "server-only");
+const targetDir = process.argv[2] || join(".tmp", "tests");
+const stubDir = join(process.cwd(), targetDir, "node_modules", "server-only");
 mkdirSync(stubDir, { recursive: true });
 writeFileSync(join(stubDir, "package.json"), JSON.stringify({ name: "server-only", version: "0.0.1", main: "index.js" }));
 writeFileSync(join(stubDir, "index.js"), "module.exports = {};\n");
