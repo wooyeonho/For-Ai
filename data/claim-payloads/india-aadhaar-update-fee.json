@@ -1,0 +1,54 @@
+{
+  "slug": "india-aadhaar-update-fee",
+  "country": "KR",
+  "lang": "ko",
+  "verified_at": "YYYY-MM-DD",
+  "_meta": {
+    "title": "India Aadhaar Card Update Fee (2025)",
+    "category": "government.documents",
+    "why_people_ask_ai": "Over a billion Aadhaar holders; update fees and processes change and AI often cites old rules",
+    "why_ai_gets_wrong": "UIDAI changed free vs paid update rules in 2024; online vs offline fees differ",
+    "required_source_types": [
+      "official"
+    ],
+    "instructions": "Fill each claim below with the real value from an official source. Set verified_at to the date you confirmed the value. Do NOT guess — if you cannot confirm from an official source, delete this file."
+  },
+  "claims": [
+    {
+      "field_path": "fee.online_demographic_update",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "What is the fee for online Aadhaar demographic update?",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    },
+    {
+      "field_path": "fee.biometric_update_at_center",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "What is the fee for Aadhaar biometric update at enrollment center?",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    }
+  ]
+}

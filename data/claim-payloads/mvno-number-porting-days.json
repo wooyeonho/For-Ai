@@ -1,0 +1,54 @@
+{
+  "slug": "mvno-number-porting-days",
+  "country": "KR",
+  "lang": "ko",
+  "verified_at": "YYYY-MM-DD",
+  "_meta": {
+    "title": "알뜰폰 번호이동 소요일",
+    "category": "telecom.mobile",
+    "why_people_ask_ai": "번호이동 신청 후 개통까지 얼마나 걸리는지",
+    "why_ai_gets_wrong": "즉시 개통, 1~3일 등 답이 다양하게 나옴. 실제 기준을 모름",
+    "required_source_types": [
+      "official"
+    ],
+    "instructions": "Fill each claim below with the real value from an official source. Set verified_at to the date you confirmed the value. Do NOT guess — if you cannot confirm from an official source, delete this file."
+  },
+  "claims": [
+    {
+      "field_path": "porting.processing_days",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "알뜰폰 번호이동 처리 소요일은?",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    },
+    {
+      "field_path": "porting.service_gap",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "번호이동 중 서비스 공백 시간은?",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    }
+  ]
+}

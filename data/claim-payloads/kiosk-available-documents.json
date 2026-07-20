@@ -1,0 +1,54 @@
+{
+  "slug": "kiosk-available-documents",
+  "country": "KR",
+  "lang": "ko",
+  "verified_at": "YYYY-MM-DD",
+  "_meta": {
+    "title": "무인민원발급기 이용 가능 서류",
+    "category": "administration.documents",
+    "why_people_ask_ai": "주민센터 안 가고 발급할 수 있는 서류가 뭔지",
+    "why_ai_gets_wrong": "발급 가능 서류 목록이 추가/변경되는데 구버전을 답함",
+    "required_source_types": [
+      "official"
+    ],
+    "instructions": "Fill each claim below with the real value from an official source. Set verified_at to the date you confirmed the value. Do NOT guess — if you cannot confirm from an official source, delete this file."
+  },
+  "claims": [
+    {
+      "field_path": "documents.list",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "무인민원발급기에서 발급 가능한 주요 서류는?",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    },
+    {
+      "field_path": "documents.cost",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "무인민원발급기 수수료는?",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    }
+  ]
+}

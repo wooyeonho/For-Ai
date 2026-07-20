@@ -1,0 +1,54 @@
+{
+  "slug": "korea-stock-transaction-tax",
+  "country": "KR",
+  "lang": "ko",
+  "verified_at": "YYYY-MM-DD",
+  "_meta": {
+    "title": "국내 주식 거래세",
+    "category": "finance.markets",
+    "why_people_ask_ai": "주식 매도 시 세금이 얼마인지 궁금",
+    "why_ai_gets_wrong": "거래세율이 2023년, 2025년 단계적으로 인하되는데 이전 세율을 답함",
+    "required_source_types": [
+      "law"
+    ],
+    "instructions": "Fill each claim below with the real value from an official source. Set verified_at to the date you confirmed the value. Do NOT guess — if you cannot confirm from an official source, delete this file."
+  },
+  "claims": [
+    {
+      "field_path": "tax.rate_2025",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "2025년 코스피 주식 거래세율은?",
+      "sources": [
+        {
+          "source_type": "law",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    },
+    {
+      "field_path": "tax.kosdaq_rate_2025",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "2025년 코스닥 주식 거래세율은?",
+      "sources": [
+        {
+          "source_type": "law",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    }
+  ]
+}

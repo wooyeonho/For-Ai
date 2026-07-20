@@ -1,0 +1,54 @@
+{
+  "slug": "er-night-surcharge",
+  "country": "KR",
+  "lang": "ko",
+  "verified_at": "YYYY-MM-DD",
+  "_meta": {
+    "title": "응급실 야간 진료비 가산",
+    "category": "health.medical",
+    "why_people_ask_ai": "야간에 응급실 가면 추가 비용이 얼마인지 궁금해서",
+    "why_ai_gets_wrong": "가산율이 시간대별로 다르고, 응급의료관리료와 혼동하는 경우 많음",
+    "required_source_types": [
+      "official"
+    ],
+    "instructions": "Fill each claim below with the real value from an official source. Set verified_at to the date you confirmed the value. Do NOT guess — if you cannot confirm from an official source, delete this file."
+  },
+  "claims": [
+    {
+      "field_path": "surcharge.night_rate",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "야간(18시~22시) 응급실 가산율은?",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    },
+    {
+      "field_path": "surcharge.late_night_rate",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "심야(22시~06시) 응급실 가산율은?",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    }
+  ]
+}

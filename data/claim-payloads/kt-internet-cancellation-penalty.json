@@ -1,0 +1,54 @@
+{
+  "slug": "kt-internet-cancellation-penalty",
+  "country": "KR",
+  "lang": "ko",
+  "verified_at": "YYYY-MM-DD",
+  "_meta": {
+    "title": "KT 인터넷 해지 위약금",
+    "category": "telecom.internet",
+    "why_people_ask_ai": "인터넷 해지 시 위약금 계산이 복잡해서",
+    "why_ai_gets_wrong": "약정 기간, 잔여 기간 비례 계산, 설치비 반환 등 조건이 복잡",
+    "required_source_types": [
+      "platform"
+    ],
+    "instructions": "Fill each claim below with the real value from an official source. Set verified_at to the date you confirmed the value. Do NOT guess — if you cannot confirm from an official source, delete this file."
+  },
+  "claims": [
+    {
+      "field_path": "penalty.calculation_method",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "KT 인터넷 위약금 계산 방식은?",
+      "sources": [
+        {
+          "source_type": "platform",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    },
+    {
+      "field_path": "penalty.installation_fee_return",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "설치비 반환 조건은?",
+      "sources": [
+        {
+          "source_type": "platform",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    }
+  ]
+}

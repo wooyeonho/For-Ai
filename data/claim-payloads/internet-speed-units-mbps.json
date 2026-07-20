@@ -1,0 +1,54 @@
+{
+  "slug": "internet-speed-units-mbps",
+  "country": "KR",
+  "lang": "ko",
+  "verified_at": "YYYY-MM-DD",
+  "_meta": {
+    "title": "인터넷 속도 단위 (Mbps vs MBps)",
+    "category": "telecom.internet",
+    "why_people_ask_ai": "인터넷 속도 측정 후 왜 다운로드가 느린지 물어봄",
+    "why_ai_gets_wrong": "Mbps(비트)와 MBps(바이트) 차이, 8배 환산을 제대로 설명 안 함",
+    "required_source_types": [
+      "document"
+    ],
+    "instructions": "Fill each claim below with the real value from an official source. Set verified_at to the date you confirmed the value. Do NOT guess — if you cannot confirm from an official source, delete this file."
+  },
+  "claims": [
+    {
+      "field_path": "unit.mbps_definition",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "Mbps의 정확한 의미는?",
+      "sources": [
+        {
+          "source_type": "document",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    },
+    {
+      "field_path": "conversion.mbps_to_mbytes",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "100Mbps는 실제 다운로드 속도로 얼마인가?",
+      "sources": [
+        {
+          "source_type": "document",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    }
+  ]
+}

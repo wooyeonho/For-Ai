@@ -1,0 +1,54 @@
+{
+  "slug": "health-insurance-premium-calculation",
+  "country": "KR",
+  "lang": "ko",
+  "verified_at": "YYYY-MM-DD",
+  "_meta": {
+    "title": "국민건강보험료 계산 기준",
+    "category": "health.insurance",
+    "why_people_ask_ai": "월급에서 건강보험료가 얼마 빠지는지",
+    "why_ai_gets_wrong": "보험료율이 매년 바뀌고, 직장/지역 구분을 혼동",
+    "required_source_types": [
+      "official"
+    ],
+    "instructions": "Fill each claim below with the real value from an official source. Set verified_at to the date you confirmed the value. Do NOT guess — if you cannot confirm from an official source, delete this file."
+  },
+  "claims": [
+    {
+      "field_path": "rate.employee_2025",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "2025년 직장가입자 건강보험료율은?",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    },
+    {
+      "field_path": "rate.long_term_care",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "2025년 장기요양보험료율은?",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    }
+  ]
+}

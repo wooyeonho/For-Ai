@@ -1,0 +1,54 @@
+{
+  "slug": "parking-violation-fine",
+  "country": "KR",
+  "lang": "ko",
+  "verified_at": "YYYY-MM-DD",
+  "_meta": {
+    "title": "주정차 위반 과태료",
+    "category": "transport.parking",
+    "why_people_ask_ai": "주정차 위반 시 과태료가 얼마인지",
+    "why_ai_gets_wrong": "승용차/승합차, 일반도로/어린이보호구역 구분 없이 답함",
+    "required_source_types": [
+      "law"
+    ],
+    "instructions": "Fill each claim below with the real value from an official source. Set verified_at to the date you confirmed the value. Do NOT guess — if you cannot confirm from an official source, delete this file."
+  },
+  "claims": [
+    {
+      "field_path": "fine.passenger_car_general",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "승용차 일반도로 주정차 위반 과태료는?",
+      "sources": [
+        {
+          "source_type": "law",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    },
+    {
+      "field_path": "fine.school_zone",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "어린이보호구역 주정차 위반 과태료는?",
+      "sources": [
+        {
+          "source_type": "law",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    }
+  ]
+}

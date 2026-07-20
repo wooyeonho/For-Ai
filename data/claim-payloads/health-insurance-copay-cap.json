@@ -1,0 +1,72 @@
+{
+  "slug": "health-insurance-copay-cap",
+  "country": "KR",
+  "lang": "ko",
+  "verified_at": "YYYY-MM-DD",
+  "_meta": {
+    "title": "건강보험 본인부담상한제",
+    "category": "health.insurance",
+    "why_people_ask_ai": "고액 의료비 발생 시 환급 가능한지 궁금해서",
+    "why_ai_gets_wrong": "소득 분위별 상한액이 매년 바뀌는데 AI가 이전 연도 금액을 답함",
+    "required_source_types": [
+      "official"
+    ],
+    "instructions": "Fill each claim below with the real value from an official source. Set verified_at to the date you confirmed the value. Do NOT guess — if you cannot confirm from an official source, delete this file."
+  },
+  "claims": [
+    {
+      "field_path": "cap.income_bracket_1",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "소득 1분위 연간 본인부담상한액은?",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    },
+    {
+      "field_path": "cap.income_bracket_10",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "소득 10분위 연간 본인부담상한액은?",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    },
+    {
+      "field_path": "process.refund_method",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "본인부담상한제 초과금 환급 방법은?",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    }
+  ]
+}

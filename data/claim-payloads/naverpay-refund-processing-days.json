@@ -1,0 +1,54 @@
+{
+  "slug": "naverpay-refund-processing-days",
+  "country": "KR",
+  "lang": "ko",
+  "verified_at": "YYYY-MM-DD",
+  "_meta": {
+    "title": "네이버페이 환불 소요일",
+    "category": "commerce.refund",
+    "why_people_ask_ai": "네이버페이로 결제 취소 시 언제 돈이 돌아오는지",
+    "why_ai_gets_wrong": "결제수단별(카드/포인트/계좌) 환불 소요일이 다른데 구분 안 함",
+    "required_source_types": [
+      "platform"
+    ],
+    "instructions": "Fill each claim below with the real value from an official source. Set verified_at to the date you confirmed the value. Do NOT guess — if you cannot confirm from an official source, delete this file."
+  },
+  "claims": [
+    {
+      "field_path": "refund.card_days",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "카드 결제 취소 후 환불까지 소요일은?",
+      "sources": [
+        {
+          "source_type": "platform",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    },
+    {
+      "field_path": "refund.point_days",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "네이버페이 포인트 환불 소요일은?",
+      "sources": [
+        {
+          "source_type": "platform",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    }
+  ]
+}

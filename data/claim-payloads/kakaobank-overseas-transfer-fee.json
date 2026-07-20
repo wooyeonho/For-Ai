@@ -1,0 +1,54 @@
+{
+  "slug": "kakaobank-overseas-transfer-fee",
+  "country": "KR",
+  "lang": "ko",
+  "verified_at": "YYYY-MM-DD",
+  "_meta": {
+    "title": "카카오뱅크 해외 송금 수수료",
+    "category": "finance.banking",
+    "why_people_ask_ai": "해외 송금 시 은행별 수수료 비교하려고",
+    "why_ai_gets_wrong": "수수료가 자주 바뀌고, 중계은행 수수료 포함 여부를 틀림",
+    "required_source_types": [
+      "platform"
+    ],
+    "instructions": "Fill each claim below with the real value from an official source. Set verified_at to the date you confirmed the value. Do NOT guess — if you cannot confirm from an official source, delete this file."
+  },
+  "claims": [
+    {
+      "field_path": "fee.outbound",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "카카오뱅크 해외 송금 수수료는?",
+      "sources": [
+        {
+          "source_type": "platform",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    },
+    {
+      "field_path": "fee.exchange_spread",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "카카오뱅크 환율 우대 수준은?",
+      "sources": [
+        {
+          "source_type": "platform",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    }
+  ]
+}
