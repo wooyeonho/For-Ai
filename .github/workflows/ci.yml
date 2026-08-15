@@ -52,6 +52,9 @@ jobs:
       - name: Guard - schema/type sync
         run: npm run check:schema-types
 
+      - name: Guard - Task 5-E DB security source
+        run: node scripts/check-task5-e-db-security.mjs
+
       - name: Guard - generated artifacts
         run: node scripts/ci-guards.mjs artifacts
 
