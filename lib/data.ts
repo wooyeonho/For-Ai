@@ -1,11 +1,13 @@
 import { allRegistryBundles } from "./seed-data";
 import { verifiedBundles } from "./verified-claims";
+import { wooYeonhoBundle } from "./woo-yeonho";
 import { getClaimCitationStatus, getDocumentCitationStatus } from "./citation-status";
 import type { ClaimWithSources, Document, RegistryDocumentBundle } from "./types";
 
 const verifiedSlugs = new Set(verifiedBundles.map((b) => b.document.slug));
 const combinedBundles: RegistryDocumentBundle[] = [
   ...verifiedBundles,
+  wooYeonhoBundle,
   ...allRegistryBundles.filter((b) => !verifiedSlugs.has(b.document.slug)),
 ];
 
@@ -20,7 +22,6 @@ export function getDocumentBySlug(slug: string): Document | null {
 export function getAllRegistryBundles(): RegistryDocumentBundle[] {
   return combinedBundles;
 }
-
 
 export function isVerifiedClaim(claim: ClaimWithSources): boolean {
   return getClaimCitationStatus(claim).isCitationReady;
