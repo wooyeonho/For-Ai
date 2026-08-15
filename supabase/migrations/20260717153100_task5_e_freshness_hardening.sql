@@ -16,6 +16,23 @@ revoke all on table public.evidence_freshness_checks
 revoke all on table public.freshness_review_cards
   from public, anon, authenticated;
 
+-- Supabase projects may carry explicit default EXECUTE grants for anon and
+-- authenticated in addition to PostgreSQL PUBLIC. Revoke every browser role
+-- explicitly; revoking PUBLIC alone is not sufficient in that configuration.
+revoke all on function public.task5_seed_evidence_freshness_state()
+  from public, anon, authenticated;
+revoke all on function public.lease_evidence_freshness(text, integer, integer)
+  from public, anon, authenticated;
+revoke all on function public.complete_evidence_freshness(
+  text, uuid, public.evidence_freshness_result, text, text, integer, text, jsonb
+) from public, anon, authenticated;
+
+grant execute on function public.lease_evidence_freshness(text, integer, integer)
+  to service_role;
+grant execute on function public.complete_evidence_freshness(
+  text, uuid, public.evidence_freshness_result, text, text, integer, text, jsonb
+) to service_role;
+
 comment on table public.evidence_freshness_checks is
   'Append-only Task 5-E inspection history. UPDATE and DELETE are rejected by trigger; freshness results never automatically change claim verification or publication state.';
 comment on table public.freshness_review_cards is
@@ -148,9 +165,11 @@ begin
 end;
 $$;
 
+-- CREATE OR REPLACE preserves existing ACLs, but explicitly repeat the browser
+-- revocation here as defense in depth against future migration/default-privilege drift.
 revoke all on function public.complete_evidence_freshness(
   text, uuid, public.evidence_freshness_result, text, text, integer, text, jsonb
-) from public;
+) from public, anon, authenticated;
 grant execute on function public.complete_evidence_freshness(
   text, uuid, public.evidence_freshness_result, text, text, integer, text, jsonb
 ) to service_role;
