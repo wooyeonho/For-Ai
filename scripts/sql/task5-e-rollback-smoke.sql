@@ -216,6 +216,50 @@ begin
     raise exception 'Task 5-E smoke: claim state changed automatically';
   end if;
 
+  -- Publication can change after lease but before completion. Preserve the
+  -- immutable check history, but do not open a review card for evidence that is
+  -- no longer attached to the active published claim version.
+  update public.evidence_freshness_state
+  set next_check_at = now()
+  where claim_evidence_id = v_evidence_alternative;
+
+  select claim_evidence_id into v_leased
+  from public.lease_evidence_freshness('smoke-publication-race', 1, 120);
+  if v_leased is distinct from v_evidence_alternative then
+    raise exception 'Task 5-E smoke: publication-race evidence lease mismatch';
+  end if;
+
+  update public.claims
+  set publication_state = 'quarantined'
+  where id = v_claim_id;
+
+  perform public.complete_evidence_freshness(
+    'smoke-publication-race', v_evidence_alternative, 'content_changed',
+    'https://example.com/task5-e-alternative',
+    encode(digest(v_quote || ' changed', 'sha256'), 'hex'), 200, null,
+    '{"smoke":true,"publication_race":true}'::jsonb
+  );
+
+  select count(*) into v_card_count
+  from public.freshness_review_cards
+  where claim_evidence_id = v_evidence_alternative and status = 'open';
+  if v_card_count <> 0 then
+    raise exception 'Task 5-E smoke: superseded/inactive evidence opened a review card';
+  end if;
+
+  if not exists (
+    select 1 from public.evidence_freshness_checks
+    where claim_evidence_id = v_evidence_alternative
+      and result = 'content_changed'
+      and metadata ->> 'publication_race' = 'true'
+  ) then
+    raise exception 'Task 5-E smoke: publication-race inspection history was not preserved';
+  end if;
+
+  update public.claims
+  set publication_state = v_publication_state
+  where id = v_claim_id;
+
   -- History must be append-only.
   begin
     update public.evidence_freshness_checks
@@ -262,7 +306,7 @@ begin
     raise exception 'Task 5-E smoke: browser lease RPC privilege present';
   end if;
 
-  raise notice 'Task 5-E rollback smoke passed: threshold, immediate card, healthy alternative, claim immutability, append-only history, and private privileges.';
+  raise notice 'Task 5-E rollback smoke passed: threshold, immediate card, healthy alternative, publication-race suppression, claim immutability, append-only history, and private privileges.';
 end;
 $$;
 
