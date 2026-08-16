@@ -2,17 +2,18 @@
 
 - Branch: `automation/hourly-operator`
 - Main/production writes: forbidden until verified release gate
-- RUN_TS: 2026-08-17 00:08 KST
+- RUN_TS: 2026-08-17 00:34 KST
 - Status: VERIFIED
-- Current Gate: locale-aware methodology content without semantic duplication or fragmented verification logic.
-- Actual work: added `lib/i18n/methodology-content.ts` with one canonical three-step semantic model, explicit Korean copy, English canonical fallback for other supported locales, and `test/methodology-content.test.ts` to prove stable step IDs and explicit fallback behavior.
-- Implementation commits: `f049424e7fb2e3bd286857aea9da064fe8be2ad4`, `30c0962b56bb1dbf081558dadb59be76069031f1`.
-- Verification hardening commit: `9197cff153b9f6510b6448e95b3105a52f4493b4` makes exact-branch CI compile and execute the methodology locale-model test before lint/build/start/HTTP assertions/Chromium capture.
-- Verification: GitHub Actions run `31954657501` completed `success` on commit `9197cff153b9f6510b6448e95b3105a52f4493b4`.
-- QA/design: semantic IDs remain identical across all supported locale requests; unsupported methodology copy falls back explicitly rather than pretending to be translated. Existing canonical `/methodology` route remains intact, avoiding duplicate route trees in this cycle.
-- Security/privacy/legal/IP: no secrets, personal data, third-party copy, score/visibility guarantee, or external publication added. Translations are original interface copy; non-English locales beyond Korean intentionally fall back to English until reviewed translations exist.
-- Screen evidence: the exact-branch workflow still captures real `home-methodology-nav.png` and `methodology-route.png` after build/start.
-- Next Gate: wire the canonical content model into the rendered methodology page with a testable locale selector/route policy, then add reviewed translations one locale at a time without cloning the semantic source of truth.
+- Current Gate: canonical locale-aware methodology rendering without semantic duplication.
+- Actual work: replaced the methodology page's duplicated local `steps` copy with `getMethodologyContent(DEFAULT_LOCALE)`, stable step IDs, explicit fallback notice, and a rendered verification-state list. The page now consumes the canonical locale model rather than maintaining a second semantic source.
+- Implementation commit: `dfe1fcb5985096a5cc6cb9dcb41383e0624809b3`.
+- Verification: exact-branch Actions run `31956051036` completed `success` on the implementation commit; workflow includes methodology locale-model test, lint/build/start, HTTP assertions and real Chromium capture.
+- Benchmark: proof-first trust, clear single-source copy, accessible composable hierarchy; no benchmark assets/layout/code copied.
+- QA/design: removes semantic drift between rendered methodology and locale model; fallback is visible rather than silently pretending unsupported translations are reviewed.
+- Security/privacy/legal/IP: no secrets, personal data, third-party copy, AI visibility guarantee, or external publication added.
+- Growth/sales: methodology is now a more reliable trust surface for future Evidence Wiki entity/claim/source pages and paid verification/report flows.
+- Screen evidence: exact-branch workflow captures `home-methodology-nav.png` and `methodology-route.png` after build/start.
+- Next Gate: add an explicit, testable locale selection/route policy for methodology, then add reviewed translations one locale at a time while preserving canonical step IDs.
 
 ## Per-run contract
 Every successful run must update this file with RUN_TS, Current Gate, implementation artifact/commit, verification, QA/design, security/privacy/legal/IP, screen evidence, and Next Gate. A run that only edits this ledger without a real implementation/recovery artifact is not progress.
