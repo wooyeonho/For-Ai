@@ -2,18 +2,17 @@
 
 - Branch: `automation/hourly-operator`
 - Main/production writes: forbidden until verified release gate
-- RUN_TS: 2026-08-16 23:38 KST
-- Status: VERIFIED PASS — METHODOLOGY ROUTE PROOF
-- Gate Goal: turn the shared verification-navigation improvement into a directly asserted, render-proven methodology route rather than trusting a home-link-only smoke.
-- Implementation: `.github/workflows/hourly-operator-verify.yml` now performs a fail-fast HTTP assertion for `/methodology`, requires verification/methodology text in the real response, and captures both the home navigation and methodology page at 390×844.
-- Implementation commit: `93ab107e7afd94f834c4646dee58d38fcf47f13d`.
-- Verification: exact-branch Actions run `31953176995` COMPLETED SUCCESS on the implementation head; npm ci/lint/build/start plus route assertion and Chromium captures passed.
-- Benchmark references/principles: WCAG 2.2 link-purpose/focus guidance, existing For-Ai benchmark record using proof-first trust surfaces, and the project operating-spine artifact rule. Adopted only descriptive destination + observable proof principles; no benchmark UI/code/trade dress copied.
-- Design verdict: PASS-WITH-CONDITIONS. Verification is now both globally discoverable and independently routable/provable, but locale-specific methodology information architecture remains unresolved.
-- Security/privacy/legal: no secrets, personal data, third-party assets, or AI-exposure guarantees added; route proof reduces false release confidence.
-- Growth/sales/content artifact: methodology is now a reproducible proof surface suitable for seller/demo due diligence instead of an unverified navigation promise.
-- Screen evidence: workflow captures `artifacts/home-methodology-nav.png` and `artifacts/methodology-route.png` from the exact branch build.
-- Next Gate: make methodology content locale-aware without duplicating source content, with one canonical verification model and locale-specific labels/routes only if they remain testable and non-fragmented.
+- RUN_TS: 2026-08-17 00:08 KST
+- Status: VERIFIED
+- Current Gate: locale-aware methodology content without semantic duplication or fragmented verification logic.
+- Actual work: added `lib/i18n/methodology-content.ts` with one canonical three-step semantic model, explicit Korean copy, English canonical fallback for other supported locales, and `test/methodology-content.test.ts` to prove stable step IDs and explicit fallback behavior.
+- Implementation commits: `f049424e7fb2e3bd286857aea9da064fe8be2ad4`, `30c0962b56bb1dbf081558dadb59be76069031f1`.
+- Verification hardening commit: `9197cff153b9f6510b6448e95b3105a52f4493b4` makes exact-branch CI compile and execute the methodology locale-model test before lint/build/start/HTTP assertions/Chromium capture.
+- Verification: GitHub Actions run `31954657501` completed `success` on commit `9197cff153b9f6510b6448e95b3105a52f4493b4`.
+- QA/design: semantic IDs remain identical across all supported locale requests; unsupported methodology copy falls back explicitly rather than pretending to be translated. Existing canonical `/methodology` route remains intact, avoiding duplicate route trees in this cycle.
+- Security/privacy/legal/IP: no secrets, personal data, third-party copy, score/visibility guarantee, or external publication added. Translations are original interface copy; non-English locales beyond Korean intentionally fall back to English until reviewed translations exist.
+- Screen evidence: the exact-branch workflow still captures real `home-methodology-nav.png` and `methodology-route.png` after build/start.
+- Next Gate: wire the canonical content model into the rendered methodology page with a testable locale selector/route policy, then add reviewed translations one locale at a time without cloning the semantic source of truth.
 
 ## Per-run contract
-Every successful run must update this file with RUN_TS, Gate Goal, implementation artifact/commit, verification, design verdict, security/privacy/legal verdict, benchmark references, commercial/content artifact, screen evidence, and next gate. A run that only edits this ledger without a real implementation/recovery artifact is not progress.
+Every successful run must update this file with RUN_TS, Current Gate, implementation artifact/commit, verification, QA/design, security/privacy/legal/IP, screen evidence, and Next Gate. A run that only edits this ledger without a real implementation/recovery artifact is not progress.
