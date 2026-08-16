@@ -1,0 +1,43 @@
+name: Hourly operator verify
+
+on:
+  push:
+    branches:
+      - automation/hourly-operator
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+      - name: Start exact branch build
+        run: |
+          npm run start -- -H 127.0.0.1 -p 3000 > /tmp/for-ai-next.log 2>&1 &
+          echo $! > /tmp/for-ai-next.pid
+          for i in {1..30}; do
+            if curl -fsS http://127.0.0.1:3000 >/dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/for-ai-next.log
+          exit 1
+      - name: Capture real home screen
+        run: |
+          mkdir -p artifacts
+          npx --yes playwright@1.55.0 install --with-deps chromium
+          npx --yes playwright@1.55.0 screenshot --device="iPhone 13" --full-page http://127.0.0.1:3000 artifacts/home-methodology-nav.png
+      - uses: actions/upload-artifact@v4
+        with:
+          name: hourly-operator-screen
+          path: artifacts/home-methodology-nav.png
