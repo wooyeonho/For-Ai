@@ -1,0 +1,43 @@
+{
+  "portfolio": "Project EUREKA",
+  "run_ts": "2026-08-16T02:00:00+09:00",
+  "claim_policy": "No COMPLETE/NOVEL/DISCOVERY claim without reproducible evidence.",
+  "topics": [
+    {
+      "id": "AMR-001",
+      "status": "ACTIVE",
+      "domain": "public health / antimicrobial resistance",
+      "hypothesis": "A directed residual precursor edge S(t)->T(t+1) may add out-of-sample information beyond target history and survive reverse/future-source, structural-bias, LOCO, temporal permutation/FDR and independent replication gates.",
+      "verification": "OFFICIAL INPUT BYTES BLOCKED",
+      "candidate_count": 0,
+      "next_gate": "Acquire lawful auditable EARS-Net export bytes; freeze extraction metadata and SHA-256; normalize; run frozen screen."
+    },
+    {
+      "id": "AGING-001",
+      "status": "ACTIVE",
+      "domain": "aging / neuroscience",
+      "hypothesis": "Midlife multimodal trajectory changes may identify reproducible, modifiable precursors of later neurocognitive decline beyond baseline age and cognition.",
+      "verification": "PROTOCOL ADMITTED; NO RESULT",
+      "candidate_count": 0,
+      "next_gate": "Freeze MIVAC data dictionary/version and define leakage-safe longitudinal endpoints, baseline comparator, negative controls and held-out validation."
+    },
+    {
+      "id": "CDR-001",
+      "status": "WATCH",
+      "domain": "climate / energy / carbon removal",
+      "hypothesis": "Cross-method deployment and R&D indicators may reveal reproducible bottleneck transitions predictive of scale-up failure or success.",
+      "verification": "SCOUTED; NOT ADMITTED",
+      "candidate_count": 0,
+      "next_gate": "Prior-art and identifiability audit using State of CDR 2026 downloadable data before admission."
+    },
+    {
+      "id": "EPIDEMIC-INTEL-001",
+      "status": "WATCH",
+      "domain": "pandemic intelligence / diagnostics",
+      "hypothesis": "Data-quality-aware multisource early-warning methods may improve actionable outbreak detection without amplifying surveillance inequity.",
+      "verification": "SCOUTED; NOT ADMITTED",
+      "candidate_count": 0,
+      "next_gate": "Map 2026 WHO/Lancet priority statements to open auditable datasets and exact unsolved benchmark."
+    }
+  ]
+}
