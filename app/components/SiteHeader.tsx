@@ -4,11 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { getLocaleFromPathname, getTranslations, withLocaleLink } from "../../lib/i18n/translations";
 import { LanguageSelector } from "./LanguageSelector";
-import { DEFAULT_LOCALE, isValidLocale } from "../../lib/i18n/locales";
-import type { SupportedLocale } from "../../lib/i18n/locales";
 import { checkAnswerPublicNavEnabled } from "../../lib/feature-flags";
 import { NotificationBell } from "./NotificationBell";
-
 
 function localeHref(locale: string, path: string): string {
   if (path.startsWith("#")) return `/${locale}${path}`;
@@ -23,6 +20,7 @@ export function SiteHeader() {
   const t = getTranslations(locale);
   const close = () => setOpen(false);
   const localize = (href: string) => withLocaleLink(pathname, href);
+  const methodologyLabel = locale === "ko" ? "검증 방법" : "Verification";
 
   const navLinks = [
     { href: localeHref(locale, "/#registry"), label: t.nav.registry },
@@ -44,6 +42,7 @@ export function SiteHeader() {
           {navLinks.map((link) => (
             <Link key={link.href} href={localize(link.href)}>{link.label}</Link>
           ))}
+          <Link href="/methodology">{methodologyLabel}</Link>
           <NotificationBell />
           <Suspense fallback={null}><LanguageSelector /></Suspense>
         </nav>
@@ -64,6 +63,7 @@ export function SiteHeader() {
           {navLinks.map((link) => (
             <Link key={link.href} href={localize(link.href)} onClick={close}>{link.label}</Link>
           ))}
+          <Link href="/methodology" onClick={close}>{methodologyLabel}</Link>
           <NotificationBell onNavigate={close} />
           <div className="site-nav-mobile-lang"><Suspense fallback={null}><LanguageSelector /></Suspense></div>
         </nav>
