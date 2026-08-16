@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import HomePageContent from "./components/HomePageContent";
 
 export const metadata: Metadata = {
@@ -10,5 +11,21 @@ export const metadata: Metadata = {
 export const revalidate = 60;
 
 export default async function HomePage() {
-  return <HomePageContent locale="en" />;
+  return (
+    <>
+      <nav
+        aria-label="Trust and verification"
+        style={{
+          maxWidth: 1120,
+          margin: "0 auto",
+          padding: "12px 24px 0",
+          fontSize: 14,
+          lineHeight: 1.5,
+        }}
+      >
+        <Link href="/methodology">How For-Ai verifies claims</Link>
+      </nav>
+      <HomePageContent locale="en" />
+    </>
+  );
 }
