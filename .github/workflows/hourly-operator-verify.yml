@@ -32,11 +32,16 @@ jobs:
           done
           cat /tmp/for-ai-next.log
           exit 1
-      - name: Capture real home screen
+      - name: Capture real home screen with installed Chromium
         run: |
           mkdir -p artifacts
-          npx --yes playwright@1.55.0 install --with-deps chromium
-          npx --yes playwright@1.55.0 screenshot --device="iPhone 13" --full-page http://127.0.0.1:3000 artifacts/home-methodology-nav.png
+          CHROME_BIN="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser)"
+          if [ -z "$CHROME_BIN" ]; then
+            echo "No Chromium-family browser found on runner"
+            exit 1
+          fi
+          "$CHROME_BIN" --headless=new --disable-gpu --no-sandbox --hide-scrollbars --window-size=390,844 --screenshot=artifacts/home-methodology-nav.png http://127.0.0.1:3000
+          test -s artifacts/home-methodology-nav.png
       - uses: actions/upload-artifact@v4
         with:
           name: hourly-operator-screen
