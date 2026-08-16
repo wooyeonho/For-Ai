@@ -1,6 +1,6 @@
 {
   "portfolio": "Project EUREKA",
-  "run_ts": "2026-08-16T02:00:00+09:00",
+  "run_ts": "2026-08-16T03:00:00+09:00",
   "claim_policy": "No COMPLETE/NOVEL/DISCOVERY claim without reproducible evidence.",
   "topics": [
     {
@@ -17,27 +17,36 @@
       "status": "ACTIVE",
       "domain": "aging / neuroscience",
       "hypothesis": "Midlife multimodal trajectory changes may identify reproducible, modifiable precursors of later neurocognitive decline beyond baseline age and cognition.",
-      "verification": "PROTOCOL ADMITTED; NO RESULT",
+      "verification": "PROVENANCE/RIGHTS GATE FROZEN; DATA VERSION/BYTES BLOCKED",
       "candidate_count": 0,
-      "next_gate": "Freeze MIVAC data dictionary/version and define leakage-safe longitudinal endpoints, baseline comparator, negative controls and held-out validation."
+      "next_gate": "Acquire/freeze exact MIVAC static release and dictionary; build participant-session temporal leakage and eligible-N audit before modeling."
     },
     {
       "id": "CDR-001",
-      "status": "WATCH",
+      "status": "ACTIVE",
       "domain": "climate / energy / carbon removal",
-      "hypothesis": "Cross-method deployment and R&D indicators may reveal reproducible bottleneck transitions predictive of scale-up failure or success.",
-      "verification": "SCOUTED; NOT ADMITTED",
+      "hypothesis": "A temporally ordered R&D + demonstration transition signature may precede durable CDR deployment growth or scale-up failure beyond maturity and broad policy/demand trends.",
+      "verification": "ADMITTED; PROTOCOL FROZEN; DATA SCHEMA/BYTES BLOCKED",
       "candidate_count": 0,
-      "next_gate": "Prior-art and identifiability audit using State of CDR 2026 downloadable data before admission."
+      "next_gate": "Freeze State of CDR 2026 Ch.2/3/7 CSV schemas/terms; build method taxonomy and time-coverage matrix; establish non-circular endpoint."
     },
     {
       "id": "EPIDEMIC-INTEL-001",
       "status": "WATCH",
       "domain": "pandemic intelligence / diagnostics",
       "hypothesis": "Data-quality-aware multisource early-warning methods may improve actionable outbreak detection without amplifying surveillance inequity.",
-      "verification": "SCOUTED; NOT ADMITTED",
+      "verification": "SCOUTED; 2026 priority evidence strengthened; NOT ADMITTED",
       "candidate_count": 0,
-      "next_gate": "Map 2026 WHO/Lancet priority statements to open auditable datasets and exact unsolved benchmark."
+      "next_gate": "Map WHO/Lancet 23 priority statements and 2026 funding tracker to open auditable datasets and an exact falsifiable benchmark."
+    },
+    {
+      "id": "CLIMATE-MIGRATION-HEALTH-001",
+      "status": "WATCH",
+      "domain": "climate / migration / public health",
+      "hypothesis": "Climate-linked displacement trajectories may contain actionable, reproducible precursors of health-system access failure or adverse health outcomes.",
+      "verification": "SCOUTED; WHO 2026 research-priority evidence; NOT ADMITTED",
+      "candidate_count": 0,
+      "next_gate": "Identify lawful longitudinal migration-health datasets with temporal exposure/outcome ordering and test identifiability before admission."
     }
   ]
 }
