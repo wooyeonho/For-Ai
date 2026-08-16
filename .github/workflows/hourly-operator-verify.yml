@@ -37,13 +37,17 @@ jobs:
           done
           cat /tmp/for-ai-next.log
           exit 1
-      - name: Assert verification methodology route
+      - name: Assert verification methodology locale routes
         run: |
-          curl --fail --silent --show-error --location \
-            --output /tmp/methodology.html \
-            http://127.0.0.1:3000/methodology
-          test -s /tmp/methodology.html
-          grep -Eiq 'methodology|verification|검증' /tmp/methodology.html
+          curl --fail --silent --show-error --location --output /tmp/methodology-default.html http://127.0.0.1:3000/methodology
+          curl --fail --silent --show-error --location --output /tmp/methodology-ko.html 'http://127.0.0.1:3000/methodology?lang=ko'
+          curl --fail --silent --show-error --location --output /tmp/methodology-en.html 'http://127.0.0.1:3000/methodology?lang=en'
+          curl --fail --silent --show-error --location --output /tmp/methodology-hi.html 'http://127.0.0.1:3000/methodology?lang=hi'
+          test -s /tmp/methodology-default.html
+          grep -q 'For-Ai 검증 방법' /tmp/methodology-ko.html
+          grep -q 'For-Ai verification method' /tmp/methodology-en.html
+          grep -q 'canonical English version is shown' /tmp/methodology-hi.html
+          grep -q 'हिन्दी' /tmp/methodology-hi.html
       - name: Capture real home and methodology screens with installed Chromium
         run: |
           mkdir -p artifacts
@@ -53,7 +57,7 @@ jobs:
             exit 1
           fi
           "$CHROME_BIN" --headless=new --disable-gpu --no-sandbox --hide-scrollbars --window-size=390,844 --screenshot=artifacts/home-methodology-nav.png http://127.0.0.1:3000
-          "$CHROME_BIN" --headless=new --disable-gpu --no-sandbox --hide-scrollbars --window-size=390,844 --screenshot=artifacts/methodology-route.png http://127.0.0.1:3000/methodology
+          "$CHROME_BIN" --headless=new --disable-gpu --no-sandbox --hide-scrollbars --window-size=390,844 --screenshot=artifacts/methodology-route.png 'http://127.0.0.1:3000/methodology?lang=ko'
           test -s artifacts/home-methodology-nav.png
           test -s artifacts/methodology-route.png
       - uses: actions/upload-artifact@v4
