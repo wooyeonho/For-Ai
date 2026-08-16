@@ -32,7 +32,14 @@ jobs:
           done
           cat /tmp/for-ai-next.log
           exit 1
-      - name: Capture real home screen with installed Chromium
+      - name: Assert verification methodology route
+        run: |
+          curl --fail --silent --show-error --location \
+            --output /tmp/methodology.html \
+            http://127.0.0.1:3000/methodology
+          test -s /tmp/methodology.html
+          grep -Eiq 'methodology|verification|검증' /tmp/methodology.html
+      - name: Capture real home and methodology screens with installed Chromium
         run: |
           mkdir -p artifacts
           CHROME_BIN="$(command -v google-chrome || command -v google-chrome-stable || command -v chromium || command -v chromium-browser)"
@@ -41,8 +48,12 @@ jobs:
             exit 1
           fi
           "$CHROME_BIN" --headless=new --disable-gpu --no-sandbox --hide-scrollbars --window-size=390,844 --screenshot=artifacts/home-methodology-nav.png http://127.0.0.1:3000
+          "$CHROME_BIN" --headless=new --disable-gpu --no-sandbox --hide-scrollbars --window-size=390,844 --screenshot=artifacts/methodology-route.png http://127.0.0.1:3000/methodology
           test -s artifacts/home-methodology-nav.png
+          test -s artifacts/methodology-route.png
       - uses: actions/upload-artifact@v4
         with:
           name: hourly-operator-screen
-          path: artifacts/home-methodology-nav.png
+          path: |
+            artifacts/home-methodology-nav.png
+            artifacts/methodology-route.png
