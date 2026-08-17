@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { buildReviewedTranslationRecord } from "../lib/i18n/reviewed-translation-record";
 import {
+  buildReviewedTranslationHistoryIndex,
   buildReviewedTranslationIndex,
   findReviewedTranslation,
   findReviewedTranslationByProvenanceKey,
@@ -35,6 +36,32 @@ test("indexes reviewed translations by locale/message and provenance key", () =>
   assert.equal(findReviewedTranslation(result.value, " KO ", " methodology.title ")?.provenanceKey, ko.provenanceKey);
   assert.equal(findReviewedTranslation(result.value, "", "methodology.title"), null);
   assert.equal(findReviewedTranslation(result.value, "ko", "missing.key"), null);
+});
+
+test("builds lookup index from history using only the active reviewed record", () => {
+  const stale = reviewed("ko", "methodology.title", "rev-1");
+  const active = reviewed("ko", "methodology.title", "rev-2");
+  const raw = JSON.stringify([
+    { record: stale, status: "superseded", supersededByProvenanceKey: active.provenanceKey },
+    { record: active, status: "active" },
+  ]);
+  const result = buildReviewedTranslationHistoryIndex(raw);
+  assert.equal(result.ok, true);
+  if (!result.ok) throw new Error("history index unexpectedly failed");
+  assert.equal(findReviewedTranslation(result.value, "ko", "methodology.title")?.provenanceKey, active.provenanceKey);
+  assert.equal(findReviewedTranslationByProvenanceKey(result.value, stale.provenanceKey), null);
+});
+
+test("fails closed when superseded history is not linked to the active provenance key", () => {
+  const stale = reviewed("ko", "methodology.title", "rev-1");
+  const active = reviewed("ko", "methodology.title", "rev-2");
+  const result = buildReviewedTranslationHistoryIndex(JSON.stringify([
+    { record: stale, status: "superseded", supersededByProvenanceKey: "wrong-key" },
+    { record: active, status: "active" },
+  ]));
+  assert.equal(result.ok, false);
+  if (result.ok) throw new Error("invalid history unexpectedly passed");
+  assert.equal(result.reason, "history_invalid_supersession");
 });
 
 test("fails closed on duplicate locale/message records", () => {
