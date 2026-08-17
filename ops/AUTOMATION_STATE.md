@@ -2,19 +2,15 @@
 
 - Branch: `automation/hourly-operator`
 - Main/production writes: forbidden until verified release gate
-- RUN_TS: 2026-08-17 11:43 KST
+- RUN_TS: 2026-08-17 14:02 KST manual cycle
 - Status: VERIFIED
-- Current Gate: localized methodology metadata/canonical policy without duplicate semantic sources.
-- Personas/counter-case: Product/Knowledge-Registry lead wanted every supported locale discoverable; i18n/SEO engineer warned that unreviewed fallback pages would duplicate English semantics; Evidence/Legal-IP reviewer required no translated claim to be implied before review. Decision: index only reviewed `ko`/`en` methodology variants and canonicalize fallback locales to the reviewed English source.
-- Actual work: added dynamic Next.js metadata to `/methodology`. Title/description come from the existing canonical methodology content model; reviewed Korean/English get explicit language alternates; fallback locales canonicalize to English and are `noindex,follow` until reviewed. No methodology step text or IDs were duplicated.
-- Implementation commit: `2da6a653b24baa5f9b4d0e6c9100d4739c3a0242`.
-- Verification: exact-branch Actions run `31988716331` completed `success`; existing methodology model tests, lint/build/start, route assertions and Chromium capture pipeline remained green.
-- Benchmark/Source Registry: Next.js `generateMetadata`/alternates documentation (official public web, current 2026 docs, global, no auth, high evidence quality); Next.js internationalization guide (official public web, current 2026, global, no auth, high evidence quality); PortfolioOps Benchmark Matching (internal persistent file, 2026-08-16) for proof-first/clarity/accessibility principles. Functional principles only; no UI/code/trade-dress copied.
-- QA/design: visible language selector behavior is unchanged; metadata now matches the reviewed-content state instead of implying unsupported localization.
-- Security/privacy/legal/IP: no secrets, personal data, third-party copy, AI visibility guarantee, payment, publication or production deployment added.
-- Growth/sales: reviewed methodology variants can be shared/indexed without treating fallback pages as independently reviewed evidence surfaces.
-- Screen evidence: no user-facing pixel change in this run; the existing exact-branch workflow still executes real Chromium capture. ACTUAL SCREEN CAPTURE not newly required for metadata-only change.
-- Next Gate: add the first new reviewed methodology translation with translator/reviewer provenance and a deterministic provenance record; separately triage production dependency audit findings before any release claim.
+- Current Gate: reviewed methodology translations must carry deterministic provenance before becoming trusted localized evidence surfaces.
+- Personas/counter-case: Knowledge Registry lead wanted locale expansion; i18n engineer warned against uncontrolled fallback/duplicate semantics; Evidence/IP reviewer required reviewer identity, source revision and review time before trust. Decision: fail closed when provenance is incomplete.
+- Actual work: added `lib/i18n/translation-provenance.ts` with validation for locale/source locale, source revision, reviewer and parseable non-future review timestamp; extended existing i18n routing tests with valid/missing-reviewer/missing-source-revision/invalid-time cases.
+- Implementation commits: `f31b0e35aaf6a3fe3553dc913f184939b814a8b0`, `f7a33d7bd89182a699eee029020f76f6c778e104`.
+- Verification: exact-branch Actions run `31997098318` completed `success` for head `f7a33d7bd89182a699eee029020f76f6c778e104`.
+- QA/security/privacy/legal/IP: no translation was fabricated or marked reviewed; the validator is infrastructure only. No public deployment, billing, user data, external posting or AI-visibility claim.
+- Next Gate: connect the provenance validator to the first real reviewed methodology translation record and persist its source revision/reviewer evidence; separately complete production dependency audit before release claim.
 
 ## Per-run contract
-Every successful run must update this file with RUN_TS, Current Gate, implementation artifact/commit, verification, QA/design, security/privacy/legal/IP, screen evidence, and Next Gate. A run that only edits this ledger without a real implementation/recovery artifact is not progress.
+Every successful run must update this file with RUN_TS, Current Gate, implementation artifact/commit, verification, QA/design, security/privacy/legal/IP, screen evidence, and Next Gate. Ledger-only edits are not progress.
