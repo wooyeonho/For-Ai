@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   createReviewedTranslationSourceProvider,
   parseReviewedTranslationProviderJson,
+  validateReviewedTranslationHistory,
 } from "../lib/i18n/reviewed-translation-provider";
 import { getTranslationProvenanceKey } from "../lib/i18n/translation-provenance";
 
@@ -37,6 +38,27 @@ test("provider rejects conflicting records for the same locale and message key",
     assert.equal(conflicting.reason, "provider_record_conflict");
     assert.equal(conflicting.detail, "ko:method.title");
   }
+});
+
+test("history keeps one active reviewed record and requires explicit stale supersession linkage", () => {
+  const oldParsed = parseReviewedTranslationProviderJson(JSON.stringify([{ messageKey: "method.title", translatedText: "검증 방법", provenance: { locale: "ko", sourceLocale: "en", sourceRevision: "rev-1", reviewer: "reviewer-1", reviewedAt: "2026-08-17T14:00:00Z" } }]));
+  const newParsed = parseReviewedTranslationProviderJson(JSON.stringify([{ messageKey: "method.title", translatedText: "검증 방식", provenance: { locale: "ko", sourceLocale: "en", sourceRevision: "rev-2", reviewer: "reviewer-2", reviewedAt: "2026-08-18T00:00:00Z" } }]));
+  assert.equal(oldParsed.ok, true);
+  assert.equal(newParsed.ok, true);
+  if (!oldParsed.ok || !newParsed.ok) return;
+
+  const valid = validateReviewedTranslationHistory([
+    { record: oldParsed.records[0], status: "superseded", supersededByProvenanceKey: newParsed.records[0].provenanceKey },
+    { record: newParsed.records[0], status: "active" },
+  ]);
+  assert.equal(valid.ok, true);
+  if (valid.ok) assert.equal(valid.activeRecords[0].provenanceKey, newParsed.records[0].provenanceKey);
+
+  const staleUnlinked = validateReviewedTranslationHistory([
+    { record: oldParsed.records[0], status: "superseded" },
+    { record: newParsed.records[0], status: "active" },
+  ]);
+  assert.deepEqual(staleUnlinked, { ok: false, reason: "history_invalid_supersession", detail: "ko:method.title" });
 });
 
 test("source provider refuses reviewed records from a different revision or source locale", async () => {
