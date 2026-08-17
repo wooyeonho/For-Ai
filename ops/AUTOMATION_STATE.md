@@ -2,20 +2,20 @@
 
 - Branch: `automation/hourly-operator`
 - Main/production writes: forbidden until verified release gate
-- RUN_TS: 2026-08-17 22:38:33 KST
-- RUN_ID: PA-20260817-223833-KST-01
+- RUN_TS: 2026-08-17 23:09:40 KST
+- RUN_ID: PA-20260817-230940-KST-01
 - Status: VERIFIED
-- Current Gate: reviewed methodology translations need fail-closed locale/message lookup plus provenance-key lookup before any structured evidence surface may expose them.
-- Personas/counter-case: Knowledge Registry lead wanted direct locale/message resolution for AI-readable evidence; i18n engineer required normalization and deterministic lookup; Evidence/IP reviewer required missing/unreviewed records to return no evidence rather than synthetic fallback. Decision: add normalized locale/message lookup over the already-validated reviewed-record index and preserve null-on-missing behavior.
-- Actual work: `lib/i18n/reviewed-translation-index.ts` now exposes `findReviewedTranslation(index, locale, messageKey)` with normalized locale/message lookup and fail-closed null behavior. `test/reviewed-translation-index.test.ts` verifies normalized lookup, provenance identity, blank input denial and missing-key denial.
-- Implementation commits: `26fe597e7cd34ca3f27447fe466faad994fb22dd`, `2e8ece030e38fac317a6a522e2abcd8f86f54f24`.
-- Verification: exact-branch Actions run `32036231566` completed `success` for head `2e8ece030e38fac317a6a522e2abcd8f86f54f24`; reviewed translation contracts, production dependency integrity, methodology tests, lint, build, route assertions and Chromium capture passed.
-- Screen evidence: real Actions artifact `hourly-operator-screen` id `9290812512`, digest `sha256:3f3827780d77a514fb16d2195ccbc4499a0b959ed0b944f6cfb9e77ce8cdffa9`, generated from this run's verified implementation head. No generated/mock proof used.
-- Recovery performed: none required; both implementation pushes passed CI.
-- QA/security/privacy/legal/IP: no reviewer identity, reviewed translation, customer evidence, publication event, production dependency, deployment, billing or user data was fabricated or changed.
-- Blocker: first production-visible reviewed methodology translation still requires genuine reviewer/source-revision/review-time evidence.
-- Owner approval needed: none for further non-production validation; production publication/release remains gated.
-- Next Gate: add a structured-evidence projection adapter that can expose only an actually indexed reviewed record and its provenance key, with null/404 semantics for missing or unreviewed locale/message pairs; do not seed fake reviewed content.
+- Current Gate: structured AI-readable evidence may expose a reviewed methodology translation only when an actually indexed reviewed record exists, and must carry deterministic provenance identity.
+- Personas/counter-case: Knowledge Registry lead wanted a projection shape ready for evidence APIs; i18n engineer required projection to reuse the normalized reviewed index rather than a second lookup path; Evidence/IP reviewer required missing/unreviewed pairs to return null with no fabricated fallback. Decision: add a projection adapter over the existing fail-closed reviewed index only.
+- Actual work: added `lib/i18n/structured-evidence-projection.ts` and `test/structured-evidence-projection.test.ts`; updated exact-branch verification workflow so reviewed translation provenance/index/projection compile and execute together.
+- Implementation commits: `10c38c5c842289d4402fbe4eaf2ddb20089c398e`, `c37e2765975d76b4149c82a252acf37df9e7b380`, `c0dce0fb27bfd010f312231cec9836eb70831a82`.
+- Verification: exact-branch GitHub Actions run `32038208880` completed `success` for head `c0dce0fb27bfd010f312231cec9836eb70831a82`; production dependency integrity, methodology tests, reviewed translation provenance/index/projection tests, lint, build, route assertions and Chromium capture passed.
+- Screen evidence: real Actions artifact `hourly-operator-screen` id `9291350176`, digest `sha256:4ad77cbf7c83e19a4ca430f9d004d99d219399e3c0dfc362b6b642e7baeb0c3c`, generated from this run's exact implementation head.
+- Recovery performed: none required; implementation workflow passed.
+- QA/security/privacy/legal/IP: no reviewer identity, reviewed translation, customer evidence, production publish event, billing, deployment or user data was fabricated or changed.
+- Blocker: first production-visible projection still requires genuine reviewer/source-revision/review-time evidence; fake reviewed records remain forbidden.
+- Owner approval needed: none for non-production adapter/API validation; production publication/release remains gated.
+- Next Gate: connect `projectReviewedTranslationEvidence` to a non-production structured evidence/API boundary with explicit null/404 semantics for missing or unreviewed locale/message pairs, while keeping real reviewed content owner-gated.
 
 ## Per-run contract
 Every successful run must update this file with RUN_TS, RUN_ID, Current Gate, implementation artifact/commit, verification, QA/design, security/privacy/legal/IP, screen evidence, defects/blockers and exact Next Gate. Ledger-only edits are not progress.
