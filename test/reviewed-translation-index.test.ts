@@ -3,6 +3,7 @@ import test from "node:test";
 import { buildReviewedTranslationRecord } from "../lib/i18n/reviewed-translation-record";
 import {
   buildReviewedTranslationIndex,
+  findReviewedTranslation,
   findReviewedTranslationByProvenanceKey,
 } from "../lib/i18n/reviewed-translation-index";
 
@@ -31,6 +32,9 @@ test("indexes reviewed translations by locale/message and provenance key", () =>
   if (!result.ok) throw new Error("reviewed translation index unexpectedly failed");
   assert.equal(result.value.byLocaleMessage.get("ko:methodology.title")?.translatedText, ko.translatedText);
   assert.equal(findReviewedTranslationByProvenanceKey(result.value, en.provenanceKey)?.translatedText, en.translatedText);
+  assert.equal(findReviewedTranslation(result.value, " KO ", " methodology.title ")?.provenanceKey, ko.provenanceKey);
+  assert.equal(findReviewedTranslation(result.value, "", "methodology.title"), null);
+  assert.equal(findReviewedTranslation(result.value, "ko", "missing.key"), null);
 });
 
 test("fails closed on duplicate locale/message records", () => {
