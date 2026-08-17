@@ -1,4 +1,5 @@
 import type { ReviewedTranslationRecord } from "./reviewed-translation-record";
+import { parseAndSelectReviewedTranslationHistory } from "./reviewed-translation-provider";
 
 export type ReviewedTranslationIndex = {
   byLocaleMessage: Map<string, ReviewedTranslationRecord>;
@@ -24,6 +25,14 @@ export function buildReviewedTranslationIndex(
   }
 
   return { ok: true, value: { byLocaleMessage, byProvenanceKey } };
+}
+
+export function buildReviewedTranslationHistoryIndex(raw: string | undefined):
+  | { ok: true; value: ReviewedTranslationIndex }
+  | { ok: false; reason: string; detail?: string } {
+  const selected = parseAndSelectReviewedTranslationHistory(raw);
+  if (!selected.ok) return selected;
+  return buildReviewedTranslationIndex(selected.records);
 }
 
 export function findReviewedTranslationByProvenanceKey(
