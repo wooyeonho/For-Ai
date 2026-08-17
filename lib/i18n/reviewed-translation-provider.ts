@@ -40,6 +40,27 @@ export function parseReviewedTranslationProviderJson(raw: string | undefined): R
   return { ok: true, records };
 }
 
+export function createReviewedTranslationSourceProvider(input: {
+  readSource: () => Promise<string | undefined>;
+  expectedSourceRevision: string;
+}) {
+  const expectedSourceRevision = input.expectedSourceRevision.trim();
+  if (!expectedSourceRevision) throw new Error("expected_source_revision_required");
+
+  return async (): Promise<ReviewedTranslationRecord[]> => {
+    const parsed = parseReviewedTranslationProviderJson(await input.readSource());
+    if ("reason" in parsed) {
+      throw new Error(`${parsed.reason}${parsed.detail ? `:${parsed.detail}` : ""}`);
+    }
+    for (const record of parsed.records) {
+      if (record.provenance.sourceRevision !== expectedSourceRevision) {
+        throw new Error("provider_source_revision_mismatch");
+      }
+    }
+    return parsed.records;
+  };
+}
+
 export function createEnvReviewedTranslationProvider(envKey = "FOR_AI_REVIEWED_TRANSLATIONS_JSON") {
   return async (): Promise<ReviewedTranslationRecord[]> => {
     const parsed = parseReviewedTranslationProviderJson(process.env[envKey]);
