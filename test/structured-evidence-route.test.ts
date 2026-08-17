@@ -38,7 +38,7 @@ test("history route serves only the active reviewed translation and excludes sup
       sourceLocale: "en",
       sourceRevision: "rev-2",
       reviewer: "reviewer-2",
-      reviewedAt: "2026-08-18T01:00:00Z",
+      reviewedAt: "2026-08-17T21:00:00Z",
     },
   };
   const parsedOld = parseReviewedTranslationProviderJson(JSON.stringify([oldRecord]));
