@@ -1,16 +1,40 @@
+import type { Metadata } from "next";
 import { DEFAULT_LOCALE, LOCALE_CONFIG, SUPPORTED_LOCALES, isValidLocale } from "../../lib/i18n/locales";
 import { getMethodologyContent } from "../../lib/i18n/methodology-content";
 
 const STATUS_LABELS = ["Needs review", "Verified", "Stale / conflict"] as const;
+const REVIEWED_METHODOLOGY_LOCALES = ["ko", "en"] as const;
 
 type MethodologyPageProps = {
   searchParams: Promise<{ lang?: string | string[] }>;
 };
 
-export default async function MethodologyPage({ searchParams }: MethodologyPageProps) {
+async function resolveMethodologyLocale(searchParams: MethodologyPageProps["searchParams"]) {
   const params = await searchParams;
   const candidate = Array.isArray(params.lang) ? params.lang[0] : params.lang;
-  const requestedLocale = candidate && isValidLocale(candidate) ? candidate : DEFAULT_LOCALE;
+  return candidate && isValidLocale(candidate) ? candidate : DEFAULT_LOCALE;
+}
+
+export async function generateMetadata({ searchParams }: MethodologyPageProps): Promise<Metadata> {
+  const requestedLocale = await resolveMethodologyLocale(searchParams);
+  const content = getMethodologyContent(requestedLocale);
+  const canonicalLocale = content.contentLocale;
+
+  return {
+    title: content.title,
+    description: content.intro,
+    alternates: {
+      canonical: `/methodology?lang=${canonicalLocale}`,
+      languages: Object.fromEntries(
+        REVIEWED_METHODOLOGY_LOCALES.map((locale) => [locale, `/methodology?lang=${locale}`]),
+      ),
+    },
+    robots: content.fallback ? { index: false, follow: true } : undefined,
+  };
+}
+
+export default async function MethodologyPage({ searchParams }: MethodologyPageProps) {
+  const requestedLocale = await resolveMethodologyLocale(searchParams);
   const content = getMethodologyContent(requestedLocale);
 
   return (
