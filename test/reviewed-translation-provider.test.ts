@@ -4,6 +4,7 @@ import {
   createReviewedTranslationSourceProvider,
   parseReviewedTranslationProviderJson,
 } from "../lib/i18n/reviewed-translation-provider";
+import { getTranslationProvenanceKey } from "../lib/i18n/translation-provenance";
 
 test("provider fails closed for empty or malformed input", () => {
   assert.deepEqual(parseReviewedTranslationProviderJson(undefined), { ok: false, reason: "provider_empty" });
@@ -35,4 +36,33 @@ test("source provider refuses reviewed records from a different revision or sour
 
   const wrongSourceLocale = createReviewedTranslationSourceProvider({ readSource: async () => raw, expectedSourceRevision: "rev-20260818", expectedSourceLocale: "ko" });
   await assert.rejects(wrongSourceLocale(), /provider_source_locale_mismatch/);
+});
+
+test("source provider can pin an exact reviewed provenance pair without trusting caller keys", async () => {
+  const provenance = {
+    locale: "ko" as const,
+    sourceLocale: "en" as const,
+    sourceRevision: "rev-20260818",
+    reviewer: "reviewer-1",
+    reviewedAt: "2026-08-17T15:00:00Z",
+  };
+  const raw = JSON.stringify([{ messageKey: "method.title", translatedText: "검증 방법", provenance, provenanceKey: "forged" }]);
+  const expectedProvenanceKey = getTranslationProvenanceKey(provenance);
+
+  const matching = createReviewedTranslationSourceProvider({
+    readSource: async () => raw,
+    expectedSourceRevision: provenance.sourceRevision,
+    expectedSourceLocale: provenance.sourceLocale,
+    expectedProvenanceKey,
+  });
+  assert.equal((await matching())[0].provenanceKey, expectedProvenanceKey);
+
+  const wrongReviewerKey = getTranslationProvenanceKey({ ...provenance, reviewer: "reviewer-2" });
+  const mismatched = createReviewedTranslationSourceProvider({
+    readSource: async () => raw,
+    expectedSourceRevision: provenance.sourceRevision,
+    expectedSourceLocale: provenance.sourceLocale,
+    expectedProvenanceKey: wrongReviewerKey,
+  });
+  await assert.rejects(mismatched(), /provider_provenance_key_mismatch/);
 });
