@@ -40,6 +40,42 @@ export function validateReviewedTranslationHistory(entries: ReviewedTranslationH
   return { ok: true, activeRecords };
 }
 
+function buildHistoryEntry(candidate: Record<string, unknown>): ReviewedTranslationHistoryEntry | null {
+  const status = candidate.status === "active" || candidate.status === "superseded" ? candidate.status : null;
+  const source = candidate.record && typeof candidate.record === "object" ? candidate.record as Record<string, unknown> : null;
+  if (!status || !source) return null;
+  const built = buildReviewedTranslationRecord({
+    messageKey: typeof source.messageKey === "string" ? source.messageKey : undefined,
+    translatedText: typeof source.translatedText === "string" ? source.translatedText : undefined,
+    provenance: source.provenance && typeof source.provenance === "object" ? source.provenance as Partial<TranslationProvenance> : undefined,
+  });
+  if ("reason" in built) return null;
+  return {
+    record: built.value,
+    status,
+    ...(typeof candidate.supersededByProvenanceKey === "string" ? { supersededByProvenanceKey: candidate.supersededByProvenanceKey.trim() } : {}),
+  };
+}
+
+export function parseAndSelectReviewedTranslationHistory(raw: string | undefined):
+  | { ok: true; records: ReviewedTranslationRecord[] }
+  | { ok: false; reason: string; detail?: string } {
+  if (!raw?.trim()) return { ok: false, reason: "history_provider_empty" };
+  let parsed: unknown;
+  try { parsed = JSON.parse(raw); } catch { return { ok: false, reason: "history_provider_invalid_json" }; }
+  if (!Array.isArray(parsed)) return { ok: false, reason: "history_provider_not_array" };
+  const entries: ReviewedTranslationHistoryEntry[] = [];
+  for (const item of parsed) {
+    if (!item || typeof item !== "object") return { ok: false, reason: "history_provider_record_invalid" };
+    const entry = buildHistoryEntry(item as Record<string, unknown>);
+    if (!entry) return { ok: false, reason: "history_provider_record_invalid" };
+    entries.push(entry);
+  }
+  const selected = validateReviewedTranslationHistory(entries);
+  if (!selected.ok) return selected;
+  return { ok: true, records: selected.activeRecords };
+}
+
 export function parseReviewedTranslationProviderJson(raw: string | undefined): ReviewedTranslationProviderResult {
   if (!raw?.trim()) return { ok: false, reason: "provider_empty" };
 
