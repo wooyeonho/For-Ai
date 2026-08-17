@@ -16,7 +16,7 @@ test("provider recomputes reviewed provenance and rejects unreviewed records", (
   assert.equal(invalid.ok, false);
   if (!invalid.ok) assert.equal(invalid.reason, "provider_record_invalid");
 
-  const valid = parseReviewedTranslationProviderJson(JSON.stringify([{ messageKey: "method.title", translatedText: "검증 방법", provenance: { locale: "ko", sourceLocale: "en", sourceName: "methodology-canonical", sourceRevision: "rev-20260818", reviewer: "reviewer-1", reviewedAt: "2026-08-17T15:00:00Z" }, provenanceKey: "attacker-controlled" }]));
+  const valid = parseReviewedTranslationProviderJson(JSON.stringify([{ messageKey: "method.title", translatedText: "검증 방법", provenance: { locale: "ko", sourceLocale: "en", sourceRevision: "rev-20260818", reviewer: "reviewer-1", reviewedAt: "2026-08-17T15:00:00Z" }, provenanceKey: "attacker-controlled" }]));
   assert.equal(valid.ok, true);
   if (valid.ok) {
     assert.equal(valid.records.length, 1);
@@ -25,14 +25,14 @@ test("provider recomputes reviewed provenance and rejects unreviewed records", (
   }
 });
 
-test("source provider refuses reviewed records from a different revision or source identity", async () => {
-  const raw = JSON.stringify([{ messageKey: "method.title", translatedText: "검증 방법", provenance: { locale: "ko", sourceLocale: "en", sourceName: "methodology-canonical", sourceRevision: "rev-20260818", reviewer: "reviewer-1", reviewedAt: "2026-08-17T15:00:00Z" } }]);
-  const matching = createReviewedTranslationSourceProvider({ readSource: async () => raw, expectedSourceRevision: "rev-20260818", expectedSourceName: "methodology-canonical" });
+test("source provider refuses reviewed records from a different revision or source locale", async () => {
+  const raw = JSON.stringify([{ messageKey: "method.title", translatedText: "검증 방법", provenance: { locale: "ko", sourceLocale: "en", sourceRevision: "rev-20260818", reviewer: "reviewer-1", reviewedAt: "2026-08-17T15:00:00Z" } }]);
+  const matching = createReviewedTranslationSourceProvider({ readSource: async () => raw, expectedSourceRevision: "rev-20260818", expectedSourceLocale: "en" });
   assert.equal((await matching())[0].provenance.sourceRevision, "rev-20260818");
 
-  const stale = createReviewedTranslationSourceProvider({ readSource: async () => raw, expectedSourceRevision: "rev-20260819", expectedSourceName: "methodology-canonical" });
+  const stale = createReviewedTranslationSourceProvider({ readSource: async () => raw, expectedSourceRevision: "rev-20260819", expectedSourceLocale: "en" });
   await assert.rejects(stale(), /provider_source_revision_mismatch/);
 
-  const wrongSource = createReviewedTranslationSourceProvider({ readSource: async () => raw, expectedSourceRevision: "rev-20260818", expectedSourceName: "unreviewed-copy-paste" });
-  await assert.rejects(wrongSource(), /provider_source_name_mismatch/);
+  const wrongSourceLocale = createReviewedTranslationSourceProvider({ readSource: async () => raw, expectedSourceRevision: "rev-20260818", expectedSourceLocale: "ko" });
+  await assert.rejects(wrongSourceLocale(), /provider_source_locale_mismatch/);
 });
