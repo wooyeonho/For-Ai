@@ -23,7 +23,7 @@ export function buildReviewedTranslationRecord(input: {
   if (!translatedText) return { ok: false, reason: "missing_translated_text" };
 
   const reviewed = validateReviewedTranslationProvenance(input.provenance ?? {});
-  if (!reviewed.ok) return reviewed;
+  if (reviewed.ok === false) return { ok: false, reason: reviewed.reason };
   if (reviewed.value.locale === reviewed.value.sourceLocale) {
     return { ok: false, reason: "translation_locale_matches_source" };
   }
