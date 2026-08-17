@@ -1,6 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { parseReviewedTranslationProviderJson } from "../lib/i18n/reviewed-translation-provider";
+import {
+  createReviewedTranslationSourceProvider,
+  parseReviewedTranslationProviderJson,
+} from "../lib/i18n/reviewed-translation-provider";
 
 test("provider fails closed for empty or malformed input", () => {
   assert.deepEqual(parseReviewedTranslationProviderJson(undefined), { ok: false, reason: "provider_empty" });
@@ -20,4 +23,13 @@ test("provider recomputes reviewed provenance and rejects unreviewed records", (
     assert.notEqual(valid.records[0].provenanceKey, "attacker-controlled");
     assert.match(valid.records[0].provenanceKey, /^en\|ko\|rev-20260818\|reviewer-1\|/);
   }
+});
+
+test("source provider refuses reviewed records from a different source revision", async () => {
+  const raw = JSON.stringify([{ messageKey: "method.title", translatedText: "검증 방법", provenance: { locale: "ko", sourceLocale: "en", sourceRevision: "rev-20260818", reviewer: "reviewer-1", reviewedAt: "2026-08-17T15:00:00Z" } }]);
+  const matching = createReviewedTranslationSourceProvider({ readSource: async () => raw, expectedSourceRevision: "rev-20260818" });
+  assert.equal((await matching())[0].provenance.sourceRevision, "rev-20260818");
+
+  const stale = createReviewedTranslationSourceProvider({ readSource: async () => raw, expectedSourceRevision: "rev-20260819" });
+  await assert.rejects(stale(), /provider_source_revision_mismatch/);
 });
