@@ -27,11 +27,11 @@ jobs:
           rm -rf .tmp/methodology-test
           npx tsc --module commonjs --target ES2020 --lib ES2020,DOM --moduleResolution node --esModuleInterop --skipLibCheck --noEmit false --outDir .tmp/methodology-test lib/i18n/locales.ts lib/i18n/methodology-content.ts test/methodology-content.test.ts
           node --test .tmp/methodology-test/test/methodology-content.test.js
-      - name: Verify reviewed translation provenance intake and lookup index
+      - name: Verify reviewed translation provenance intake, lookup and evidence projection
         run: |
           rm -rf .tmp/reviewed-translation-test
-          npx tsc --module commonjs --target ES2020 --lib ES2020,DOM --moduleResolution node --esModuleInterop --skipLibCheck --noEmit false --outDir .tmp/reviewed-translation-test lib/i18n/locales.ts lib/i18n/translation-provenance.ts lib/i18n/reviewed-translation-record.ts lib/i18n/reviewed-translation-index.ts test/reviewed-translation-record.test.ts test/reviewed-translation-index.test.ts
-          node --test .tmp/reviewed-translation-test/test/reviewed-translation-record.test.js .tmp/reviewed-translation-test/test/reviewed-translation-index.test.js
+          npx tsc --module commonjs --target ES2020 --lib ES2020,DOM --moduleResolution node --esModuleInterop --skipLibCheck --noEmit false --outDir .tmp/reviewed-translation-test lib/i18n/locales.ts lib/i18n/translation-provenance.ts lib/i18n/reviewed-translation-record.ts lib/i18n/reviewed-translation-index.ts lib/i18n/structured-evidence-projection.ts test/reviewed-translation-record.test.ts test/reviewed-translation-index.test.ts test/structured-evidence-projection.test.ts
+          node --test .tmp/reviewed-translation-test/test/reviewed-translation-record.test.js .tmp/reviewed-translation-test/test/reviewed-translation-index.test.js .tmp/reviewed-translation-test/test/structured-evidence-projection.test.js
       - run: npm run lint
       - run: npm run build
       - name: Start exact branch build
