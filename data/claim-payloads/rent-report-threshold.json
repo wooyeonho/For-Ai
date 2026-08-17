@@ -1,0 +1,54 @@
+{
+  "slug": "rent-report-threshold",
+  "country": "KR",
+  "lang": "ko",
+  "verified_at": "YYYY-MM-DD",
+  "_meta": {
+    "title": "전월세 신고 기준",
+    "category": "finance.housing",
+    "why_people_ask_ai": "임대차 신고 의무 기준이 지역별로 다를 수 있어서",
+    "why_ai_gets_wrong": "보증금/월세 기준, 신고 기한, 대상 지역을 혼동",
+    "required_source_types": [
+      "law"
+    ],
+    "instructions": "Fill each claim below with the real value from an official source. Set verified_at to the date you confirmed the value. Do NOT guess — if you cannot confirm from an official source, delete this file."
+  },
+  "claims": [
+    {
+      "field_path": "threshold.deposit",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "임대차 신고 의무 보증금 기준은?",
+      "sources": [
+        {
+          "source_type": "law",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    },
+    {
+      "field_path": "deadline.days",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "임대차 계약 신고 기한은?",
+      "sources": [
+        {
+          "source_type": "law",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "slug": "subway-platform-structure-types",
+  "country": "KR",
+  "lang": "ko",
+  "verified_at": "YYYY-MM-DD",
+  "_meta": {
+    "title": "지하철 승강장 구조 종류",
+    "category": "transport.structure",
+    "why_people_ask_ai": "섬식/상대식/혼합식 승강장 차이를 궁금해함",
+    "why_ai_gets_wrong": "섬식과 상대식 설명을 반대로 하거나, 예시 역을 틀림",
+    "required_source_types": [
+      "document"
+    ],
+    "instructions": "Fill each claim below with the real value from an official source. Set verified_at to the date you confirmed the value. Do NOT guess — if you cannot confirm from an official source, delete this file."
+  },
+  "claims": [
+    {
+      "field_path": "types.island_platform",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "섬식 승강장의 구조는?",
+      "sources": [
+        {
+          "source_type": "document",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    },
+    {
+      "field_path": "types.side_platform",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "상대식 승강장의 구조는?",
+      "sources": [
+        {
+          "source_type": "document",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "slug": "faucet-types",
+  "country": "KR",
+  "lang": "ko",
+  "verified_at": "YYYY-MM-DD",
+  "_meta": {
+    "title": "수도꼭지 종류",
+    "category": "plumbing.fixture",
+    "why_people_ask_ai": "교체 시 종류와 규격을 물어봄",
+    "why_ai_gets_wrong": "단수전/혼합수전, 벽부/상부 구분, 카트리지 종류를 혼동",
+    "required_source_types": [
+      "document"
+    ],
+    "instructions": "Fill each claim below with the real value from an official source. Set verified_at to the date you confirmed the value. Do NOT guess — if you cannot confirm from an official source, delete this file."
+  },
+  "claims": [
+    {
+      "field_path": "types.single_lever",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "싱글레버 수도꼭지의 특징은?",
+      "sources": [
+        {
+          "source_type": "document",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    },
+    {
+      "field_path": "types.two_handle",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "투핸들 수도꼭지의 특징은?",
+      "sources": [
+        {
+          "source_type": "document",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    }
+  ]
+}

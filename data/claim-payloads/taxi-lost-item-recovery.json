@@ -1,0 +1,55 @@
+{
+  "slug": "taxi-lost-item-recovery",
+  "country": "KR",
+  "lang": "ko",
+  "verified_at": "YYYY-MM-DD",
+  "_meta": {
+    "title": "택시 분실물 찾기 방법",
+    "category": "transport.taxi",
+    "why_people_ask_ai": "택시에 물건 두고 내렸을 때 어떻게 찾는지",
+    "why_ai_gets_wrong": "카카오T/일반호출/길거리 승차별 분실물 신고 경로가 다른데 혼동",
+    "required_source_types": [
+      "platform",
+      "official"
+    ],
+    "instructions": "Fill each claim below with the real value from an official source. Set verified_at to the date you confirmed the value. Do NOT guess — if you cannot confirm from an official source, delete this file."
+  },
+  "claims": [
+    {
+      "field_path": "method.kakao_t",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "카카오T 택시 분실물 신고 방법은?",
+      "sources": [
+        {
+          "source_type": "platform",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    },
+    {
+      "field_path": "method.general",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "일반 택시 분실물 찾기 방법은?",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    }
+  ]
+}

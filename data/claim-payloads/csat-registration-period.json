@@ -1,0 +1,72 @@
+{
+  "slug": "csat-registration-period",
+  "country": "KR",
+  "lang": "ko",
+  "verified_at": "YYYY-MM-DD",
+  "_meta": {
+    "title": "수능 접수 기간",
+    "category": "education.admissions",
+    "why_people_ask_ai": "매년 접수 기간이 바뀌어서 확인 필요",
+    "why_ai_gets_wrong": "작년 일정을 올해 일정으로 답하는 경우 많음",
+    "required_source_types": [
+      "official"
+    ],
+    "instructions": "Fill each claim below with the real value from an official source. Set verified_at to the date you confirmed the value. Do NOT guess — if you cannot confirm from an official source, delete this file."
+  },
+  "claims": [
+    {
+      "field_path": "registration.start_date",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "수능 접수 시작일은?",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    },
+    {
+      "field_path": "registration.end_date",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "수능 접수 마감일은?",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    },
+    {
+      "field_path": "exam.date",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "수능 시험일은?",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    }
+  ]
+}

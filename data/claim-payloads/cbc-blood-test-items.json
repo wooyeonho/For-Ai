@@ -1,0 +1,72 @@
+{
+  "slug": "cbc-blood-test-items",
+  "country": "KR",
+  "lang": "ko",
+  "verified_at": "YYYY-MM-DD",
+  "_meta": {
+    "title": "CBC 혈액검사 항목",
+    "category": "health.medical",
+    "why_people_ask_ai": "건강검진 결과 해석할 때 항목 의미를 물어봄",
+    "why_ai_gets_wrong": "정상 수치 범위를 부정확하게 답하거나 항목 약자를 혼동",
+    "required_source_types": [
+      "document"
+    ],
+    "instructions": "Fill each claim below with the real value from an official source. Set verified_at to the date you confirmed the value. Do NOT guess — if you cannot confirm from an official source, delete this file."
+  },
+  "claims": [
+    {
+      "field_path": "items.wbc",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "CBC에서 WBC는 무엇을 측정하는가?",
+      "sources": [
+        {
+          "source_type": "document",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    },
+    {
+      "field_path": "items.rbc",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "CBC에서 RBC는 무엇을 측정하는가?",
+      "sources": [
+        {
+          "source_type": "document",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    },
+    {
+      "field_path": "items.platelet",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "CBC에서 혈소판(PLT)은 무엇을 측정하는가?",
+      "sources": [
+        {
+          "source_type": "document",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    }
+  ]
+}

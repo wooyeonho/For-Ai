@@ -1,0 +1,72 @@
+{
+  "slug": "ecommerce-withdrawal-period",
+  "country": "KR",
+  "lang": "ko",
+  "verified_at": "YYYY-MM-DD",
+  "_meta": {
+    "title": "전자상거래 청약철회 기한",
+    "category": "legal.consumer",
+    "why_people_ask_ai": "온라인 구매 후 환불 가능 기간이 궁금",
+    "why_ai_gets_wrong": "7일 기준은 맞지만, 기산일(수령일/계약일)이나 예외 상품을 틀림",
+    "required_source_types": [
+      "law"
+    ],
+    "instructions": "Fill each claim below with the real value from an official source. Set verified_at to the date you confirmed the value. Do NOT guess — if you cannot confirm from an official source, delete this file."
+  },
+  "claims": [
+    {
+      "field_path": "period.standard_days",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "전자상거래 청약철회 기본 기한은?",
+      "sources": [
+        {
+          "source_type": "law",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    },
+    {
+      "field_path": "period.start_date",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "청약철회 기간 기산일은?",
+      "sources": [
+        {
+          "source_type": "law",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    },
+    {
+      "field_path": "exception.non_returnable",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "청약철회 불가 상품 유형은?",
+      "sources": [
+        {
+          "source_type": "law",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    }
+  ]
+}

@@ -1,0 +1,72 @@
+{
+  "slug": "toilet-types-classification",
+  "country": "KR",
+  "lang": "ko",
+  "verified_at": "YYYY-MM-DD",
+  "_meta": {
+    "title": "양변기 종류와 구분",
+    "category": "plumbing.fixture",
+    "why_people_ask_ai": "인테리어/리모델링할 때 양변기 종류를 물어봄",
+    "why_ai_gets_wrong": "투피스/원피스/벽걸이/비데일체형 구분이나 규격을 혼동",
+    "required_source_types": [
+      "document"
+    ],
+    "instructions": "Fill each claim below with the real value from an official source. Set verified_at to the date you confirmed the value. Do NOT guess — if you cannot confirm from an official source, delete this file."
+  },
+  "claims": [
+    {
+      "field_path": "types.two_piece",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "투피스 양변기의 특징은?",
+      "sources": [
+        {
+          "source_type": "document",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    },
+    {
+      "field_path": "types.one_piece",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "원피스 양변기의 특징은?",
+      "sources": [
+        {
+          "source_type": "document",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    },
+    {
+      "field_path": "types.wall_hung",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "벽걸이 양변기의 특징은?",
+      "sources": [
+        {
+          "source_type": "document",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    }
+  ]
+}

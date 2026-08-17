@@ -1,0 +1,72 @@
+{
+  "slug": "ktx-srt-difference",
+  "country": "KR",
+  "lang": "ko",
+  "verified_at": "YYYY-MM-DD",
+  "_meta": {
+    "title": "KTX vs SRT 차이",
+    "category": "transport.rail",
+    "why_people_ask_ai": "두 고속열차의 차이(노선, 운영사, 요금)를 모르는 사람이 많아서",
+    "why_ai_gets_wrong": "운영사 구분, 출발역 차이(서울역 vs 수서역), 가격 비교를 부정확하게 답함",
+    "required_source_types": [
+      "official"
+    ],
+    "instructions": "Fill each claim below with the real value from an official source. Set verified_at to the date you confirmed the value. Do NOT guess — if you cannot confirm from an official source, delete this file."
+  },
+  "claims": [
+    {
+      "field_path": "operator.ktx",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "KTX 운영사는?",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    },
+    {
+      "field_path": "operator.srt",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "SRT 운영사는?",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    },
+    {
+      "field_path": "station.ktx_main",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "KTX 주요 출발역은?",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    }
+  ]
+}

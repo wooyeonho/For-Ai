@@ -1,0 +1,72 @@
+{
+  "slug": "unemployment-benefit-eligibility",
+  "country": "KR",
+  "lang": "ko",
+  "verified_at": "YYYY-MM-DD",
+  "_meta": {
+    "title": "실업급여 수급 조건",
+    "category": "labor.benefits",
+    "why_people_ask_ai": "퇴사 후 실업급여 받을 수 있는지 조건 확인",
+    "why_ai_gets_wrong": "자발적 퇴사/비자발적 퇴사 구분, 피보험 기간 기준을 부정확하게 답함",
+    "required_source_types": [
+      "official"
+    ],
+    "instructions": "Fill each claim below with the real value from an official source. Set verified_at to the date you confirmed the value. Do NOT guess — if you cannot confirm from an official source, delete this file."
+  },
+  "claims": [
+    {
+      "field_path": "eligibility.insured_period",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "실업급여 최소 피보험 기간은?",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    },
+    {
+      "field_path": "eligibility.voluntary_quit",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "자발적 퇴사 시 실업급여 수급 가능한가?",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    },
+    {
+      "field_path": "duration.max_days",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "실업급여 최대 수급 기간은?",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "slug": "low-floor-bus-vs-regular-bus",
+  "country": "KR",
+  "lang": "ko",
+  "verified_at": "YYYY-MM-DD",
+  "_meta": {
+    "title": "저상버스 vs 일반버스 차이",
+    "category": "transport.bus",
+    "why_people_ask_ai": "휠체어/유모차 이용 시 저상버스를 찾으려고",
+    "why_ai_gets_wrong": "저상버스 운행 비율, 노선 확인 방법을 부정확하게 답함",
+    "required_source_types": [
+      "official"
+    ],
+    "instructions": "Fill each claim below with the real value from an official source. Set verified_at to the date you confirmed the value. Do NOT guess — if you cannot confirm from an official source, delete this file."
+  },
+  "claims": [
+    {
+      "field_path": "features.low_floor",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "저상버스의 특징은?",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    },
+    {
+      "field_path": "ratio.seoul_percentage",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "서울 시내버스 저상버스 비율은?",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    }
+  ]
+}

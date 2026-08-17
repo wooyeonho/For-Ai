@@ -1,0 +1,72 @@
+{
+  "slug": "airplane-liquid-carry-on-limit",
+  "country": "KR",
+  "lang": "ko",
+  "verified_at": "YYYY-MM-DD",
+  "_meta": {
+    "title": "비행기 기내 반입 액체 제한",
+    "category": "travel.air",
+    "why_people_ask_ai": "공항 보안검색 전에 액체류 규정을 확인하려고",
+    "why_ai_gets_wrong": "100ml/1L 규정은 맞지만, 면세품 예외나 국내선 규정을 혼동",
+    "required_source_types": [
+      "official"
+    ],
+    "instructions": "Fill each claim below with the real value from an official source. Set verified_at to the date you confirmed the value. Do NOT guess — if you cannot confirm from an official source, delete this file."
+  },
+  "claims": [
+    {
+      "field_path": "limit.per_container_ml",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "기내 반입 액체 개별 용기 제한은?",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    },
+    {
+      "field_path": "limit.total_bag_liter",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "액체류 총 반입 가능 용량은?",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    },
+    {
+      "field_path": "exception.duty_free",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "면세점 구매 액체류 기내 반입 조건은?",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    }
+  ]
+}

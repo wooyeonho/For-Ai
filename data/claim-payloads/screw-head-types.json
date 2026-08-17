@@ -1,0 +1,72 @@
+{
+  "slug": "screw-head-types",
+  "country": "KR",
+  "lang": "ko",
+  "verified_at": "YYYY-MM-DD",
+  "_meta": {
+    "title": "나사 머리 종류",
+    "category": "hardware.standard",
+    "why_people_ask_ai": "DIY/수리 시 어떤 드라이버를 써야 하는지",
+    "why_ai_gets_wrong": "십자(Phillips) vs 포지드라이브(Pozidriv), 육각(Allen) 등 혼동",
+    "required_source_types": [
+      "document"
+    ],
+    "instructions": "Fill each claim below with the real value from an official source. Set verified_at to the date you confirmed the value. Do NOT guess — if you cannot confirm from an official source, delete this file."
+  },
+  "claims": [
+    {
+      "field_path": "types.phillips",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "Phillips(십자) 나사의 특징은?",
+      "sources": [
+        {
+          "source_type": "document",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    },
+    {
+      "field_path": "types.flathead",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "일자(Flathead) 나사의 특징은?",
+      "sources": [
+        {
+          "source_type": "document",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    },
+    {
+      "field_path": "types.hex",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "육각(Hex/Allen) 나사의 특징은?",
+      "sources": [
+        {
+          "source_type": "document",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    }
+  ]
+}

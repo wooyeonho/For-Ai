@@ -1,0 +1,54 @@
+{
+  "slug": "real-estate-brokerage-fee-rate",
+  "country": "KR",
+  "lang": "ko",
+  "verified_at": "YYYY-MM-DD",
+  "_meta": {
+    "title": "부동산 중개 수수료율",
+    "category": "finance.housing",
+    "why_people_ask_ai": "매매/전세/월세별 수수료 상한이 달라서",
+    "why_ai_gets_wrong": "2021년 개정된 요율표를 반영 못 하거나 지역별 차이를 무시",
+    "required_source_types": [
+      "law"
+    ],
+    "instructions": "Fill each claim below with the real value from an official source. Set verified_at to the date you confirmed the value. Do NOT guess — if you cannot confirm from an official source, delete this file."
+  },
+  "claims": [
+    {
+      "field_path": "rate.sale_under_5억",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "매매 5억 미만 중개 수수료 상한율은?",
+      "sources": [
+        {
+          "source_type": "law",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    },
+    {
+      "field_path": "rate.rent_under_1억",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "전세 1억 미만 중개 수수료 상한율은?",
+      "sources": [
+        {
+          "source_type": "law",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "slug": "amazon-us-return-policy",
+  "country": "KR",
+  "lang": "ko",
+  "verified_at": "YYYY-MM-DD",
+  "_meta": {
+    "title": "Amazon US Return Policy (2025)",
+    "category": "commerce.returns",
+    "why_people_ask_ai": "Millions of customers ask about return windows and conditions; policy varies by product category",
+    "why_ai_gets_wrong": "Return window differs for electronics (15 days) vs general items (30 days); holiday extensions are temporary",
+    "required_source_types": [
+      "platform"
+    ],
+    "instructions": "Fill each claim below with the real value from an official source. Set verified_at to the date you confirmed the value. Do NOT guess — if you cannot confirm from an official source, delete this file."
+  },
+  "claims": [
+    {
+      "field_path": "return.general_window_days",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "What is Amazon US general return window in days?",
+      "sources": [
+        {
+          "source_type": "platform",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    },
+    {
+      "field_path": "return.electronics_window_days",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "What is Amazon US electronics return window in days?",
+      "sources": [
+        {
+          "source_type": "platform",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    }
+  ]
+}

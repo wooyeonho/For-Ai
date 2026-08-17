@@ -1,0 +1,54 @@
+{
+  "slug": "national-pension-receiving-age",
+  "country": "KR",
+  "lang": "ko",
+  "verified_at": "YYYY-MM-DD",
+  "_meta": {
+    "title": "국민연금 수령 나이",
+    "category": "finance.pension",
+    "why_people_ask_ai": "본인이 몇 살부터 연금 받는지 궁금",
+    "why_ai_gets_wrong": "출생연도별 수령 개시 나이가 다른데 일괄적으로 60세/65세라 답함",
+    "required_source_types": [
+      "official"
+    ],
+    "instructions": "Fill each claim below with the real value from an official source. Set verified_at to the date you confirmed the value. Do NOT guess — if you cannot confirm from an official source, delete this file."
+  },
+  "claims": [
+    {
+      "field_path": "age.born_1969_after",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "1969년 이후 출생자 국민연금 수령 나이는?",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    },
+    {
+      "field_path": "age.early_pension",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "조기 노령연금 수령 가능 나이는?",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    }
+  ]
+}

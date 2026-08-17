@@ -1,0 +1,72 @@
+{
+  "slug": "regular-taxi-vs-deluxe-taxi",
+  "country": "KR",
+  "lang": "ko",
+  "verified_at": "YYYY-MM-DD",
+  "_meta": {
+    "title": "일반 택시 vs 모범 택시 차이",
+    "category": "transport.taxi",
+    "why_people_ask_ai": "요금 차이, 콜비, 심야 할증 등이 다른지 궁금해서",
+    "why_ai_gets_wrong": "지역별 요금이 다르고, 최근 요금 인상을 반영 못 함",
+    "required_source_types": [
+      "official"
+    ],
+    "instructions": "Fill each claim below with the real value from an official source. Set verified_at to the date you confirmed the value. Do NOT guess — if you cannot confirm from an official source, delete this file."
+  },
+  "claims": [
+    {
+      "field_path": "fare.regular_base_seoul",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "서울 일반 택시 기본요금은?",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    },
+    {
+      "field_path": "fare.deluxe_base_seoul",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "서울 모범 택시 기본요금은?",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    },
+    {
+      "field_path": "surcharge.night_rate",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "택시 심야 할증 시간대와 비율은?",
+      "sources": [
+        {
+          "source_type": "official",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    }
+  ]
+}

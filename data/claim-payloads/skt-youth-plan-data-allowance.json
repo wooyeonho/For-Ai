@@ -1,0 +1,54 @@
+{
+  "slug": "skt-youth-plan-data-allowance",
+  "country": "KR",
+  "lang": "ko",
+  "verified_at": "YYYY-MM-DD",
+  "_meta": {
+    "title": "SKT 청소년 요금제 데이터 제공량",
+    "category": "telecom.mobile",
+    "why_people_ask_ai": "자녀 요금제 비교할 때 데이터 양을 물어봄",
+    "why_ai_gets_wrong": "요금제가 자주 개편되어 AI가 구버전 정보를 답함",
+    "required_source_types": [
+      "platform"
+    ],
+    "instructions": "Fill each claim below with the real value from an official source. Set verified_at to the date you confirmed the value. Do NOT guess — if you cannot confirm from an official source, delete this file."
+  },
+  "claims": [
+    {
+      "field_path": "plan.data_gb",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "SKT 청소년 요금제 기본 데이터 제공량은?",
+      "sources": [
+        {
+          "source_type": "platform",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    },
+    {
+      "field_path": "plan.monthly_fee",
+      "claim_value": "TODO: fill from official source",
+      "confidence": "high",
+      "claim_text": "SKT 청소년 요금제 월 기본료는?",
+      "sources": [
+        {
+          "source_type": "platform",
+          "title": "TODO: official source page title",
+          "url": "TODO: https://...",
+          "observed_at": "YYYY-MM-DD",
+          "note": "TODO: how the value was confirmed"
+        }
+      ],
+      "verification_event": {
+        "note": "TODO: verification context"
+      }
+    }
+  ]
+}
