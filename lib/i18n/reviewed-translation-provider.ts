@@ -1,4 +1,5 @@
 import { buildReviewedTranslationRecord, type ReviewedTranslationRecord } from "./reviewed-translation-record";
+import type { TranslationProvenance } from "./translation-provenance";
 
 export type ReviewedTranslationProviderResult =
   | { ok: true; records: ReviewedTranslationRecord[] }
@@ -27,7 +28,7 @@ export function parseReviewedTranslationProviderJson(raw: string | undefined): R
       translatedText: typeof candidate.translatedText === "string" ? candidate.translatedText : undefined,
       provenance:
         candidate.provenance && typeof candidate.provenance === "object"
-          ? (candidate.provenance as Record<string, unknown>)
+          ? (candidate.provenance as Partial<TranslationProvenance>)
           : undefined,
     });
     if (!built.ok) {
