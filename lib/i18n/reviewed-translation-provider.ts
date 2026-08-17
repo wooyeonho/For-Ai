@@ -43,8 +43,10 @@ export function parseReviewedTranslationProviderJson(raw: string | undefined): R
 export function createReviewedTranslationSourceProvider(input: {
   readSource: () => Promise<string | undefined>;
   expectedSourceRevision: string;
+  expectedSourceName?: string;
 }) {
   const expectedSourceRevision = input.expectedSourceRevision.trim();
+  const expectedSourceName = input.expectedSourceName?.trim();
   if (!expectedSourceRevision) throw new Error("expected_source_revision_required");
 
   return async (): Promise<ReviewedTranslationRecord[]> => {
@@ -55,6 +57,9 @@ export function createReviewedTranslationSourceProvider(input: {
     for (const record of parsed.records) {
       if (record.provenance.sourceRevision !== expectedSourceRevision) {
         throw new Error("provider_source_revision_mismatch");
+      }
+      if (expectedSourceName && record.provenance.sourceName !== expectedSourceName) {
+        throw new Error("provider_source_name_mismatch");
       }
     }
     return parsed.records;
