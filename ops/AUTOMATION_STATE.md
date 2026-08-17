@@ -2,16 +2,16 @@
 
 - Branch: `automation/hourly-operator`
 - Main/production writes: forbidden until verified release gate
-- RUN_TS: 2026-08-18 03:24:37 KST
-- RUN_ID: PA-20260818-032437-KST-01
+- RUN_TS: 2026-08-18 03:38:25 KST
+- RUN_ID: PA-20260818-033825-KST-01
 - Status: VERIFIED
-- Current Gate: bind reviewed translation evidence to the exact canonical reviewed provenance pair without trusting caller-supplied keys or permitting source substitution.
-- Personas/counter-case: Knowledge Registry Lead wanted exact evidence identity; Data/Provenance Engineer required recomputation from canonical provenance fields; Evidence/IP Reviewer rejected fabricated source/reviewer data. Decision: add optional exact provenance-key pinning while preserving existing revision/locale checks.
-- Actual work this run: `lib/i18n/reviewed-translation-provider.ts` now accepts `expectedProvenanceKey` and recomputes the canonical key from validated provenance; mismatch fails closed. `test/reviewed-translation-provider.test.ts` proves matching exact pairs pass and forged/wrong-reviewer keys fail.
-- Implementation commits: `a19de426ba98b0b12c763b31f04eabd85f00f320`, `1db484c1dc4b15543fc0a46429ae37186ca490f7`.
-- Verification: exact-head Actions `32054870716` completed `success` for `1db484c1dc4b15543fc0a46429ae37186ca490f7`.
-- Screen evidence: current-run `hourly-operator-screen` artifact `9296058560`, digest `sha256:a5abeb8a700e4e1c09a4e9f5ad263f40cc5da0118678a7ebe61077c07b2053f1`.
-- Recovery performed: none required after implementation; exact-head CI passed.
-- Blocker: a genuine approved reviewed translation record is still required for a truthful 200 reviewed-evidence response; none was fabricated.
-- Owner approval needed: none for isolated genuine-source integration; production release/publication remains owner-gated.
-- Exact Next Gate: bind one genuine non-production reviewed record to the provider using its exact provenance key, prove missing/stale/mismatched evidence denial, then add correction/history linkage.
+- Current Gate: preserve one canonical reviewed translation per locale/message pair and fail closed when provider evidence conflicts before any reviewed copy can influence the Evidence Wiki surface.
+- Personas/counter-case: Knowledge Registry Lead wanted deterministic claim/evidence identity; Provenance Engineer required conflict detection before source-provider pinning; Evidence/IP Reviewer rejected silently accepting competing reviewed text for one locale/message pair. Counter-case: legitimate correction history can contain multiple historical versions, so the provider gate is scoped to the active provider payload and does not erase history. Decision: reject conflicting active pairs while allowing exact duplicates.
+- Actual work this run: `lib/i18n/reviewed-translation-provider.ts` now detects conflicting records for the same `locale:messageKey` after canonical provenance recomputation and returns `provider_record_conflict`; `test/reviewed-translation-provider.test.ts` proves conflicting reviewed text/reviewer evidence fails closed.
+- Implementation commits: `2254468a86ffd987603a77d495cbf54e253c1961`, `d486f97c12283e2bd39e6338e0623631aa90b094`.
+- Verification: current-run exact-head Actions `32056049882` completed `success` for `d486f97c12283e2bd39e6338e0623631aa90b094`.
+- Screen evidence: current-run `hourly-operator-screen` artifact `9296457981`, digest `sha256:b7365fbf72e7fdd915bf6683e03149cf2e2f627772b66e5dda46686179c566b4`.
+- Recovery performed: first GitHub test-file update returned transient 502; retried unchanged safe write and CI passed. No gate weakening.
+- Blocker: a genuine approved reviewed translation record is still required for truthful reviewed-copy activation; none was fabricated.
+- Owner approval needed: none for isolated evidence-history/correction integration; production publication remains owner-gated.
+- Exact Next Gate: add explicit correction/supersession linkage for reviewed translation records so historical evidence can coexist while exactly one active locale/message pair is selected; then bind one genuine non-production reviewed record and prove stale/superseded denial.
