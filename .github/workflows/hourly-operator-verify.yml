@@ -55,11 +55,11 @@ jobs:
           grep -q 'For-Ai verification method' /tmp/methodology-en.html
           grep -q 'canonical English version is shown' /tmp/methodology-hi.html
           grep -q 'हिन्दी' /tmp/methodology-hi.html
-      - name: Assert non-production structured evidence route fails closed without reviewed provider
+      - name: Assert production runtime hides non-production structured evidence route
         run: |
           status="$(curl --silent --output /tmp/structured-evidence.json --write-out '%{http_code}' 'http://127.0.0.1:3000/api/internal/structured-evidence?locale=ko&messageKey=method.title')"
-          test "$status" = "503"
-          grep -q 'reviewed_translation_provider_unavailable' /tmp/structured-evidence.json
+          test "$status" = "404"
+          grep -q 'non_production_only' /tmp/structured-evidence.json
       - name: Capture real home and methodology screens with installed Chromium
         run: |
           mkdir -p artifacts
