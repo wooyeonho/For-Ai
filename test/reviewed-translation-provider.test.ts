@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   createReviewedTranslationSourceProvider,
+  parseAndSelectReviewedTranslationHistory,
   parseReviewedTranslationProviderJson,
   validateReviewedTranslationHistory,
 } from "../lib/i18n/reviewed-translation-provider";
@@ -59,6 +60,30 @@ test("history keeps one active reviewed record and requires explicit stale super
     { record: newParsed.records[0], status: "active" },
   ]);
   assert.deepEqual(staleUnlinked, { ok: false, reason: "history_invalid_supersession", detail: "ko:method.title" });
+});
+
+test("history provider emits only the active record and rejects stale unlinked history", () => {
+  const oldRecord = { messageKey: "method.title", translatedText: "검증 방법", provenance: { locale: "ko", sourceLocale: "en", sourceRevision: "rev-1", reviewer: "reviewer-1", reviewedAt: "2026-08-17T14:00:00Z" } };
+  const newRecord = { messageKey: "method.title", translatedText: "검증 방식", provenance: { locale: "ko", sourceLocale: "en", sourceRevision: "rev-2", reviewer: "reviewer-2", reviewedAt: "2026-08-17T19:00:00Z" } };
+  const builtNew = parseReviewedTranslationProviderJson(JSON.stringify([newRecord]));
+  assert.equal(builtNew.ok, true);
+  if (!builtNew.ok) return;
+  const activeKey = builtNew.records[0].provenanceKey;
+  const selected = parseAndSelectReviewedTranslationHistory(JSON.stringify([
+    { record: oldRecord, status: "superseded", supersededByProvenanceKey: activeKey },
+    { record: newRecord, status: "active" },
+  ]));
+  assert.equal(selected.ok, true);
+  if (selected.ok) {
+    assert.equal(selected.records.length, 1);
+    assert.equal(selected.records[0].provenanceKey, activeKey);
+    assert.equal(selected.records[0].translatedText, "검증 방식");
+  }
+  const invalid = parseAndSelectReviewedTranslationHistory(JSON.stringify([
+    { record: oldRecord, status: "superseded" },
+    { record: newRecord, status: "active" },
+  ]));
+  assert.equal(invalid.ok, false);
 });
 
 test("source provider refuses reviewed records from a different revision or source locale", async () => {
