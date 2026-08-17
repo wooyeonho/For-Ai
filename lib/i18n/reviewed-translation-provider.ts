@@ -3,7 +3,7 @@ import { getTranslationProvenanceKey, type TranslationProvenance } from "./trans
 
 export type ReviewedTranslationProviderResult =
   | { ok: true; records: ReviewedTranslationRecord[] }
-  | { ok: false; reason: "provider_empty" | "provider_invalid_json" | "provider_not_array" | "provider_record_invalid"; detail?: string };
+  | { ok: false; reason: "provider_empty" | "provider_invalid_json" | "provider_not_array" | "provider_record_invalid" | "provider_record_conflict"; detail?: string };
 
 export function parseReviewedTranslationProviderJson(raw: string | undefined): ReviewedTranslationProviderResult {
   if (!raw?.trim()) return { ok: false, reason: "provider_empty" };
@@ -18,6 +18,7 @@ export function parseReviewedTranslationProviderJson(raw: string | undefined): R
   if (!Array.isArray(parsed)) return { ok: false, reason: "provider_not_array" };
 
   const records: ReviewedTranslationRecord[] = [];
+  const canonicalPairs = new Map<string, string>();
   for (const item of parsed) {
     if (!item || typeof item !== "object") {
       return { ok: false, reason: "provider_record_invalid", detail: "record_not_object" };
@@ -34,6 +35,14 @@ export function parseReviewedTranslationProviderJson(raw: string | undefined): R
     if ("reason" in built) {
       return { ok: false, reason: "provider_record_invalid", detail: built.reason };
     }
+
+    const pairKey = `${built.value.provenance.locale}:${built.value.messageKey}`;
+    const pairIdentity = `${built.value.translatedText}\u0000${getTranslationProvenanceKey(built.value.provenance)}`;
+    const previousIdentity = canonicalPairs.get(pairKey);
+    if (previousIdentity && previousIdentity !== pairIdentity) {
+      return { ok: false, reason: "provider_record_conflict", detail: pairKey };
+    }
+    canonicalPairs.set(pairKey, pairIdentity);
     records.push(built.value);
   }
 
