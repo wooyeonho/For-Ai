@@ -42,7 +42,7 @@ test("provider rejects conflicting records for the same locale and message key",
 
 test("history keeps one active reviewed record and requires explicit stale supersession linkage", () => {
   const oldParsed = parseReviewedTranslationProviderJson(JSON.stringify([{ messageKey: "method.title", translatedText: "검증 방법", provenance: { locale: "ko", sourceLocale: "en", sourceRevision: "rev-1", reviewer: "reviewer-1", reviewedAt: "2026-08-17T14:00:00Z" } }]));
-  const newParsed = parseReviewedTranslationProviderJson(JSON.stringify([{ messageKey: "method.title", translatedText: "검증 방식", provenance: { locale: "ko", sourceLocale: "en", sourceRevision: "rev-2", reviewer: "reviewer-2", reviewedAt: "2026-08-18T00:00:00Z" } }]));
+  const newParsed = parseReviewedTranslationProviderJson(JSON.stringify([{ messageKey: "method.title", translatedText: "검증 방식", provenance: { locale: "ko", sourceLocale: "en", sourceRevision: "rev-2", reviewer: "reviewer-2", reviewedAt: "2026-08-17T19:00:00Z" } }]));
   assert.equal(oldParsed.ok, true);
   assert.equal(newParsed.ok, true);
   if (!oldParsed.ok || !newParsed.ok) return;
