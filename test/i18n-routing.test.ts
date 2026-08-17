@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { SUPPORTED_LOCALES, type SupportedLocale } from "../lib/i18n/locales";
+import { validateReviewedTranslationProvenance } from "../lib/i18n/translation-provenance";
 import {
   I18N_PRIMARY_ROUTE_BUILDERS,
   I18N_SMOKE_TEST_SLUG,
@@ -62,4 +63,19 @@ test("suggest-topic CTA carries the failed query and locale into the form", () =
   assert.equal(getSuggestTopicHref("  여권 수수료  ", "ko"), `/suggest-topic?q=${encodeURIComponent("여권 수수료")}&lang=ko`);
   assert.equal(getSuggestTopicHref("", "ja"), "/suggest-topic?lang=ja");
   assert.equal(getSuggestTopicHref("   ", "en"), "/suggest-topic?lang=en");
+});
+
+test("translation entries fail closed unless reviewer provenance is complete", () => {
+  const reviewedAt = new Date(Date.now() - 60_000).toISOString();
+  const valid = validateReviewedTranslationProvenance({
+    locale: "ko",
+    sourceLocale: "en",
+    sourceRevision: "claim-rev-42",
+    reviewer: "reviewer-1",
+    reviewedAt,
+  });
+  assert.equal(valid.ok, true);
+  assert.deepEqual(validateReviewedTranslationProvenance({ locale: "ko", sourceLocale: "en", sourceRevision: "claim-rev-42", reviewedAt }), { ok: false, reason: "missing_reviewer" });
+  assert.deepEqual(validateReviewedTranslationProvenance({ locale: "ko", sourceLocale: "en", reviewer: "reviewer-1", reviewedAt }), { ok: false, reason: "missing_source_revision" });
+  assert.deepEqual(validateReviewedTranslationProvenance({ locale: "ko", sourceLocale: "en", sourceRevision: "claim-rev-42", reviewer: "reviewer-1", reviewedAt: "not-a-date" }), { ok: false, reason: "invalid_reviewed_at" });
 });
