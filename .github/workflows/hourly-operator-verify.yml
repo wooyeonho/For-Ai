@@ -20,6 +20,8 @@ jobs:
           node-version: 20
           cache: npm
       - run: npm ci
+      - name: Verify production dependency integrity
+        run: node scripts/check-production-dependencies.mjs
       - name: Verify canonical methodology locale model
         run: |
           rm -rf .tmp/methodology-test
