@@ -31,7 +31,7 @@ export function buildReviewedTranslationHistoryIndex(raw: string | undefined):
   | { ok: true; value: ReviewedTranslationIndex }
   | { ok: false; reason: string; detail?: string } {
   const selected = parseAndSelectReviewedTranslationHistory(raw);
-  if (!selected.ok) {
+  if ("reason" in selected) {
     return { ok: false, reason: selected.reason, ...(selected.detail ? { detail: selected.detail } : {}) };
   }
   return buildReviewedTranslationIndex(selected.records);
