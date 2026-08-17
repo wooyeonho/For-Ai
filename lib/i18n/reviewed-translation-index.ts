@@ -32,3 +32,14 @@ export function findReviewedTranslationByProvenanceKey(
 ): ReviewedTranslationRecord | null {
   return index.byProvenanceKey.get(provenanceKey) ?? null;
 }
+
+export function findReviewedTranslation(
+  index: ReviewedTranslationIndex,
+  locale: string,
+  messageKey: string,
+): ReviewedTranslationRecord | null {
+  const normalizedLocale = locale.trim().toLowerCase();
+  const normalizedMessageKey = messageKey.trim();
+  if (!normalizedLocale || !normalizedMessageKey) return null;
+  return index.byLocaleMessage.get(`${normalizedLocale}:${normalizedMessageKey}`) ?? null;
+}
