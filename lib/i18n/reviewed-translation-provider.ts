@@ -72,7 +72,7 @@ export function parseAndSelectReviewedTranslationHistory(raw: string | undefined
     entries.push(entry);
   }
   const selected = validateReviewedTranslationHistory(entries);
-  if (!selected.ok) return { ok: false, reason: selected.reason, detail: selected.detail };
+  if ("reason" in selected) return { ok: false, reason: selected.reason, detail: selected.detail };
   return { ok: true, records: selected.activeRecords };
 }
 
