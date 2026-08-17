@@ -19,7 +19,7 @@ function reviewed(locale: "ko" | "en", messageKey: string, sourceRevision: strin
     },
   });
   assert.equal(result.ok, true);
-  if (!result.ok) throw new Error(result.reason);
+  if (!result.ok) throw new Error("reviewed translation fixture unexpectedly failed");
   return result.value;
 }
 
@@ -28,7 +28,7 @@ test("indexes reviewed translations by locale/message and provenance key", () =>
   const en = reviewed("en", "methodology.title", "rev-2");
   const result = buildReviewedTranslationIndex([ko, en]);
   assert.equal(result.ok, true);
-  if (!result.ok) throw new Error(result.reason);
+  if (!result.ok) throw new Error("reviewed translation index unexpectedly failed");
   assert.equal(result.value.byLocaleMessage.get("ko:methodology.title")?.translatedText, ko.translatedText);
   assert.equal(findReviewedTranslationByProvenanceKey(result.value, en.provenanceKey)?.translatedText, en.translatedText);
 });
