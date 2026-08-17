@@ -1,5 +1,5 @@
 import { buildReviewedTranslationRecord, type ReviewedTranslationRecord } from "./reviewed-translation-record";
-import type { TranslationProvenance } from "./translation-provenance";
+import { getTranslationProvenanceKey, type TranslationProvenance } from "./translation-provenance";
 
 export type ReviewedTranslationProviderResult =
   | { ok: true; records: ReviewedTranslationRecord[] }
@@ -44,9 +44,11 @@ export function createReviewedTranslationSourceProvider(input: {
   readSource: () => Promise<string | undefined>;
   expectedSourceRevision: string;
   expectedSourceLocale?: TranslationProvenance["sourceLocale"];
+  expectedProvenanceKey?: string;
 }) {
   const expectedSourceRevision = input.expectedSourceRevision.trim();
   if (!expectedSourceRevision) throw new Error("expected_source_revision_required");
+  const expectedProvenanceKey = input.expectedProvenanceKey?.trim();
 
   return async (): Promise<ReviewedTranslationRecord[]> => {
     const parsed = parseReviewedTranslationProviderJson(await input.readSource());
@@ -59,6 +61,9 @@ export function createReviewedTranslationSourceProvider(input: {
       }
       if (input.expectedSourceLocale && record.provenance.sourceLocale !== input.expectedSourceLocale) {
         throw new Error("provider_source_locale_mismatch");
+      }
+      if (expectedProvenanceKey && getTranslationProvenanceKey(record.provenance) !== expectedProvenanceKey) {
+        throw new Error("provider_provenance_key_mismatch");
       }
     }
     return parsed.records;
