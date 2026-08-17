@@ -19,7 +19,7 @@ export function createStructuredEvidenceRoute(loadReviewedRecords: ReviewedRecor
     }
 
     const index = buildReviewedTranslationIndex(records);
-    if (!index.ok) {
+    if ("reason" in index) {
       return { status: 409, body: { error: "reviewed_translation_index_invalid", reason: index.reason } };
     }
     return buildStructuredEvidenceResponse(index.value, locale, messageKey);
