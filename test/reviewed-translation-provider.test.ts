@@ -26,6 +26,19 @@ test("provider recomputes reviewed provenance and rejects unreviewed records", (
   }
 });
 
+test("provider rejects conflicting records for the same locale and message key", () => {
+  const base = { locale: "ko", sourceLocale: "en", sourceRevision: "rev-20260818", reviewer: "reviewer-1", reviewedAt: "2026-08-17T15:00:00Z" };
+  const conflicting = parseReviewedTranslationProviderJson(JSON.stringify([
+    { messageKey: "method.title", translatedText: "검증 방법", provenance: base },
+    { messageKey: "method.title", translatedText: "검증 방식", provenance: { ...base, reviewer: "reviewer-2" } },
+  ]));
+  assert.equal(conflicting.ok, false);
+  if (!conflicting.ok) {
+    assert.equal(conflicting.reason, "provider_record_conflict");
+    assert.equal(conflicting.detail, "ko:method.title");
+  }
+});
+
 test("source provider refuses reviewed records from a different revision or source locale", async () => {
   const raw = JSON.stringify([{ messageKey: "method.title", translatedText: "검증 방법", provenance: { locale: "ko", sourceLocale: "en", sourceRevision: "rev-20260818", reviewer: "reviewer-1", reviewedAt: "2026-08-17T15:00:00Z" } }]);
   const matching = createReviewedTranslationSourceProvider({ readSource: async () => raw, expectedSourceRevision: "rev-20260818", expectedSourceLocale: "en" });
