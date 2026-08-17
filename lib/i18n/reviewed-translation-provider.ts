@@ -31,7 +31,7 @@ export function parseReviewedTranslationProviderJson(raw: string | undefined): R
           ? (candidate.provenance as Partial<TranslationProvenance>)
           : undefined,
     });
-    if (!built.ok) {
+    if ("reason" in built) {
       return { ok: false, reason: "provider_record_invalid", detail: built.reason };
     }
     records.push(built.value);
@@ -43,7 +43,9 @@ export function parseReviewedTranslationProviderJson(raw: string | undefined): R
 export function createEnvReviewedTranslationProvider(envKey = "FOR_AI_REVIEWED_TRANSLATIONS_JSON") {
   return async (): Promise<ReviewedTranslationRecord[]> => {
     const parsed = parseReviewedTranslationProviderJson(process.env[envKey]);
-    if (!parsed.ok) throw new Error(`${parsed.reason}${parsed.detail ? `:${parsed.detail}` : ""}`);
+    if ("reason" in parsed) {
+      throw new Error(`${parsed.reason}${parsed.detail ? `:${parsed.detail}` : ""}`);
+    }
     return parsed.records;
   };
 }
