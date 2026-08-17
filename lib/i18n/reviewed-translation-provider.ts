@@ -72,51 +72,34 @@ export function parseAndSelectReviewedTranslationHistory(raw: string | undefined
     entries.push(entry);
   }
   const selected = validateReviewedTranslationHistory(entries);
-  if (!selected.ok) return selected;
+  if (!selected.ok) return { ok: false, reason: selected.reason, detail: selected.detail };
   return { ok: true, records: selected.activeRecords };
 }
 
 export function parseReviewedTranslationProviderJson(raw: string | undefined): ReviewedTranslationProviderResult {
   if (!raw?.trim()) return { ok: false, reason: "provider_empty" };
-
   let parsed: unknown;
-  try {
-    parsed = JSON.parse(raw);
-  } catch {
-    return { ok: false, reason: "provider_invalid_json" };
-  }
-
+  try { parsed = JSON.parse(raw); } catch { return { ok: false, reason: "provider_invalid_json" }; }
   if (!Array.isArray(parsed)) return { ok: false, reason: "provider_not_array" };
 
   const records: ReviewedTranslationRecord[] = [];
   const canonicalPairs = new Map<string, string>();
   for (const item of parsed) {
-    if (!item || typeof item !== "object") {
-      return { ok: false, reason: "provider_record_invalid", detail: "record_not_object" };
-    }
+    if (!item || typeof item !== "object") return { ok: false, reason: "provider_record_invalid", detail: "record_not_object" };
     const candidate = item as Record<string, unknown>;
     const built = buildReviewedTranslationRecord({
       messageKey: typeof candidate.messageKey === "string" ? candidate.messageKey : undefined,
       translatedText: typeof candidate.translatedText === "string" ? candidate.translatedText : undefined,
-      provenance:
-        candidate.provenance && typeof candidate.provenance === "object"
-          ? (candidate.provenance as Partial<TranslationProvenance>)
-          : undefined,
+      provenance: candidate.provenance && typeof candidate.provenance === "object" ? candidate.provenance as Partial<TranslationProvenance> : undefined,
     });
-    if ("reason" in built) {
-      return { ok: false, reason: "provider_record_invalid", detail: built.reason };
-    }
-
+    if ("reason" in built) return { ok: false, reason: "provider_record_invalid", detail: built.reason };
     const pairKey = `${built.value.provenance.locale}:${built.value.messageKey}`;
     const pairIdentity = `${built.value.translatedText}\u0000${getTranslationProvenanceKey(built.value.provenance)}`;
     const previousIdentity = canonicalPairs.get(pairKey);
-    if (previousIdentity && previousIdentity !== pairIdentity) {
-      return { ok: false, reason: "provider_record_conflict", detail: pairKey };
-    }
+    if (previousIdentity && previousIdentity !== pairIdentity) return { ok: false, reason: "provider_record_conflict", detail: pairKey };
     canonicalPairs.set(pairKey, pairIdentity);
     records.push(built.value);
   }
-
   return { ok: true, records };
 }
 
@@ -129,22 +112,13 @@ export function createReviewedTranslationSourceProvider(input: {
   const expectedSourceRevision = input.expectedSourceRevision.trim();
   if (!expectedSourceRevision) throw new Error("expected_source_revision_required");
   const expectedProvenanceKey = input.expectedProvenanceKey?.trim();
-
   return async (): Promise<ReviewedTranslationRecord[]> => {
     const parsed = parseReviewedTranslationProviderJson(await input.readSource());
-    if ("reason" in parsed) {
-      throw new Error(`${parsed.reason}${parsed.detail ? `:${parsed.detail}` : ""}`);
-    }
+    if ("reason" in parsed) throw new Error(`${parsed.reason}${parsed.detail ? `:${parsed.detail}` : ""}`);
     for (const record of parsed.records) {
-      if (record.provenance.sourceRevision !== expectedSourceRevision) {
-        throw new Error("provider_source_revision_mismatch");
-      }
-      if (input.expectedSourceLocale && record.provenance.sourceLocale !== input.expectedSourceLocale) {
-        throw new Error("provider_source_locale_mismatch");
-      }
-      if (expectedProvenanceKey && getTranslationProvenanceKey(record.provenance) !== expectedProvenanceKey) {
-        throw new Error("provider_provenance_key_mismatch");
-      }
+      if (record.provenance.sourceRevision !== expectedSourceRevision) throw new Error("provider_source_revision_mismatch");
+      if (input.expectedSourceLocale && record.provenance.sourceLocale !== input.expectedSourceLocale) throw new Error("provider_source_locale_mismatch");
+      if (expectedProvenanceKey && getTranslationProvenanceKey(record.provenance) !== expectedProvenanceKey) throw new Error("provider_provenance_key_mismatch");
     }
     return parsed.records;
   };
@@ -153,9 +127,7 @@ export function createReviewedTranslationSourceProvider(input: {
 export function createEnvReviewedTranslationProvider(envKey = "FOR_AI_REVIEWED_TRANSLATIONS_JSON") {
   return async (): Promise<ReviewedTranslationRecord[]> => {
     const parsed = parseReviewedTranslationProviderJson(process.env[envKey]);
-    if ("reason" in parsed) {
-      throw new Error(`${parsed.reason}${parsed.detail ? `:${parsed.detail}` : ""}`);
-    }
+    if ("reason" in parsed) throw new Error(`${parsed.reason}${parsed.detail ? `:${parsed.detail}` : ""}`);
     return parsed.records;
   };
 }
