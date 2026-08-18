@@ -18,9 +18,10 @@ export type StructuredEvidenceRouteResponse =
 
 function projectPredecessorProvenanceKeys(raw: string, activeProvenanceKey: string): string[] {
   const parsed = JSON.parse(raw) as Array<Record<string, unknown>>;
-  const keys: string[] = [];
+  const reverse = new Map<string, string[]>();
+
   for (const candidate of parsed) {
-    if (candidate.status !== "superseded" || candidate.supersededByProvenanceKey !== activeProvenanceKey) continue;
+    if (candidate.status !== "superseded" || typeof candidate.supersededByProvenanceKey !== "string") continue;
     const source = candidate.record && typeof candidate.record === "object" ? candidate.record as Record<string, unknown> : null;
     if (!source) continue;
     const built = buildReviewedTranslationRecord({
@@ -28,9 +29,25 @@ function projectPredecessorProvenanceKeys(raw: string, activeProvenanceKey: stri
       translatedText: typeof source.translatedText === "string" ? source.translatedText : undefined,
       provenance: source.provenance && typeof source.provenance === "object" ? source.provenance as Parameters<typeof buildReviewedTranslationRecord>[0]["provenance"] : undefined,
     });
-    if (built.ok && built.value.provenanceKey !== activeProvenanceKey) keys.push(built.value.provenanceKey);
+    if (!built.ok || built.value.provenanceKey === candidate.supersededByProvenanceKey) continue;
+    const list = reverse.get(candidate.supersededByProvenanceKey) ?? [];
+    list.push(built.value.provenanceKey);
+    reverse.set(candidate.supersededByProvenanceKey, list);
   }
-  return [...new Set(keys)].sort();
+
+  const keys: string[] = [];
+  const seen = new Set<string>([activeProvenanceKey]);
+  const queue = [activeProvenanceKey];
+  while (queue.length) {
+    const current = queue.shift()!;
+    for (const predecessor of (reverse.get(current) ?? []).sort()) {
+      if (seen.has(predecessor)) continue;
+      seen.add(predecessor);
+      keys.push(predecessor);
+      queue.push(predecessor);
+    }
+  }
+  return keys;
 }
 
 export function createStructuredEvidenceRoute(loadReviewedRecords: ReviewedRecordProvider) {
