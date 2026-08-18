@@ -11,12 +11,14 @@ export type ReviewedHistoryProvider = () => Promise<string | undefined>;
 type StructuredEvidenceBody = Extract<StructuredEvidenceResponse, { status: 200 }>["body"];
 
 export type StructuredEvidenceRouteResponse =
-  | { status: 200; body: StructuredEvidenceBody & { predecessorProvenanceKeys?: string[] } }
+  | { status: 200; body: StructuredEvidenceBody & { predecessorProvenanceKeys?: string[]; correctionCount?: number } }
   | { status: 404; body: { error: "reviewed_translation_not_found" } }
   | { status: 409; body: { error: "reviewed_translation_index_invalid"; reason: string } }
   | { status: 503; body: { error: "reviewed_translation_provider_unavailable" } };
 
-function projectPredecessorProvenanceKeys(raw: string, activeProvenanceKey: string): string[] {
+function projectPredecessorProvenanceKeys(raw: string, activeProvenanceKey: string):
+  | { ok: true; keys: string[] }
+  | { ok: false; reason: "cyclic_correction_lineage" } {
   const parsed = JSON.parse(raw) as Array<Record<string, unknown>>;
   const reverse = new Map<string, string[]>();
 
@@ -29,25 +31,34 @@ function projectPredecessorProvenanceKeys(raw: string, activeProvenanceKey: stri
       translatedText: typeof source.translatedText === "string" ? source.translatedText : undefined,
       provenance: source.provenance && typeof source.provenance === "object" ? source.provenance as Parameters<typeof buildReviewedTranslationRecord>[0]["provenance"] : undefined,
     });
-    if (!built.ok || built.value.provenanceKey === candidate.supersededByProvenanceKey) continue;
+    if (!built.ok) continue;
+    if (built.value.provenanceKey === candidate.supersededByProvenanceKey) {
+      return { ok: false, reason: "cyclic_correction_lineage" };
+    }
     const list = reverse.get(candidate.supersededByProvenanceKey) ?? [];
     list.push(built.value.provenanceKey);
     reverse.set(candidate.supersededByProvenanceKey, list);
   }
 
   const keys: string[] = [];
-  const seen = new Set<string>([activeProvenanceKey]);
-  const queue = [activeProvenanceKey];
-  while (queue.length) {
-    const current = queue.shift()!;
+  const seen = new Set<string>();
+  const visiting = new Set<string>();
+
+  function visit(current: string): boolean {
+    if (visiting.has(current)) return false;
+    if (seen.has(current)) return true;
+    visiting.add(current);
     for (const predecessor of (reverse.get(current) ?? []).sort()) {
-      if (seen.has(predecessor)) continue;
-      seen.add(predecessor);
-      keys.push(predecessor);
-      queue.push(predecessor);
+      if (!visit(predecessor)) return false;
+      if (predecessor !== activeProvenanceKey && !keys.includes(predecessor)) keys.push(predecessor);
     }
+    visiting.delete(current);
+    seen.add(current);
+    return true;
   }
-  return keys;
+
+  if (!visit(activeProvenanceKey)) return { ok: false, reason: "cyclic_correction_lineage" };
+  return { ok: true, keys: keys.slice(0, 100) };
 }
 
 export function createStructuredEvidenceRoute(loadReviewedRecords: ReviewedRecordProvider) {
@@ -85,11 +96,16 @@ export function createStructuredEvidenceHistoryRoute(loadReviewedHistory: Review
     }
     const response = buildStructuredEvidenceResponse(index.value, locale, messageKey);
     if (response.status !== 200 || !raw) return response;
+    const lineage = projectPredecessorProvenanceKeys(raw, response.body.provenanceKey);
+    if (!lineage.ok) {
+      return { status: 409, body: { error: "reviewed_translation_index_invalid", reason: lineage.reason } };
+    }
     return {
       status: 200,
       body: {
         ...response.body,
-        predecessorProvenanceKeys: projectPredecessorProvenanceKeys(raw, response.body.provenanceKey),
+        predecessorProvenanceKeys: lineage.keys,
+        correctionCount: lineage.keys.length,
       },
     };
   };
