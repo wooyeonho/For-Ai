@@ -22,6 +22,8 @@ jobs:
       - run: npm ci
       - name: Verify production dependency integrity
         run: node scripts/check-production-dependencies.mjs
+      - name: Verify correction-history report rendering is bounded and fail-closed
+        run: node scripts/visibility/test-correction-history-render.mjs
       - name: Verify canonical methodology locale model
         run: |
           rm -rf .tmp/methodology-test
