@@ -59,6 +59,12 @@ test("history route serves active reviewed translation with bounded predecessor 
       parsedOld.records[0].provenanceKey,
     ]);
     assert.equal(response.body.correctionCount, 2);
+    assert.deepEqual(response.body.correctionDisclosure, {
+      count: 2,
+      scope: "provenance_keys_only",
+      supersededContentIncluded: false,
+      message: "Correction history exposes provenance-only predecessor keys; superseded content is not included.",
+    });
     assert.ok((response.body.predecessorProvenanceKeys?.length ?? 0) <= 100);
     const serialized = JSON.stringify(response.body);
     for (const forbidden of ["아주 옛 검증 방법", "옛 검증 방법", "reviewer-0", "reviewer-1", "rev-0", "rev-1"]) {
