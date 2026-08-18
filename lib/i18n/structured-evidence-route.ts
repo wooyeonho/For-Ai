@@ -10,8 +10,22 @@ export type ReviewedHistoryProvider = () => Promise<string | undefined>;
 
 type StructuredEvidenceBody = Extract<StructuredEvidenceResponse, { status: 200 }>["body"];
 
+type CorrectionDisclosure = {
+  count: number;
+  scope: "provenance_keys_only";
+  supersededContentIncluded: false;
+  message: "Correction history exposes provenance-only predecessor keys; superseded content is not included.";
+};
+
 export type StructuredEvidenceRouteResponse =
-  | { status: 200; body: StructuredEvidenceBody & { predecessorProvenanceKeys?: string[]; correctionCount?: number } }
+  | {
+      status: 200;
+      body: StructuredEvidenceBody & {
+        predecessorProvenanceKeys?: string[];
+        correctionCount?: number;
+        correctionDisclosure?: CorrectionDisclosure;
+      };
+    }
   | { status: 404; body: { error: "reviewed_translation_not_found" } }
   | { status: 409; body: { error: "reviewed_translation_index_invalid"; reason: string } }
   | { status: 503; body: { error: "reviewed_translation_provider_unavailable" } };
@@ -106,6 +120,12 @@ export function createStructuredEvidenceHistoryRoute(loadReviewedHistory: Review
         ...response.body,
         predecessorProvenanceKeys: lineage.keys,
         correctionCount: lineage.keys.length,
+        correctionDisclosure: {
+          count: lineage.keys.length,
+          scope: "provenance_keys_only",
+          supersededContentIncluded: false,
+          message: "Correction history exposes provenance-only predecessor keys; superseded content is not included.",
+        },
       },
     };
   };
