@@ -57,7 +57,7 @@ test("history route serves active reviewed translation with bounded predecessor 
     assert.deepEqual(response.body.predecessorProvenanceKeys, [
       parsedOldest.records[0].provenanceKey,
       parsedOld.records[0].provenanceKey,
-    ].sort());
+    ]);
     assert.equal(response.body.correctionCount, 2);
     assert.ok((response.body.predecessorProvenanceKeys?.length ?? 0) <= 100);
     const serialized = JSON.stringify(response.body);
