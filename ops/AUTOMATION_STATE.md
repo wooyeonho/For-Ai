@@ -2,17 +2,17 @@
 
 - Branch: `automation/hourly-operator`
 - Main/production writes: forbidden until verified release gate
-- RUN_TS: 2026-08-18 06:32:23 KST
-- RUN_ID: PA-20260818-063223-KST-01
-- Status: VERIFIED
-- Current Gate: project correction-aware reviewed-translation history into the non-production structured-evidence response so superseded text remains auditable upstream but cannot be served as active evidence.
-- Personas/counter-case: Knowledge Registry Lead required active reviewed evidence to remain directly queryable; Provenance Engineer required superseded history to remain upstream and explicit; Evidence/IP Reviewer required invalid lineage to fail closed rather than silently select a record. Strongest counter-case: a history-aware route can accidentally reactivate stale text if it indexes all entries. Decision: validate/select the history first and only project the selected active record.
-- Actual work this run: `lib/i18n/structured-evidence-route.ts` now exposes `createStructuredEvidenceHistoryRoute`, which loads raw correction history, fails closed on unavailable/invalid history, builds the correction-aware active index and returns structured evidence from only the active reviewed record. `test/structured-evidence-route.test.ts` proves active text/provenance is served, superseded provenance is excluded, and invalid supersession returns 409.
-- Implementation commits: `6b84d0541caffa24f37adcf02734d2e82be04127`, `5bd2738619213730bc9db40dd9ad3142b2e04dfe`; recovery commit `36ae5fc8499ac85f8ea0f74227346b132ff4a7a4`.
-- Verification: first current-run Actions `32071766814` failed in the reviewed-translation suite because the new fixture used a future `reviewedAt` that correctly violated the existing provenance clock guard. The fixture was repaired without weakening validation. Final Actions `32072144016` completed successfully for `36ae5fc8499ac85f8ea0f74227346b132ff4a7a4`; dependency integrity, methodology tests, reviewed-history/evidence tests, lint, build, runtime assertions and Chromium capture all PASS.
-- Screen evidence: current-run exact-head `hourly-operator-screen` artifact `9302141607`, digest `sha256:2d4a63699117120c3ca6daeb63bcc4553763f9a4444b7a95fb6a5cd2619ce617`.
-- Recovery performed: inspected the failed current-run provenance test, identified the future timestamp fixture, corrected it to a current-run-valid historical review time, and reran the full CI successfully.
-- Security/privacy/legal/IP: no reviewer identity or approval was invented; superseded translations remain non-active; invalid lineage fails closed; no production publication/deployment/billing/user data changed.
-- Blocker: no genuine owner/reviewer-approved production translation payload exists; none was fabricated.
-- Owner approval needed: none for non-production evidence hardening; production publication remains owner-gated.
-- Exact Next Gate: add an explicit correction-lineage projection for the active evidence response that can expose predecessor provenance keys without returning superseded translated text, and verify the lineage remains non-production until authentic reviewed records exist.
+- RUN_TS: 2026-08-18 10:10:36 KST
+- RUN_ID: PA-20260818-101036-KST-01
+- Status: PARTIAL — current-run material regression artifact persisted; fresh CI conclusion not yet observable through the available connector, so no stale PASS is reused.
+- Current Gate: expose correction lineage for active reviewed evidence without leaking superseded translated text or superseded reviewer/source metadata.
+- Personas/counter-case: Visibility/Evidence Product Lead wants correction history queryable; Provenance Engineer requires lineage to remain machine-readable; Privacy/IP Reviewer requires superseded content/reviewer metadata not to leak. Strongest counter-case: adding lineage can accidentally republish stale text or reviewer metadata. Decision: harden the active-response regression so only provenance keys may reveal predecessor lineage.
+- Actual work this run: strengthened `test/structured-evidence-route.test.ts` to assert superseded translated text, superseded reviewer id and superseded source revision are absent from the active structured-evidence response while predecessor provenance keys remain available.
+- Current-run implementation commit: `d6af678c0d0539ad1fb87d9bf3fab63f1b5c5d68`.
+- Verification: fresh push was created in this RUN_ID. Final CI PASS is not claimed until current-run workflow evidence is observable.
+- Screen evidence: `ACTUAL SCREEN CAPTURE BLOCKED: current-run workflow artifact cannot be truthfully claimed until the fresh push workflow completes and is observable; prior screenshots are intentionally not reused.`
+- Recovery performed: none yet; no current-run verification failure has been observed.
+- Security/privacy/legal/IP: new regression specifically prevents stale translated text/reviewer/source revision leakage; no production publication, billing, user data or main write changed.
+- Blocker: fresh CI observability for this commit is pending in the available connector.
+- Owner approval needed: none for non-production verification; production publication remains owner-gated.
+- Exact Next Gate: once fresh CI is observable, require PASS plus current-head screen artifact where technically produced; then extend lineage projection to multi-step predecessor chains without exposing superseded text.
