@@ -12,7 +12,7 @@ import {
   sourcePlatformRows,
 } from "./render-template.mjs";
 
-export async function renderReports({ outDir, segment, questionPack, entities, parsedRows, scores, referenceRange, responses }) {
+export async function renderReports({ outDir, segment, questionPack, entities, parsedRows, scores, referenceRange, responses, evidenceHistoryByEntity = {} }) {
   await mkdir(outDir, { recursive: true });
   const style = await styleBlock();
   const labels = labelsFor(segment.locale);
@@ -31,6 +31,7 @@ export async function renderReports({ outDir, segment, questionPack, entities, p
   for (const entity of entities) {
     const score = scoreByEntity.get(entity.id);
     const entityRows = rowsByEntity.get(entity.id) || [];
+    const evidenceHistory = normalizeEvidenceHistory(evidenceHistoryByEntity?.[entity.id]);
     await writeFile(path.join(outDir, "fa-r1-reports", `${entity.id}-report.html`), await renderStandard({
       templateName: "fa-r1-report.html",
       title: labels.reportTitle,
@@ -41,7 +42,7 @@ export async function renderReports({ outDir, segment, questionPack, entities, p
       segment,
       entity,
       specimenId: `${segment.segment_id}:${entity.id}:FA-R1`,
-      body: r1Body({ labels, segment, questionPack, questionPackLabel, provider, inspectionDate, score, referenceRange, allDomains, entityRows }),
+      body: r1Body({ labels, segment, questionPack, questionPackLabel, provider, inspectionDate, score, referenceRange, allDomains, entityRows, evidenceHistory }),
     }));
     await writeFile(path.join(outDir, "fa-d1-briefs", `${entity.id}-brief.html`), await renderStandard({
       templateName: "fa-d1-brief.html",
@@ -53,7 +54,7 @@ export async function renderReports({ outDir, segment, questionPack, entities, p
       segment,
       entity,
       specimenId: `${segment.segment_id}:${entity.id}:FA-D1`,
-      body: d1Body({ labels, segment, questionPack, questionPackLabel, provider, inspectionDate, score, referenceRange, allDomains, entityRows, responseByQuestion }),
+      body: d1Body({ labels, segment, questionPack, questionPackLabel, provider, inspectionDate, score, referenceRange, allDomains, entityRows, responseByQuestion, evidenceHistory }),
     }));
     await writeFile(path.join(outDir, "fa-p1-profiles", `${entity.id}-profile.html`), await renderStandard({
       templateName: "fa-p1-profile.html",
@@ -96,6 +97,23 @@ export async function renderReports({ outDir, segment, questionPack, entities, p
   }));
 }
 
+function normalizeEvidenceHistory(value) {
+  if (!value || typeof value !== "object") return null;
+  const count = Number.isInteger(value.count) && value.count >= 0 ? value.count : null;
+  if (count === null || value.scope !== "provenance_keys_only" || value.supersededContentIncluded !== false) return null;
+  return { count, scope: "provenance_keys_only", supersededContentIncluded: false };
+}
+
+function correctionHistoryBlock(labels, evidenceHistory) {
+  if (!evidenceHistory) return "";
+  const korean = labels.currentState === "현재 상태";
+  const title = korean ? "정정 이력" : "Correction history";
+  const text = korean
+    ? `이 검사에 연결된 검증 근거에는 ${evidenceHistory.count}개의 선행 정정 기록이 있습니다. 개인정보와 이전 문구는 포함하지 않고 provenance key 수준의 이력만 집계합니다.`
+    : `Verified evidence linked to this inspection has ${evidenceHistory.count} predecessor correction record(s). Only provenance-key history is counted; personal data and superseded wording are not included.`;
+  return `<section data-evidence-history="provenance_keys_only"><h2>${title}</h2><p>${escapeHtml(text)}</p></section>`;
+}
+
 async function styleBlock() {
   const { readFile } = await import("node:fs/promises");
   return readFile(path.join(process.cwd(), "templates", "visibility", "base-style.html"), "utf8");
@@ -105,11 +123,12 @@ async function renderStandard(context) {
   return renderTemplate(context.templateName, context);
 }
 
-function d1Body({ labels, segment, questionPack, questionPackLabel, provider, inspectionDate, score, referenceRange, allDomains, entityRows }) {
+function d1Body({ labels, segment, questionPack, questionPackLabel, provider, inspectionDate, score, referenceRange, allDomains, entityRows, evidenceHistory }) {
   return `
 <section><h2>${labels.entitySnapshot}</h2><table><tr><th>${labels.entity}</th><td>${escapeHtml(score.entity_name)}</td></tr><tr><th>${labels.category}</th><td>${escapeHtml(segment.category_label)}</td></tr><tr><th>${labels.region}</th><td>${escapeHtml(segment.region)}</td></tr></table></section>
 <section><h2>${labels.inspectionMetadata}</h2><table><tr><th>${labels.inspectionDate}</th><td>${inspectionDate}</td></tr><tr><th>${labels.questionPack}</th><td>${escapeHtml(questionPackLabel)}</td></tr><tr><th>${labels.measurementProvider}</th><td>${escapeHtml(provider)}</td></tr></table></section>
 <section><h2>${labels.scoreSummary}</h2><div class="metrics">${metricCards(segment, score)}</div></section>
+${correctionHistoryBlock(labels, evidenceHistory)}
 <section><h2>${labels.segmentComparison}</h2><table><tr><th>${labels.metric}</th><th>${labels.value}</th><th>${labels.median}</th><th>${labels.top25}</th></tr>${comparisonRows({ labels, segment, score, referenceRange })}</table></section>
 <section><h2>${labels.sourceSnapshot}</h2><ul>${domainList(allDomains)}</ul></section>
 <section><h2>${labels.sampleQuestions}</h2><table><tr><th>${labels.questionNo}</th><th>${labels.questionType}</th><th>${labels.question}</th><th>${labels.result}</th></tr>${sampleQuestionRows({ labels, segment, questionPack, entityRows })}</table></section>
@@ -118,9 +137,10 @@ function d1Body({ labels, segment, questionPack, questionPackLabel, provider, in
 <section><p class="notice">${labels.noRanking}</p></section>`;
 }
 
-function r1Body({ labels, segment, questionPack, questionPackLabel, provider, inspectionDate, score, referenceRange, allDomains, entityRows }) {
+function r1Body({ labels, segment, questionPack, questionPackLabel, provider, inspectionDate, score, referenceRange, allDomains, entityRows, evidenceHistory }) {
   return `
 <section><h2>${labels.summaryMetrics}</h2><div class="metrics">${metricCards(segment, score)}</div></section>
+${correctionHistoryBlock(labels, evidenceHistory)}
 <section><h2>${labels.referenceScope}</h2><p>${escapeHtml(segment.reference_scope_label)}</p><table><tr><th>${labels.metric}</th><th>${labels.bottom25}</th><th>${labels.median}</th><th>${labels.top25}</th></tr>${referenceRows(segment, referenceRange)}</table></section>
 <section><h2>${labels.questionBreakdown}</h2><table><tr><th>${labels.questionPack}</th><td>${escapeHtml(questionPackLabel)}</td></tr><tr><th>${labels.measurementProvider}</th><td>${escapeHtml(provider)}</td></tr><tr><th>${labels.inspectionDate}</th><td>${inspectionDate}</td></tr></table><table><tr><th>${labels.questionNo}</th><th>${labels.questionType}</th><th>${labels.question}</th><th>${labels.result}</th></tr>${sampleQuestionRows({ labels, segment, questionPack, entityRows, limit: questionPack.questions.length })}</table></section>
 <section><h2>${labels.citedDomains}</h2><ul>${domainList(allDomains)}</ul></section>
