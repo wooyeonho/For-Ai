@@ -18,7 +18,7 @@ test("fails closed when reviewed-record provider is unavailable", async () => {
   assert.deepEqual(response, { status: 503, body: { error: "reviewed_translation_provider_unavailable" } });
 });
 
-test("history route serves active reviewed translation with full predecessor chain but no superseded content", async () => {
+test("history route serves active reviewed translation with bounded predecessor summary but no superseded content", async () => {
   const oldestRecord = {
     messageKey: "methodology.title",
     translatedText: "아주 옛 검증 방법",
@@ -55,9 +55,11 @@ test("history route serves active reviewed translation with full predecessor cha
     assert.equal(response.body.translatedText, "현재 검증 방법");
     assert.equal(response.body.provenanceKey, parsedNew.records[0].provenanceKey);
     assert.deepEqual(response.body.predecessorProvenanceKeys, [
-      parsedOld.records[0].provenanceKey,
       parsedOldest.records[0].provenanceKey,
-    ]);
+      parsedOld.records[0].provenanceKey,
+    ].sort());
+    assert.equal(response.body.correctionCount, 2);
+    assert.ok((response.body.predecessorProvenanceKeys?.length ?? 0) <= 100);
     const serialized = JSON.stringify(response.body);
     for (const forbidden of ["아주 옛 검증 방법", "옛 검증 방법", "reviewer-0", "reviewer-1", "rev-0", "rev-1"]) {
       assert.equal(serialized.includes(forbidden), false);
@@ -70,5 +72,18 @@ test("history route rejects invalid supersession instead of serving stale eviden
   const rawHistory = JSON.stringify([{ record: { messageKey: "methodology.title", translatedText: "옛 검증 방법", provenance: { locale: "ko", sourceLocale: "en", sourceRevision: "rev-1", reviewer: "reviewer-1", reviewedAt: "2026-08-17T14:00:00Z" } }, status: "superseded" }]);
   const handle = createStructuredEvidenceHistoryRoute(async () => rawHistory);
   const response = await handle("ko", "methodology.title");
+  assert.equal(response.status, 409);
+});
+
+test("history route rejects self-referential correction lineage", async () => {
+  const record = { messageKey: "methodology.title", translatedText: "검증 방법", provenance: { locale: "ko", sourceLocale: "en", sourceRevision: "rev-cycle", reviewer: "reviewer-cycle", reviewedAt: "2026-08-18T11:03:37Z" } };
+  const parsed = parseReviewedTranslationProviderJson(JSON.stringify([record]));
+  assert.equal(parsed.ok, true);
+  if (!parsed.ok) return;
+  const rawHistory = JSON.stringify([
+    { record, status: "superseded", supersededByProvenanceKey: parsed.records[0].provenanceKey },
+    { record: { ...record, translatedText: "현재 검증 방법", provenance: { ...record.provenance, sourceRevision: "rev-current", reviewedAt: "2026-08-18T11:04:00Z" } }, status: "active" },
+  ]);
+  const response = await createStructuredEvidenceHistoryRoute(async () => rawHistory)("ko", "methodology.title");
   assert.equal(response.status, 409);
 });
