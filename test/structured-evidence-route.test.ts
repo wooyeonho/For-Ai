@@ -18,7 +18,7 @@ test("fails closed when reviewed-record provider is unavailable", async () => {
   assert.deepEqual(response, { status: 503, body: { error: "reviewed_translation_provider_unavailable" } });
 });
 
-test("history route serves only the active reviewed translation and excludes superseded provenance", async () => {
+test("history route serves active reviewed translation with predecessor provenance keys but no superseded text", async () => {
   const oldRecord = {
     messageKey: "methodology.title",
     translatedText: "옛 검증 방법",
@@ -62,7 +62,8 @@ test("history route serves only the active reviewed translation and excludes sup
   if (response.status === 200) {
     assert.equal(response.body.translatedText, "현재 검증 방법");
     assert.equal(response.body.provenanceKey, parsedNew.records[0].provenanceKey);
-    assert.notEqual(response.body.provenanceKey, parsedOld.records[0].provenanceKey);
+    assert.deepEqual(response.body.predecessorProvenanceKeys, [parsedOld.records[0].provenanceKey]);
+    assert.equal(JSON.stringify(response.body).includes("옛 검증 방법"), false);
     assert.equal(response.body.sourceRevision, "rev-2");
   }
 });
