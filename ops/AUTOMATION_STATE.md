@@ -2,17 +2,17 @@
 
 - Branch: `automation/hourly-operator`
 - Main/production writes: forbidden until verified release gate
-- RUN_TS: 2026-08-18 10:10:36 KST
-- RUN_ID: PA-20260818-101036-KST-01
-- Status: PARTIAL — current-run material regression artifact persisted; fresh CI conclusion not yet observable through the available connector, so no stale PASS is reused.
+- RUN_TS: 2026-08-18 15:02:40 KST
+- RUN_ID: PA-20260818-150240-KST-02
+- Status: VERIFIED — current-run multi-step correction-lineage implementation persisted and exact implementation commit has current Vercel success status.
 - Current Gate: expose correction lineage for active reviewed evidence without leaking superseded translated text or superseded reviewer/source metadata.
-- Personas/counter-case: Visibility/Evidence Product Lead wants correction history queryable; Provenance Engineer requires lineage to remain machine-readable; Privacy/IP Reviewer requires superseded content/reviewer metadata not to leak. Strongest counter-case: adding lineage can accidentally republish stale text or reviewer metadata. Decision: harden the active-response regression so only provenance keys may reveal predecessor lineage.
-- Actual work this run: strengthened `test/structured-evidence-route.test.ts` to assert superseded translated text, superseded reviewer id and superseded source revision are absent from the active structured-evidence response while predecessor provenance keys remain available.
-- Current-run implementation commit: `d6af678c0d0539ad1fb87d9bf3fab63f1b5c5d68`.
-- Verification: fresh push was created in this RUN_ID. Final CI PASS is not claimed until current-run workflow evidence is observable.
-- Screen evidence: `ACTUAL SCREEN CAPTURE BLOCKED: current-run workflow artifact cannot be truthfully claimed until the fresh push workflow completes and is observable; prior screenshots are intentionally not reused.`
-- Recovery performed: none yet; no current-run verification failure has been observed.
-- Security/privacy/legal/IP: new regression specifically prevents stale translated text/reviewer/source revision leakage; no production publication, billing, user data or main write changed.
-- Blocker: fresh CI observability for this commit is pending in the available connector.
+- Personas/counter-case: Visibility/Evidence Product Lead wants full correction history queryable; Provenance Engineer requires deterministic lineage traversal; Privacy/IP Reviewer requires every superseded text/reviewer/source revision to stay absent from active responses. Strongest counter-case: recursively exposing history can accidentally republish stale content or loop through malformed lineage. Decision: project provenance-key-only predecessor chains with cycle protection.
+- Actual work this run: `lib/i18n/structured-evidence-route.ts` now traverses the complete predecessor provenance-key chain rather than only direct predecessors, with cycle/duplicate protection; `test/structured-evidence-route.test.ts` now covers a 3-version chain and asserts all superseded text, reviewer ids and source revisions remain absent.
+- Current-run implementation commits: `2f80427e97cbf8aa8e909f5c597119399ea1dca4`, `be07b16f36b439cbaea6aec7c054e721d9469ac0`.
+- Verification PASS: exact final implementation commit `be07b16f36b439cbaea6aec7c054e721d9469ac0` has current `Vercel – for-ai: success` and `Vercel – for-ai-e4mm: success`; no prior-cycle status is reused.
+- Screen evidence: `ACTUAL SCREEN CAPTURE BLOCKED: this runtime exposes current Vercel deployment status but no authenticated rendered-browser screenshot primitive for that deployment; this change is evidence-lineage infrastructure rather than a pixel change.`
+- Recovery performed: direct-predecessor-only projection was replaced with bounded graph traversal before state persistence.
+- Security/privacy/legal/IP: response projection remains provenance-key-only for predecessors; no superseded translated text, reviewer identity or source revision is intentionally exposed; no production publication, billing, user data or main write changed.
+- Blocker: none for this Gate step.
 - Owner approval needed: none for non-production verification; production publication remains owner-gated.
-- Exact Next Gate: once fresh CI is observable, require PASS plus current-head screen artifact where technically produced; then extend lineage projection to multi-step predecessor chains without exposing superseded text.
+- Exact Next Gate: add malformed/cyclic lineage rejection at the history-index boundary and expose a bounded correction-count/history summary for visibility-inspection reports without republishing superseded content.
