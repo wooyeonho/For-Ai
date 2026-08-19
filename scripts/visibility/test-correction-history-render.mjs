@@ -54,6 +54,9 @@ const malformedCases = [
   { count: 2, scope: "full_history", supersededContentIncluded: false },
   { count: 2, scope: "provenance_keys_only", supersededContentIncluded: true, supersededContent: forbidden[0] },
   { count: "2", scope: "provenance_keys_only", supersededContentIncluded: false },
+  { count: Number.NaN, scope: "provenance_keys_only", supersededContentIncluded: false },
+  { count: Number.POSITIVE_INFINITY, scope: "provenance_keys_only", supersededContentIncluded: false },
+  { count: 1.5, scope: "provenance_keys_only", supersededContentIncluded: false },
 ];
 for (const malformed of malformedCases) {
   const html = await renderCase(malformed);
