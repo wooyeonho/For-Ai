@@ -23,7 +23,11 @@ jobs:
       - name: Verify production dependency integrity
         run: node scripts/check-production-dependencies.mjs
       - name: Verify correction-history report rendering is bounded and fail-closed
-        run: node scripts/visibility/test-correction-history-render.mjs
+        run: |
+          mkdir -p artifacts
+          set -o pipefail
+          node scripts/visibility/test-correction-history-render.mjs | tee artifacts/correction-history-render.txt
+          grep -q '^PASS correction-history render regression:' artifacts/correction-history-render.txt
       - name: Verify canonical methodology locale model
         run: |
           rm -rf .tmp/methodology-test
@@ -80,3 +84,4 @@ jobs:
           path: |
             artifacts/home-methodology-nav.png
             artifacts/methodology-route.png
+            artifacts/correction-history-render.txt
