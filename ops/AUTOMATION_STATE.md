@@ -2,50 +2,52 @@
 
 - Branch: `automation/hourly-operator`
 - Main/production writes: forbidden until verified release gate
-- RUN_TS: 2026-08-19 08:45 KST
-- RUN_ID: PA-20260819-0845-KST-01
+- RUN_TS: 2026-08-19 09:42 KST
+- RUN_ID: PA-20260819-0942-KST-01
 - Rotation: selected `For-Ai`; next project `Yeogie`.
-- Canonical Portfolio A registry reconciled from all five current states: `For-Ai; Yeogie; 한끼안부; 계절·24절기(+사주); GYEOL`. No retirement, omission, rename, merge-away, or stale rotation drift. Current chain remains For-Ai -> Yeogie -> 한끼안부 -> 계절·24절기(+사주) -> GYEOL -> For-Ai.
-- Owner definition locks reconciled: For-Ai remains owner-first baseline measurement -> lawful intervention -> controlled remeasurement -> raw success/failure evidence -> evidence-led YouTube/content -> consenting external cases -> verified registry/data flywheel. Supporting registry infrastructure must not indefinitely replace the genuine owner experiment. GYEOL remains the bounded persistent self-growing AI companion/pet; old local fact-registry identity remains superseded/non-canonical.
-- Status: ARTIFACT CREATED / VERIFICATION-PENDING — the exact Current Gate received an executable fail-closed report-render regression and CI wiring. Fresh exact-head CI PASS is not yet observable and is not invented or replaced with stale evidence.
+- Canonical Portfolio A registry reconciled from all five current states: `For-Ai; Yeogie; 한끼안부; 계절·24절기(+사주); GYEOL`. No retirement, omission, rename, merge-away, duplicate, or stale rotation drift. Canonical chain remains For-Ai -> Yeogie -> 한끼안부 -> 계절·24절기(+사주) -> GYEOL -> For-Ai.
+- Owner definition locks reconciled: For-Ai remains owner-first baseline measurement -> lawful intervention -> controlled remeasurement -> raw success/failure evidence -> evidence-led YouTube/content -> consenting external cases -> verified registry/data flywheel. Supporting infrastructure must not indefinitely replace the first genuine owner experiment. GYEOL remains the bounded persistent self-growing AI companion/pet; old local fact-registry identity remains superseded/non-canonical.
+- Status: ARTIFACT CREATED / VERIFICATION-PENDING — fresh exact-head proof-persistence CI wiring is durably committed; current exact-head Actions execution is not observable and no stale PASS is reused.
 
 ## Current Gate
-Prove the bounded `evidenceHistoryByEntity` correction-history disclosure executes safely in FA-R1/FA-D1 rendering: valid `{count, scope: provenance_keys_only, supersededContentIncluded:false}` must render count/scope; malformed inputs and superseded/private strings must fail closed.
+Prove the bounded `evidenceHistoryByEntity` correction-history disclosure executes safely in FA-R1/FA-D1 rendering, and make the exact regression PASS output durable/inspectable in the same CI artifact as real Chromium screen evidence.
 
 ## Personas / strongest counter-case
-- AI Visibility Product Lead: correction-history evidence must be testable in the actual report renderer, not only by static code inspection.
-- Provenance/Test Engineer: a deterministic executable fixture should exercise both FA-R1 and FA-D1 outputs and be wired into exact-branch CI.
-- Privacy/IP Reviewer: malformed history and extra secret/reviewer/source-revision fields must never become a disclosure side channel.
-- Strongest counter-case: a permissive renderer could pass a happy-path test while leaking unrecognized fields or accepting unsafe scope values; the regression therefore includes valid data carrying sentinel private fields plus multiple malformed variants and asserts none are emitted.
+- AI Visibility Product Lead: correction-history evidence must be executable in the actual report renderer, not inferred from static source.
+- Provenance/Test Engineer: exact-head CI should retain the deterministic regression output so a later run can verify the specific commit without trusting transient console output.
+- Privacy/IP Reviewer: only bounded count/scope may be disclosed; malformed history and private/superseded sentinel fields must fail closed.
+- Strongest counter-case: a workflow can contain the correct command yet still leave no durable evidence tying PASS to the exact head; therefore this cycle persists the regression output and requires its explicit PASS marker before artifact upload.
 
 ## Actual work
-- Added `scripts/visibility/test-correction-history-render.mjs` on `automation/hourly-operator` at commit `d0ac3bab5ebf3ec02fbb35924270e01b8980b4b2`.
-- The regression invokes the real `renderReports()` path, verifies both FA-R1 and FA-D1 output, requires the bounded correction-history marker/count, rejects sentinel superseded/reviewer/source-revision strings, and verifies negative count, wrong scope, superseded-content inclusion and string count all fail closed.
-- Updated `.github/workflows/hourly-operator-verify.yml` to execute the regression before the existing lint/build/runtime/screen gates. CI-wiring commit: `de14d0b325718e4ff22ced7fee0a294e5a455c69`.
+- Reconciled all five project states before selection: Yeogie next=`한끼안부`, 한끼안부 next=`계절·24절기(+사주)`, 계절 next=`GYEOL`, GYEOL next=`For-Ai`, previous For-Ai next=`Yeogie`; no registry loss/drift found.
+- Confirmed the existing renderer regression at `scripts/visibility/test-correction-history-render.mjs` invokes the real `renderReports()` path, covers FA-R1/FA-D1, rejects malformed scope/count/superseded inclusion, and asserts private sentinel strings never render.
+- Updated `.github/workflows/hourly-operator-verify.yml` to run the regression with `set -o pipefail`, persist exact output as `artifacts/correction-history-render.txt`, require an explicit `PASS correction-history render regression:` marker, and upload that proof beside the existing real Chromium screenshots.
 
 ## Durable artifacts
-- Regression: `scripts/visibility/test-correction-history-render.mjs` @ `d0ac3bab5ebf3ec02fbb35924270e01b8980b4b2`.
-- CI workflow: `.github/workflows/hourly-operator-verify.yml` @ `de14d0b325718e4ff22ced7fee0a294e5a455c69`.
+- Existing renderer regression: `scripts/visibility/test-correction-history-render.mjs`.
+- Fresh CI proof-persistence commit: `255ec21c63370aff03cf39226be171ed59598943`.
+- CI workflow blob: `7e5e3f20ce3e32ea35bef71c753cf3d0db529238`.
 - State: this file on `automation/hourly-operator`.
 
 ## Verification
-- GitHub durable-write PASS for regression and CI workflow.
-- Exact-head workflow lookup for `de14d0b325718e4ff22ced7fee0a294e5a455c69` returned no observable run in the connected surface during this run. Therefore executable CI remains `VERIFICATION-PENDING`; no previous workflow PASS is reused.
+- GitHub branch durable-write PASS for exact CI workflow update.
+- Workflow source contract PASS: regression output is piped to `artifacts/correction-history-render.txt`, explicit PASS marker is required, and the proof file is included in `hourly-operator-screen` with real Chromium screenshots.
+- Fresh exact-head Actions lookup for `255ec21c63370aff03cf39226be171ed59598943` returned no observable workflow run through the connected commit-run surface. Therefore status remains `VERIFICATION-PENDING`; no prior CI PASS is reused.
 
 ## Screen evidence
-- `ACTUAL SCREEN CAPTURE PENDING`: the existing workflow still captures real Chromium home/methodology screens, but this backend-only correction-history regression does not yet expose an exact-head generated FA-R1/FA-D1 browser artifact through the connected surface. No mock or stale screenshot is substituted.
+- `ACTUAL SCREEN CAPTURE PENDING`: exact-head workflow retains real Chromium home/methodology screenshots, but the fresh run/artifact for `255ec21c6` is not observable yet. No stale or generated screenshot is substituted.
 
 ## QA / security / privacy / legal / IP / accessibility
-- QA covers positive and malformed cases against the real renderer.
-- Privacy/security fail closed: only integer count + fixed provenance-only scope may render; sentinel superseded content, reviewer identity and source revision must not appear.
-- Synthetic fixture only; no real person/customer data, production configuration, public posting, spending, external contact, main merge or production security change.
-- Existing semantic report structure remains unchanged; no new accessibility regression surface introduced by this test-only cycle.
+- QA: fail-closed renderer regression remains wired before lint/build/runtime gates; explicit PASS retention improves reproducibility.
+- Security/privacy: retained proof is synthetic test output only; private/superseded sentinel strings remain forbidden from rendered output.
+- Legal/IP: project-owned code/fixtures only; no external copying, public publishing, external contact, spending, production/main write, or production security change.
+- Accessibility: no user-facing UI semantics changed this cycle; existing real mobile Chromium capture remains part of CI.
 
 ## Blocker
-Fresh exact-head Actions conclusion/artifact for `de14d0b3` is not observable through the connected GitHub surface yet.
+Fresh exact-head Actions conclusion/artifact for commit `255ec21c6` is not observable through the connected GitHub commit-run surface yet.
 
 ## Owner approval needed
-None for branch-only regression/CI work. Production publication and real external-person measurement/content remain owner/consent gated.
+None for branch-only CI/proof work. Production publication and real external-person measurement/content remain owner/consent gated.
 
 ## Exact Next Gate
-Obtain the fresh exact-head Actions result for `de14d0b3`. If PASS, retain/render an exact-head FA-R1/FA-D1 HTML fixture (and browser screen if the workflow can expose it), then return rotation to `Yeogie`. If CI fails, inspect the failing step and repair on `automation/hourly-operator` without reusing stale evidence.
+On the next For-Ai turn, obtain the exact-head Actions result/artifact for `255ec21c6`. Require the retained `correction-history-render.txt` explicit PASS plus real Chromium artifacts. If PASS, persist an exact-head FA-R1/FA-D1 rendered fixture/browser proof and then advance toward the unresolved owner-baseline R-001~R-004 completeness gate rather than adding unrelated registry infrastructure. If CI fails, inspect and repair the exact failing step on `automation/hourly-operator`.
