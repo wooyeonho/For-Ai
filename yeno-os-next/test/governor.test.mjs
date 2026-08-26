@@ -17,8 +17,8 @@ function grantApproval(db, overrides = {}) {
   const approvalId = `APR-${sha256Json(spec).slice(0, 12)}`;
   db.prepare(
     `INSERT INTO approvals (approval_id, scope_hash, exact_action, target, payload_hash, max_cost_krw,
-       expires_at, max_uses, uses, rollback_plan, granted_by, created_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?)`,
+       expires_at, max_uses, uses, rollback_plan, granted_by, created_at, owner_packet_ref)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?)`,
   ).run(
     approvalId,
     scopeHash(spec),
@@ -31,6 +31,7 @@ function grantApproval(db, overrides = {}) {
     'git revert',
     'owner',
     new Date().toISOString(),
+    'evidence/OWNER-PACKET-002.md',
   );
   return { approvalId, spec };
 }

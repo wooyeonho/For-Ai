@@ -53,16 +53,23 @@ b2b83c0ac7bd44aa1614133448758aa982a97eedcb607efd52049f19c21c409f  migrations/000
 f6b73de158d62ca2a031ba9adaabf181b1c098bd27608660bfe9e1624b10d544  migrations/0007_soak_per_cycle_evidence.sql
 b9a97c0ac7c188011d0adc1595264e31534a516896c4299d825521af86ede5f9  migrations/0008_gate_promotion_guard.sql
 1e50bd5951ae428f53c73c58624380ecd2e864239578bcfa4c27a4d2e655237e  migrations/0009_intake.sql
+56375f513760c3cefcf20d086022aac1a76fc1a76e5de2b13c64e8dcb0415591  migrations/0010_governor_guard.sql
+7056e8a9336cab355e16b6dab6b3fffac9fbcda417bd7d96394e6099ce7357d5  migrations/0011_approval_provenance.sql
 ```
 
-All nine are applied and pinned in `migrations/CHECKSUMS.json`; `node
-scripts/pin-migration-checksums.mjs --check` reports `CHECKSUM_PIN_OK: 9
+All eleven are applied and pinned in `migrations/CHECKSUMS.json`; `node
+scripts/pin-migration-checksums.mjs --check` reports `CHECKSUM_PIN_OK: 11
 migrations pinned` and `0001` is untouched. `0006` adds the durability tables,
 `0007` makes a soak pass require a complete probe set in every planned cycle,
 `0008` makes gate promotion order, the G1 crash/restore floor, and the
 G6-after-G5 rule schema-enforced, `0009` adds the intake vault/parser registry/
 recovery state machine and makes recovery provenance, monotonic attempt counts,
-append-only intake history and title-only promotion refusal schema-enforced.
+append-only intake history and title-only promotion refusal schema-enforced,
+`0010` makes the G3 governor invariants schema-enforced (Owner-only stop release,
+monotonic approval uses, immutable approval scope, no un-revoke/delete, A3+ RUN
+needs a live in-scope approval, budget ratchet, unstealable lease, append-only
+admission evidence) and adds the `redteam_probes` table, `0011` makes every
+approval cite an immutable Owner Packet reference that exists on disk.
 
 ## 4. Tests
 
@@ -70,30 +77,42 @@ Exact command and original tail of output:
 
 ```text
 $ node --test
-ℹ tests 102
+ℹ tests 116
 ℹ suites 0
-ℹ pass 102
+ℹ pass 116
 ℹ fail 0
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
 ```
 
-**102 tests.** 63 at G0/continuity, plus 11 functional-self, 9 durability soak,
-5 gate-promotion and 14 G2 intake tests. No 67-test run exists in this checkout.
+**116 tests.** 63 at G0/continuity, plus 11 functional-self, 9 durability soak,
+5 gate-promotion, 14 G2 intake and 14 G3 governance tests. No 67-test run exists
+in this checkout.
 
 Other verifiers, all from this RUN:
 
 ```text
-$ node scripts/local-ci.mjs        -> 12/12 PASS, LOCAL_CI_PASS
+$ node scripts/local-ci.mjs        -> 13/13 PASS, LOCAL_CI_PASS
 $ node src/cli.mjs verify          -> ok: true, failed: []
 $ node scripts/independent-validation.mjs -> INDEPENDENT_VALIDATION_PASS
-    PASS soak_verdicts_recomputed — 3 sessions, 3 passing
+    PASS soak_verdicts_recomputed — 14 sessions, 14 passing
     PASS intake_coverage_recomputed — 1 inbox items, 1 source versions, 2 intakes
+    PASS governor_recomputed — 143 red-team probes, 1 denials recorded
     PASS gate_promotions_recomputed — 2 gates passed
 $ node scripts/self-adversarial-probes.mjs -> SELF_PROBES_PASS: 11/11
-$ node scripts/assert-seeded-defect-detected.mjs -> seeded defects 10, detected 10, missed 0
+$ node scripts/assert-seeded-defect-detected.mjs -> seeded defects 12, detected 12, missed 0
+$ node scripts/red-team-governor.mjs
+    red-team probes: 38, refused: 38, allowed: 0, unverifiable: 0
+    negative controls: 4, bypassed with the guard removed: 4
+    REDTEAM_PASS
 ```
+
+The red-team suite is written so a refusal cannot be vacuous: every raw-SQL probe
+seeds the row it attacks, a statement that changes 0 rows is `UNVERIFIABLE`
+rather than `REFUSED`, and four negative controls drop the guard and re-run the
+same attack — all four succeed without the guard, so the suite measures guards
+and not mis-aimed SQL. A dead control fails the suite.
 
 The self-adversarial probes are the same raw-SQL attacks used to re-adjudicate
 the external Claude lane, pointed back at this lane so the judge is not grading
@@ -117,7 +136,7 @@ a fresh DB, 30000 events, 1800/1800 probes passing, 308314 ms.
 | G0 Baseline Lock | `PASSED` | `evidence/BASELINE-20260826.md`; clean-tree reproduction, immutable-migration check, local CI |
 | G1 Durable Truth | `PASSED` | `evidence/SOAK-cf77e410-d146-4b9f-b0d3-26bffaef8cb8.json`; 300-cycle real crash/restore soak |
 | G2 Unbounded Intake | `PENDING` | intake slice implemented and invariant-tested; `NEEDS_SOURCE`: no official chat export ingested, so 144 bodies cannot be recovered |
-| G3 Governor | `PENDING` | governor implemented; operator surface and red-team evidence missing |
+| G3 Governor | `PENDING` | operator surface, schema guards and red-team evidence now exist (`evidence/REDTEAM-G3-001.json`, 38/38 refused, 0 allowed); promotion refused because gate order is enforced: `earlier gates not passed: G2=PENDING` |
 | G4 Workflow Runtime | `PENDING` | durable queue not built |
 | G5 Agent Team | `PENDING` | `BLOCKED_PROVIDER_ACCESS`: no Claude Code / Codex / Devin bounded live RUN has passed |
 | G6 Functional Self | `PENDING` | `PREP_ONLY`: implementation and tests proceed locally; promotion withheld until G5 is resolved |
@@ -149,14 +168,17 @@ b0af61515a44730239d7e5b493f9bbf3097ade426a0312420e39047c724c4360  evidence/SELF-
 b38474c1210e3d803a9db973923fb6381a423d49c0386d8065bd60cd1e3570c4  evidence/RUN-003.md
 88f203816ce658d2c76bc0a321974dfd30239a16954c0a0f053c865eb8004d47  evidence/RUN-004.md
 6298847b6ce55e2ccd6308ecf122136c600b194bff98f0d204895a9e74124e60  evidence/RUN-005.md
+0330e76995e57354bb9e803e7cf39ba7faec6e593b9c0ce542e31eab28e507d1  evidence/RUN-006.md
+7a369689b268d1b962df7da1ddaef976c5917ca713120224091a62c0e04e1f79  evidence/REDTEAM-G3-001.json
 fe881b2d793f7391ec35930d3e54aa17778d6963db22e3abc83b0aa50d33cc47  evidence/SOAK-cf77e410-d146-4b9f-b0d3-26bffaef8cb8.json
 636917e73b61ced8c91ef651c4ef60bf0af6ec41d915751fce8ed8d1e6b940fa  evidence/raw/CAND-x-angeldot-2092234523471737056.html
 ```
 
 Gate evidence IDs: G0 = `BASELINE-20260826`, G1 =
-`SOAK-cf77e410-d146-4b9f-b0d3-26bffaef8cb8`. G2–G5 have **no** evidence file,
-because those gates are not closed; claiming an ID for them would be
-fabrication. This RUN's evidence is `evidence/RUN-005.md`; the external-lane
+`SOAK-cf77e410-d146-4b9f-b0d3-26bffaef8cb8`. G2, G4 and G5 have **no** evidence
+file, because those gates are not closed; claiming an ID for them would be
+fabrication. G3 has a red-team artefact (`REDTEAM-G3-001`) but is still `PENDING`
+— an artefact is not a promotion. This RUN's evidence is `evidence/RUN-006.md`; the external-lane
 re-adjudication is `evidence/READJUDICATION-CLAUDE-LANE-001.md` (+ `.json`) and
 the lane comparison is `evidence/COMPARE-CLAUDE-LANE-001.md`.
 
@@ -188,9 +210,17 @@ reasons:
 - `blockers`: 5 `WAITING` — official chat export missing (SOURCE), no provider
   auth wired (PROVIDER_ACCESS), Codex CLI not logged in (PROVIDER_ACCESS), no
   Windows build host (HARDWARE), merge PR #513 (OWNER_APPROVAL). 2 `RESOLVED`.
-- `next_run`: next exact action is the G3 governor CLI + red-team bypass suite
-  (`NXT-3cd7d922`), which is the earliest gate not blocked on an Owner-only
-  input. The G2 intake entry was consumed by `RUN-005`.
+- `next_run`: next exact action is the G4 durable queue (retry/backoff/dead-letter,
+  run steps, artifact store, scheduler OFF by default, deterministic resume/cancel,
+  kill/reboot test proving zero duplicated external effects). The G3 governor entry
+  was consumed by `RUN-006`.
+- `approvals`: 1 row, revoked. `APR-85b98f0c…` was minted by the agent during a
+  CLI smoke test with `granted_by = 'owner'` although the Owner never granted it;
+  it was revoked on the record and migration `0011` now refuses any approval that
+  does not cite an Owner Packet file present on disk.
+- `redteam_probes` / `admission_attempts`: red-team results and admission denials
+  are recorded and append-only; the independent validator recomputes G3 acceptance
+  from these raw rows rather than from the `v_g3_acceptance` view.
 - Event ledger: 35 events, head `12627a1b0b93e3995d59c8edf98222b0016e324588573f7e4c7766a00858893b`, chain ok, integrity `ok`, emergency stop `ON`.
 
 ## 8. Codex CLI facts on this machine

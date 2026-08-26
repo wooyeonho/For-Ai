@@ -64,14 +64,14 @@ test('G1 refuses promotion until a long enough real soak exists', () => {
 test('gates pass in release-train order, and the schema says so too', () => {
   const { db, cleanup } = freshDb();
   try {
-    const outcome = passGate(db, 'G3', { evidenceRef: 'evidence/BASELINE-20260826.md', migrationsDir: MIGRATIONS });
+    const outcome = passGate(db, 'G4', { evidenceRef: 'evidence/BASELINE-20260826.md', migrationsDir: MIGRATIONS });
     assert.equal(outcome.promoted, false);
     assert.match(outcome.reasons.join('; '), /earlier gates not passed/);
 
     assert.throws(
       () =>
         db
-          .prepare("UPDATE gates SET state = 'PASSED', evidence_ref = 'evidence/BASELINE-20260826.md' WHERE gate_id = 'G3'")
+          .prepare("UPDATE gates SET state = 'PASSED', evidence_ref = 'evidence/BASELINE-20260826.md' WHERE gate_id = 'G4'")
           .run(),
       /YENO_SAFETY: an earlier gate has not passed yet/,
     );

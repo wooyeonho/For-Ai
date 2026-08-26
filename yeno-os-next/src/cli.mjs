@@ -7,6 +7,7 @@ import { appendEvent, readEvents, verifyChain } from './core/events.mjs';
 import { catchUp, rebuild } from './core/projections.mjs';
 import { createBackup, verifyBackup, restoreBackup } from './core/backup.mjs';
 import { setStop, stopEngaged } from './core/governor.mjs';
+import { sha256, sha256Json } from './core/hash.mjs';
 import { statusReport, verifyReport } from './domain/status.mjs';
 import {
   startRun,
@@ -21,6 +22,15 @@ import {
 import { activateDesires, goalTrace, observe, remember, selfReport } from './domain/self.mjs';
 import { soakReport } from './domain/soak.mjs';
 import { gateReport, passGate } from './domain/gate.mjs';
+import {
+  admissionCheck,
+  admissionReport,
+  approvalList,
+  g3Acceptance,
+  grantApproval,
+  redteamProbes,
+  revokeApproval,
+} from './domain/governance.mjs';
 import {
   ingest,
   intakeReport,
@@ -68,6 +78,17 @@ const USAGE = `yeno <command>
   candidate probe --id ID --state S [--evidence E] [--detail D]
   inbox promote --inbox ID --code C --name N [--body-evidence E] [--owner-confirmation E]
                                    refuses title-only promotion
+  approval grant --action A --target T --expires ISO --rollback R --packet REF
+                 [--payload JSON] [--max-cost N] [--max-uses N]
+                                   one-shot scoped grant (same scope = same grant);
+                                   --packet is the Owner Packet file that authorised it
+  approval list [--json]           grants with LIVE/EXPIRED/EXHAUSTED/REVOKED state
+  approval revoke <id> --reason R   revocation is final
+  admit check --goal G --authority A [--method-class SAFE] [--approval ID]
+              [--action A --target T --payload JSON] [--cost N] [--budget BP-LOCAL]
+                                   run the real admission order, record the attempt
+  admit report [--json] [--limit N] stop state, grants, denial reason codes, leases
+  redteam report [--json] [--class C] recorded bypass attempts and G3 acceptance
   gate list [--json]               release train state and evidence presence
   gate pass --gate G --evidence E  promote a gate only if its machine checks hold
                                    (refusal reasons are recorded, never bypassed)
@@ -384,6 +405,65 @@ async function main() {
         if (typeof goalId !== 'string') throw new Error('self trace requires a goal id');
         print(goalTrace(db, goalId), json);
         return 0;
+      }
+      case 'approval grant': {
+        const out = grantApproval(db, {
+          exactAction: str(flags.action, 'approval grant requires --action'),
+          target: str(flags.target, 'approval grant requires --target'),
+          payload: typeof flags.payload === 'string' ? JSON.parse(flags.payload) : null,
+          maxCostKrw: Number(flags['max-cost'] ?? 0),
+          expiresAt: str(flags.expires, 'approval grant requires --expires (ISO)'),
+          maxUses: Number(flags['max-uses'] ?? 1),
+          rollbackPlan: str(flags.rollback, 'approval grant requires --rollback'),
+          ownerPacketRef: str(flags.packet, 'approval grant requires --packet (the Owner Packet that authorised it)'),
+        });
+        print(out, json);
+        return 0;
+      }
+      case 'approval list': {
+        print(approvalList(db), json);
+        return 0;
+      }
+      case 'approval revoke': {
+        const id = positional[2] ?? flags.id;
+        if (typeof id !== 'string') throw new Error('approval revoke requires an approval id');
+        print(revokeApproval(db, id, str(flags.reason, 'approval revoke requires --reason')), json);
+        return 0;
+      }
+      case 'admit check': {
+        const out = admissionCheck(db, {
+          goal: str(flags.goal, 'admit check requires --goal'),
+          authority: str(flags.authority, 'admit check requires --authority'),
+          methodClass: typeof flags['method-class'] === 'string' ? flags['method-class'] : 'SAFE',
+          method: typeof flags.method === 'string' ? flags.method : null,
+          budgetProfileId: typeof flags.budget === 'string' ? flags.budget : 'BP-LOCAL',
+          costP90Krw: flags.cost === undefined ? 0 : Number(flags.cost),
+          approvalId: typeof flags.approval === 'string' ? flags.approval : null,
+          exactAction: typeof flags.action === 'string' ? flags.action : null,
+          target: typeof flags.target === 'string' ? flags.target : null,
+          payloadHash: typeof flags.payload === 'string' ? sha256Json(JSON.parse(flags.payload)) : sha256(''),
+          actor: typeof flags.actor === 'string' ? flags.actor : 'cli',
+          resource: typeof flags.resource === 'string' ? flags.resource : null,
+        });
+        print(out, json);
+        return out.decision === 'ALLOW' ? 0 : 1;
+      }
+      case 'admit report': {
+        print(admissionReport(db, { limit: Number(flags.limit ?? 20) }), json);
+        return 0;
+      }
+      case 'redteam report': {
+        const acceptance = g3Acceptance(db);
+        print(
+          {
+            acceptance,
+            probes: redteamProbes(db, {
+              bypassClass: typeof flags.class === 'string' ? flags.class : null,
+            }),
+          },
+          json,
+        );
+        return acceptance.problems.length === 0 ? 0 : 1;
       }
       case 'stop engage': {
         setStop(db, true, String(flags.reason ?? 'cli'), 'cli');

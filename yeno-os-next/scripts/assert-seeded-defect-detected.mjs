@@ -193,7 +193,50 @@ function record(name, detected, detail) {
   rmSync(s.dir, { recursive: true, force: true });
 }
 
-// Case 10: a corrupted backup file must be refused by backup verify.
+// Case 10: a red-team bypass that actually worked must fail the governor check.
+{
+  const s = scaffold();
+  s.db
+    .prepare(
+      `INSERT INTO redteam_probes (probe_id, suite_ref, ts, bypass_class, attack, outcome, detail)
+       VALUES ('RT-seed','seed', ?, 'LEASE', 'stole a held lease', 'ALLOWED', 'changed 1 row')`,
+    )
+    .run(new Date().toISOString());
+  s.db.close();
+  const run = runValidator(s.dbPath, s.migDir);
+  record(
+    'redteam_bypass_allowed',
+    run.status !== 0 && /governor_recomputed/.test(run.stdout),
+    run.stdout.match(/FAIL governor_recomputed.*/)?.[0] ?? '',
+  );
+  rmSync(s.dir, { recursive: true, force: true });
+}
+
+// Case 11: a high-authority RUN with no Owner approval, trigger removed.
+{
+  const s = scaffold();
+  const now = new Date().toISOString();
+  s.db.exec('DROP TRIGGER trg_runs_high_authority_needs_approval');
+  s.db.exec('DROP TRIGGER trg_runs_blocked_by_stop');
+  s.db
+    .prepare(
+      `INSERT INTO runs (run_id, goal, authority, method_class, network, cost_p90_krw, budget_profile_id,
+         approval_id, baseline_ref, acceptance, rollback, state, created_at, updated_at)
+       VALUES ('RUN-forged','unapproved external effect','A4','SAFE','ALLOWLIST',0,'BP-LOCAL',
+               NULL,'BASELINE-20260826','none','none','PENDING', ?, ?)`,
+    )
+    .run(now, now);
+  s.db.close();
+  const run = runValidator(s.dbPath, s.migDir);
+  record(
+    'unapproved_high_authority_run',
+    run.status !== 0 && /governor_recomputed/.test(run.stdout),
+    run.stdout.match(/FAIL governor_recomputed.*/)?.[0] ?? '',
+  );
+  rmSync(s.dir, { recursive: true, force: true });
+}
+
+// Case 12: a corrupted backup file must be refused by backup verify.
 {
   const s = scaffold();
   const backup = await createBackup(s.db, { dir: join(s.dir, 'backups') });

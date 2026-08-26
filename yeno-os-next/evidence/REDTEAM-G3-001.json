@@ -1,0 +1,296 @@
+{
+  "generated_at": "2026-08-26T13:31:24.395Z",
+  "suite_ref": "scripts/red-team-governor.mjs",
+  "fingerprint": "42d84fa4fa3a8c8205aa872d48384f4d12baf0cd1dee6b27fe65163c3356b008",
+  "totals": {
+    "total": 38,
+    "refused": 38,
+    "allowed": 0,
+    "unverifiable": 0
+  },
+  "acceptance": {
+    "classes_missing": 0,
+    "bypasses_allowed": 0,
+    "probes_unverifiable": 0,
+    "probes_total": 181,
+    "denials_recorded": 1,
+    "classes_covered": [
+      "APPROVAL_EXPIRY",
+      "APPROVAL_PARTIAL_USE",
+      "APPROVAL_REPLAY",
+      "AX_METHOD",
+      "BUDGET",
+      "EMERGENCY_STOP",
+      "EVIDENCE",
+      "GOVERNOR_API",
+      "LEASE",
+      "RAW_SQL"
+    ],
+    "classes_uncovered": [],
+    "problems": []
+  },
+  "probes": [
+    {
+      "bypass_class": "EMERGENCY_STOP",
+      "attack": "admit a RUN on a fresh install where the stop is default-on",
+      "outcome": "REFUSED",
+      "detail": "DENY/EMERGENCY_STOP_ENGAGED"
+    },
+    {
+      "bypass_class": "EMERGENCY_STOP",
+      "attack": "flip the emergency stop off with raw SQL as a non-Owner actor",
+      "outcome": "REFUSED",
+      "detail": "schema refused: YENO_SAFETY: only the Owner releases the emergency stop, with a reason"
+    },
+    {
+      "bypass_class": "EMERGENCY_STOP",
+      "attack": "delete the emergency stop row to escape default-on",
+      "outcome": "REFUSED",
+      "detail": "schema refused: YENO_SAFETY: the emergency stop row is permanent"
+    },
+    {
+      "bypass_class": "EMERGENCY_STOP",
+      "attack": "insert a RUN directly while the stop is engaged",
+      "outcome": "REFUSED",
+      "detail": "schema refused: YENO_SAFETY: emergency stop engaged, no new RUN"
+    },
+    {
+      "bypass_class": "GOVERNOR_API",
+      "attack": "request an A4 external action with no approval id",
+      "outcome": "REFUSED",
+      "detail": "DENY/APPROVAL_REQUIRED"
+    },
+    {
+      "bypass_class": "GOVERNOR_API",
+      "attack": "point a real approval at a different payload (scope mismatch)",
+      "outcome": "REFUSED",
+      "detail": "DENY/APPROVAL_SCOPE_MISMATCH"
+    },
+    {
+      "bypass_class": "GOVERNOR_API",
+      "attack": "insert an A4 RUN row directly, skipping admission entirely",
+      "outcome": "REFUSED",
+      "detail": "schema refused: YENO_SAFETY: A3+ RUN needs a live in-scope Owner approval"
+    },
+    {
+      "bypass_class": "GOVERNOR_API",
+      "attack": "attach a revoked approval to an A3 RUN insert",
+      "outcome": "REFUSED",
+      "detail": "schema refused: YENO_SAFETY: A3+ RUN needs a live in-scope Owner approval"
+    },
+    {
+      "bypass_class": "APPROVAL_REPLAY",
+      "attack": "consume a one-shot approval twice",
+      "outcome": "REFUSED",
+      "detail": "second use refused: YENO_GOVERNOR: approval could not be consumed"
+    },
+    {
+      "bypass_class": "APPROVAL_REPLAY",
+      "attack": "admit again after the approval is exhausted",
+      "outcome": "REFUSED",
+      "detail": "DENY/APPROVAL_USES_EXHAUSTED"
+    },
+    {
+      "bypass_class": "APPROVAL_REPLAY",
+      "attack": "rewind the approval use counter with raw SQL",
+      "outcome": "REFUSED",
+      "detail": "schema refused: YENO_SAFETY: approval use count cannot be rewound"
+    },
+    {
+      "bypass_class": "APPROVAL_REPLAY",
+      "attack": "delete the approval record to erase what was allowed",
+      "outcome": "REFUSED",
+      "detail": "schema refused: YENO_SAFETY: approvals are evidence and are never deleted"
+    },
+    {
+      "bypass_class": "APPROVAL_EXPIRY",
+      "attack": "use an approval whose expiry has passed",
+      "outcome": "REFUSED",
+      "detail": "DENY/APPROVAL_EXPIRED"
+    },
+    {
+      "bypass_class": "APPROVAL_EXPIRY",
+      "attack": "extend the expiry of an existing approval with raw SQL",
+      "outcome": "REFUSED",
+      "detail": "schema refused: YENO_SAFETY: approval scope is immutable, request a new approval"
+    },
+    {
+      "bypass_class": "APPROVAL_PARTIAL_USE",
+      "attack": "reuse the remaining use of a multi-use grant for a different target",
+      "outcome": "REFUSED",
+      "detail": "DENY/APPROVAL_SCOPE_MISMATCH"
+    },
+    {
+      "bypass_class": "APPROVAL_PARTIAL_USE",
+      "attack": "raise max_uses on a partially used approval",
+      "outcome": "REFUSED",
+      "detail": "schema refused: YENO_SAFETY: approval scope is immutable, request a new approval"
+    },
+    {
+      "bypass_class": "APPROVAL_PARTIAL_USE",
+      "attack": "spend more than the approved cost ceiling",
+      "outcome": "REFUSED",
+      "detail": "DENY/APPROVAL_COST_CEILING"
+    },
+    {
+      "bypass_class": "BUDGET",
+      "attack": "run with an unknown cost_p90",
+      "outcome": "REFUSED",
+      "detail": "DENY/COST_P90_UNKNOWN"
+    },
+    {
+      "bypass_class": "BUDGET",
+      "attack": "run past the remaining monthly budget",
+      "outcome": "REFUSED",
+      "detail": "DENY/BUDGET_EXCEEDED"
+    },
+    {
+      "bypass_class": "BUDGET",
+      "attack": "activate the un-promoted 3M profile",
+      "outcome": "REFUSED",
+      "detail": "schema refused: YENO_SAFETY: budget profile needs Owner promotion before activation"
+    },
+    {
+      "bypass_class": "BUDGET",
+      "attack": "rewind recorded spend to re-open an exhausted budget",
+      "outcome": "REFUSED",
+      "detail": "schema refused: YENO_SAFETY: recorded spend cannot be lowered"
+    },
+    {
+      "bypass_class": "BUDGET",
+      "attack": "raise the monthly ceiling without Owner promotion",
+      "outcome": "REFUSED",
+      "detail": "schema refused: YENO_SAFETY: raising a budget ceiling needs Owner promotion"
+    },
+    {
+      "bypass_class": "AX_METHOD",
+      "attack": "request an AX method class with a valid approval",
+      "outcome": "REFUSED",
+      "detail": "DENY/AX_METHOD_FORBIDDEN"
+    },
+    {
+      "bypass_class": "AX_METHOD",
+      "attack": "request a named AX pattern under a SAFE label",
+      "outcome": "REFUSED",
+      "detail": "DENY/AX_METHOD_FORBIDDEN"
+    },
+    {
+      "bypass_class": "AX_METHOD",
+      "attack": "insert an AX RUN row directly",
+      "outcome": "REFUSED",
+      "detail": "schema refused: YENO_SAFETY: AX method class is never admissible"
+    },
+    {
+      "bypass_class": "LEASE",
+      "attack": "acquire a lease already held by a live writer",
+      "outcome": "REFUSED",
+      "detail": "{\"ok\":false,\"reason\":\"HELD\",\"holder\":\"writer-a\",\"fencingToken\":1}"
+    },
+    {
+      "bypass_class": "LEASE",
+      "attack": "steal a held, unexpired lease with raw SQL",
+      "outcome": "REFUSED",
+      "detail": "schema refused: YENO_SAFETY: lease is held and unexpired, it cannot be stolen"
+    },
+    {
+      "bypass_class": "LEASE",
+      "attack": "rewind the fencing token so a stale worker wins",
+      "outcome": "REFUSED",
+      "detail": "schema refused: YENO_SAFETY: fencing token must increase"
+    },
+    {
+      "bypass_class": "LEASE",
+      "attack": "delete the lease row to reset the token counter",
+      "outcome": "REFUSED",
+      "detail": "schema refused: YENO_SAFETY: lease rows expire, they are not deleted"
+    },
+    {
+      "bypass_class": "RAW_SQL",
+      "attack": "set G3 to PASSED with raw SQL",
+      "outcome": "REFUSED",
+      "detail": "schema refused: YENO_SAFETY: G3 needs a refused red-team probe in every bypass class"
+    },
+    {
+      "bypass_class": "RAW_SQL",
+      "attack": "rewrite an event payload in the ledger",
+      "outcome": "REFUSED",
+      "detail": "schema refused: table events has no column named id"
+    },
+    {
+      "bypass_class": "RAW_SQL",
+      "attack": "delete an admission denial record",
+      "outcome": "REFUSED",
+      "detail": "schema refused: YENO_SAFETY: admission attempts are append-only"
+    },
+    {
+      "bypass_class": "RAW_SQL",
+      "attack": "rewrite the reason code of a recorded denial",
+      "outcome": "REFUSED",
+      "detail": "schema refused: YENO_SAFETY: admission attempts are append-only"
+    },
+    {
+      "bypass_class": "EVIDENCE",
+      "attack": "pass G3 through the domain layer with an evidence file that does not exist",
+      "outcome": "REFUSED",
+      "detail": "earlier gates not passed: G0=IN_PROGRESS, G1=PENDING, G2=PENDING; evidence file evidence/DOES-NOT-EXIST.md does not exist in the repository; no refused probe for bypass class: RAW_SQL, GOVERNOR_API, APPROVAL_REPLAY, APPROVAL_EXPIRY, APPROVAL_PARTIAL_USE, EMERGENCY_STOP, BUDGET, LEASE, AX_METHOD, EVIDENCE; no admission denial has ever been recorded"
+    },
+    {
+      "bypass_class": "EVIDENCE",
+      "attack": "rewrite a recorded red-team result to hide an allowed bypass",
+      "outcome": "REFUSED",
+      "detail": "schema refused: YENO_SAFETY: red-team results are append-only"
+    },
+    {
+      "bypass_class": "EVIDENCE",
+      "attack": "grant an approval citing an Owner Packet that does not exist",
+      "outcome": "REFUSED",
+      "detail": "refused: YENO_GOVERNOR: Owner Packet evidence/OWNER-PACKET-999-does-not-exist.md does not exist on disk"
+    },
+    {
+      "bypass_class": "EVIDENCE",
+      "attack": "insert an approval with no Owner Packet reference at all",
+      "outcome": "REFUSED",
+      "detail": "schema refused: YENO_SAFETY: an approval must cite the Owner Packet that authorised it"
+    },
+    {
+      "bypass_class": "EVIDENCE",
+      "attack": "repoint an approval at a different Owner Packet after the fact",
+      "outcome": "REFUSED",
+      "detail": "schema refused: YENO_SAFETY: the Owner Packet reference of an approval is immutable"
+    }
+  ],
+  "negative_controls": [
+    {
+      "control": "emergency stop raw flip",
+      "dropped": [
+        "trg_stop_release_needs_owner"
+      ],
+      "bypassed": true,
+      "detail": "1 row(s) changed with the guard removed"
+    },
+    {
+      "control": "approval use rewind",
+      "dropped": [
+        "trg_approval_uses_monotonic"
+      ],
+      "bypassed": true,
+      "detail": "1 row(s) changed with the guard removed"
+    },
+    {
+      "control": "lease steal",
+      "dropped": [
+        "trg_lease_no_steal"
+      ],
+      "bypassed": true,
+      "detail": "1 row(s) changed with the guard removed"
+    },
+    {
+      "control": "denial record deletion",
+      "dropped": [
+        "trg_admission_no_delete"
+      ],
+      "bypassed": true,
+      "detail": "1 row(s) changed with the guard removed"
+    }
+  ]
+}

@@ -7,6 +7,7 @@ import { join } from 'node:path';
 import { verifyReport } from './status.mjs';
 import { durabilityEvidence } from './soak.mjs';
 import { intakeCoverage } from './intake.mjs';
+import { g3Acceptance } from './governance.mjs';
 
 const REPO_ROOT = new URL('../../', import.meta.url).pathname;
 
@@ -62,6 +63,19 @@ const REQUIREMENTS = {
       .prepare("SELECT COUNT(*) AS n FROM inbox_items WHERE state IN ('BODY_MISSING','NEEDS_SOURCE')")
       .get().n;
     if (stillMissing > 0) reasons.push(`${stillMissing} inbox items still have no recovered body`);
+    return reasons;
+  },
+  G3: (db) => {
+    const acceptance = g3Acceptance(db);
+    const reasons = [...acceptance.problems];
+    // A governor with no recorded denial has never been attacked.
+    if (acceptance.denials_recorded === 0) reasons.push('no admission denial has ever been recorded');
+    const stop = db.prepare('SELECT engaged FROM emergency_stop WHERE id = 1').get();
+    if (stop === undefined) reasons.push('the emergency stop row is missing');
+    const unapproved = db
+      .prepare("SELECT COUNT(*) AS n FROM runs WHERE authority IN ('A3','A4','A5','A6') AND approval_id IS NULL")
+      .get().n;
+    if (unapproved > 0) reasons.push(`${unapproved} high-authority RUN(s) exist with no Owner approval`);
     return reasons;
   },
   G5: (db) => {

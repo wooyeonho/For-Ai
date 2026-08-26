@@ -368,6 +368,61 @@ if (g1Row?.state === 'PASSED') {
     );
   }
 }
+// G3 governor: recomputed from the raw governance rows, not from
+// v_g3_acceptance, so a tampered view cannot certify itself.
+const g3Row = gates.find((g) => g.gate_id === 'G3');
+const G3_BYPASS_CLASSES = [
+  'RAW_SQL',
+  'GOVERNOR_API',
+  'APPROVAL_REPLAY',
+  'APPROVAL_EXPIRY',
+  'APPROVAL_PARTIAL_USE',
+  'EMERGENCY_STOP',
+  'BUDGET',
+  'LEASE',
+  'AX_METHOD',
+  'EVIDENCE',
+];
+const governorProblems = [];
+const allowedBypasses = db.prepare("SELECT bypass_class, attack FROM redteam_probes WHERE outcome = 'ALLOWED'").all();
+for (const b of allowedBypasses) governorProblems.push(`red-team bypass was not refused: ${b.bypass_class} — ${b.attack}`);
+const unapprovedRuns = db
+  .prepare("SELECT COUNT(*) AS n FROM runs WHERE authority IN ('A3','A4','A5','A6') AND approval_id IS NULL")
+  .get().n;
+if (unapprovedRuns > 0) governorProblems.push(`${unapprovedRuns} high-authority RUN(s) exist with no approval`);
+const overUsedApprovals = db.prepare('SELECT COUNT(*) AS n FROM approvals WHERE uses > max_uses').get().n;
+if (overUsedApprovals > 0) governorProblems.push(`${overUsedApprovals} approval(s) used more times than granted`);
+// A usable approval must cite an Owner Packet that really exists: "granted_by =
+// owner" is a label, the packet file is the artefact the Owner can dispute.
+for (const a of db
+  .prepare('SELECT approval_id, owner_packet_ref FROM approvals WHERE revoked = 0 AND uses < max_uses')
+  .all()) {
+  if (!a.owner_packet_ref) governorProblems.push(`${a.approval_id}: usable with no Owner Packet reference`);
+  else if (!existsSync(join(REPO, a.owner_packet_ref))) {
+    governorProblems.push(`${a.approval_id}: Owner Packet ${a.owner_packet_ref} is missing on disk`);
+  }
+}
+const stopRows = db.prepare('SELECT COUNT(*) AS n FROM emergency_stop').get().n;
+if (stopRows !== 1) governorProblems.push(`emergency_stop has ${stopRows} rows, expected exactly 1`);
+if (g3Row?.state === 'PASSED') {
+  const covered = db
+    .prepare("SELECT DISTINCT bypass_class FROM redteam_probes WHERE outcome = 'REFUSED'")
+    .all()
+    .map((r) => r.bypass_class);
+  const missing = G3_BYPASS_CLASSES.filter((c) => !covered.includes(c));
+  if (missing.length > 0) governorProblems.push(`G3: PASSED with no refused probe for ${missing.join(',')}`);
+  if (db.prepare("SELECT COUNT(*) AS n FROM admission_attempts WHERE decision = 'DENY'").get().n === 0) {
+    governorProblems.push('G3: PASSED with no recorded admission denial');
+  }
+}
+verdict(
+  governorProblems.length === 0,
+  'governor_recomputed',
+  `${db.prepare('SELECT COUNT(*) AS n FROM redteam_probes').get().n} red-team probes, ` +
+    `${db.prepare("SELECT COUNT(*) AS n FROM admission_attempts WHERE decision = 'DENY'").get().n} denials recorded`,
+  governorProblems.join(' | '),
+);
+
 const g5Row = gates.find((g) => g.gate_id === 'G5');
 const g6Row = gates.find((g) => g.gate_id === 'G6');
 if (g6Row?.state === 'PASSED' && g5Row?.state !== 'PASSED') gateProblems.push('G6: PASSED while G5 is not');

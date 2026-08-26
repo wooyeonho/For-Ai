@@ -1,11 +1,11 @@
 {
   "manifest_version": 1,
-  "started_at": "2026-08-26T13:14:45.986Z",
-  "finished_at": "2026-08-26T13:14:48.745Z",
+  "started_at": "2026-08-26T13:29:53.606Z",
+  "finished_at": "2026-08-26T13:29:57.227Z",
   "node_version": "v24.19.0",
   "platform": "linux-x64",
   "ok": true,
-  "steps_total": 12,
+  "steps_total": 13,
   "steps_failed": 0,
   "steps": [
     {
@@ -28,9 +28,9 @@
       ],
       "exit_code": 0,
       "ok": true,
-      "duration_ms": 1837,
-      "stdout_sha256": "1861e10f32b0049a3c25db04fb27629b3b1426340da1adc1f469fd00224a7824",
-      "stdout_tail": "✔ projections are derived from the ledger and rebuild deterministically (9.444683ms)\n✔ a wiped projection is fully recovered from events alone (6.502682ms)\n✔ catchUp is incremental and does not reapply old events (6.257975ms)\n✔ unknown event types are ignored rather than crashing the projector (5.860373ms)\nℹ tests 102\nℹ suites 0\nℹ pass 102\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 1811.736268",
+      "duration_ms": 2214,
+      "stdout_sha256": "4da51f0ae26adef4aa04891299a4e56b5229ed49f35cfefb831075621e659893",
+      "stdout_tail": "✔ projections are derived from the ledger and rebuild deterministically (11.371846ms)\n✔ a wiped projection is fully recovered from events alone (8.227923ms)\n✔ catchUp is incremental and does not reapply old events (7.92618ms)\n✔ unknown event types are ignored rather than crashing the projector (7.605982ms)\nℹ tests 116\nℹ suites 0\nℹ pass 116\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 2189.117708",
       "stderr_tail": ""
     },
     {
@@ -42,8 +42,8 @@
       "exit_code": 0,
       "ok": true,
       "duration_ms": 25,
-      "stdout_sha256": "c220989181c68732ce066688cd01799425271bfe38b33bdad1650c895941f9a1",
-      "stdout_tail": "CHECKSUM_PIN_OK: 9 migrations pinned",
+      "stdout_sha256": "22bd13f34d5720c7e40c7c87c345e8102f555838071726ae61ab4e3be6c36bb7",
+      "stdout_tail": "CHECKSUM_PIN_OK: 11 migrations pinned",
       "stderr_tail": ""
     },
     {
@@ -54,9 +54,9 @@
       ],
       "exit_code": 0,
       "ok": true,
-      "duration_ms": 37,
-      "stdout_sha256": "08ddf4f65fa9b0f1d54fe2492da33783278fb11e28df83797d2c4da9b949070e",
-      "stdout_tail": "applied:\n\ntotal: 9",
+      "duration_ms": 34,
+      "stdout_sha256": "34fadbdc7a3b35c94f8e2e062d2565523e48af4073bf786142a19f4e69ebb05c",
+      "stdout_tail": "applied:\n\ntotal: 11",
       "stderr_tail": ""
     },
     {
@@ -68,8 +68,8 @@
       ],
       "exit_code": 0,
       "ok": true,
-      "duration_ms": 36,
-      "stdout_sha256": "2d4a009b3f3975875c97e2a72cbd6f505a9b2f83c77841e1e86d32a3b4a6a3a6",
+      "duration_ms": 40,
+      "stdout_sha256": "1dc24251d474b8031e2ca339ca9a1bfc874d5e2212bccf90eef1b32f285919c6",
       "stdout_tail": "    \"kill_count\": 300,\n    \"restore_count\": 300,\n    \"events_appended\": 30000,\n    \"duration_ms\": 308314,\n    \"head_hash\": \"2b0426af562c970376b608dd7f63538481653f92a8aba79db38539bbcfd1be6f\",\n    \"evidence_ref\": \"evidence/SOAK-cf77e410-d146-4b9f-b0d3-26bffaef8cb8.json\",\n    \"failure\": null,\n    \"probes\": 1800,\n    \"probes_failed\": 0,\n    \"probe_kinds\": 6\n  }\n}",
       "stderr_tail": ""
     },
@@ -82,8 +82,8 @@
       ],
       "exit_code": 0,
       "ok": true,
-      "duration_ms": 47,
-      "stdout_sha256": "518fb92bd2c0b77cfa116e4240e14dc3924d300f4b029ab6cd3790e3366749cf",
+      "duration_ms": 43,
+      "stdout_sha256": "9f87ef430b1569e3768437c5e6b3af62f2dcc3393d6c7fe01fde80c27d13b744",
       "stdout_tail": "      \"name\": \"g6_not_promoted_before_g5\",\n      \"ok\": true,\n      \"detail\": \"G6 PENDING while G5 PENDING\"\n    },\n    {\n      \"name\": \"no_consciousness_claim_recorded\",\n      \"ok\": true,\n      \"detail\": \"0 claims\"\n    }\n  ],\n  \"failed\": []\n}",
       "stderr_tail": ""
     },
@@ -97,9 +97,9 @@
       ],
       "exit_code": 0,
       "ok": true,
-      "duration_ms": 34,
-      "stdout_sha256": "dc9f5cf71d0de0bba0e6acfc87146265d0767dc0de24f18d983236764c2f3af6",
-      "stdout_tail": "  },\n  \"projections\": {\n    \"proj_inbox_state\": {\n      \"last_seq\": 49,\n      \"rows\": 1\n    },\n    \"proj_run_state\": {\n      \"last_seq\": 49,\n      \"rows\": 0\n    }\n  }\n}",
+      "duration_ms": 37,
+      "stdout_sha256": "fc11e2305cc83b3d43c9456229ce318e7ede13042935e794ac390b696bb26e72",
+      "stdout_tail": "  },\n  \"projections\": {\n    \"proj_inbox_state\": {\n      \"last_seq\": 51,\n      \"rows\": 1\n    },\n    \"proj_run_state\": {\n      \"last_seq\": 51,\n      \"rows\": 0\n    }\n  }\n}",
       "stderr_tail": ""
     },
     {
@@ -111,9 +111,9 @@
       ],
       "exit_code": 0,
       "ok": true,
-      "duration_ms": 34,
-      "stdout_sha256": "71acab01661d792a4121d6dae363e512a709ded9520c8ab88f80b96d6d55df9c",
-      "stdout_tail": "proj_inbox_state:\n  last_seq: 49\n  rows: 1\nproj_run_state:\n  last_seq: 49\n  rows: 0",
+      "duration_ms": 39,
+      "stdout_sha256": "058425c7b82b62bb1011d0780ea10ea3cfe7f3259f722ed3a9ed1b491e3aa133",
+      "stdout_tail": "proj_inbox_state:\n  last_seq: 51\n  rows: 1\nproj_run_state:\n  last_seq: 51\n  rows: 0",
       "stderr_tail": ""
     },
     {
@@ -129,9 +129,9 @@
       ],
       "exit_code": 0,
       "ok": true,
-      "duration_ms": 201,
-      "stdout_sha256": "fa70228f5ac7d2c0a8ca6d5440d2257c59c7b66113edb0d6d4d92a84fe90b3ee",
-      "stdout_tail": "soak SOAK-f46501d1-02f8-4c1d-ac48-e0631d34379d: 2 cycles x 8 events, scratch /tmp/yeno-soak-rkMCP2/yeno.db\ncycle 1/2: 6/6 probes ok\ncycle 2/2: 6/6 probes ok\nevidence/runtime/SOAK-f46501d1-02f8-4c1d-ac48-e0631d34379d.json\nSOAK_PASS SOAK-f46501d1-02f8-4c1d-ac48-e0631d34379d",
+      "duration_ms": 215,
+      "stdout_sha256": "b56ca2bd83aff4ae4a95fc5d9b6e44721c98c0f30d9b1bf6ab6135a2e70e91b9",
+      "stdout_tail": "soak SOAK-32d7538c-8e09-469a-89b2-f276a52ec8ed: 2 cycles x 8 events, scratch /tmp/yeno-soak-EbdTDM/yeno.db\ncycle 1/2: 6/6 probes ok\ncycle 2/2: 6/6 probes ok\nevidence/runtime/SOAK-32d7538c-8e09-469a-89b2-f276a52ec8ed.json\nSOAK_PASS SOAK-32d7538c-8e09-469a-89b2-f276a52ec8ed",
       "stderr_tail": ""
     },
     {
@@ -142,8 +142,8 @@
       "exit_code": 0,
       "ok": true,
       "duration_ms": 34,
-      "stdout_sha256": "0e65977f98ff875d996712a406c8b2de40067b9cc269e05928913fcb301fef19",
-      "stdout_tail": "PASS migration_checksum — 0008_gate_promotion_guard.sql\nPASS migration_checksum — 0009_intake.sql\nPASS migration_order\nPASS pinned_checksums\nPASS event_hash_chain — 49 events, head=145209fbdc1d0b26\nPASS projection_matches_ledger — 1 inbox rows\nPASS safety_objects_present\nPASS vault_bytes_rehashed — 1 source versions\nPASS soak_verdicts_recomputed — 13 sessions, 13 passing\nPASS intake_coverage_recomputed — 1 inbox items, 1 source versions, 2 intakes\nPASS gate_promotions_recomputed — 2 gates passed\nINDEPENDENT_VALIDATION_PASS",
+      "stdout_sha256": "90998ba248cf59e74da6065cedc29daf49955b3b5e5bd164024d8f3fc470ae5a",
+      "stdout_tail": "PASS migration_checksum — 0011_approval_provenance.sql\nPASS migration_order\nPASS pinned_checksums\nPASS event_hash_chain — 51 events, head=bf5ae4fb99dd9833\nPASS projection_matches_ledger — 1 inbox rows\nPASS safety_objects_present\nPASS vault_bytes_rehashed — 1 source versions\nPASS soak_verdicts_recomputed — 15 sessions, 15 passing\nPASS intake_coverage_recomputed — 1 inbox items, 1 source versions, 2 intakes\nPASS governor_recomputed — 143 red-team probes, 1 denials recorded\nPASS gate_promotions_recomputed — 2 gates passed\nINDEPENDENT_VALIDATION_PASS",
       "stderr_tail": ""
     },
     {
@@ -153,9 +153,22 @@
       ],
       "exit_code": 0,
       "ok": true,
-      "duration_ms": 111,
-      "stdout_sha256": "e4fed2e73eeaf64d6ebf08ab15f066d1f2c72993906508e85e4a24fffd4ea2b7",
-      "stdout_tail": "PASS          cost_hard_gate_enforced_in_schema\n        schema refused: YENO_SAFETY: cost_p90 unknown or exceeds remaining budget\nPASS          ax_method_refused_in_schema\n        schema refused: YENO_SAFETY: AX method class is never admissible\nPASS          emergency_stop_defaults_ON_on_a_fresh_install\n        a freshly migrated DB has emergency_stop.engaged = 1 as stored state, not derived from a log whose absence means OFF\nPASS          cli_refuses_gate_pass_without_real_evidence\n        CLI refused:     \"evidence file evidence/DOES-NOT-EXIST.md does not exist in the repository\"   ] }\nPASS          durability_soak_floor_100_cycles\n        300 cycles, 300 SIGKILLs, 300 restores, 1800 probes with 0 failures, evidence evidence/SOAK-cf77e410-d146-4b9f-b0d3-26bffaef8cb8.json\n\nSELF_PROBES_PASS: 11/11",
+      "duration_ms": 121,
+      "stdout_sha256": "6df13d22797d6ea56e42e96aca523820b8a1e4f10a9c672250cef471810d67c1",
+      "stdout_tail": "PASS          cost_hard_gate_enforced_in_schema\n        schema refused: YENO_SAFETY: cost_p90 unknown or exceeds remaining budget\nPASS          ax_method_refused_in_schema\n        schema refused: YENO_SAFETY: A3+ RUN needs a live in-scope Owner approval\nPASS          emergency_stop_defaults_ON_on_a_fresh_install\n        a freshly migrated DB has emergency_stop.engaged = 1 as stored state, not derived from a log whose absence means OFF\nPASS          cli_refuses_gate_pass_without_real_evidence\n        CLI refused:     \"evidence file evidence/DOES-NOT-EXIST.md does not exist in the repository\"   ] }\nPASS          durability_soak_floor_100_cycles\n        300 cycles, 300 SIGKILLs, 300 restores, 1800 probes with 0 failures, evidence evidence/SOAK-cf77e410-d146-4b9f-b0d3-26bffaef8cb8.json\n\nSELF_PROBES_PASS: 11/11",
+      "stderr_tail": ""
+    },
+    {
+      "id": "governor_red_team",
+      "argv": [
+        "scripts/red-team-governor.mjs",
+        "--no-record"
+      ],
+      "exit_code": 0,
+      "ok": true,
+      "duration_ms": 351,
+      "stdout_sha256": "558b5a2ff1e7e7fae9917c4e8257d6e8a83022382727b259c322c7de02a49769",
+      "stdout_tail": "REFUSED      RAW_SQL               rewrite an event payload in the ledger\nREFUSED      RAW_SQL               delete an admission denial record\nREFUSED      RAW_SQL               rewrite the reason code of a recorded denial\nREFUSED      EVIDENCE              pass G3 through the domain layer with an evidence file that does not exist\nREFUSED      EVIDENCE              rewrite a recorded red-team result to hide an allowed bypass\nREFUSED      EVIDENCE              grant an approval citing an Owner Packet that does not exist\nREFUSED      EVIDENCE              insert an approval with no Owner Packet reference at all\nREFUSED      EVIDENCE              repoint an approval at a different Owner Packet after the fact\n\nred-team probes: 38, refused: 38, allowed: 0, unverifiable: 0\nnegative controls: 4, bypassed with the guard removed: 4\nREDTEAM_PASS",
       "stderr_tail": ""
     },
     {
@@ -165,9 +178,9 @@
       ],
       "exit_code": 0,
       "ok": true,
-      "duration_ms": 357,
-      "stdout_sha256": "a1616c9ce06a33d71a56654308ba384c5d39be7f32921855a5c5b4942bc02a85",
-      "stdout_tail": "DETECTED event_payload_tampered — FAIL event_hash — seq 1 stored=38992d977a89296f807c1ebf0a6798b8c0a305928e56488d882e64abf3613249 recomputed=b562d44c90d683ade9bcd2c3f8044b2d19fe737a18f30a986fa6f51be08c3840\nDETECTED event_deleted — FAIL event_seq_contiguous — expected 2 got 3\nDETECTED projection_hand_edited — FAIL projection_matches_ledger — IN-3: want={\"attempts\":0,\"state\":\"BODY_MISSING\",\"title\":\"seed 3\"} got={\"attempts\":0,\"state\":\"PROMOTED\",\"title\":\"seed 3\"}\nDETECTED applied_migration_edited — FAIL migration_checksum — 0001_core.sql db=8518c63459b7a679d51f10a452d6ccd6b5571c5ee5c657aa343e1e8f96343d61 disk=67b8158509f31bd9297151cd8bbc6b3ce607f8c3f5bc5b986ffab96c778a4f50\nDETECTED safety_trigger_dropped — FAIL safety_object_present — trg_runs_cost_hard_gate is missing\nDETECTED vault_bytes_mismatch — FAIL vault_bytes_rehashed — SV-1: bytes hash mismatch\nDETECTED title_only_project_promoted — FAIL intake_coverage_recomputed — 1 projects were promoted from a title alone: PRJ-FORGED\nDETECTED recovered_without_attempt — FAIL intake_coverage_recomputed — 1 recovered items have no matching recovery attempt: IN-CLAIMED\nDETECTED corrupted_backup_refused — DB_HASH_MISMATCH: manifest=df5af073d76aa353b5c8a0e6a96daecbf3c36eca51cf9b876053ecc075c937fe actual=119e9e6dec3fba092a1c95e7bbc6518cfe9ec13590249bb7e2f40c8f16afbf18\n\nseeded defects: 10, detected: 10, missed: 0\nSEEDED_DEFECT_CHECK_PASS",
+      "duration_ms": 463,
+      "stdout_sha256": "cd06e5d9563d4d8805b805ea2e942efd098de2ca5df8d625c09144e7d1c8cf18",
+      "stdout_tail": "DETECTED projection_hand_edited — FAIL projection_matches_ledger — IN-3: want={\"attempts\":0,\"state\":\"BODY_MISSING\",\"title\":\"seed 3\"} got={\"attempts\":0,\"state\":\"PROMOTED\",\"title\":\"seed 3\"}\nDETECTED applied_migration_edited — FAIL migration_checksum — 0001_core.sql db=8518c63459b7a679d51f10a452d6ccd6b5571c5ee5c657aa343e1e8f96343d61 disk=67b8158509f31bd9297151cd8bbc6b3ce607f8c3f5bc5b986ffab96c778a4f50\nDETECTED safety_trigger_dropped — FAIL safety_object_present — trg_runs_cost_hard_gate is missing\nDETECTED vault_bytes_mismatch — FAIL vault_bytes_rehashed — SV-1: bytes hash mismatch\nDETECTED title_only_project_promoted — FAIL intake_coverage_recomputed — 1 projects were promoted from a title alone: PRJ-FORGED\nDETECTED recovered_without_attempt — FAIL intake_coverage_recomputed — 1 recovered items have no matching recovery attempt: IN-CLAIMED\nDETECTED redteam_bypass_allowed — FAIL governor_recomputed — red-team bypass was not refused: LEASE — stole a held lease\nDETECTED unapproved_high_authority_run — FAIL governor_recomputed — 1 high-authority RUN(s) exist with no approval\nDETECTED corrupted_backup_refused — DB_HASH_MISMATCH: manifest=2fa5e5f6181c69474fe72f644fd0cac4bd11b49208259618bf3761e27ed36695 actual=a053ef07cdd8997fd1afd6ec756032d59102c4e23e5bfca58a14780d6bb0721d | OPEN_FAILED: database disk image is malformed\n\nseeded defects: 12, detected: 12, missed: 0\nSEEDED_DEFECT_CHECK_PASS",
       "stderr_tail": ""
     }
   ],
@@ -253,9 +266,19 @@
       "sha256": "1e50bd5951ae428f53c73c58624380ecd2e864239578bcfa4c27a4d2e655237e"
     },
     {
+      "path": "migrations/0010_governor_guard.sql",
+      "size": 8017,
+      "sha256": "56375f513760c3cefcf20d086022aac1a76fc1a76e5de2b13c64e8dcb0415591"
+    },
+    {
+      "path": "migrations/0011_approval_provenance.sql",
+      "size": 1263,
+      "sha256": "7056e8a9336cab355e16b6dab6b3fffac9fbcda417bd7d96394e6099ce7357d5"
+    },
+    {
       "path": "migrations/CHECKSUMS.json",
-      "size": 865,
-      "sha256": "3cc712f68f8b3a51489eb2de72b2dd702ad456c885b22178eabaaf50f56cca1e"
+      "size": 1064,
+      "sha256": "c06adfa7ed2b9ebfa3bac228697f05201fa32abf6ec6089cf1346148e2b9ddc1"
     },
     {
       "path": "package.json",
@@ -264,8 +287,8 @@
     },
     {
       "path": "scripts/assert-seeded-defect-detected.mjs",
-      "size": 9022,
-      "sha256": "5478f9a28ef8ab552e70e374be182ee079e23f583086bb87e1ab3511c14ff6cb"
+      "size": 10647,
+      "sha256": "1c256086c68fd7c8ab089f9c14bc678a7bbf482de80647d53bd6a3e358d78f8a"
     },
     {
       "path": "scripts/crash-writer.mjs",
@@ -274,13 +297,13 @@
     },
     {
       "path": "scripts/independent-validation.mjs",
-      "size": 16724,
-      "sha256": "7c36877367350e02f018ad1175ae46b16706f91e7797ce88d4087b6ec4d2012d"
+      "size": 19485,
+      "sha256": "98d686f8c9e10ef0c361b738ae271b72587f23ca1622a2d47d2f55de65b3d79d"
     },
     {
       "path": "scripts/local-ci.mjs",
-      "size": 3781,
-      "sha256": "f1aa834f9c49d4a08bb0cec1510cb69148a95ea7dc7b68d88e1611fa53b38a2f"
+      "size": 3868,
+      "sha256": "d926c7f67963561662f6cb805d52e41190a71698e3efab8e6458f3fbc5f5cd31"
     },
     {
       "path": "scripts/pin-migration-checksums.mjs",
@@ -298,6 +321,11 @@
       "sha256": "a554b8faadf7fcf7cbbd547369cc45932f3f8b90195a3f14b7aa853696df20f0"
     },
     {
+      "path": "scripts/red-team-governor.mjs",
+      "size": 23445,
+      "sha256": "aabfe9aaefd583cbd3104829c4054b8aab4bd1d8de2e7bc7de544500b9c710d7"
+    },
+    {
       "path": "scripts/self-adversarial-probes.mjs",
       "size": 8028,
       "sha256": "ca39414d07e3dc720d036f3d0746aab141d3b33627053f4d57f3e798ef70a45d"
@@ -309,8 +337,8 @@
     },
     {
       "path": "src/cli.mjs",
-      "size": 16762,
-      "sha256": "803b2116f45cf6d85a93a34f3ede9aba3fd630205be61cad29855a812591e459"
+      "size": 20649,
+      "sha256": "a8471b59d5bfb04ae753a97942a6782f3a2d36210a735d24eb1c301a1c49ea62"
     },
     {
       "path": "src/core/backup.mjs",
@@ -359,8 +387,13 @@
     },
     {
       "path": "src/domain/gate.mjs",
-      "size": 6571,
-      "sha256": "c9fa2d1a49ba607640bbd6104f80a6a15a227258beef95086795642c2437a2ee"
+      "size": 7345,
+      "sha256": "eb11afed147466ed5f9339d75d23bc92caddbc04cff05fbd5ea80e88702cd609"
+    },
+    {
+      "path": "src/domain/governance.mjs",
+      "size": 7585,
+      "sha256": "f88098026ecddbcd1956f92f00b4f7d3ff6fe2792dd96845d0f529a1af9e6f81"
     },
     {
       "path": "src/domain/handoff.mjs",
@@ -425,12 +458,17 @@
     {
       "path": "test/gate-promotion.test.mjs",
       "size": 4965,
-      "sha256": "13b1a98e2e6e8702809178a6e106e6145e69ab07b4bfbb6bb57fdaff7ee25513"
+      "sha256": "e1384a5a71e95f66c3190924569225a8dfbfc01296ba861aac021dbac17edffd"
+    },
+    {
+      "path": "test/governance.test.mjs",
+      "size": 12026,
+      "sha256": "0edb661f470ae7db2612a1ed6b2edaa386e37be81f1e37742ef1f1d9121e9089"
     },
     {
       "path": "test/governor.test.mjs",
-      "size": 10345,
-      "sha256": "31a3008770f1e1138ee546ad8abd6beef34c111efae55c62567e5b6252948f6c"
+      "size": 10402,
+      "sha256": "ae6a7f17547fe84f2f6119b718e88c8d8f32a1718b50f7cb8dc038b374ee9d13"
     },
     {
       "path": "test/guards.test.mjs",
