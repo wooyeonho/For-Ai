@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 import { readFileSync } from 'node:fs';
+import { randomBytes } from 'node:crypto';
 import { argv, exit, stdout } from 'node:process';
 import { openDb, DEFAULT_DB_PATH } from './core/db.mjs';
 import { migrate, MIGRATIONS_DIR, appliedMigrations } from './core/migrate.mjs';
@@ -63,6 +64,12 @@ import {
 } from './domain/portfolio.mjs';
 import { makeArtifactVerifier } from './domain/portfolio-verifier.mjs';
 import { panel, panels, panelNames, g8ReadSideAcceptance } from './domain/mission-control.mjs';
+import {
+  createServer as createApiServer,
+  COMMANDS as API_COMMANDS,
+  DEFAULT_ORIGINS as API_ORIGINS,
+  LOOPBACK as API_LOOPBACK,
+} from './api/server.mjs';
 import {
   createSchedule,
   setScheduleEnabled,
@@ -158,6 +165,9 @@ const USAGE = `yeno <command>
                                    acceptance)
   mc panel --name inbox|projects|timeline|council|approvals|evidence|costs|settings
            [--json] [--limit N]    one panel, deterministic, no writes possible
+  api serve [--port N] [--json]     local facade for the desktop shell: 127.0.0.1
+                                   only, token required, reads read-only, writes
+                                   limited to the allowlisted command vocabulary
   gate list [--json]               release train state and evidence presence
   gate pass --gate G --evidence E  promote a gate only if its machine checks hold
                                    (refusal reasons are recorded, never bypassed)
@@ -248,6 +258,35 @@ async function main() {
     } finally {
       roDb.close();
     }
+  }
+
+  // The API is the only door a desktop shell gets, so the CLI never lets it open
+  // wider than loopback and never lets it run without a token.
+  if (command === 'api' && sub === 'serve') {
+    const token = typeof flags.token === 'string' ? flags.token : randomBytes(24).toString('hex');
+    const api = createApiServer({ dbPath, token });
+    const address = await api.listen(flags.port === undefined ? 0 : Number(flags.port));
+    print(
+      {
+        bound: `${API_LOOPBACK}:${address.port}`,
+        loopback_only: address.address === API_LOOPBACK,
+        token_supplied: typeof flags.token === 'string',
+        token,
+        commands: Object.keys(API_COMMANDS),
+        origins: API_ORIGINS,
+      },
+      json,
+    );
+    if (flags.once) {
+      await api.close();
+      return 0;
+    }
+    await new Promise((resolve) => {
+      process.once('SIGINT', resolve);
+      process.once('SIGTERM', resolve);
+    });
+    await api.close();
+    return 0;
   }
 
   const db = openDb(dbPath);

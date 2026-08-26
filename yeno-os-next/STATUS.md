@@ -134,10 +134,11 @@ $ node --test
 ℹ todo 0
 ```
 
-**171 tests.** 63 at G0/continuity, plus 11 functional-self, 9 durability soak,
+**179 tests.** 63 at G0/continuity, plus 11 functional-self, 9 durability soak,
 5 gate-promotion, 14 G2 intake, 14 G3 governance, 11 G4 workflow-runtime, 11 G4
-scheduler, 5 G4 scheduler-daemon, 8 G4 scheduler-supervisor, 12 G7 PortfolioOps
-and 8 G8 Mission Control read-side tests. No 67-test run exists in this checkout.
+scheduler, 5 G4 scheduler-daemon, 8 G4 scheduler-supervisor, 12 G7 PortfolioOps,
+8 G8 Mission Control read-side and 8 G8 local-API tests. No 67-test run exists in
+this checkout.
 
 `npm run lint` and `npm run typecheck` were attempted and **do not exist** in
 this repository (`npm error Missing script`). They are absent, not passing.
@@ -145,7 +146,7 @@ this repository (`npm error Missing script`). They are absent, not passing.
 Other verifiers, all from this RUN:
 
 ```text
-$ node scripts/local-ci.mjs        -> 19/19 PASS, LOCAL_CI_PASS
+$ node scripts/local-ci.mjs        -> 21/21 PASS, LOCAL_CI_PASS
 $ node src/cli.mjs verify          -> ok: true, failed: []
 $ node scripts/independent-validation.mjs -> INDEPENDENT_VALIDATION_PASS
     PASS soak_verdicts_recomputed — 20 sessions, 20 passing
@@ -160,12 +161,15 @@ $ node scripts/independent-validation.mjs -> INDEPENDENT_VALIDATION_PASS
                                        source bytes, 1/1 active
     PASS gate_promotions_recomputed — 2 gates passed
 $ node scripts/self-adversarial-probes.mjs -> SELF_PROBES_PASS: 11/11
-$ node scripts/assert-seeded-defect-detected.mjs -> seeded defects 24, detected 24, missed 0
+$ node scripts/assert-seeded-defect-detected.mjs -> seeded defects 27, detected 27, missed 0
 $ node scripts/portfolio-exercise.mjs -> PORTFOLIO_EXERCISE_PASS
 $ node scripts/red-team-governor.mjs
     red-team probes: 38, refused: 38, allowed: 0, unverifiable: 0
     negative controls: 4, bypassed with the guard removed: 4
     REDTEAM_PASS
+$ node scripts/red-team-api.mjs
+    api red team probes: 15, leaks: 0
+    API_RED_TEAM_PASS
 $ node scripts/red-team-queue.mjs
     queue red-team probes: 42, refused: 42, allowed: 0, unverifiable: 0
     negative controls: 11, bypassed with the guard removed: 11
@@ -257,7 +261,7 @@ a fresh DB, 30000 events, 1800/1800 probes passing, 308314 ms.
 | G5 Agent Team | `PENDING` | `BLOCKED_PROVIDER_ACCESS`: no Claude Code / Codex / Devin bounded live RUN has passed |
 | G6 Functional Self | `PENDING` | `PREP_ONLY`: implementation and tests proceed locally; promotion withheld until G5 is resolved |
 | G7 PortfolioOps | `PENDING` | one source carried through goal → durable RUN → independent verification → outcome → memory, twice over (two adapters), plus crash-mid-RUN recovery and refusal to scale without demand/utility or past capacity, are built and evidenced (`evidence/RUN-011.md`); promotion refused because gate order is enforced |
-| G8 Mission Control | `PENDING` | the read side is built and evidenced (`evidence/RUN-012.md`): migration `0017` adds eight deterministic views (Inbox/Projects/Timeline/Council/Approvals/Evidence/Costs/Settings), `mc panels`/`mc panel` serve them from a read-only handle, the independent validator recomputes every panel from the base tables, and three seeded defects prove a lying panel is caught. The Tauri 2 desktop shell, Living Body, state colours, keyboard/accessibility, the 8GB RAM profile and push-to-talk voice are **not** built — the shell needs an Owner-approved Rust/Cargo install |
+| G8 Mission Control | `PENDING` | the read side is built and evidenced (`evidence/RUN-012.md`): migration `0017` adds eight deterministic views (Inbox/Projects/Timeline/Council/Approvals/Evidence/Costs/Settings), `mc panels`/`mc panel` serve them from a read-only handle, the independent validator recomputes every panel from the base tables, and three seeded defects prove a lying panel is caught. The Tauri 2 desktop shell, Living Body, state colours, keyboard/accessibility, the 8GB RAM profile and push-to-talk voice are **not** built — the shell needs an Owner-approved Rust/Cargo install (`evidence/OWNER-PACKET-003.md`). The local boundary the shell will read is also built and attacked (`evidence/RUN-013.md`): `127.0.0.1`-only bind, mandatory `x-yeno-token`, origin allowlist, rate limit, reads from a read-only handle, a closed two-command write vocabulary that goes command handler → Governor → transaction → event → projection, and 15 independent HTTP probes (`API_RED_TEAM_PASS`, 0 leaks) run from a process that imports nothing from `src/` |
 | G9–G14 | `PENDING` | no evidence |
 
 `release_state.current_gate` = `G2`, `gates_passed` = 2.
@@ -293,6 +297,8 @@ e6baf57899e60bcd520d1be35a11c67129767db8017ab16d77f902fcee9c57ec  evidence/RUN-0
 5266be885bbed2302240c035f6978ab5622545c284ecf15c4cec158e1ad7b432  evidence/RUN-010.md
 6c90e9865bfe0f8bed702b29b4d6d8788eec5d03bed7423513320c6ec52e28b2  evidence/RUN-011.md
 ee9ae974c846399aef0ad9bf87037ce3d0a12b455e5a47e50333498b74999c97  evidence/RUN-012.md
+2a008cc00d0cf447ad3f6588343269a12ee1ce861ef7a5a51084341ae314312c  evidence/OWNER-PACKET-003.md
+a60e676133c74414fc5b74e17c9bff60b81d79c4885248330a856db5c5878e14  evidence/RUN-013.md
 93c779dd6efd77a8d5efa49930019f06fc4440c6c02331413c4c93e9563a7894  evidence/G4-ACCEPTANCE-001.json
 a0c9103a8f1789c26ea69e196b55144a1b5f09e1f73ac89971a74efd740705e7  evidence/G4-SCHEDULER-001.json
 79a73ee406d014e5e769c460f60777fb3abf2a47c813f7844b392b6cb819367e  evidence/G4-DAEMON-001.json
@@ -389,8 +395,10 @@ reasons:
   the G4 durable-queue entry by `RUN-007`, the scheduler entry by `RUN-008`, the
   daemon entry by `RUN-009`, the supervisor entry by `RUN-010`, the G7
   PortfolioOps entry by `RUN-011`, and the G8 read-surface entry by `RUN-012`.
-  The queued NEXT_RUN is the Owner Packet for the Rust/Cargo + Tauri 2 install
-  plus the local `127.0.0.1` API/SSE facade the shell will read.
+  The API/SSE facade entry was consumed by `RUN-013`, which also opened
+  `evidence/OWNER-PACKET-003.md` for the Rust/Cargo + Tauri 2 install. The queued
+  NEXT_RUN is widening the API command vocabulary to the panels' own actions with
+  each command carrying authority, cost and approval through the Governor.
 - `approvals`: 1 row, revoked. `APR-85b98f0c…` was minted by the agent during a
   CLI smoke test with `granted_by = 'owner'` although the Owner never granted it;
   it was revoked on the record and migration `0011` now refuses any approval that

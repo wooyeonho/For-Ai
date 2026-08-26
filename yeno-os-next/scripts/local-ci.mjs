@@ -35,6 +35,7 @@ const STEPS = [
   { id: 'self_adversarial_probes', argv: ['scripts/self-adversarial-probes.mjs'] },
   { id: 'governor_red_team', argv: ['scripts/red-team-governor.mjs', '--no-record'] },
   { id: 'queue_red_team', argv: ['scripts/red-team-queue.mjs', '--no-record'] },
+  { id: 'api_red_team', argv: ['scripts/red-team-api.mjs'] },
   { id: 'seeded_defect_detection', argv: ['scripts/assert-seeded-defect-detected.mjs'] },
 ];
 
