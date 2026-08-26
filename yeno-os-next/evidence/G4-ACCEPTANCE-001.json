@@ -1,0 +1,23 @@
+{
+  "duplicated_effects": 0,
+  "stuck_leases": 0,
+  "dead_letters_without_reason": 0,
+  "done_jobs_with_open_attempts": 0,
+  "dead_lettered": 2,
+  "retried_then_done": 2,
+  "effects_committed": 2,
+  "effects_abandoned": 0,
+  "scheduler_enabled": 0,
+  "jobs_total": 6,
+  "queue_soak": {
+    "soak_ref": "QSOAK-G4-001",
+    "cycles": 12,
+    "cycles_ok": 12,
+    "killed_after_claim": 6,
+    "killed_after_effect": 6,
+    "worst_effect_lines": 1,
+    "started_at": "2026-08-26T13:46:20.815Z",
+    "ended_at": "2026-08-26T13:46:21.541Z"
+  },
+  "problems": []
+}

@@ -40,6 +40,19 @@ import {
   recoveryQueue,
   registerParsers,
 } from './domain/intake.mjs';
+import {
+  cancelJob,
+  claimNextJob,
+  commitEffect,
+  abandonEffect,
+  completeJob,
+  enqueueJob,
+  failJob,
+  g4Acceptance,
+  queueReport,
+  reclaimStuckJobs,
+  setScheduler,
+} from './domain/workflow.mjs';
 
 const USAGE = `yeno <command>
 
@@ -89,6 +102,21 @@ const USAGE = `yeno <command>
                                    run the real admission order, record the attempt
   admit report [--json] [--limit N] stop state, grants, denial reason codes, leases
   redteam report [--json] [--class C] recorded bypass attempts and G3 acceptance
+  queue add --kind K [--payload JSON] [--queue Q] [--authority A2] [--max-attempts N]
+                                   durable enqueue; the same payload twice is one job
+  queue claim --worker W [--queue Q] [--lease-ms N]
+                                   lease the next runnable job with a fencing token
+  queue done --job ID --worker W --token N [--artifact REF]
+  queue fail --job ID --worker W --token N --error E
+                                   retry with backoff, then dead-letter
+  queue reclaim [--queue Q]        recover jobs whose worker died (attempt is not refunded)
+  queue cancel --job ID --reason R
+  queue effect --effect ID --evidence REF [--abandon]
+                                   settle an effect claim: committed by default, or
+                                   abandoned to record that it never reached the world
+  queue scheduler --enable|--disable --reason R
+                                   OFF at install; only the Owner turns it on
+  queue report [--json] [--queue Q] queue depth, dead letters, effects, G4 acceptance
   gate list [--json]               release train state and evidence presence
   gate pass --gate G --evidence E  promote a gate only if its machine checks hold
                                    (refusal reasons are recorded, never bypassed)
@@ -463,6 +491,81 @@ async function main() {
           },
           json,
         );
+        return acceptance.problems.length === 0 ? 0 : 1;
+      }
+      case 'queue add': {
+        print(
+          enqueueJob(db, {
+            kind: str(flags.kind, 'queue add needs --kind'),
+            payload: typeof flags.payload === 'string' ? JSON.parse(flags.payload) : {},
+            queue: typeof flags.queue === 'string' ? flags.queue : undefined,
+            authority: typeof flags.authority === 'string' ? flags.authority : undefined,
+            maxAttempts: flags['max-attempts'] ? Number(flags['max-attempts']) : undefined,
+          }),
+          json,
+        );
+        return 0;
+      }
+      case 'queue claim': {
+        const job = claimNextJob(db, {
+          worker: str(flags.worker, 'queue claim needs --worker'),
+          queue: typeof flags.queue === 'string' ? flags.queue : undefined,
+          leaseMs: flags['lease-ms'] ? Number(flags['lease-ms']) : undefined,
+        });
+        print(job ?? { leased: null, reason: 'nothing runnable (or the emergency stop is engaged)' }, json);
+        return job ? 0 : 1;
+      }
+      case 'queue done': {
+        print(
+          completeJob(db, {
+            jobId: str(flags.job, 'queue done needs --job'),
+            worker: str(flags.worker, 'queue done needs --worker'),
+            leaseToken: Number(flags.token),
+            artifactRef: typeof flags.artifact === 'string' ? flags.artifact : null,
+          }),
+          json,
+        );
+        return 0;
+      }
+      case 'queue fail': {
+        print(
+          failJob(db, {
+            jobId: str(flags.job, 'queue fail needs --job'),
+            worker: str(flags.worker, 'queue fail needs --worker'),
+            leaseToken: Number(flags.token),
+            error: str(flags.error, 'queue fail needs --error'),
+          }),
+          json,
+        );
+        return 0;
+      }
+      case 'queue reclaim': {
+        print(reclaimStuckJobs(db, { queue: typeof flags.queue === 'string' ? flags.queue : null }), json);
+        return 0;
+      }
+      case 'queue cancel': {
+        print(
+          cancelJob(db, str(flags.job, 'queue cancel needs --job'), str(flags.reason, 'queue cancel needs --reason')),
+          json,
+        );
+        return 0;
+      }
+      case 'queue effect': {
+        const effectId = str(flags.effect, 'queue effect needs --effect');
+        const evidence = str(flags.evidence, 'queue effect needs --evidence');
+        const settle = flags.abandon === true ? abandonEffect : commitEffect;
+        print(settle(db, effectId, evidence), json);
+        return 0;
+      }
+      case 'queue scheduler': {
+        const enable = flags.enable === true;
+        setScheduler(db, enable, str(flags.reason, 'queue scheduler needs --reason'), 'owner');
+        print(queueReport(db).scheduler, json);
+        return 0;
+      }
+      case 'queue report': {
+        const acceptance = g4Acceptance(db);
+        print({ ...queueReport(db, { queue: typeof flags.queue === 'string' ? flags.queue : null }), acceptance }, json);
         return acceptance.problems.length === 0 ? 0 : 1;
       }
       case 'stop engage': {

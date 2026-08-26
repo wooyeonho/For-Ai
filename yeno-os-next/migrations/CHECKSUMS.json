@@ -9,5 +9,6 @@
   "0008_gate_promotion_guard.sql": "b9a97c0ac7c188011d0adc1595264e31534a516896c4299d825521af86ede5f9",
   "0009_intake.sql": "1e50bd5951ae428f53c73c58624380ecd2e864239578bcfa4c27a4d2e655237e",
   "0010_governor_guard.sql": "56375f513760c3cefcf20d086022aac1a76fc1a76e5de2b13c64e8dcb0415591",
-  "0011_approval_provenance.sql": "7056e8a9336cab355e16b6dab6b3fffac9fbcda417bd7d96394e6099ce7357d5"
+  "0011_approval_provenance.sql": "7056e8a9336cab355e16b6dab6b3fffac9fbcda417bd7d96394e6099ce7357d5",
+  "0012_workflow_runtime.sql": "9447ba9eef987a8d1dec565616ed806a9c85874486e0d37ae9d8797d059bdefe"
 }

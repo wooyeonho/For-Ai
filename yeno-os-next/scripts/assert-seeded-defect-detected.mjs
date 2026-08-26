@@ -11,6 +11,7 @@ import { migrate } from '../src/core/migrate.mjs';
 import { appendEvent } from '../src/core/events.mjs';
 import { catchUp } from '../src/core/projections.mjs';
 import { createBackup, verifyBackup } from '../src/core/backup.mjs';
+import { setStop } from '../src/core/governor.mjs';
 
 const REPO = new URL('..', import.meta.url).pathname;
 const MIGRATIONS = join(REPO, 'migrations');
@@ -247,6 +248,53 @@ function record(name, detected, detail) {
   const verification = await verifyBackup(backup.path);
   s.db.close();
   record('corrupted_backup_refused', verification.ok === false, verification.problems.join(' | '));
+  rmSync(s.dir, { recursive: true, force: true });
+}
+
+// Case 13: two live effect rows for one idempotency key is the duplicate the
+// whole of G4 exists to prevent, so the validator must catch it even when the
+// guard that normally makes it impossible has been dropped.
+{
+  const s = scaffold();
+  setStop(s.db, false, 'seeded-defect harness: exercising the queue on a throwaway kernel', 'owner');
+  s.db.exec('DROP INDEX idx_effects_live_key');
+  s.db.exec("INSERT INTO jobs (job_id, queue, kind, payload_json, payload_hash, dedupe_key, authority, state, available_at, created_at, updated_at) VALUES ('JOB-seed','default','seed','{}','" + 'a'.repeat(64) + "','seed','A2','READY','2026-08-26T00:00:00Z','2026-08-26T00:00:00Z','2026-08-26T00:00:00Z')");
+  for (const id of ['EFF-seed-1', 'EFF-seed-2']) {
+    s.db.exec(
+      `INSERT INTO external_effects (effect_id, idempotency_key, job_id, attempt, kind, target, payload_hash,
+         state, claimed_at, settled_at, evidence_ref)
+       VALUES ('${id}','${'b'.repeat(64)}','JOB-seed',1,'http.post','https://example.test','${'c'.repeat(64)}',
+               'COMMITTED','2026-08-26T00:00:00Z','2026-08-26T00:00:00Z','evidence/RUN-007.md')`,
+    );
+  }
+  s.db.close();
+  const run = runValidator(s.dbPath, s.migDir);
+  record(
+    'duplicated_external_effect',
+    run.status !== 0 && /FAIL workflow_runtime_recomputed/.test(run.stdout),
+    run.stdout.match(/FAIL workflow_runtime_recomputed.*/)?.[0] ?? '',
+  );
+  rmSync(s.dir, { recursive: true, force: true });
+}
+
+// Case 14: a crash-soak cycle that calls a duplicated effect a pass is the exact
+// lie that would let G4 through on forged durability evidence.
+{
+  const s = scaffold();
+  s.db.exec('DROP TRIGGER trg_queue_soak_honest_verdict');
+  s.db.exec(
+    `INSERT INTO queue_soak_cycles (cycle_id, soak_ref, cycle, kill_point, job_id, idempotency_key,
+       effect_lines, resumed_outcome, ok, detail, observed_at)
+     VALUES ('QSC-seed','QSOAK-seed',1,'after-effect','JOB-x','${'d'.repeat(64)}',2,'done',1,
+             'seeded lie','2026-08-26T00:00:00Z')`,
+  );
+  s.db.close();
+  const run = runValidator(s.dbPath, s.migDir);
+  record(
+    'soak_cycle_calls_duplicate_a_pass',
+    run.status !== 0 && /FAIL workflow_runtime_recomputed/.test(run.stdout),
+    run.stdout.match(/FAIL workflow_runtime_recomputed.*/)?.[0] ?? '',
+  );
   rmSync(s.dir, { recursive: true, force: true });
 }
 

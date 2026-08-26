@@ -423,6 +423,77 @@ verdict(
   governorProblems.join(' | '),
 );
 
+// G4 recomputed from raw queue rows. The runtime's own views are not consulted:
+// duplicate external effects and forged retry budgets are counted here directly.
+const g4Row = gates.find((g) => g.gate_id === 'G4');
+const queueProblems = [];
+const liveDuplicates = db
+  .prepare(
+    `SELECT idempotency_key, COUNT(*) AS n FROM external_effects
+      WHERE state <> 'ABANDONED' GROUP BY idempotency_key HAVING n > 1`,
+  )
+  .all();
+for (const d of liveDuplicates) queueProblems.push(`${d.n} live effects share idempotency key ${d.idempotency_key}`);
+const committedWithoutEvidence = db
+  .prepare("SELECT COUNT(*) AS n FROM external_effects WHERE state = 'COMMITTED' AND (evidence_ref IS NULL OR TRIM(evidence_ref) = '')")
+  .get().n;
+if (committedWithoutEvidence > 0) queueProblems.push(`${committedWithoutEvidence} committed effect(s) carry no evidence`);
+const unapprovedEffects = db
+  .prepare(
+    `SELECT COUNT(*) AS n FROM external_effects e JOIN jobs j USING (job_id)
+      WHERE j.authority IN ('A3','A4','A5','A6') AND e.approval_id IS NULL`,
+  )
+  .get().n;
+if (unapprovedEffects > 0) queueProblems.push(`${unapprovedEffects} high-authority external effect(s) with no approval`);
+const overBudgetJobs = db.prepare('SELECT COUNT(*) AS n FROM jobs WHERE attempt > max_attempts').get().n;
+if (overBudgetJobs > 0) queueProblems.push(`${overBudgetJobs} job(s) ran past their retry budget`);
+const silentDeadLetters = db
+  .prepare("SELECT COUNT(*) AS n FROM jobs WHERE state = 'DEAD_LETTER' AND (last_error IS NULL OR TRIM(last_error) = '')")
+  .get().n;
+if (silentDeadLetters > 0) queueProblems.push(`${silentDeadLetters} dead-lettered job(s) with no recorded error`);
+const forgedTokens = db
+  .prepare("SELECT COUNT(*) AS n FROM jobs WHERE state = 'LEASED' AND lease_token <> lease_epoch").get().n;
+if (forgedTokens > 0) queueProblems.push(`${forgedTokens} leased job(s) hold a token that is not the current epoch`);
+const openAttemptsOnFinished = db
+  .prepare(
+    `SELECT COUNT(*) AS n FROM job_attempts a JOIN jobs j USING (job_id)
+      WHERE j.state IN ('DONE','DEAD_LETTER','CANCELLED') AND a.outcome IS NULL`,
+  )
+  .get().n;
+if (openAttemptsOnFinished > 0) queueProblems.push(`${openAttemptsOnFinished} finished job(s) left an attempt open`);
+const scheduler = db.prepare('SELECT * FROM scheduler_state WHERE id = 1').get();
+if (!scheduler) queueProblems.push('scheduler_state row is missing, so its default cannot be checked');
+else if (scheduler.enabled === 1 && scheduler.changed_by !== 'owner') {
+  queueProblems.push(`the scheduler is enabled by ${scheduler.changed_by}, not the Owner`);
+}
+// Crash evidence: at least one soak where both kill points held, recomputed from
+// the per-cycle rows rather than the summary view.
+const soaks = db
+  .prepare(
+    `SELECT soak_ref, COUNT(*) AS cycles, SUM(ok) AS ok_cycles, MAX(effect_lines) AS worst,
+            SUM(kill_point = 'after-claim') AS after_claim, SUM(kill_point = 'after-effect') AS after_effect
+       FROM queue_soak_cycles GROUP BY soak_ref`,
+  )
+  .all();
+const dishonestSoak = db.prepare('SELECT COUNT(*) AS n FROM queue_soak_cycles WHERE ok = 1 AND effect_lines > 1').get().n;
+if (dishonestSoak > 0) queueProblems.push(`${dishonestSoak} soak cycle(s) call a duplicated effect a pass`);
+// The strongest clean soak is the one worth reporting, so a short CI run does
+// not make the recorded crash evidence look thinner than it is.
+const cleanSoak = soaks
+  .filter((s) => s.cycles === s.ok_cycles && s.after_claim > 0 && s.after_effect > 0 && s.worst <= 1)
+  .sort((a, b) => b.cycles - a.cycles)[0];
+if (g4Row?.state === 'PASSED' && !cleanSoak) {
+  queueProblems.push('G4: PASSED with no crash soak covering both kill points');
+}
+verdict(
+  queueProblems.length === 0,
+  'workflow_runtime_recomputed',
+  `${db.prepare('SELECT COUNT(*) AS n FROM jobs').get().n} jobs, ` +
+    `${db.prepare('SELECT COUNT(*) AS n FROM external_effects').get().n} external effects, ` +
+    `${cleanSoak ? `soak ${cleanSoak.soak_ref} ${cleanSoak.ok_cycles}/${cleanSoak.cycles}` : 'no clean soak'}`,
+  queueProblems.join(' | '),
+);
+
 const g5Row = gates.find((g) => g.gate_id === 'G5');
 const g6Row = gates.find((g) => g.gate_id === 'G6');
 if (g6Row?.state === 'PASSED' && g5Row?.state !== 'PASSED') gateProblems.push('G6: PASSED while G5 is not');
