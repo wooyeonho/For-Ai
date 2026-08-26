@@ -183,6 +183,33 @@ export function tickScheduler(db, { tickId = newId('TICK'), limit = 50, beforeCo
   return { tick_id: tickId, refused: null, fired };
 }
 
+/**
+ * The daemon loop: tick, sleep, tick again, for as long as it is allowed to.
+ *
+ * It never arms anything and never releases the stop — it only serves boundaries
+ * the Owner already armed, so the worst a runaway daemon can do is tick a
+ * disarmed scheduler and refuse itself. `onOutcome` is how a supervisor watches
+ * it; `shouldStop` is how a test or a signal handler ends it deterministically.
+ */
+export async function runSchedulerDaemon(
+  db,
+  { tickMs = 250, maxTicks = Infinity, onOutcome = null, shouldStop = null, sleep = null } = {},
+  clock = Date,
+) {
+  const pause = sleep ?? ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
+  let ticks = 0;
+  let served = 0;
+  while (ticks < maxTicks && !(shouldStop && shouldStop())) {
+    const outcome = tickScheduler(db, {}, clock);
+    ticks += 1;
+    served += outcome.fired.filter((f) => !f.already_fired && !f.deduped).length;
+    if (onOutcome) onOutcome(outcome);
+    if (shouldStop && shouldStop()) break;
+    await pause(tickMs);
+  }
+  return { ticks, served };
+}
+
 export function scheduleReport(db) {
   return {
     generated_at: new Date().toISOString(),

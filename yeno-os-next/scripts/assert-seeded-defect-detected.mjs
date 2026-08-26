@@ -382,6 +382,45 @@ function record(name, detected, detail) {
   rmSync(s.dir, { recursive: true, force: true });
 }
 
+// Case 18: a daemon restart soak cycle that never really died calling itself a
+// pass — the lie a soak harness tells when the kill silently stopped working.
+{
+  const s = scaffold();
+  s.db.exec('DROP TRIGGER trg_daemon_soak_honest_verdict');
+  s.db.exec(
+    `INSERT INTO daemon_soak_cycles (cycle_id, soak_ref, cycle, death, killed, ran_ms,
+       boundaries_served, duplicate_boundaries, duplicate_jobs, fires_regressed, ok, detail, recorded_at)
+     VALUES ('DSC-seed','DSOAK-seed',1,'sigkill',0,1000,3,0,0,0,1,'seeded lie','2026-08-26T00:00:00Z')`,
+  );
+  s.db.close();
+  const run = runValidator(s.dbPath, s.migDir);
+  record(
+    'daemon_soak_claims_a_kill_that_never_happened',
+    run.status !== 0 && /FAIL scheduler_daemon_recomputed/.test(run.stdout),
+    run.stdout.match(/FAIL scheduler_daemon_recomputed.*/)?.[0] ?? '',
+  );
+  rmSync(s.dir, { recursive: true, force: true });
+}
+
+// Case 19: a daemon soak that served the same boundary twice and passed anyway.
+{
+  const s = scaffold();
+  s.db.exec('DROP TRIGGER trg_daemon_soak_honest_verdict');
+  s.db.exec(
+    `INSERT INTO daemon_soak_cycles (cycle_id, soak_ref, cycle, death, killed, ran_ms,
+       boundaries_served, duplicate_boundaries, duplicate_jobs, fires_regressed, ok, detail, recorded_at)
+     VALUES ('DSC-dup','DSOAK-seed',1,'sigkill',1,1000,3,1,0,0,1,'seeded lie','2026-08-26T00:00:00Z')`,
+  );
+  s.db.close();
+  const run = runValidator(s.dbPath, s.migDir);
+  record(
+    'daemon_soak_calls_a_duplicated_boundary_a_pass',
+    run.status !== 0 && /FAIL scheduler_daemon_recomputed/.test(run.stdout),
+    run.stdout.match(/FAIL scheduler_daemon_recomputed.*/)?.[0] ?? '',
+  );
+  rmSync(s.dir, { recursive: true, force: true });
+}
+
 const missed = results.filter((r) => !r.detected);
 process.stdout.write(`\nseeded defects: ${results.length}, detected: ${results.length - missed.length}, missed: ${missed.length}\n`);
 if (missed.length > 0) {

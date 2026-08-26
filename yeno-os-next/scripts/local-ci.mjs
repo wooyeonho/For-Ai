@@ -24,7 +24,10 @@ const STEPS = [
     argv: ['scripts/soak.mjs', '--cycles', '2', '--batch', '8', '--evidence-dir', 'evidence/runtime'],
   },
   { id: 'queue_crash_soak', argv: ['scripts/queue-soak.mjs', '--cycles', '4'] },
-  { id: 'scheduler_crash_soak', argv: ['scripts/scheduler-soak.mjs', '--cycles', '4'] },
+  // `--no-record` keeps repeated CI runs out of the kernel's soak evidence: the
+  // recorded soaks are the deliberate ones a RUN's evidence cites.
+  { id: 'scheduler_crash_soak', argv: ['scripts/scheduler-soak.mjs', '--cycles', '4', '--no-record'] },
+  { id: 'scheduler_daemon_restart_soak', argv: ['scripts/daemon-soak.mjs', '--cycles', '4', '--no-record'] },
   { id: 'independent_validation', argv: ['scripts/independent-validation.mjs'] },
   { id: 'self_adversarial_probes', argv: ['scripts/self-adversarial-probes.mjs'] },
   { id: 'governor_red_team', argv: ['scripts/red-team-governor.mjs', '--no-record'] },

@@ -37,8 +37,8 @@ e482ddd yeno-os-next: persistent session continuity + fail-closed shell indirect
 18cc021 Add yeno-os-next: G0 Baseline Lock of the local Truth Kernel
 ```
 
-Nine commits, and the RUN-008 durable-scheduler work in §3–§5 is committed on
-top of them as the tenth. The "seven commits" reported from elsewhere never
+Ten commits, and the RUN-009 scheduler-daemon work in §3–§5 is committed on
+top of them as the eleventh. The "seven commits" reported from elsewhere never
 existed in this checkout; if that work exists in another WSL folder or Claude
 Code checkout, it has not reached this repository and is therefore not part of
 the truth state. Recovery plan is in §9.
@@ -61,11 +61,12 @@ b9a97c0ac7c188011d0adc1595264e31534a516896c4299d825521af86ede5f9  migrations/000
 7056e8a9336cab355e16b6dab6b3fffac9fbcda417bd7d96394e6099ce7357d5  migrations/0011_approval_provenance.sql
 9447ba9eef987a8d1dec565616ed806a9c85874486e0d37ae9d8797d059bdefe  migrations/0012_workflow_runtime.sql
 c144ff9a7db3bdd4b3250a892953aa750880f6e4fe94e374d6153796ebfffccf  migrations/0013_scheduler.sql
+cf358bccbbc0b96c3c427d4853c0afa3f769949e0c208d89ed2139b1e9a05a38  migrations/0014_scheduler_daemon.sql
 ```
 
-All thirteen are applied and pinned in `migrations/CHECKSUMS.json`; `node
-scripts/pin-migration-checksums.mjs --check` reports `CHECKSUM_PIN_OK: 13
-migrations pinned` and `0001` is untouched. `0006` adds the durability tables,
+All fourteen are applied and pinned in `migrations/CHECKSUMS.json`; `node
+scripts/pin-migration-checksums.mjs --check` reports 14 migrations pinned and
+`0001` is untouched. `0006` adds the durability tables,
 `0007` makes a soak pass require a complete probe set in every planned cycle,
 `0008` makes gate promotion order, the G1 crash/restore floor, and the
 G6-after-G5 rule schema-enforced, `0009` adds the intake vault/parser registry/
@@ -93,6 +94,11 @@ schedule deletion, and a trigger that refuses to record a scheduler soak cycle
 calling a double fire or a missing kill a pass. It replaces the empty `schedules`
 placeholder from `0012` only after proving the placeholder holds zero rows, so a
 non-empty one fails the migration closed; `0012` itself was not edited.
+`0014` is purely additive: `daemon_soak_cycles` records one row per restart cycle
+of the unattended scheduler daemon, append-only and undeletable, and a cycle may
+only be recorded as a pass if it really died the way it claims, no boundary was
+served twice, no job served two boundaries and the served count never went
+backwards.
 
 ## 4. Tests
 
@@ -100,18 +106,19 @@ Exact command and original tail of output:
 
 ```text
 $ node --test
-ℹ tests 138
+ℹ tests 143
 ℹ suites 0
-ℹ pass 138
+ℹ pass 143
 ℹ fail 0
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
 ```
 
-**138 tests.** 63 at G0/continuity, plus 11 functional-self, 9 durability soak,
-5 gate-promotion, 14 G2 intake, 14 G3 governance, 11 G4 workflow-runtime and 11
-G4 scheduler tests. No 67-test run exists in this checkout.
+**143 tests.** 63 at G0/continuity, plus 11 functional-self, 9 durability soak,
+5 gate-promotion, 14 G2 intake, 14 G3 governance, 11 G4 workflow-runtime, 11 G4
+scheduler and 5 G4 scheduler-daemon tests. No 67-test run exists in this
+checkout.
 
 `npm run lint` and `npm run typecheck` were attempted and **do not exist** in
 this repository (`npm error Missing script`). They are absent, not passing.
@@ -119,17 +126,18 @@ this repository (`npm error Missing script`). They are absent, not passing.
 Other verifiers, all from this RUN:
 
 ```text
-$ node scripts/local-ci.mjs        -> 16/16 PASS, LOCAL_CI_PASS
+$ node scripts/local-ci.mjs        -> 17/17 PASS, LOCAL_CI_PASS
 $ node src/cli.mjs verify          -> ok: true, failed: []
 $ node scripts/independent-validation.mjs -> INDEPENDENT_VALIDATION_PASS
-    PASS soak_verdicts_recomputed — 17 sessions, 17 passing
+    PASS soak_verdicts_recomputed — 20 sessions, 20 passing
     PASS intake_coverage_recomputed — 1 inbox items, 1 source versions, 2 intakes
     PASS governor_recomputed — 381 red-team probes, 1 denials recorded
     PASS workflow_runtime_recomputed — 8 jobs, 2 external effects, soak QSOAK-G4-001 12/12
     PASS scheduler_recomputed — 1 schedules, 2 fires, soak SSOAK-G4-001 8/8
+    PASS scheduler_daemon_recomputed — soak DSOAK-G4-001 8/8, 7 real kills, 12 boundaries served, 0 duplicated
     PASS gate_promotions_recomputed — 2 gates passed
 $ node scripts/self-adversarial-probes.mjs -> SELF_PROBES_PASS: 11/11
-$ node scripts/assert-seeded-defect-detected.mjs -> seeded defects 17, detected 17, missed 0
+$ node scripts/assert-seeded-defect-detected.mjs -> seeded defects 19, detected 19, missed 0
 $ node scripts/red-team-governor.mjs
     red-team probes: 38, refused: 38, allowed: 0, unverifiable: 0
     negative controls: 4, bypassed with the guard removed: 4
@@ -145,7 +153,21 @@ $ node scripts/queue-exercise.mjs -> G4_EXERCISE_PASS
 $ node scripts/scheduler-soak.mjs --cycles 8 --soak-ref SSOAK-G4-001
     SCHEDULER_SOAK_PASS 8/8   (in-transaction 4/4, after-commit 4/4)
 $ node scripts/scheduler-exercise.mjs -> SCHEDULER_EXERCISE_PASS
+$ node scripts/daemon-soak.mjs --cycles 8 --soak-ref DSOAK-G4-001
+    DAEMON_SOAK_PASS 8/8 boundaries=12   (7 real SIGKILLs, final cycle a clean SIGTERM)
 ```
+
+The daemon soak is the RUN-008 gap closed: a real long-running
+`scripts/scheduler-daemon.mjs` process ticks unattended, is `SIGKILL`ed at
+moments nobody chose (a randomised 1–2 boundary window), and a brand new process
+takes over each cycle as if the machine had restarted; the last cycle ends with a
+clean `SIGTERM` so a graceful shutdown is on the record next to the violent ones.
+Duplicates are recomputed from raw rows: 12 boundaries served, 0 served twice, 0
+jobs serving two boundaries. A soak where nothing ever fired would satisfy every
+duplicate check while proving nothing, so `served < cycles` is itself a failure.
+The daemon arms nothing and releases nothing — every tick still goes through the
+two Owner switches and the emergency stop, and a daemon on a fresh install is
+proven inert by test (`EMERGENCY_STOP` every tick, 0 fires, 0 jobs).
 
 The scheduler soak kills a real tick process with `SIGKILL` **inside the
 transaction** in half the cycles — after the job row, the fire row and the
@@ -194,7 +216,7 @@ a fresh DB, 30000 events, 1800/1800 probes passing, 308314 ms.
 | G1 Durable Truth | `PASSED` | `evidence/SOAK-cf77e410-d146-4b9f-b0d3-26bffaef8cb8.json`; 300-cycle real crash/restore soak |
 | G2 Unbounded Intake | `PENDING` | intake slice implemented and invariant-tested; `NEEDS_SOURCE`: no official chat export ingested, so 144 bodies cannot be recovered |
 | G3 Governor | `PENDING` | operator surface, schema guards and red-team evidence now exist (`evidence/REDTEAM-G3-001.json`, 38/38 refused, 0 allowed); promotion refused because gate order is enforced: `earlier gates not passed: G2=PENDING` |
-| G4 Workflow Runtime | `PENDING` | durable queue, retry/backoff/dead-letter, leases with monotonic fencing tokens, at-most-once external effects, artifacts, and a durable scheduler that fires each boundary at most once with both switches OFF by default are built and evidenced (`evidence/RUN-007.md`, `evidence/RUN-008.md`, `evidence/G4-ACCEPTANCE-001.json`, `evidence/G4-SCHEDULER-001.json`, `evidence/REDTEAM-QUEUE-001.json`); promotion refused because gate order is enforced: `earlier gates not passed: G2=PENDING, G3=PENDING` |
+| G4 Workflow Runtime | `PENDING` | durable queue, retry/backoff/dead-letter, leases with monotonic fencing tokens, at-most-once external effects, artifacts, a durable scheduler that fires each boundary at most once with both switches OFF by default, and an unattended daemon that keeps that guarantee across repeated kills and restarts are built and evidenced (`evidence/RUN-007.md`, `evidence/RUN-008.md`, `evidence/RUN-009.md`, `evidence/G4-ACCEPTANCE-001.json`, `evidence/G4-SCHEDULER-001.json`, `evidence/G4-DAEMON-001.json`, `evidence/REDTEAM-QUEUE-001.json`); promotion refused because gate order is enforced: `earlier gates not passed: G2=PENDING, G3=PENDING` |
 | G5 Agent Team | `PENDING` | `BLOCKED_PROVIDER_ACCESS`: no Claude Code / Codex / Devin bounded live RUN has passed |
 | G6 Functional Self | `PENDING` | `PREP_ONLY`: implementation and tests proceed locally; promotion withheld until G5 is resolved |
 | G7–G14 | `PENDING` | no evidence |
@@ -228,8 +250,10 @@ b38474c1210e3d803a9db973923fb6381a423d49c0386d8065bd60cd1e3570c4  evidence/RUN-0
 0330e76995e57354bb9e803e7cf39ba7faec6e593b9c0ce542e31eab28e507d1  evidence/RUN-006.md
 8949141956b325e30d93fb27fcc4f8a875964ec0d533bd3b4d66115501e27e2f  evidence/RUN-007.md
 e6baf57899e60bcd520d1be35a11c67129767db8017ab16d77f902fcee9c57ec  evidence/RUN-008.md
+54e0636d5bd2d2899df31455a73cc07abc66ebcc4e28a92a8817cf39518f8605  evidence/RUN-009.md
 93c779dd6efd77a8d5efa49930019f06fc4440c6c02331413c4c93e9563a7894  evidence/G4-ACCEPTANCE-001.json
 a0c9103a8f1789c26ea69e196b55144a1b5f09e1f73ac89971a74efd740705e7  evidence/G4-SCHEDULER-001.json
+79a73ee406d014e5e769c460f60777fb3abf2a47c813f7844b392b6cb819367e  evidence/G4-DAEMON-001.json
 02be859d90c042e93b67c7c58e4b0eee838a7af07e9ef550da1733240a96b257  evidence/REDTEAM-QUEUE-001.json
 7a369689b268d1b962df7da1ddaef976c5917ca713120224091a62c0e04e1f79  evidence/REDTEAM-G3-001.json
 fe881b2d793f7391ec35930d3e54aa17778d6963db22e3abc83b0aa50d33cc47  evidence/SOAK-cf77e410-d146-4b9f-b0d3-26bffaef8cb8.json
@@ -240,9 +264,10 @@ Gate evidence IDs: G0 = `BASELINE-20260826`, G1 =
 `SOAK-cf77e410-d146-4b9f-b0d3-26bffaef8cb8`. G2 and G5 have **no** evidence
 file, because those gates are not closed; claiming an ID for them would be
 fabrication. G3 and G4 have artefacts (`REDTEAM-G3-001`; `RUN-007`,
-`RUN-008`, `G4-ACCEPTANCE-001`, `G4-SCHEDULER-001`, `REDTEAM-QUEUE-001`,
-`QSOAK-G4-001`, `SSOAK-G4-001`) and are still `PENDING`
-— an artefact is not a promotion. This RUN's evidence is `evidence/RUN-008.md`; the external-lane
+`RUN-008`, `RUN-009`, `G4-ACCEPTANCE-001`, `G4-SCHEDULER-001`, `G4-DAEMON-001`,
+`REDTEAM-QUEUE-001`, `QSOAK-G4-001`, `SSOAK-G4-001`, `DSOAK-G4-001`) and are
+still `PENDING`
+— an artefact is not a promotion. This RUN's evidence is `evidence/RUN-009.md`; the external-lane
 re-adjudication is `evidence/READJUDICATION-CLAUDE-LANE-001.md` (+ `.json`) and
 the lane comparison is `evidence/COMPARE-CLAUDE-LANE-001.md`.
 
@@ -259,11 +284,11 @@ reasons:
 - `work_orders`: 0 rows.
 - `session_checkpoints`: this table does not exist. Session continuity lives in
   `session_runs` (+ `blockers`, `next_run`, view `v_handoff`).
-- `session_runs`: 7 rows — `RUN-002` (G1 continuity), `RUN-003` (G6 PREP_ONLY),
+- `session_runs`: 8 rows — `RUN-002` (G1 continuity), `RUN-003` (G6 PREP_ONLY),
   `RUN-004` (G1 durability + gate guards), `RUN-005` (G2 intake slice + external
   lane re-adjudication), `RUN-006` (G3 governor surface + red-team), `RUN-007`
-  (G4 workflow runtime), `RUN-008` (G4 durable scheduler), all `CHECKPOINTED`
-  with evidence refs.
+  (G4 workflow runtime), `RUN-008` (G4 durable scheduler), `RUN-009` (G4
+  scheduler daemon), all `CHECKPOINTED` with evidence refs.
 - Queue: 8 jobs (2 retried-then-done, 2 dead-lettered with the error on the
   record, 2 enqueued by the scheduler exercise), 2 committed external effects,
   0 duplicated effect keys, 0 stuck leases, 0 DONE jobs with an open attempt.
@@ -275,6 +300,12 @@ reasons:
   `SSOAK-G4-001` is the 8-cycle soak the evidence rests on, and two exploratory
   4-cycle runs are on the record because a `--no-record` flag-parsing bug (since
   fixed) recorded them; they are real passing cycles, not forged ones.
+- Daemon: 8 `daemon_soak_cycles` rows for `DSOAK-G4-001`, all `ok` — 7 real
+  `SIGKILL`s of a live daemon process and 1 clean `SIGTERM`, 12 boundaries served,
+  0 duplicated boundaries, 0 duplicated jobs, 0 regressions. Append-only. The soak
+  runs against a scratch database, so the kernel's own schedule stays disarmed.
+  Local CI's daemon step runs with `--no-record` so repeated CI runs cannot
+  inflate this evidence.
 - Intake: 4 active parsers, 1 sealed source version, 2 intakes (1 `ACCEPTED`,
   1 `DUPLICATE` from re-importing the same bytes), 1 inbox item, 0 projects,
   0 title-only promotions. `intake report` is `ok: true` with no problems.
@@ -287,11 +318,12 @@ reasons:
 - `blockers`: 5 `WAITING` — official chat export missing (SOURCE), no provider
   auth wired (PROVIDER_ACCESS), Codex CLI not logged in (PROVIDER_ACCESS), no
   Windows build host (HARDWARE), merge PR #513 (OWNER_APPROVAL). 2 `RESOLVED`.
-- `next_run`: next exact action is reboot-level scheduler/queue crash evidence
-  with a supervised tick daemon (still OFF by default) — or, if the official chat
-  exports arrive first, G2 body recovery, which is the only thing that unblocks
-  the G3/G4 promotions. The G3 governor entry was consumed by `RUN-006`, the G4
-  durable-queue entry by `RUN-007`, and the scheduler entry by `RUN-008`.
+- `next_run`: next exact action is a supervised scheduler daemon that survives a
+  real OS restart (service/autostart registration, crash-loop backoff, still OFF
+  by default) — or, if the official chat exports arrive first, G2 body recovery,
+  which is the only thing that unblocks the G3/G4 promotions. The G3 governor
+  entry was consumed by `RUN-006`, the G4 durable-queue entry by `RUN-007`, the
+  scheduler entry by `RUN-008`, and the daemon entry by `RUN-009`.
 - `approvals`: 1 row, revoked. `APR-85b98f0c…` was minted by the agent during a
   CLI smoke test with `granted_by = 'owner'` although the Owner never granted it;
   it was revoked on the record and migration `0011` now refuses any approval that
@@ -303,10 +335,10 @@ reasons:
   The stop was released with an Owner reason only for the duration of the G4
   queue and scheduler exercises and re-engaged immediately afterwards; every
   transition is an event in the ledger.
-- Rollback rehearsal after `0013`: `BKP-7f33dea9-8b45-4a41-9ae8-da1e18b59583`
-  (`db_sha256 95de0a1a3a6aa94502ab552038fecdb57e3dd922d855833fd4812947cb90a1c8`)
+- Rollback rehearsal after `0014`: `BKP-65f795de-8368-46be-873a-a1cc631f5a71`
+  (`db_sha256 5bc59d1461c661bbf40361374fbcf174ea3ef7ab845880d330873b0108e65b60`)
   verified, restored into a fresh database, and the restored copy passes
-  `independent-validation` including `scheduler_recomputed`.
+  `independent-validation` including `scheduler_daemon_recomputed`.
 
 ## 8. Codex CLI facts on this machine
 

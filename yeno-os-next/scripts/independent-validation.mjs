@@ -547,6 +547,37 @@ verdict(
   schedulerProblems.join(' | '),
 );
 
+// Daemon restart soak, recomputed the same way: a passing cycle has to have
+// really died, and a passing soak has to have made progress across the restarts.
+const daemonProblems = [];
+const dishonestDaemonSoak = db
+  .prepare(
+    `SELECT COUNT(*) AS n FROM daemon_soak_cycles
+      WHERE ok = 1 AND ((death = 'sigkill' AND killed = 0) OR duplicate_boundaries <> 0 OR duplicate_jobs <> 0 OR fires_regressed <> 0)`,
+  )
+  .get().n;
+if (dishonestDaemonSoak > 0) {
+  daemonProblems.push(`${dishonestDaemonSoak} daemon soak cycle(s) call a duplicated boundary or a missing kill a pass`);
+}
+const daemonSoaks = db
+  .prepare(
+    `SELECT soak_ref, COUNT(*) AS cycles, SUM(ok) AS ok_cycles, SUM(boundaries_served) AS served,
+            SUM(death = 'sigkill' AND killed = 1) AS real_kills
+       FROM daemon_soak_cycles GROUP BY soak_ref`,
+  )
+  .all();
+const cleanDaemonSoak = daemonSoaks
+  .filter((s) => s.cycles === s.ok_cycles && s.real_kills > 0 && s.served >= s.cycles)
+  .sort((a, b) => b.cycles - a.cycles)[0];
+verdict(
+  daemonProblems.length === 0,
+  'scheduler_daemon_recomputed',
+  cleanDaemonSoak
+    ? `soak ${cleanDaemonSoak.soak_ref} ${cleanDaemonSoak.ok_cycles}/${cleanDaemonSoak.cycles}, ${cleanDaemonSoak.real_kills} real kills, ${cleanDaemonSoak.served} boundaries served, 0 duplicated`
+    : 'no clean daemon restart soak on record',
+  daemonProblems.join(' | '),
+);
+
 const g5Row = gates.find((g) => g.gate_id === 'G5');
 const g6Row = gates.find((g) => g.gate_id === 'G6');
 if (g6Row?.state === 'PASSED' && g5Row?.state !== 'PASSED') gateProblems.push('G6: PASSED while G5 is not');
