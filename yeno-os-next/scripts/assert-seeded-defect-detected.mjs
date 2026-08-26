@@ -6,6 +6,7 @@ import { mkdtempSync, rmSync, copyFileSync, writeFileSync, readFileSync, mkdirSy
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import { openDb } from '../src/core/db.mjs';
 import { migrate } from '../src/core/migrate.mjs';
 import { appendEvent } from '../src/core/events.mjs';
@@ -672,6 +673,90 @@ function scaffoldWithCycle() {
     'ui_contract_promises_a_panel_whose_view_is_gone',
     run.status !== 0 && /FAIL ui_contract_recomputed/.test(run.stdout),
     run.stdout.match(/FAIL ui_contract_recomputed.*/)?.[0] ?? '',
+  );
+  rmSync(s.dir, { recursive: true, force: true });
+}
+
+// G9 Evolution Lab. The triggers are the leash, so each case below removes one
+// of them and does the thing it was there to stop. The point is that the
+// independent validator re-derives the same refusal from the raw rows: if the
+// schema is ever bypassed, the second opinion still catches the self-change.
+const LAB_PATCH = 'the exact bytes of a proposed change';
+const LAB_DIFF = createHash('sha256').update(Buffer.from(LAB_PATCH, 'utf8')).digest('hex');
+
+/** A PROPOSED change to a legal target, with its bytes in the vault. */
+function seedProposal(db, { target = 'src/ui/render.mjs', proposalId = 'PRP-seeded' } = {}) {
+  db.prepare('INSERT OR IGNORE INTO blobs (sha256, size_bytes, bytes, created_at) VALUES (?, ?, ?, ?)').run(
+    LAB_DIFF,
+    LAB_PATCH.length,
+    Buffer.from(LAB_PATCH, 'utf8'),
+    '2026-08-26T00:00:00.000Z',
+  );
+  db.prepare(
+    `INSERT INTO change_proposals (proposal_id, origin, target_path, diff_sha256, diff_bytes, patch_ref,
+       rationale, risk, blast_radius, rollback_plan, created_by, created_at)
+     VALUES (?, 'SELF', ?, ?, ?, ?, 'a seeded rationale', 'LOW', 'one module', 'revert', 'yeno',
+             '2026-08-26T00:00:00.000Z')`,
+  ).run(proposalId, target, LAB_DIFF, LAB_PATCH.length, `blob:${LAB_DIFF}`);
+  return proposalId;
+}
+
+function seedBenchmark(db, proposalId, { verdict = 'PASS', baseline = 12, candidate = 3, id = 'BMK-seeded' } = {}) {
+  db.prepare(
+    `INSERT INTO proposal_benchmarks (benchmark_id, proposal_id, diff_sha256, suite, metric, baseline,
+       candidate, higher_is_better, verdict, measured_by, evidence_ref, measured_at)
+     VALUES (?, ?, ?, 'seeded', 'seeded_metric', ?, ?, 0, ?, 'seed', 'evidence/RUN-019.md',
+             '2026-08-26T00:00:00.000Z')`,
+  ).run(id, proposalId, LAB_DIFF, baseline, candidate, verdict);
+}
+
+// Case 30: a self-change reaches APPROVED with nobody's consent attached.
+{
+  const s = scaffold();
+  const id = seedProposal(s.db);
+  seedBenchmark(s.db, id);
+  s.db.exec('DROP TRIGGER trg_proposal_state_ladder');
+  s.db.exec('DROP TRIGGER trg_proposal_approved_needs_owner_approval');
+  s.db.prepare('UPDATE change_proposals SET state = ? WHERE proposal_id = ?').run('APPROVED', id);
+  s.db.close();
+  const run = runValidator(s.dbPath, s.migDir);
+  record(
+    'evolution_proposal_is_approved_without_owner_consent',
+    run.status !== 0 && /FAIL evolution_lab_recomputed/.test(run.stdout),
+    run.stdout.match(/FAIL evolution_lab_recomputed.*/)?.[0] ?? '',
+  );
+  rmSync(s.dir, { recursive: true, force: true });
+}
+
+// Case 31: a benchmark claims the change improved things while its own numbers
+// got worse — self-measurement is worthless if the verdict can disagree with it.
+{
+  const s = scaffold();
+  const id = seedProposal(s.db);
+  s.db.exec('DROP TRIGGER trg_benchmark_verdict_matches_numbers');
+  seedBenchmark(s.db, id, { verdict: 'PASS', baseline: 12, candidate: 40 });
+  s.db.close();
+  const run = runValidator(s.dbPath, s.migDir);
+  record(
+    'evolution_benchmark_claims_pass_on_worse_numbers',
+    run.status !== 0 && /FAIL evolution_lab_recomputed/.test(run.stdout),
+    run.stdout.match(/FAIL evolution_lab_recomputed.*/)?.[0] ?? '',
+  );
+  rmSync(s.dir, { recursive: true, force: true });
+}
+
+// Case 32: a proposal aimed at the safety layer itself — the validator that
+// judges it. This is the one self-change that must never exist in the ledger.
+{
+  const s = scaffold();
+  s.db.exec('DROP TRIGGER trg_proposal_target_not_forbidden');
+  seedProposal(s.db, { target: 'scripts/independent-validation.mjs', proposalId: 'PRP-seeded-leash' });
+  s.db.close();
+  const run = runValidator(s.dbPath, s.migDir);
+  record(
+    'evolution_proposal_targets_its_own_judge',
+    run.status !== 0 && /FAIL evolution_lab_recomputed/.test(run.stdout),
+    run.stdout.match(/FAIL evolution_lab_recomputed.*/)?.[0] ?? '',
   );
   rmSync(s.dir, { recursive: true, force: true });
 }

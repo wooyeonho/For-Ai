@@ -1,7 +1,7 @@
 {
   "manifest_version": 1,
-  "started_at": "2026-08-26T16:10:13.036Z",
-  "finished_at": "2026-08-26T16:10:42.821Z",
+  "started_at": "2026-08-26T16:23:05.638Z",
+  "finished_at": "2026-08-26T16:23:36.772Z",
   "node_version": "v24.19.0",
   "platform": "linux-x64",
   "ok": true,
@@ -28,9 +28,9 @@
       ],
       "exit_code": 0,
       "ok": true,
-      "duration_ms": 7600,
-      "stdout_sha256": "74451c46d2bf086c44ed49b43179276ce0c5064d6bf72e31b7dcb7c893193644",
-      "stdout_tail": "✔ cancellation is recorded, closes the open attempt, and is final (13.05843ms)\n✔ the emergency stop closes the queue, and the scheduler is off until the Owner enables it (13.287113ms)\n✔ an A3+ job cannot touch the outside world without the approval the governor consumed (13.453817ms)\n✔ idempotency keys are payload-sensitive, and G4 acceptance stays honest (12.496115ms)\nℹ tests 197\nℹ suites 0\nℹ pass 197\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 7576.569689",
+      "duration_ms": 8794,
+      "stdout_sha256": "705f562b4901fdc81dd9ddaf5d6ac9fe4ba07cddd2549957203c155dee0fc293",
+      "stdout_tail": "✔ cancellation is recorded, closes the open attempt, and is final (16.65538ms)\n✔ the emergency stop closes the queue, and the scheduler is off until the Owner enables it (17.419234ms)\n✔ an A3+ job cannot touch the outside world without the approval the governor consumed (16.530704ms)\n✔ idempotency keys are payload-sensitive, and G4 acceptance stays honest (15.981631ms)\nℹ tests 204\nℹ suites 0\nℹ pass 204\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 8763.023222",
       "stderr_tail": ""
     },
     {
@@ -41,9 +41,9 @@
       ],
       "exit_code": 0,
       "ok": true,
-      "duration_ms": 33,
-      "stdout_sha256": "47cdf7cb42db4bb0cee93d8a377022d577c50050f0e764866dce78e07c619e00",
-      "stdout_tail": "CHECKSUM_PIN_OK: 17 migrations pinned",
+      "duration_ms": 31,
+      "stdout_sha256": "d01c151d270117ff0d58c5014b0f8b120538907bfe09219e5ace8227508a6cf3",
+      "stdout_tail": "CHECKSUM_PIN_OK: 18 migrations pinned",
       "stderr_tail": ""
     },
     {
@@ -54,9 +54,9 @@
       ],
       "exit_code": 0,
       "ok": true,
-      "duration_ms": 59,
-      "stdout_sha256": "a937c0321924339cd3a1c5ec36b9d7e1c194ae86ecfbe6eafac0d8abb6ab13c6",
-      "stdout_tail": "applied:\n\ntotal: 17",
+      "duration_ms": 61,
+      "stdout_sha256": "01d3ec4f1fea5c37df8ccf7acaafcce8657882b8f2b279ed710f3e0960a9eb4f",
+      "stdout_tail": "applied:\n\ntotal: 18",
       "stderr_tail": ""
     },
     {
@@ -69,7 +69,7 @@
       "exit_code": 0,
       "ok": true,
       "duration_ms": 71,
-      "stdout_sha256": "d5579f824adb8c1eb78cff2f99ffb9e0f4a91a45fc54b59947efddcdb826eea7",
+      "stdout_sha256": "a9fe55976635368094c0d78cfcb4bef50762e0a1837223f81cfdf6b1f636e97b",
       "stdout_tail": "    \"kill_count\": 300,\n    \"restore_count\": 300,\n    \"events_appended\": 30000,\n    \"duration_ms\": 308314,\n    \"head_hash\": \"2b0426af562c970376b608dd7f63538481653f92a8aba79db38539bbcfd1be6f\",\n    \"evidence_ref\": \"evidence/SOAK-cf77e410-d146-4b9f-b0d3-26bffaef8cb8.json\",\n    \"failure\": null,\n    \"probes\": 1800,\n    \"probes_failed\": 0,\n    \"probe_kinds\": 6\n  }\n}",
       "stderr_tail": ""
     },
@@ -83,7 +83,7 @@
       "exit_code": 0,
       "ok": true,
       "duration_ms": 76,
-      "stdout_sha256": "a895292375cc55d231b5993f3d451ab59481ea7b19defff62fe8d12df9e038db",
+      "stdout_sha256": "9808235d7b72b24aaea3f1da5e086e39f27ef5c2e76957df66a9e8e1dc4965d7",
       "stdout_tail": "      \"name\": \"g6_not_promoted_before_g5\",\n      \"ok\": true,\n      \"detail\": \"G6 PENDING while G5 PENDING\"\n    },\n    {\n      \"name\": \"no_consciousness_claim_recorded\",\n      \"ok\": true,\n      \"detail\": \"0 claims\"\n    }\n  ],\n  \"failed\": []\n}",
       "stderr_tail": ""
     },
@@ -97,9 +97,9 @@
       ],
       "exit_code": 0,
       "ok": true,
-      "duration_ms": 59,
-      "stdout_sha256": "dcb4f1b92b8fc6928e130f67a65bff803eb756b4c35c2abfd8df5b2b0ec6be02",
-      "stdout_tail": "  },\n  \"projections\": {\n    \"proj_inbox_state\": {\n      \"last_seq\": 234,\n      \"rows\": 2\n    },\n    \"proj_run_state\": {\n      \"last_seq\": 234,\n      \"rows\": 0\n    }\n  }\n}",
+      "duration_ms": 64,
+      "stdout_sha256": "f5cab5aa912a1620215f68c1773ef483e3c0ff4c19fe2e41f55383204a2b9744",
+      "stdout_tail": "  },\n  \"projections\": {\n    \"proj_inbox_state\": {\n      \"last_seq\": 243,\n      \"rows\": 2\n    },\n    \"proj_run_state\": {\n      \"last_seq\": 243,\n      \"rows\": 0\n    }\n  }\n}",
       "stderr_tail": ""
     },
     {
@@ -111,9 +111,9 @@
       ],
       "exit_code": 0,
       "ok": true,
-      "duration_ms": 54,
-      "stdout_sha256": "7aa9ed6ef5f2e40e108e32e33fcd15301faaed8a8617455fbb8b68ca0f55d503",
-      "stdout_tail": "proj_inbox_state:\n  last_seq: 234\n  rows: 2\nproj_run_state:\n  last_seq: 234\n  rows: 0",
+      "duration_ms": 61,
+      "stdout_sha256": "3bb37b6f9de2225adee223ef791447049d50d75e1a8883740b40796ce140e57b",
+      "stdout_tail": "proj_inbox_state:\n  last_seq: 243\n  rows: 2\nproj_run_state:\n  last_seq: 243\n  rows: 0",
       "stderr_tail": ""
     },
     {
@@ -129,9 +129,9 @@
       ],
       "exit_code": 0,
       "ok": true,
-      "duration_ms": 251,
-      "stdout_sha256": "8f7be1e6b09faded95ba848d91a0444f5d9eb58ad7c8b7813a8646b1cf448ddc",
-      "stdout_tail": "soak SOAK-56a4e542-c6a8-48b5-99ea-6bf7e4064a1b: 2 cycles x 8 events, scratch /tmp/yeno-soak-ZiQjRh/yeno.db\ncycle 1/2: 6/6 probes ok\ncycle 2/2: 6/6 probes ok\nevidence/runtime/SOAK-56a4e542-c6a8-48b5-99ea-6bf7e4064a1b.json\nSOAK_PASS SOAK-56a4e542-c6a8-48b5-99ea-6bf7e4064a1b",
+      "duration_ms": 271,
+      "stdout_sha256": "4428598acdb99dc8699e59104c211a1fd2468ab53efef82cee0ea2c89dcc6f92",
+      "stdout_tail": "soak SOAK-e134def2-b852-4150-ac08-3eba3ad96a90: 2 cycles x 8 events, scratch /tmp/yeno-soak-W03IAt/yeno.db\ncycle 1/2: 6/6 probes ok\ncycle 2/2: 6/6 probes ok\nevidence/runtime/SOAK-e134def2-b852-4150-ac08-3eba3ad96a90.json\nSOAK_PASS SOAK-e134def2-b852-4150-ac08-3eba3ad96a90",
       "stderr_tail": ""
     },
     {
@@ -143,9 +143,9 @@
       ],
       "exit_code": 0,
       "ok": true,
-      "duration_ms": 311,
-      "stdout_sha256": "fa68e03d35d1ec140073efecd846ea4c7f1426bdd66828b08c66ee8c6494f45e",
-      "stdout_tail": "    \"worst_effect_lines\": 1,\n    \"started_at\": \"2026-08-26T16:10:21.365Z\",\n    \"ended_at\": \"2026-08-26T16:10:21.550Z\"\n  },\n  \"queue\": [\n    {\n      \"state\": \"LEASED\",\n      \"n\": 4\n    }\n  ]\n}\nQUEUE_SOAK_PASS 4/4",
+      "duration_ms": 351,
+      "stdout_sha256": "4232baf6585a390fd61ea76ff01c2d4be653eacac3c6bc0b45647dae1ae04e45",
+      "stdout_tail": "    \"worst_effect_lines\": 1,\n    \"started_at\": \"2026-08-26T16:23:15.199Z\",\n    \"ended_at\": \"2026-08-26T16:23:15.418Z\"\n  },\n  \"queue\": [\n    {\n      \"state\": \"LEASED\",\n      \"n\": 4\n    }\n  ]\n}\nQUEUE_SOAK_PASS 4/4",
       "stderr_tail": ""
     },
     {
@@ -158,9 +158,9 @@
       ],
       "exit_code": 0,
       "ok": true,
-      "duration_ms": 307,
-      "stdout_sha256": "ef45656913f608ca4921efb30c4049303b63b9f5a4e3d9f73709e0c2a97dd5c9",
-      "stdout_tail": "  \"soak_ref\": \"SSOAK-a5ffcfec-79ab-4b04-a8d6-281a8af38acf\",\n  \"acceptance\": {\n    \"generated_at\": \"2026-08-26T16:10:21.860Z\",\n    \"schedules\": 4,\n    \"armed\": 4,\n    \"fires\": 4,\n    \"deduped_fires\": 0,\n    \"problems\": [],\n    \"ok\": true\n  }\n}\nSCHEDULER_SOAK_PASS 4/4",
+      "duration_ms": 347,
+      "stdout_sha256": "1223b3a5c4d3ccd0a2dd33df9527f1a9c94e96728ea79c8213751e80d78c4fe4",
+      "stdout_tail": "  \"soak_ref\": \"SSOAK-22347b26-4649-4d35-96a0-996b2f60d01e\",\n  \"acceptance\": {\n    \"generated_at\": \"2026-08-26T16:23:15.767Z\",\n    \"schedules\": 4,\n    \"armed\": 4,\n    \"fires\": 4,\n    \"deduped_fires\": 0,\n    \"problems\": [],\n    \"ok\": true\n  }\n}\nSCHEDULER_SOAK_PASS 4/4",
       "stderr_tail": ""
     },
     {
@@ -173,9 +173,9 @@
       ],
       "exit_code": 0,
       "ok": true,
-      "duration_ms": 6058,
-      "stdout_sha256": "994a7362fd0840abf7300ceebecac7b6c450e4eecae08d089f496dd2ed591032",
-      "stdout_tail": "  \"total_boundaries_served\": 6,\n  \"acceptance\": {\n    \"generated_at\": \"2026-08-26T16:10:27.917Z\",\n    \"schedules\": 1,\n    \"armed\": 1,\n    \"fires\": 6,\n    \"deduped_fires\": 0,\n    \"problems\": [],\n    \"ok\": true\n  }\n}\nDAEMON_SOAK_PASS 4/4 boundaries=6",
+      "duration_ms": 5629,
+      "stdout_sha256": "524b89b0cf8b8913874adc299d37d26f72d2e2b75509b3cb9f6329a9cbbeabc1",
+      "stdout_tail": "  \"total_boundaries_served\": 6,\n  \"acceptance\": {\n    \"generated_at\": \"2026-08-26T16:23:21.395Z\",\n    \"schedules\": 1,\n    \"armed\": 1,\n    \"fires\": 6,\n    \"deduped_fires\": 0,\n    \"problems\": [],\n    \"ok\": true\n  }\n}\nDAEMON_SOAK_PASS 4/4 boundaries=6",
       "stderr_tail": ""
     },
     {
@@ -188,9 +188,9 @@
       ],
       "exit_code": 0,
       "ok": true,
-      "duration_ms": 7188,
-      "stdout_sha256": "fac7ac4d8d74104b525ec0fc29afa044d30f1fe20fd1f7bd82e29078f5dc44ed",
-      "stdout_tail": "  \"total_boundaries_served\": 7,\n  \"acceptance\": {\n    \"generated_at\": \"2026-08-26T16:10:35.106Z\",\n    \"schedules\": 1,\n    \"armed\": 1,\n    \"fires\": 7,\n    \"deduped_fires\": 0,\n    \"problems\": [],\n    \"ok\": true\n  }\n}\nSUPERVISOR_SOAK_PASS 3/3 boundaries=7",
+      "duration_ms": 6405,
+      "stdout_sha256": "b284f52317a496c24ab7650ab98e7d6d917202de9c9c8854b3a69a1bfb6f8fff",
+      "stdout_tail": "  \"total_boundaries_served\": 7,\n  \"acceptance\": {\n    \"generated_at\": \"2026-08-26T16:23:27.800Z\",\n    \"schedules\": 1,\n    \"armed\": 1,\n    \"fires\": 7,\n    \"deduped_fires\": 0,\n    \"problems\": [],\n    \"ok\": true\n  }\n}\nSUPERVISOR_SOAK_PASS 3/3 boundaries=7",
       "stderr_tail": ""
     },
     {
@@ -200,7 +200,7 @@
       ],
       "exit_code": 0,
       "ok": true,
-      "duration_ms": 1151,
+      "duration_ms": 1173,
       "stdout_sha256": "9a6cde8111057acf4b53108e83c7e71c385408ee049683495b549b2a84503146",
       "stdout_tail": "PASS stop_released — released with an Owner reason for the duration of the exercise\nPASS project — G7-EX-1 (PRJ-G7EX-1787756218873) carries source SV-028d430f-7a63-4943-80a3-29824935d66d from INBOX-9311e47588f08870e357628e\nPASS adapters — for_ai and shopping_shorts registered and enabled\nPASS activation_refused_without_evidence — already active from an earlier run of this exercise: the refusal was recorded then\nPASS activated — G7-EX-1 is BUILD\nPASS for_ai_pass — not run: ALREADY_RUN\nPASS crash_mid_run — child was SIGKILLed holding the job; job left LEASED, cycles recorded by the dead worker: 0\nPASS recovered_after_crash — reclaimed 1, outcome USEFUL, jobs 1, artefacts 1, cycles 1\nPASS shopping_shorts_pass — not run: ALREADY_RUN\nPASS capacity_refusal — portfolio capacity is full (1/1 active)\nPORTFOLIO_EXERCISE_PASS",
       "stderr_tail": ""
@@ -217,8 +217,8 @@
       ],
       "exit_code": 0,
       "ok": true,
-      "duration_ms": 53,
-      "stdout_sha256": "4e62387f486e58ec566903266f054d8dcf55b4e203f45a3aabd051ae789eda3d",
+      "duration_ms": 62,
+      "stdout_sha256": "dd6a4e92c8cc932476613d5d0b71df541d399a9b2d3959d8e6ee960938801678",
       "stdout_tail": "        \"name\": \"no_goal_shown_decided_without_verdict\",\n        \"ok\": true,\n        \"detail\": \"0 offender(s)\"\n      },\n      {\n        \"name\": \"settings_shows_the_real_stop\",\n        \"ok\": true,\n        \"detail\": \"panel 1, table 1\"\n      }\n    ]\n  }\n}",
       "stderr_tail": ""
     },
@@ -230,7 +230,7 @@
       ],
       "exit_code": 0,
       "ok": true,
-      "duration_ms": 61,
+      "duration_ms": 75,
       "stdout_sha256": "0f561417c995a8beb90cce29386912be522f5da61f4e8fbc80c71297c9fc7e44",
       "stdout_tail": "UI_CONTRACT_PIN_OK: 8 panels, 5 commands, 3 panel actions",
       "stderr_tail": ""
@@ -246,9 +246,9 @@
       ],
       "exit_code": 0,
       "ok": true,
-      "duration_ms": 54,
-      "stdout_sha256": "98cbab6dde89d8f2f290da37f5e26ece201c50b15428f7035f3f4f2e4ea70fd9",
-      "stdout_tail": "EVIDENCE  (1/40, 16 need attention)\nkind               ref_id             label              state              evidence_ref       sha256             at                \nRUN                RUN-017            make the shell fol CHECKPOINTED       RUN-017            —                  2026-08-26T16:06:1\n\nCOSTS  (1/3)\nprofile_id         name               monthly_limit_krw  spent_krw          remaining_krw      active             owner_promoted     cost_denials       runs              \nBP-LOCAL           Local Safe 300k    300000             0                  300000             1                  1                  0                  0                 \n\nSETTINGS  (1/1, 1 need attention)\nemergency_stop_eng emergency_stop_rea scheduler_enabled  schedules_armed    schedules          portfolio_max_acti projects_active    identity_version   release_version    current_gate       migrations_applied events             head_hash         \n1                  G7 exercise finish 0                  0                  1                  1                  1                  1                  0.0.1              G2                 17                 237                5b42b4fa5b6a5ec2dd\n[ self.observe ] disabled: EMERGENCY_STOP",
+      "duration_ms": 63,
+      "stdout_sha256": "4320aacb3196c21e24b01c639f7acd3f7e3aa157f579b88b2ffd402f73aa5b2e",
+      "stdout_tail": "EVIDENCE  (1/41, 16 need attention)\nkind               ref_id             label              state              evidence_ref       sha256             at                \nRUN                RUN-018            prove the screen c CHECKPOINTED       RUN-018            —                  2026-08-26T16:11:4\n\nCOSTS  (1/3)\nprofile_id         name               monthly_limit_krw  spent_krw          remaining_krw      active             owner_promoted     cost_denials       runs              \nBP-LOCAL           Local Safe 300k    300000             0                  300000             1                  1                  0                  0                 \n\nSETTINGS  (1/1, 1 need attention)\nemergency_stop_eng emergency_stop_rea scheduler_enabled  schedules_armed    schedules          portfolio_max_acti projects_active    identity_version   release_version    current_gate       migrations_applied events             head_hash         \n1                  G7 exercise finish 0                  0                  1                  1                  1                  1                  0.0.1              G2                 18                 246                c54b07fe5b978feda5\n[ self.observe ] disabled: EMERGENCY_STOP",
       "stderr_tail": ""
     },
     {
@@ -258,7 +258,7 @@
       ],
       "exit_code": 0,
       "ok": true,
-      "duration_ms": 702,
+      "duration_ms": 743,
       "stdout_sha256": "78e227a206cdbe0aebfaff6ca65a3a59c23798afccf06efe5a1e92c57edd97ea",
       "stdout_tail": "OK command_accepted_after_owner_released_the_stop — status 202\nOK command_event_reached_the_follower — cursor 3\nOK no_gap_forced_a_refetch_on_a_clean_stream\nOK screen_shows_the_effect_only_after_its_event — cursor 3 visible in the timeline\nOK released_stop_makes_the_buttons_pressable_again\nOK dropped_connection_marks_the_screen_stale — stale: DISCONNECTED; last seen event 3\nOK reopening_refetches_before_believing_the_screen\nOK resume_delivers_only_events_after_the_last_seen_sequence — from 3 to 4\nOK negative_control_gap_detection_removed — the check breaks with the rule removed\nOK negative_control_replay_guard_removed — the check breaks with the rule removed\nui follow checks: 11, failed: 0\nUI_FOLLOW_EXERCISE_PASS",
       "stderr_tail": ""
@@ -271,7 +271,7 @@
       ],
       "exit_code": 0,
       "ok": true,
-      "duration_ms": 1724,
+      "duration_ms": 1812,
       "stdout_sha256": "02081e1ff8faf95795bd5fb9c031bb2e313fcf2fb61ecf471c10daa86fa6125d",
       "stdout_tail": "cycle 1: head 3, cursor 3, accepted 202, denied 400/422, identical true (44 lines)\ncycle 2: head 5, cursor 5, accepted 202, denied 400/422, identical true (46 lines)\ncycle 3: head 7, cursor 7, accepted 202, denied 400/422, identical true (46 lines)\ncycle 4: head 9, cursor 9, accepted 202, denied 400/422, identical true (46 lines)\nscreen soak cycles: 4, divergent screens: 0, bad accepts: 0, leaked denials: 0, stale cursors: 0\nUI_SCREEN_SOAK_PASS 4/4",
       "stderr_tail": ""
@@ -283,9 +283,9 @@
       ],
       "exit_code": 0,
       "ok": true,
-      "duration_ms": 48,
-      "stdout_sha256": "e8d78004aaa3e486a7e0bf52eded402231bf5f76b361a87e5e77ad3a75f417d4",
-      "stdout_tail": "PASS soak_verdicts_recomputed — 30 sessions, 30 passing\nPASS intake_coverage_recomputed — 2 inbox items, 2 source versions, 3 intakes\nPASS governor_recomputed — 381 red-team probes, 1 denials recorded\nPASS workflow_runtime_recomputed — 11 jobs, 2 external effects, soak QSOAK-G4-001 12/12\nPASS scheduler_recomputed — 1 schedules, 2 fires, soak SSOAK-G4-001 8/8\nPASS scheduler_daemon_recomputed — soak DSOAK-G4-001 8/8, 7 real kills, 12 boundaries served, 0 duplicated\nPASS scheduler_supervisor_recomputed — soak VSOAK-G4-001 6/6, 3 child kills, 2 tree kills, 3 unattended restarts, 14 boundaries served, 0 duplicated\nPASS portfolio_cycles_recomputed — 3/3 cycles USEFUL, artefacts rehashed from the stored source bytes, 1/1 active\nPASS mission_control_panels_recomputed — 8 panels agree with the base tables, served read-only\nPASS gate_promotions_recomputed — 2 gates passed\nPASS ui_contract_recomputed — 8 panels pinned, columns re-read from the views\nINDEPENDENT_VALIDATION_PASS",
+      "duration_ms": 57,
+      "stdout_sha256": "a0f331563ddfd3c87416c414fc12de6b3818dfa26e03cdc7c83371fe07037c43",
+      "stdout_tail": "PASS intake_coverage_recomputed — 2 inbox items, 2 source versions, 3 intakes\nPASS governor_recomputed — 381 red-team probes, 1 denials recorded\nPASS workflow_runtime_recomputed — 11 jobs, 2 external effects, soak QSOAK-G4-001 12/12\nPASS scheduler_recomputed — 1 schedules, 2 fires, soak SSOAK-G4-001 8/8\nPASS scheduler_daemon_recomputed — soak DSOAK-G4-001 8/8, 7 real kills, 12 boundaries served, 0 duplicated\nPASS scheduler_supervisor_recomputed — soak VSOAK-G4-001 6/6, 3 child kills, 2 tree kills, 3 unattended restarts, 14 boundaries served, 0 duplicated\nPASS portfolio_cycles_recomputed — 3/3 cycles USEFUL, artefacts rehashed from the stored source bytes, 1/1 active\nPASS mission_control_panels_recomputed — 8 panels agree with the base tables, served read-only\nPASS gate_promotions_recomputed — 2 gates passed\nPASS ui_contract_recomputed — 8 panels pinned, columns re-read from the views\nPASS evolution_lab_recomputed — 0 proposals, benchmark verdicts recomputed from their own numbers\nINDEPENDENT_VALIDATION_PASS",
       "stderr_tail": ""
     },
     {
@@ -295,7 +295,7 @@
       ],
       "exit_code": 0,
       "ok": true,
-      "duration_ms": 172,
+      "duration_ms": 207,
       "stdout_sha256": "6df13d22797d6ea56e42e96aca523820b8a1e4f10a9c672250cef471810d67c1",
       "stdout_tail": "PASS          cost_hard_gate_enforced_in_schema\n        schema refused: YENO_SAFETY: cost_p90 unknown or exceeds remaining budget\nPASS          ax_method_refused_in_schema\n        schema refused: YENO_SAFETY: A3+ RUN needs a live in-scope Owner approval\nPASS          emergency_stop_defaults_ON_on_a_fresh_install\n        a freshly migrated DB has emergency_stop.engaged = 1 as stored state, not derived from a log whose absence means OFF\nPASS          cli_refuses_gate_pass_without_real_evidence\n        CLI refused:     \"evidence file evidence/DOES-NOT-EXIST.md does not exist in the repository\"   ] }\nPASS          durability_soak_floor_100_cycles\n        300 cycles, 300 SIGKILLs, 300 restores, 1800 probes with 0 failures, evidence evidence/SOAK-cf77e410-d146-4b9f-b0d3-26bffaef8cb8.json\n\nSELF_PROBES_PASS: 11/11",
       "stderr_tail": ""
@@ -308,7 +308,7 @@
       ],
       "exit_code": 0,
       "ok": true,
-      "duration_ms": 536,
+      "duration_ms": 696,
       "stdout_sha256": "558b5a2ff1e7e7fae9917c4e8257d6e8a83022382727b259c322c7de02a49769",
       "stdout_tail": "REFUSED      RAW_SQL               rewrite an event payload in the ledger\nREFUSED      RAW_SQL               delete an admission denial record\nREFUSED      RAW_SQL               rewrite the reason code of a recorded denial\nREFUSED      EVIDENCE              pass G3 through the domain layer with an evidence file that does not exist\nREFUSED      EVIDENCE              rewrite a recorded red-team result to hide an allowed bypass\nREFUSED      EVIDENCE              grant an approval citing an Owner Packet that does not exist\nREFUSED      EVIDENCE              insert an approval with no Owner Packet reference at all\nREFUSED      EVIDENCE              repoint an approval at a different Owner Packet after the fact\n\nred-team probes: 38, refused: 38, allowed: 0, unverifiable: 0\nnegative controls: 4, bypassed with the guard removed: 4\nREDTEAM_PASS",
       "stderr_tail": ""
@@ -321,7 +321,7 @@
       ],
       "exit_code": 0,
       "ok": true,
-      "duration_ms": 684,
+      "duration_ms": 935,
       "stdout_sha256": "c10b71ad2cd7f5d3eeb19b4edc9a9e062b2c992f8fb187f33cac83c1062b303f",
       "stdout_tail": "REFUSED      RAW_SQL            shorten an armed schedule to a busy loop\nREFUSED      RAW_SQL            arm a schedule as a non-Owner actor\nREFUSED      RAW_SQL            delete a schedule so its firing history is orphaned\nREFUSED      RAW_SQL            fire a schedule while the master scheduler switch is off\nREFUSED      RAW_SQL            fire a schedule while the emergency stop is engaged\nREFUSED      RAW_SQL            forge a passing scheduler soak cycle that fired one boundary twice\nREFUSED      GOVERNOR_API       tick a disarmed schedule through the domain API\n\nqueue red-team probes: 42, refused: 42, allowed: 0, unverifiable: 0\nnegative controls: 11, bypassed with the guard removed: 11\nscheduler probes: 13, refused: 13 (minimum 13)\nREDTEAM_QUEUE_PASS",
       "stderr_tail": ""
@@ -333,7 +333,7 @@
       ],
       "exit_code": 0,
       "ok": true,
-      "duration_ms": 1050,
+      "duration_ms": 1191,
       "stdout_sha256": "bd80ac2cde2a9fbb9f50c720915569d98125e6af4ddcb081cdc5930504c50c02",
       "stdout_tail": "REFUSED/OK accepted_command: expected 202, got 202\nREFUSED/OK minting_an_approval: expected 400, got 400\nREFUSED/OK cancelling_an_invented_job: expected 422, got 422\nREFUSED/OK promoting_an_invented_inbox_item: expected 422, got 422\nREFUSED/OK projects_still_empty: expected 0, got 0\nREFUSED/OK command_after_re_engage: expected 423, got 423\nREFUSED/OK read_flood_is_rate_limited: expected true, got true\nREFUSED/OK read_flood_wrote_nothing: expected 3, got 3\nREFUSED/OK negative_control_stop_guard_leaks_when_removed: expected true, got true\nREFUSED/OK negative_control_token_guard_leaks_when_removed: expected true, got true\napi red team probes: 25, leaks: 0\nAPI_RED_TEAM_PASS",
       "stderr_tail": ""
@@ -345,9 +345,9 @@
       ],
       "exit_code": 0,
       "ok": true,
-      "duration_ms": 1473,
-      "stdout_sha256": "1c84bf68024e19950f0aaded466ac14d26d9837973347d1164c8a327c7268fba",
-      "stdout_tail": "DETECTED supervisor_soak_calls_a_duplicated_boundary_a_pass — FAIL scheduler_supervisor_recomputed — 1 supervisor soak cycle(s) call a missing kill, a restart with no new process or a duplicated boundary a pass\nDETECTED portfolio_cycle_claims_an_artifact_the_source_cannot_produce — FAIL portfolio_cycles_recomputed — PCY-d7f160da-69c8-469c-9588-5ed42e8a470c: the artefact hash is not what for_ai yields from the stored source bytes\nDETECTED portfolio_cycle_cites_a_goal_no_council_selected — FAIL portfolio_cycles_recomputed — PCY-96f0b0df-4a07-49f1-80a3-79f0b0ca75eb: cites a goal no council selected (no verdict)\nDETECTED project_is_active_with_no_demand_or_utility_evidence — FAIL portfolio_cycles_recomputed — SEED-1 is active without both demand and utility evidence\nDETECTED mission_control_inbox_panel_hides_items — FAIL mission_control_panels_recomputed — v_mc_inbox shows 0 of 1 row(s)\nDETECTED mission_control_shows_an_expired_approval_as_live — FAIL mission_control_panels_recomputed — APR-seeded-stale: panel says LIVE, the row means EXPIRED\nDETECTED mission_control_shows_the_stop_as_released_while_engaged — FAIL mission_control_panels_recomputed — settings shows stop 0, the table says 1\nDETECTED ui_contract_misses_a_new_panel_column — FAIL ui_contract_recomputed — panel inbox columns differ from v_mc_inbox\nDETECTED ui_contract_promises_a_panel_whose_view_is_gone — FAIL ui_contract_recomputed — panel costs names view v_mc_costs, which does not exist\n\nseeded defects: 29, detected: 29, missed: 0\nSEEDED_DEFECT_CHECK_PASS",
+      "duration_ms": 1951,
+      "stdout_sha256": "1316f02e57827241b91d96a9ccba3d5282d24c7b26520df169ee8dfdf85b83ae",
+      "stdout_tail": "DETECTED project_is_active_with_no_demand_or_utility_evidence — FAIL portfolio_cycles_recomputed — SEED-1 is active without both demand and utility evidence\nDETECTED mission_control_inbox_panel_hides_items — FAIL mission_control_panels_recomputed — v_mc_inbox shows 0 of 1 row(s)\nDETECTED mission_control_shows_an_expired_approval_as_live — FAIL mission_control_panels_recomputed — APR-seeded-stale: panel says LIVE, the row means EXPIRED\nDETECTED mission_control_shows_the_stop_as_released_while_engaged — FAIL mission_control_panels_recomputed — settings shows stop 0, the table says 1\nDETECTED ui_contract_misses_a_new_panel_column — FAIL ui_contract_recomputed — panel inbox columns differ from v_mc_inbox\nDETECTED ui_contract_promises_a_panel_whose_view_is_gone — FAIL ui_contract_recomputed — panel costs names view v_mc_costs, which does not exist\nDETECTED evolution_proposal_is_approved_without_owner_consent — FAIL evolution_lab_recomputed — PRP-seeded is APPROVED without an approval\nDETECTED evolution_benchmark_claims_pass_on_worse_numbers — FAIL evolution_lab_recomputed — BMK-seeded claims PASS but its numbers got worse\nDETECTED evolution_proposal_targets_its_own_judge — FAIL evolution_lab_recomputed — PRP-seeded-leash targets scripts/independent-validation.mjs, which scripts/independent-validation.mjs forbids\n\nseeded defects: 32, detected: 32, missed: 0\nSEEDED_DEFECT_CHECK_PASS",
       "stderr_tail": ""
     }
   ],
@@ -384,8 +384,8 @@
     },
     {
       "path": "STATUS.md",
-      "size": 34596,
-      "sha256": "65819f3d831eb7a1ecd40dd52e76e00f43d3d9e044444391e3bbbb8a576e064e"
+      "size": 37757,
+      "sha256": "c74d0f3abe0c7aafe1dd9a8f1e3a15f2b4e11b4636d6be9b3bd0b028e103ec3d"
     },
     {
       "path": "artifacts/portfolio/for_ai-256f30acc7b310d1.json",
@@ -493,9 +493,14 @@
       "sha256": "82c5c8d63973cb0e16e8b8fa504eb22a5234779f9e95e8a60a025586db5fca00"
     },
     {
+      "path": "migrations/0018_evolution_lab.sql",
+      "size": 14751,
+      "sha256": "5939d8baabb5ed757d9ba896504c0fb3d7987ee8eefd04aaa6dd4b2de87e81e5"
+    },
+    {
       "path": "migrations/CHECKSUMS.json",
-      "size": 1637,
-      "sha256": "582405d9de5bb344425a93a14ee57ad4ffde767e4bb036174d8d142f9c8efb19"
+      "size": 1733,
+      "sha256": "ec98362e1e30ff23eda1a0c3d7abc68077e9df4f5638adaa991f4ea607bb0f33"
     },
     {
       "path": "package.json",
@@ -504,8 +509,8 @@
     },
     {
       "path": "scripts/assert-seeded-defect-detected.mjs",
-      "size": 30169,
-      "sha256": "a2ceb4fd4a0ce5f0fae69a0fa538acf29ea95152f074e2c9fb90fc358659d0f9"
+      "size": 34111,
+      "sha256": "3d9e0d78cbc0d0034956e7fbe8480cb866899d0e162aa8ce24361534a379dd85"
     },
     {
       "path": "scripts/crash-writer.mjs",
@@ -519,8 +524,8 @@
     },
     {
       "path": "scripts/independent-validation.mjs",
-      "size": 43684,
-      "sha256": "a5503e9d1035516a2b8e73e7d48118eb97c05d55ba120341b229fad6334cdfb8"
+      "size": 47249,
+      "sha256": "a05b28441b84ef4ebdfe4df9078390f79b80024259896e914074787af500419f"
     },
     {
       "path": "scripts/local-ci.mjs",
@@ -644,8 +649,8 @@
     },
     {
       "path": "src/cli.mjs",
-      "size": 34333,
-      "sha256": "3c470c74bd13f00df3ef3ca71c77efc61777bf526b9a380b2971a7945a0ad05d"
+      "size": 39079,
+      "sha256": "fb00ea6877ededf4ebb9872cc649b631e57a929a3a0c9675e309be8f651b2422"
     },
     {
       "path": "src/core/backup.mjs",
@@ -691,6 +696,11 @@
       "path": "src/core/projections.mjs",
       "size": 3164,
       "sha256": "f34425c9deec142482ddea7b8e9aaa9286b66eb26f4abf45809101da0d521776"
+    },
+    {
+      "path": "src/domain/evolution.mjs",
+      "size": 13407,
+      "sha256": "77b5ef97a5e0ded17fefbf5c277f89df9924c54aef8b9d72bd857a6d5abb97a5"
     },
     {
       "path": "src/domain/gate.mjs",
@@ -811,6 +821,11 @@
       "path": "test/events.test.mjs",
       "size": 3447,
       "sha256": "c988bf249d396fbe59b06148d510bd71f5b0a941661ece61501710f9bcdc3ee2"
+    },
+    {
+      "path": "test/evolution.test.mjs",
+      "size": 14440,
+      "sha256": "3a440e882df647f9f7831bb30876bdcee114538380c198dc44240a7a762d7c59"
     },
     {
       "path": "test/functional-self.test.mjs",

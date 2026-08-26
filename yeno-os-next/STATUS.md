@@ -134,11 +134,12 @@ $ node --test
 ℹ todo 0
 ```
 
-**197 tests.** 63 at G0/continuity, plus 11 functional-self, 9 durability soak,
+**204 tests.** 63 at G0/continuity, plus 11 functional-self, 9 durability soak,
 5 gate-promotion, 14 G2 intake, 14 G3 governance, 11 G4 workflow-runtime, 11 G4
 scheduler, 5 G4 scheduler-daemon, 8 G4 scheduler-supervisor, 12 G7 PortfolioOps,
 8 G8 Mission Control read-side, 11 G8 local-API, 3 G8 UI-contract, 6 G8
-UI-renderer and 6 G8 UI-follower tests. No 67-test run exists in this checkout.
+UI-renderer, 6 G8 UI-follower and 7 G9 Evolution Lab tests. No 67-test run
+exists in this checkout.
 
 `npm run lint` and `npm run typecheck` were attempted and **do not exist** in
 this repository (`npm error Missing script`). They are absent, not passing.
@@ -161,8 +162,9 @@ $ node scripts/independent-validation.mjs -> INDEPENDENT_VALIDATION_PASS
                                        source bytes, 1/1 active
     PASS gate_promotions_recomputed — 2 gates passed
     PASS ui_contract_recomputed — 8 panels pinned, columns re-read from the views
+    PASS evolution_lab_recomputed — proposals re-judged from their own numbers and the approvals table
 $ node scripts/self-adversarial-probes.mjs -> SELF_PROBES_PASS: 11/11
-$ node scripts/assert-seeded-defect-detected.mjs -> seeded defects 29, detected 29, missed 0
+$ node scripts/assert-seeded-defect-detected.mjs -> seeded defects 32, detected 32, missed 0
 $ node scripts/pin-ui-contract.mjs --check -> UI_CONTRACT_PIN_OK: 8 panels, 5 commands, 3 panel actions
 $ node scripts/portfolio-exercise.mjs -> PORTFOLIO_EXERCISE_PASS
 $ node scripts/red-team-governor.mjs
@@ -265,7 +267,8 @@ a fresh DB, 30000 events, 1800/1800 probes passing, 308314 ms.
 | G6 Functional Self | `PENDING` | `PREP_ONLY`: implementation and tests proceed locally; promotion withheld until G5 is resolved |
 | G7 PortfolioOps | `PENDING` | one source carried through goal → durable RUN → independent verification → outcome → memory, twice over (two adapters), plus crash-mid-RUN recovery and refusal to scale without demand/utility or past capacity, are built and evidenced (`evidence/RUN-011.md`); promotion refused because gate order is enforced |
 | G8 Mission Control | `PENDING` | the read side is built and evidenced (`evidence/RUN-012.md`): migration `0017` adds eight deterministic views (Inbox/Projects/Timeline/Council/Approvals/Evidence/Costs/Settings), `mc panels`/`mc panel` serve them from a read-only handle, the independent validator recomputes every panel from the base tables, and three seeded defects prove a lying panel is caught. The Tauri 2 desktop shell, Living Body, state colours, keyboard/accessibility, the 8GB RAM profile and push-to-talk voice are **not** built — the shell needs an Owner-approved Rust/Cargo install (`evidence/OWNER-PACKET-003.md`). The local boundary the shell will read is also built and attacked (`evidence/RUN-013.md`): `127.0.0.1`-only bind, mandatory `x-yeno-token`, origin allowlist, rate limit, reads from a read-only handle, a closed two-command write vocabulary that goes command handler → Governor → transaction → event → projection, and 21 independent HTTP probes (`API_RED_TEAM_PASS`, 0 leaks) run from a process that imports nothing from `src/`. `evidence/RUN-014.md` moves admission itself to the Governor: every command declares its own authority, target and cost, `admit()` returns the verdict, a denial answers `403` with the reason code and the `admission_attempts` id (`423` for the stop), the vocabulary is now five panel actions with **granting** an approval deliberately excluded, and two negative controls prove the probes have teeth by deleting one guard in a throwaway copy of `src/` and observing the leak. `evidence/RUN-015.md` fixes the shell's vocabulary before the shell exists: `src/domain/ui-contract.mjs` derives each panel's columns from `pragma_table_info` on the live views and each panel's buttons from the API allowlist (three panels have actions; Timeline, Evidence, Projects, Council and Costs have none, and granting an approval is absent because it is absent from the API), `contracts/ui-contract.json` pins the contract and its hash so drift fails local CI, `GET /contract` serves it read-only (`POST` is a `404`), the independent validator re-reads the columns and parses `src/api/server.mjs` as text to confirm the pinned commands are exactly the implemented ones, and two more seeded defects (an unexpected panel column, a dropped panel view) are caught. Still **not** gate acceptance: a contract is not a rendered interface. `evidence/RUN-016.md` adds the renderer that contract implies, minus the pixels: `src/ui/render.mjs` draws every panel as text from the contract plus the served rows and enforces the four rules a hand-written UI gets wrong — a column the contract does not list is never drawn even when the row carries it, a contract column the row lacks is drawn `—` instead of shifting the columns after it, rows from another view are refused rather than relabelled, and a button the kernel would refuse now is drawn disabled with the reason (on a fresh, restored or rebooted kernel that is every button). `mc render` and CI step `ui_render_screen` run it on the live kernel. `evidence/RUN-017.md` fixes **when** the screen redraws, which is where a desktop UI usually starts lying: `src/ui/follower.mjs` follows `/events/stream` instead of polling, drops a repeated or regressing sequence rather than applying it twice, refetches the panels rather than patching them when a gap proves events were missed, marks the screen `stale` on a dropped connection instead of clearing it or pretending it is live, and resumes with `?from=<lastSeq>` so resume is a ledger position and not a server session. `scripts/ui-follow-exercise.mjs` (CI step `ui_follow_exercise`) plays the shell against a throwaway kernel and a real `api serve` child over the socket only: 11 checks, 0 failed, including two negative controls that delete one rule in a copy of the follower and observe the matching check break. `evidence/RUN-018.md` closes the claim those three imply: `scripts/ui-screen-soak.mjs` (CI step `ui_screen_soak`) draws the same screen twice through paths that share no step but the ledger — a follower that watched every event over the socket, and a separate process that never saw the stream and renders from a read-only database handle — and requires the bytes to match, in 6 cycles that each reconnect the follower, accept one command and are refused twice (`UI_SCREEN_SOAK_PASS 6/6`, 0 divergent, 0 leaked denials, 0 stale cursors). Text lines are still not a desktop application |
-| G9–G14 | `PENDING` | no evidence |
+| G9 Evolution Lab | `PENDING` | the proposal-only half is built and evidenced (`evidence/RUN-019.md`): migration `0018` adds `evolution_forbidden_targets` (the safety layer — migrations, governor, event chain, hash module, governance, gate promotion, the validators, the red teams, `CLAUDE.md` — undeletable from inside the kernel), `change_proposals`, `proposal_benchmarks`, `v_evolution_lab` and 15 triggers, so a proposal is born `PROPOSED`/unapproved/unapplied, its target and diff hash are immutable, a benchmark must measure that exact diff and may not claim `PASS` while its own numbers got worse, `BENCHMARKED` needs a measured improvement with no regression, and `APPROVED` needs a live Owner grant for `evolution.apply` on that path whose `payload_hash` **is** the diff hash and which cites an Owner Packet on disk — so editing the patch loses the approval. `src/domain/evolution.mjs` and `lab propose|bench|benchmarked|approve|reject|apply|report|targets` expose it; `lab apply` always answers `APPLY_PATH_NOT_BUILT` because there is no sandbox, no canary and no automatic rollback. The independent validator's `evolution_lab_recomputed` re-derives every verdict from the raw numbers and re-checks every `APPROVED`/`APPLIED` row against the approvals table without importing the domain module, and three new seeded defects (cases 30–32) drop one trigger each and perform the forbidden act — a proposal approved with no consent, a `PASS` on worse numbers, a proposal aimed at its own judge. **Not** gate acceptance: the sandbox, canary, automatic rollback, a benchmark registry that runs the suites itself, seeded-regression detection through a real apply/rollback cycle, and any demonstrated performance/cost/safety improvement *by* a self-change are all missing |
+| G10–G14 | `PENDING` | no evidence |
 
 `release_state.current_gate` = `G2`, `gates_passed` = 2.
 
@@ -307,6 +310,7 @@ aae2bfb3215653f2f69eeb71379093c929b1a05a2c83bc69d76ad6bbe19428e1  evidence/RUN-0
 6fdf2eac48657b5b5471df4c7d2d10bd850e6b55333fb492440f3129d2ac8974  evidence/RUN-016.md
 17a559ac9e93f7f776d7027730ec4588d8bf418951be58474965e5787455d2f5  evidence/RUN-017.md
 ece36cc966de1eec364a19e89a2df4923a2fa834e72104c89279c93ef8eef988  evidence/RUN-018.md
+0e3324d01ee0d590b61a75e4bb1e04805c62d22b69adfb3895b388e36a65d3d3  evidence/RUN-019.md
 992ad062d29348829494682450ab416280a4e301725c9170150bc432cfeb9b5f  contracts/ui-contract.json
 93c779dd6efd77a8d5efa49930019f06fc4440c6c02331413c4c93e9563a7894  evidence/G4-ACCEPTANCE-001.json
 a0c9103a8f1789c26ea69e196b55144a1b5f09e1f73ac89971a74efd740705e7  evidence/G4-SCHEDULER-001.json
@@ -419,8 +423,13 @@ reasons:
   side is now closed — vocabulary, drawing, refresh, agreement — and what remains
   for acceptance needs the toolchain, so the queued NEXT_RUN is the Owner-facing
   one: `evidence/OWNER-PACKET-003.md` (Rust/Cargo + Tauri 2). Until it is
-  approved, the next install-free slice is G9's proposal-only self-change ledger,
-  which needs no UI and no provider.
+  approved, the next install-free slice was G9's proposal-only self-change
+  ledger, which needs no UI and no provider; it was consumed by `RUN-019`, which
+  built the ladder `PROPOSED → BENCHMARKED → APPROVED` and left `APPLIED`
+  unreachable on purpose. The queued NEXT_RUN is now G9's sandbox: apply an
+  approved patch to a *copy* of the kernel, run the full local CI inside that
+  copy, and revert automatically on any regression — the real working tree is not
+  touched by YENO until that path exists and the Owner has seen it work.
 - `approvals`: 1 row, revoked. `APR-85b98f0c…` was minted by the agent during a
   CLI smoke test with `granted_by = 'owner'` although the Owner never granted it;
   it was revoked on the record and migration `0011` now refuses any approval that

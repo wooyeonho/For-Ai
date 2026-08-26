@@ -923,6 +923,66 @@ verdict(
   contractProblems.join(' | '),
 );
 
+// ------------------------------------------------------------------ G9 lab
+//
+// Recomputed here, not read: every benchmark verdict is derived again from its
+// own numbers, and every proposal that claims to be APPROVED or APPLIED must
+// still have an Owner grant bound to its exact bytes. A proposal that reached
+// the top of the ladder without measurement or consent is a G9 failure even if
+// the triggers were bypassed by whatever wrote the row.
+const labProblems = [];
+let labProposals = 0;
+if (objects.has('change_proposals')) {
+  labProposals = db.prepare('SELECT COUNT(*) AS n FROM change_proposals').get().n;
+  for (const b of db.prepare('SELECT * FROM proposal_benchmarks').all()) {
+    const improved = b.higher_is_better === 1 ? b.candidate > b.baseline : b.candidate < b.baseline;
+    if (b.verdict === 'PASS' && !improved) labProblems.push(`${b.benchmark_id} claims PASS but its numbers got worse`);
+    if (b.verdict === 'REGRESSION' && improved) {
+      labProblems.push(`${b.benchmark_id} claims REGRESSION but its numbers improved`);
+    }
+    const proposal = db.prepare('SELECT diff_sha256 FROM change_proposals WHERE proposal_id = ?').get(b.proposal_id);
+    if (!proposal) labProblems.push(`${b.benchmark_id} measures a proposal that does not exist`);
+    else if (proposal.diff_sha256 !== b.diff_sha256) {
+      labProblems.push(`${b.benchmark_id} measured bytes that are not ${b.proposal_id}'s`);
+    }
+  }
+  const forbidden = db.prepare('SELECT pattern FROM evolution_forbidden_targets').all().map((r) => r.pattern);
+  const matches = (path, pattern) =>
+    new RegExp(`^${pattern.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/%/g, '.*')}$`).test(path);
+  for (const p of db.prepare('SELECT * FROM change_proposals').all()) {
+    const pattern = forbidden.find((f) => matches(p.target_path, f));
+    if (pattern) labProblems.push(`${p.proposal_id} targets ${p.target_path}, which ${pattern} forbids`);
+    if (!['APPROVED', 'APPLIED', 'ROLLED_BACK'].includes(p.state)) continue;
+    const improved = db
+      .prepare(
+        `SELECT
+           SUM(CASE WHEN verdict = 'PASS' THEN 1 ELSE 0 END) AS improved,
+           SUM(CASE WHEN verdict IN ('REGRESSION','FAIL') THEN 1 ELSE 0 END) AS regressed
+         FROM proposal_benchmarks WHERE proposal_id = ? AND diff_sha256 = ?`,
+      )
+      .get(p.proposal_id, p.diff_sha256);
+    if ((improved.improved ?? 0) === 0) labProblems.push(`${p.proposal_id} is ${p.state} with no measured improvement`);
+    if ((improved.regressed ?? 0) > 0) labProblems.push(`${p.proposal_id} is ${p.state} with a recorded regression`);
+    const approval = p.approval_id
+      ? db.prepare('SELECT * FROM approvals WHERE approval_id = ?').get(p.approval_id)
+      : null;
+    if (!approval) labProblems.push(`${p.proposal_id} is ${p.state} without an approval`);
+    else if (approval.payload_hash !== p.diff_sha256) {
+      labProblems.push(`${p.proposal_id} cites an approval bound to other bytes`);
+    } else if (approval.exact_action !== 'evolution.apply' || approval.target !== p.target_path) {
+      labProblems.push(`${p.proposal_id} cites an approval for ${approval.exact_action} on ${approval.target}`);
+    } else if (!approval.owner_packet_ref || !existsSync(join(REPO, approval.owner_packet_ref))) {
+      labProblems.push(`${p.proposal_id} cites an approval whose Owner Packet is not on disk`);
+    }
+  }
+}
+verdict(
+  labProblems.length === 0,
+  'evolution_lab_recomputed',
+  `${labProposals} proposals, benchmark verdicts recomputed from their own numbers`,
+  labProblems.join(' | '),
+);
+
 db.close();
 
 const failed = findings.filter((f) => !f.ok);

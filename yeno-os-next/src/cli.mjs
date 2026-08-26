@@ -65,6 +65,16 @@ import {
 import { makeArtifactVerifier } from './domain/portfolio-verifier.mjs';
 import { panel, panels, panelNames, g8ReadSideAcceptance } from './domain/mission-control.mjs';
 import { uiContract } from './domain/ui-contract.mjs';
+import {
+  applyApproved,
+  approveProposal,
+  forbiddenTargets,
+  lab,
+  markBenchmarked,
+  proposeChange,
+  recordBenchmark,
+  rejectProposal,
+} from './domain/evolution.mjs';
 import { renderScreen, currentRefusals } from './ui/render.mjs';
 import {
   createServer as createApiServer,
@@ -118,7 +128,7 @@ const USAGE = `yeno <command>
   inbox promote --inbox ID --code C --name N [--body-evidence E] [--owner-confirmation E]
                                    refuses title-only promotion
   approval grant --action A --target T --expires ISO --rollback R --packet REF
-                 [--payload JSON] [--max-cost N] [--max-uses N]
+                 [--payload JSON | --payload-hash SHA256] [--max-cost N] [--max-uses N]
                                    one-shot scoped grant (same scope = same grant);
                                    --packet is the Owner Packet file that authorised it
   approval list [--json]           grants with LIVE/EXPIRED/EXHAUSTED/REVOKED state
@@ -178,6 +188,23 @@ const USAGE = `yeno <command>
   api serve [--port N] [--json]     local facade for the desktop shell: 127.0.0.1
                                    only, token required, reads read-only, writes
                                    limited to the allowlisted command vocabulary
+  lab propose --target PATH --patch-file P --rationale R --blast B --rollback R
+              [--risk LOW|MEDIUM|HIGH] [--origin SELF|OWNER]
+                                   propose a change to YENO itself: the bytes are
+                                   sealed in the vault, the safety layer is not a
+                                   legal target, and the proposal starts powerless
+  lab bench --proposal ID --suite S --metric M --baseline N --candidate N
+            --measured-by W --evidence REF [--lower-is-better] [--failed]
+                                   one measurement; the verdict is derived from the
+                                   numbers, never claimed
+  lab benchmarked --proposal ID    PROPOSED -> BENCHMARKED, refused without a
+                                   measured improvement or with any regression
+  lab approve --proposal ID --approval ID [--note N]
+                                   needs a live Owner grant scoped to the diff hash
+  lab reject --proposal ID --note N
+  lab apply --proposal ID          always refuses: G9 is proposal-only
+  lab report [--json] [--limit N]  every proposal, what measured it, what blocks it
+  lab targets [--json]             the paths a self-change may never touch, and why
   gate list [--json]               release train state and evidence presence
   gate pass --gate G --evidence E  promote a gate only if its machine checks hold
                                    (refusal reasons are recorded, never bypassed)
@@ -512,6 +539,77 @@ async function main() {
         print(result, json);
         return result.promoted ? 0 : 1;
       }
+      // G9 Evolution Lab. YENO may propose and measure; it may not approve or
+      // apply. Every refusal below is also a trigger in 0018.
+      case 'lab propose': {
+        const patchPath = str(flags['patch-file'], 'lab propose requires --patch-file');
+        const result = proposeChange(db, {
+          targetPath: str(flags.target, 'lab propose requires --target'),
+          patch: readFileSync(patchPath, 'utf8'),
+          rationale: str(flags.rationale, 'lab propose requires --rationale'),
+          risk: typeof flags.risk === 'string' ? flags.risk : 'LOW',
+          blastRadius: str(flags.blast, 'lab propose requires --blast (what this can break)'),
+          rollbackPlan: str(flags.rollback, 'lab propose requires --rollback'),
+          origin: typeof flags.origin === 'string' ? flags.origin : 'SELF',
+          createdBy: typeof flags['created-by'] === 'string' ? flags['created-by'] : 'yeno',
+        });
+        catchUp(db);
+        print(result, json);
+        return result.proposed ? 0 : 1;
+      }
+      case 'lab bench': {
+        const row = recordBenchmark(db, {
+          proposalId: str(flags.proposal, 'lab bench requires --proposal'),
+          suite: str(flags.suite, 'lab bench requires --suite'),
+          metric: str(flags.metric, 'lab bench requires --metric'),
+          baseline: Number(flags.baseline),
+          candidate: Number(flags.candidate),
+          higherIsBetter: flags['lower-is-better'] !== true,
+          measuredBy: str(flags['measured-by'], 'lab bench requires --measured-by'),
+          evidenceRef: str(flags.evidence, 'lab bench requires --evidence'),
+          ok: flags.failed !== true,
+        });
+        catchUp(db);
+        print(row, json);
+        return row.verdict === 'PASS' ? 0 : 1;
+      }
+      case 'lab benchmarked': {
+        const result = markBenchmarked(db, str(flags.proposal, 'lab benchmarked requires --proposal'));
+        catchUp(db);
+        print(result, json);
+        return result.moved ? 0 : 1;
+      }
+      case 'lab approve': {
+        const result = approveProposal(db, {
+          proposalId: str(flags.proposal, 'lab approve requires --proposal'),
+          approvalId: str(flags.approval, 'lab approve requires --approval'),
+          note: typeof flags.note === 'string' ? flags.note : '',
+        });
+        catchUp(db);
+        print(result, json);
+        return result.approved ? 0 : 1;
+      }
+      case 'lab reject': {
+        const result = rejectProposal(db, {
+          proposalId: str(flags.proposal, 'lab reject requires --proposal'),
+          note: str(flags.note, 'lab reject requires --note'),
+        });
+        catchUp(db);
+        print(result, json);
+        return result.rejected ? 0 : 1;
+      }
+      case 'lab apply': {
+        print(applyApproved(db, str(flags.proposal, 'lab apply requires --proposal')), json);
+        return 1;
+      }
+      case 'lab report': {
+        print(lab(db, { limit: flags.limit === undefined ? 50 : Number(flags.limit) }), json);
+        return 0;
+      }
+      case 'lab targets': {
+        print(forbiddenTargets(db), json);
+        return 0;
+      }
       case 'gate list': {
         print(gateReport(db), json);
         return 0;
@@ -563,6 +661,8 @@ async function main() {
           exactAction: str(flags.action, 'approval grant requires --action'),
           target: str(flags.target, 'approval grant requires --target'),
           payload: typeof flags.payload === 'string' ? JSON.parse(flags.payload) : null,
+          // A patch is bytes, not JSON: consent to a change is given by its hash.
+          payloadHash: typeof flags['payload-hash'] === 'string' ? flags['payload-hash'] : null,
           maxCostKrw: Number(flags['max-cost'] ?? 0),
           expiresAt: str(flags.expires, 'approval grant requires --expires (ISO)'),
           maxUses: Number(flags['max-uses'] ?? 1),
