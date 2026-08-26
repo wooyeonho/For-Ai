@@ -7,9 +7,13 @@ import { createServer as createHttpServer } from 'node:http';
 import { randomUUID } from 'node:crypto';
 import { openDb, inTransaction } from '../core/db.mjs';
 import { appendEvent, readEvents, head } from '../core/events.mjs';
-import { stopEngaged } from '../core/governor.mjs';
+import { admit, stopEngaged } from '../core/governor.mjs';
+import { sha256Json } from '../core/hash.mjs';
 import { catchUp } from '../core/projections.mjs';
 import { remember, observe } from '../domain/self.mjs';
+import { promoteInbox } from '../domain/intake.mjs';
+import { revokeApproval } from '../domain/governance.mjs';
+import { cancelJob } from '../domain/workflow.mjs';
 import { panel, panels, panelNames, g8ReadSideAcceptance } from '../domain/mission-control.mjs';
 
 export const LOOPBACK = '127.0.0.1';
@@ -19,10 +23,19 @@ const RATE_LIMIT = { windowMs: 10_000, max: 120 };
 /**
  * The whole write vocabulary. A command that is not here cannot be sent, so the
  * shell cannot invent an effect by shaping a request differently.
+ *
+ * `authority`, `costP90Krw` and `target` are what the Governor judges. They are
+ * declared here rather than taken from the request, so a caller cannot lower the
+ * authority of an action by asking politely.
+ *
+ * Deliberately absent: granting an approval. An approval is the Owner's signature
+ * on an external effect, so it cannot be mintable by the surface that wants to
+ * spend it. Revoking one is allowed in the safe direction only.
  */
 export const COMMANDS = {
   'self.remember': {
     authority: 'A2',
+    target: () => 'memory',
     handler: (db, body) =>
       remember(db, {
         kind: req(body, 'kind'),
@@ -34,9 +47,44 @@ export const COMMANDS = {
   },
   'self.observe': {
     authority: 'A2',
-    handler: (db, body) => observe(db, req(body, 'metric'), Number(req(body, 'value'))),
+    target: () => 'homeostasis',
+    handler: (db, body) => observe(db, req(body, 'metric'), num(body, 'value')),
+  },
+  // Inbox triage. The promotion rules live in the domain: a title-only item still
+  // cannot become a project without an Owner confirmation ref, and the API has no
+  // way to say otherwise.
+  'inbox.promote': {
+    authority: 'A2',
+    ownTransaction: true,
+    target: (body) => `inbox:${body.inbox_id ?? '?'}`,
+    handler: (db, body) =>
+      promoteInbox(db, req(body, 'inbox_id'), {
+        code: req(body, 'code'),
+        name: req(body, 'name'),
+        status: body.status === undefined ? 'REGISTRY' : String(body.status),
+        bodyEvidenceRef: body.body_evidence_ref ?? null,
+        ownerConfirmationRef: body.owner_confirmation_ref ?? null,
+        programUg: body.program_ug ?? null,
+      }),
+  },
+  'approval.revoke': {
+    authority: 'A2',
+    target: (body) => `approval:${body.approval_id ?? '?'}`,
+    handler: (db, body) => revokeApproval(db, req(body, 'approval_id'), req(body, 'reason'), 'api'),
+  },
+  'run.cancel': {
+    authority: 'A2',
+    ownTransaction: true,
+    target: (body) => `job:${body.job_id ?? '?'}`,
+    handler: (db, body) => cancelJob(db, req(body, 'job_id'), req(body, 'reason')),
   },
 };
+
+function num(body, key) {
+  const value = Number(req(body, key));
+  if (!Number.isFinite(value)) throw new BadRequest(`field ${key} is not a finite number`);
+  return value;
+}
 
 function req(body, key) {
   if (body === null || typeof body !== 'object' || body[key] === undefined || body[key] === null) {
@@ -48,32 +96,56 @@ function req(body, key) {
 class BadRequest extends Error {}
 
 /**
- * A command is admitted only if the stop is released and the command is known.
- * The audit event is written inside the same transaction as the effect, so an
+ * Admission is the Governor's, not the API's. The facade only names the action;
+ * `admit` decides, and records every refusal in `admission_attempts` whether the
+ * refusal came from the stop, the authority ladder, an approval scope or the cost
+ * gate. The audit event is written in the same transaction as the effect, so an
  * accepted command and its record cannot come apart.
  */
-export function runCommand(db, name, body, { actor = 'api', requestId = null } = {}) {
+export function runCommand(db, name, body, { actor = 'api', requestId = null, budgetProfileId = 'BP-LOCAL' } = {}) {
   const spec = COMMANDS[name];
   if (!spec) throw new BadRequest(`unknown command ${name}`);
-  if (stopEngaged(db)) {
-    const err = new Error('EMERGENCY_STOP: the local API refuses commands while the stop is engaged');
-    err.stopped = true;
+  const decision = admit(db, {
+    goal: `api:${name}`,
+    authority: spec.authority,
+    methodClass: spec.methodClass ?? 'LOCAL_REVERSIBLE',
+    exactAction: name,
+    target: spec.target(body ?? {}),
+    payloadHash: sha256Json(body ?? {}),
+    costP90Krw: spec.costP90Krw ?? 0,
+    budgetProfileId,
+    actor,
+  });
+  if (decision.decision !== 'ALLOW') {
+    const err = new Error(`ADMISSION_DENIED: ${decision.reasonCode}`);
+    err.denied = decision.reasonCode;
+    err.attemptId = decision.attemptId;
     throw err;
   }
   const rid = requestId ?? randomUUID();
-  const out = inTransaction(db, () => {
-    const result = spec.handler(db, body);
+  const audit = () =>
     appendEvent(db, {
       eventId: `EVT-api-${rid}`,
       type: 'api.command.accepted',
       actor,
       authority: spec.authority,
-      payload: { request_id: rid, command: name },
+      payload: { request_id: rid, command: name, admission: decision.attemptId },
     });
-    return result;
-  });
+  // Some domain calls own their own transaction; nesting `BEGIN IMMEDIATE` would
+  // fail, so those commit the effect first and the audit event immediately after.
+  let out;
+  if (spec.ownTransaction) {
+    out = spec.handler(db, body);
+    inTransaction(db, audit);
+  } else {
+    out = inTransaction(db, () => {
+      const result = spec.handler(db, body);
+      audit();
+      return result;
+    });
+  }
   catchUp(db);
-  return { request_id: rid, command: name, result: out };
+  return { request_id: rid, command: name, admission: decision.attemptId, result: out };
 }
 
 function rateLimiter() {
@@ -164,7 +236,12 @@ export function createServer({ dbPath, token, origins = DEFAULT_ORIGINS, pollMs 
             return send(202, runCommand(rw, body.command, body.payload ?? {}, { actor: 'api' }));
           } catch (err) {
             if (err instanceof BadRequest) return send(400, { error: 'BAD_COMMAND', detail: err.message });
-            if (err.stopped) return send(423, { error: 'EMERGENCY_STOP', detail: err.message });
+            if (err.denied === 'EMERGENCY_STOP_ENGAGED') {
+              return send(423, { error: 'EMERGENCY_STOP', admission: err.attemptId });
+            }
+            if (err.denied) {
+              return send(403, { error: 'ADMISSION_DENIED', reason: err.denied, admission: err.attemptId });
+            }
             return send(422, { error: 'COMMAND_REFUSED', detail: err.message });
           }
         }
