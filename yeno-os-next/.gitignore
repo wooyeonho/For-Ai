@@ -1,6 +1,7 @@
 state/
 backups/
 evidence/runtime/
+evidence/local-ci-20*.json
 tmp/
 *.db
 *.db-wal

@@ -18,6 +18,8 @@ import {
   pendingNextRuns,
 } from './domain/handoff.mjs';
 import { activateDesires, goalTrace, observe, remember, selfReport } from './domain/self.mjs';
+import { soakReport } from './domain/soak.mjs';
+import { gateReport, passGate } from './domain/gate.mjs';
 
 const USAGE = `yeno <command>
 
@@ -46,6 +48,10 @@ const USAGE = `yeno <command>
   self observe --metric M --value N
   self activate                    derive desire activations from internal state
   self trace <goalId> [--json]     desire -> activation -> goal -> council -> verdict
+  soak report [--soak ID] [--json] G1 durability soak sessions and probe results
+  gate list [--json]               release train state and evidence presence
+  gate pass --gate G --evidence E  promote a gate only if its machine checks hold
+                                   (refusal reasons are recorded, never bypassed)
 
 Options: --db <path> (default ${DEFAULT_DB_PATH}), --migrations <dir> (default ${MIGRATIONS_DIR})`;
 
@@ -252,6 +258,22 @@ async function main() {
           return 1;
         }
         print({ next_id: entry.next_id, gate_id: entry.gate_id, exact_action: entry.exact_action }, json);
+        return 0;
+      }
+      case 'gate list': {
+        print(gateReport(db), json);
+        return 0;
+      }
+      case 'gate pass': {
+        const outcome = passGate(db, str(flags.gate, 'gate pass requires --gate'), {
+          evidenceRef: str(flags.evidence, 'gate pass requires --evidence'),
+          migrationsDir,
+        });
+        print(outcome, json);
+        return outcome.promoted ? 0 : 1;
+      }
+      case 'soak report': {
+        print(soakReport(db, typeof flags.soak === 'string' ? flags.soak : null), json);
         return 0;
       }
       case 'self report': {

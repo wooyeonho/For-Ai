@@ -19,6 +19,10 @@ const STEPS = [
   { id: 'cli_verify', argv: ['src/cli.mjs', 'verify', '--json'] },
   { id: 'event_replay', argv: ['src/cli.mjs', 'event', 'replay', '--json'] },
   { id: 'projection_rebuild', argv: ['src/cli.mjs', 'projection', 'rebuild'] },
+  {
+    id: 'durability_soak',
+    argv: ['scripts/soak.mjs', '--cycles', '2', '--batch', '8', '--evidence-dir', 'evidence/runtime'],
+  },
   { id: 'independent_validation', argv: ['scripts/independent-validation.mjs'] },
   { id: 'seeded_defect_detection', argv: ['scripts/assert-seeded-defect-detected.mjs'] },
 ];

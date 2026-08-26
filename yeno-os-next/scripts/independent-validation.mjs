@@ -15,6 +15,8 @@ for (let i = 2; i < process.argv.length; i += 2) args.set(process.argv[i].replac
 const dbPath = args.get('db') ?? process.env.YENO_DB ?? 'state/yeno.db';
 const migrationsDir = args.get('migrations') ?? 'migrations';
 const asJson = process.argv.includes('--json');
+// Evidence refs are repository-relative; resolve them from the repo root.
+const REPO = new URL('..', import.meta.url).pathname;
 
 const digest = (s) => createHash('sha256').update(s).digest('hex');
 
@@ -160,6 +162,14 @@ for (const required of [
   'trg_memory_no_delete',
   'trg_memory_supersession_final',
   'trg_self_no_consciousness_claim',
+  'trg_probe_no_delete',
+  'trg_probe_no_result_rewrite',
+  'trg_soak_pass_needs_evidence',
+  'trg_gate_pass_needs_evidence',
+  'trg_gate_pass_in_order',
+  'trg_g1_pass_needs_soak',
+  'trg_g6_pass_needs_g5',
+  'v_durability',
   'v_effective_source_versions',
   'v_handoff',
   'admission_attempts',
@@ -184,6 +194,92 @@ for (const row of vaultRows) {
 vaultProblems.length === 0
   ? pass('vault_bytes_rehashed', `${vaultRows.length} source versions`)
   : fail('vault_bytes_rehashed', vaultProblems.join(' | '));
+
+// 8. Durability: recompute every passing soak verdict from the probe rows
+// alone, so a soak cannot be believed on the strength of its own summary.
+const soakProblems = [];
+const REQUIRED_KINDS = [
+  'CRASH_REPLAY',
+  'CHAIN_VERIFY',
+  'PROJECTION_DETERMINISM',
+  'INTEGRITY',
+  'BACKUP_RESTORE',
+  'LEASE_FENCING',
+];
+const soakSessions = db.prepare('SELECT * FROM soak_sessions').all();
+for (const s of soakSessions) {
+  const probes = db.prepare('SELECT kind, ok FROM durability_probes WHERE soak_id = ?').all(s.soak_id);
+  const failedProbes = probes.filter((p) => p.ok === 0).length;
+  const kinds = new Set(probes.filter((p) => p.ok === 1).map((p) => p.kind));
+  const perCycle = db
+    .prepare(
+      `SELECT cycle, COUNT(*) AS n FROM durability_probes
+        WHERE soak_id = ? AND ok = 1 GROUP BY cycle HAVING n < ?`,
+    )
+    .all(s.soak_id, REQUIRED_KINDS.length);
+  const deserved =
+    failedProbes === 0 &&
+    s.completed_cycles >= s.planned_cycles &&
+    s.kill_count > 0 &&
+    s.restore_count > 0 &&
+    REQUIRED_KINDS.every((k) => kinds.has(k)) &&
+    perCycle.length === 0;
+  if (s.state === 'PASSED' && !deserved) {
+    soakProblems.push(
+      `${s.soak_id}: PASSED but ${failedProbes} failed probes, ${s.completed_cycles}/${s.planned_cycles} cycles, ` +
+        `${s.kill_count} kills, ${s.restore_count} restores, kinds=${[...kinds].sort().join(',')}, ` +
+        `incomplete cycles=${perCycle.map((c) => c.cycle).join(',') || 'none'}`,
+    );
+  }
+  if (s.state === 'PASSED' && !s.evidence_ref) soakProblems.push(`${s.soak_id}: PASSED without evidence_ref`);
+}
+const g1State = db.prepare("SELECT state FROM gates WHERE gate_id = 'G1'").get()?.state;
+const passingSoaks = soakSessions.filter((s) => s.state === 'PASSED').length;
+if (g1State === 'PASSED' && passingSoaks === 0) soakProblems.push('G1 is PASSED with no passing soak session');
+soakProblems.length === 0
+  ? pass('soak_verdicts_recomputed', `${soakSessions.length} sessions, ${passingSoaks} passing`)
+  : fail('soak_verdicts_recomputed', soakProblems.join(' | '));
+
+// 9. Release train: every PASSED gate must point at an evidence file that
+// really exists on disk, pass in order, and satisfy its own gate rule. This is
+// recomputed here without importing src/core or src/domain.
+const gateProblems = [];
+const gates = db.prepare('SELECT gate_id, ordinal, state, evidence_ref FROM gates ORDER BY ordinal').all();
+for (const g of gates) {
+  if (g.state !== 'PASSED') continue;
+  if (!g.evidence_ref) gateProblems.push(`${g.gate_id}: PASSED without evidence_ref`);
+  else if (!existsSync(join(REPO, g.evidence_ref))) {
+    gateProblems.push(`${g.gate_id}: evidence file ${g.evidence_ref} is missing on disk`);
+  }
+  const earlier = gates.filter((o) => o.ordinal < g.ordinal && o.state !== 'PASSED').map((o) => o.gate_id);
+  if (earlier.length > 0) gateProblems.push(`${g.gate_id}: PASSED while ${earlier.join(',')} are not`);
+}
+const g1Row = gates.find((g) => g.gate_id === 'G1');
+if (g1Row?.state === 'PASSED') {
+  const best = db
+    .prepare(
+      `SELECT MAX(completed_cycles) AS cycles, MAX(kill_count) AS kills, MAX(restore_count) AS restores
+         FROM soak_sessions WHERE state = 'PASSED' AND gate_id = 'G1'`,
+    )
+    .get();
+  if ((best?.cycles ?? 0) < 100 || (best?.kills ?? 0) < 100 || (best?.restores ?? 0) < 100) {
+    gateProblems.push(
+      `G1: PASSED on a soak of only ${best?.cycles ?? 0} cycles / ${best?.kills ?? 0} kills / ${best?.restores ?? 0} restores`,
+    );
+  }
+}
+const g5Row = gates.find((g) => g.gate_id === 'G5');
+const g6Row = gates.find((g) => g.gate_id === 'G6');
+if (g6Row?.state === 'PASSED' && g5Row?.state !== 'PASSED') gateProblems.push('G6: PASSED while G5 is not');
+if (g5Row?.state === 'PASSED') {
+  const liveRuns = db
+    .prepare("SELECT COUNT(*) AS n FROM runs WHERE authority = 'A3' AND state = 'DONE' AND approval_id IS NOT NULL")
+    .get().n;
+  if (liveRuns === 0) gateProblems.push('G5: PASSED with no approved live provider RUN');
+}
+gateProblems.length === 0
+  ? pass('gate_promotions_recomputed', `${gates.filter((g) => g.state === 'PASSED').length} gates passed`)
+  : fail('gate_promotions_recomputed', gateProblems.join(' | '));
 
 db.close();
 

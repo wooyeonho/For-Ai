@@ -2,6 +2,7 @@ import { integrityCheck } from '../core/db.mjs';
 import { appliedMigrations, assertNoDrift } from '../core/migrate.mjs';
 import { verifyChain } from '../core/events.mjs';
 import { stopEngaged } from '../core/governor.mjs';
+import { durabilityEvidence } from './soak.mjs';
 
 export function statusReport(db, { migrationsDir } = {}) {
   const chain = verifyChain(db);
@@ -32,6 +33,7 @@ export function statusReport(db, { migrationsDir } = {}) {
     budget: db.prepare('SELECT profile_id, monthly_limit_krw, spent_krw FROM budget_profiles WHERE active = 1').get(),
     gates: db.prepare('SELECT gate_id, state, blocked_reason FROM gates ORDER BY ordinal').all(),
     continuity: db.prepare('SELECT * FROM v_handoff').get(),
+    durability: durabilityEvidence(db),
   };
 }
 
@@ -153,6 +155,26 @@ export function verifyReport(db, { migrationsDir } = {}) {
     )
     .get().n;
   add('selected_goals_have_passing_verdict', hiddenGoals === 0, `${hiddenGoals} goals selected without a verdict`);
+
+  // G1 Durable Truth: green tests are not durability. The gate may only be
+  // PASSED once a soak session survived real SIGKILLs and a real restore.
+  const g1 = db.prepare("SELECT state FROM gates WHERE gate_id = 'G1'").get();
+  const soak = durabilityEvidence(db);
+  add(
+    'g1_not_passed_without_soak',
+    g1.state !== 'PASSED' || soak !== null,
+    soak ? `soak ${soak.soak_id}: ${soak.completed_cycles} cycles, ${soak.kill_count} kills` : 'no passing soak session',
+  );
+
+  const soakFakePass = db
+    .prepare(
+      `SELECT COUNT(*) AS n FROM soak_sessions s
+        WHERE s.state = 'PASSED'
+          AND (s.kill_count = 0 OR s.restore_count = 0 OR s.completed_cycles < s.planned_cycles
+               OR EXISTS (SELECT 1 FROM durability_probes p WHERE p.soak_id = s.soak_id AND p.ok = 0))`,
+    )
+    .get().n;
+  add('no_soak_passed_without_probes', soakFakePass === 0, `${soakFakePass} soak sessions passed without evidence`);
 
   const g5 = db.prepare("SELECT state, blocked_reason FROM gates WHERE gate_id = 'G5'").get();
   const g6 = db.prepare("SELECT state, blocked_reason FROM gates WHERE gate_id = 'G6'").get();

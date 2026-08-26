@@ -3,5 +3,8 @@
   "0002_release_control.sql": "7ce52c1eaf09d63e3c65a5fc948008fe74dec33fc921de2dbf206d9a84a8e8e4",
   "0003_continuity.sql": "c08ae635def3c2a041c2db58fcd33c76416d4c464b8c13252133b44937ddbd47",
   "0004_handoff_view.sql": "25b07e25f8ac6fdf29095ca5279b7f348f248706d4e6f35cf3bae841e4e3a82f",
-  "0005_functional_self.sql": "9e39681171f9af12e31d1b294f6f060905da690f51017f8846bd004b8bfd25fd"
+  "0005_functional_self.sql": "9e39681171f9af12e31d1b294f6f060905da690f51017f8846bd004b8bfd25fd",
+  "0006_durability.sql": "b2b83c0ac7bd44aa1614133448758aa982a97eedcb607efd52049f19c21c409f",
+  "0007_soak_per_cycle_evidence.sql": "f6b73de158d62ca2a031ba9adaabf181b1c098bd27608660bfe9e1624b10d544",
+  "0008_gate_promotion_guard.sql": "b9a97c0ac7c188011d0adc1595264e31534a516896c4299d825521af86ede5f9"
 }
