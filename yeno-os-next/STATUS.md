@@ -26,6 +26,7 @@ origin	https://git-manager.devin.ai/proxy/github.com/wooyeonho/For-Ai.git (push)
 
 ```text
 $ git log --oneline --no-decorate origin/main..HEAD
+a838651 yeno-os-next: G4 workflow runtime with at-most-once external effects under real process kills (gate stays PENDING) [large-diff-ok]
 34f2a91 yeno-os-next: G3 governor operator surface + schema-enforced red-team suite (gate stays PENDING) [large-diff-ok]
 75340c2 yeno-os-next: G2 intake slice with schema-enforced provenance + machine re-adjudication of the external lane [large-diff-ok]
 b7e677c yeno-os-next: keep the validator's verdicts out of expression statements so repo lint stays under its warning budget
@@ -36,8 +37,8 @@ e482ddd yeno-os-next: persistent session continuity + fail-closed shell indirect
 18cc021 Add yeno-os-next: G0 Baseline Lock of the local Truth Kernel
 ```
 
-Eight commits, and the RUN-007 G4 workflow-runtime work in §3–§5 is committed on
-top of them as the ninth. The "seven commits" reported from elsewhere never
+Nine commits, and the RUN-008 durable-scheduler work in §3–§5 is committed on
+top of them as the tenth. The "seven commits" reported from elsewhere never
 existed in this checkout; if that work exists in another WSL folder or Claude
 Code checkout, it has not reached this repository and is therefore not part of
 the truth state. Recovery plan is in §9.
@@ -59,10 +60,11 @@ b9a97c0ac7c188011d0adc1595264e31534a516896c4299d825521af86ede5f9  migrations/000
 56375f513760c3cefcf20d086022aac1a76fc1a76e5de2b13c64e8dcb0415591  migrations/0010_governor_guard.sql
 7056e8a9336cab355e16b6dab6b3fffac9fbcda417bd7d96394e6099ce7357d5  migrations/0011_approval_provenance.sql
 9447ba9eef987a8d1dec565616ed806a9c85874486e0d37ae9d8797d059bdefe  migrations/0012_workflow_runtime.sql
+c144ff9a7db3bdd4b3250a892953aa750880f6e4fe94e374d6153796ebfffccf  migrations/0013_scheduler.sql
 ```
 
-All twelve are applied and pinned in `migrations/CHECKSUMS.json`; `node
-scripts/pin-migration-checksums.mjs --check` reports `CHECKSUM_PIN_OK: 12
+All thirteen are applied and pinned in `migrations/CHECKSUMS.json`; `node
+scripts/pin-migration-checksums.mjs --check` reports `CHECKSUM_PIN_OK: 13
 migrations pinned` and `0001` is untouched. `0006` adds the durability tables,
 `0007` makes a soak pass require a complete probe set in every planned cycle,
 `0008` makes gate promotion order, the G1 crash/restore floor, and the
@@ -82,6 +84,15 @@ expired lease, dead letter needs a reason, nothing enqueued/leased and no effect
 claimed while the emergency stop is engaged, immutable and final committed
 effects, commit needs evidence, A3+ effect needs its approval, Owner-only
 scheduler enable, and a soak cycle that cannot call a duplicated effect a pass.
+`0013` adds the durable scheduler: `schedules` (interval floor of one second,
+OFF at creation, Owner provenance and reason required to arm, intent immutable),
+`schedule_fires` with `UNIQUE (schedule_id, due_at)` so at-most-once firing is a
+database constraint rather than a code path, `schedule_soak_cycles`, monotonic
+`next_due_at` and `fire_count`, append-only and undeletable firing history, no
+schedule deletion, and a trigger that refuses to record a scheduler soak cycle
+calling a double fire or a missing kill a pass. It replaces the empty `schedules`
+placeholder from `0012` only after proving the placeholder holds zero rows, so a
+non-empty one fails the migration closed; `0012` itself was not edited.
 
 ## 4. Tests
 
@@ -89,44 +100,62 @@ Exact command and original tail of output:
 
 ```text
 $ node --test
-ℹ tests 127
+ℹ tests 138
 ℹ suites 0
-ℹ pass 127
+ℹ pass 138
 ℹ fail 0
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
 ```
 
-**127 tests.** 63 at G0/continuity, plus 11 functional-self, 9 durability soak,
-5 gate-promotion, 14 G2 intake, 14 G3 governance and 11 G4 workflow-runtime
-tests. No 67-test run exists in this checkout.
+**138 tests.** 63 at G0/continuity, plus 11 functional-self, 9 durability soak,
+5 gate-promotion, 14 G2 intake, 14 G3 governance, 11 G4 workflow-runtime and 11
+G4 scheduler tests. No 67-test run exists in this checkout.
+
+`npm run lint` and `npm run typecheck` were attempted and **do not exist** in
+this repository (`npm error Missing script`). They are absent, not passing.
 
 Other verifiers, all from this RUN:
 
 ```text
-$ node scripts/local-ci.mjs        -> 15/15 PASS, LOCAL_CI_PASS
+$ node scripts/local-ci.mjs        -> 16/16 PASS, LOCAL_CI_PASS
 $ node src/cli.mjs verify          -> ok: true, failed: []
 $ node scripts/independent-validation.mjs -> INDEPENDENT_VALIDATION_PASS
     PASS soak_verdicts_recomputed — 17 sessions, 17 passing
     PASS intake_coverage_recomputed — 1 inbox items, 1 source versions, 2 intakes
-    PASS governor_recomputed — 210 red-team probes, 1 denials recorded
-    PASS workflow_runtime_recomputed — 6 jobs, 2 external effects, soak QSOAK-G4-001 12/12
+    PASS governor_recomputed — 381 red-team probes, 1 denials recorded
+    PASS workflow_runtime_recomputed — 8 jobs, 2 external effects, soak QSOAK-G4-001 12/12
+    PASS scheduler_recomputed — 1 schedules, 2 fires, soak SSOAK-G4-001 8/8
     PASS gate_promotions_recomputed — 2 gates passed
 $ node scripts/self-adversarial-probes.mjs -> SELF_PROBES_PASS: 11/11
-$ node scripts/assert-seeded-defect-detected.mjs -> seeded defects 14, detected 14, missed 0
+$ node scripts/assert-seeded-defect-detected.mjs -> seeded defects 17, detected 17, missed 0
 $ node scripts/red-team-governor.mjs
     red-team probes: 38, refused: 38, allowed: 0, unverifiable: 0
     negative controls: 4, bypassed with the guard removed: 4
     REDTEAM_PASS
 $ node scripts/red-team-queue.mjs
-    queue red-team probes: 29, refused: 29, allowed: 0, unverifiable: 0
-    negative controls: 6, bypassed with the guard removed: 6
+    queue red-team probes: 42, refused: 42, allowed: 0, unverifiable: 0
+    negative controls: 11, bypassed with the guard removed: 11
+    scheduler probes: 13, refused: 13 (minimum 13)
     REDTEAM_QUEUE_PASS
 $ node scripts/queue-soak.mjs --cycles 12 --soak-ref QSOAK-G4-001
     QUEUE_SOAK_PASS 12/12
 $ node scripts/queue-exercise.mjs -> G4_EXERCISE_PASS
+$ node scripts/scheduler-soak.mjs --cycles 8 --soak-ref SSOAK-G4-001
+    SCHEDULER_SOAK_PASS 8/8   (in-transaction 4/4, after-commit 4/4)
+$ node scripts/scheduler-exercise.mjs -> SCHEDULER_EXERCISE_PASS
 ```
+
+The scheduler soak kills a real tick process with `SIGKILL` **inside the
+transaction** in half the cycles — after the job row, the fire row and the
+boundary advance are written, before the commit — and after the commit in the
+other half, then lets a brand new process tick again as if after a reboot. Every
+cycle counts raw rows for that exact `(schedule_id, due_at)`: anything other than
+one fire and one job fails the cycle, and `0013` refuses to record a passing
+cycle that claims otherwise. The kernel exercise adds the switch behaviour on the
+real ledger: both switches off → `SCHEDULER_OFF`, armed → exactly one job, a
+replayed tick → nothing, six owed hours → one fire rather than six.
 
 The queue soak kills a **real OS process** with `SIGKILL` at two points — after
 the external-effect claim and after the effect itself — then expires the lease,
@@ -165,7 +194,7 @@ a fresh DB, 30000 events, 1800/1800 probes passing, 308314 ms.
 | G1 Durable Truth | `PASSED` | `evidence/SOAK-cf77e410-d146-4b9f-b0d3-26bffaef8cb8.json`; 300-cycle real crash/restore soak |
 | G2 Unbounded Intake | `PENDING` | intake slice implemented and invariant-tested; `NEEDS_SOURCE`: no official chat export ingested, so 144 bodies cannot be recovered |
 | G3 Governor | `PENDING` | operator surface, schema guards and red-team evidence now exist (`evidence/REDTEAM-G3-001.json`, 38/38 refused, 0 allowed); promotion refused because gate order is enforced: `earlier gates not passed: G2=PENDING` |
-| G4 Workflow Runtime | `PENDING` | durable queue, retry/backoff/dead-letter, leases with monotonic fencing tokens, at-most-once external effects, artifacts and an OFF-by-default scheduler are built and evidenced (`evidence/RUN-007.md`, `evidence/G4-ACCEPTANCE-001.json`, `evidence/REDTEAM-QUEUE-001.json`); promotion refused because gate order is enforced: `earlier gates not passed: G2=PENDING, G3=PENDING` |
+| G4 Workflow Runtime | `PENDING` | durable queue, retry/backoff/dead-letter, leases with monotonic fencing tokens, at-most-once external effects, artifacts, and a durable scheduler that fires each boundary at most once with both switches OFF by default are built and evidenced (`evidence/RUN-007.md`, `evidence/RUN-008.md`, `evidence/G4-ACCEPTANCE-001.json`, `evidence/G4-SCHEDULER-001.json`, `evidence/REDTEAM-QUEUE-001.json`); promotion refused because gate order is enforced: `earlier gates not passed: G2=PENDING, G3=PENDING` |
 | G5 Agent Team | `PENDING` | `BLOCKED_PROVIDER_ACCESS`: no Claude Code / Codex / Devin bounded live RUN has passed |
 | G6 Functional Self | `PENDING` | `PREP_ONLY`: implementation and tests proceed locally; promotion withheld until G5 is resolved |
 | G7–G14 | `PENDING` | no evidence |
@@ -197,8 +226,11 @@ b38474c1210e3d803a9db973923fb6381a423d49c0386d8065bd60cd1e3570c4  evidence/RUN-0
 88f203816ce658d2c76bc0a321974dfd30239a16954c0a0f053c865eb8004d47  evidence/RUN-004.md
 6298847b6ce55e2ccd6308ecf122136c600b194bff98f0d204895a9e74124e60  evidence/RUN-005.md
 0330e76995e57354bb9e803e7cf39ba7faec6e593b9c0ce542e31eab28e507d1  evidence/RUN-006.md
+8949141956b325e30d93fb27fcc4f8a875964ec0d533bd3b4d66115501e27e2f  evidence/RUN-007.md
+e6baf57899e60bcd520d1be35a11c67129767db8017ab16d77f902fcee9c57ec  evidence/RUN-008.md
 93c779dd6efd77a8d5efa49930019f06fc4440c6c02331413c4c93e9563a7894  evidence/G4-ACCEPTANCE-001.json
-9ec58ff0e8beaa3b4c1f96596885f8986da840e19122fb4cb04c969016b681a5  evidence/REDTEAM-QUEUE-001.json
+a0c9103a8f1789c26ea69e196b55144a1b5f09e1f73ac89971a74efd740705e7  evidence/G4-SCHEDULER-001.json
+02be859d90c042e93b67c7c58e4b0eee838a7af07e9ef550da1733240a96b257  evidence/REDTEAM-QUEUE-001.json
 7a369689b268d1b962df7da1ddaef976c5917ca713120224091a62c0e04e1f79  evidence/REDTEAM-G3-001.json
 fe881b2d793f7391ec35930d3e54aa17778d6963db22e3abc83b0aa50d33cc47  evidence/SOAK-cf77e410-d146-4b9f-b0d3-26bffaef8cb8.json
 636917e73b61ced8c91ef651c4ef60bf0af6ec41d915751fce8ed8d1e6b940fa  evidence/raw/CAND-x-angeldot-2092234523471737056.html
@@ -208,8 +240,9 @@ Gate evidence IDs: G0 = `BASELINE-20260826`, G1 =
 `SOAK-cf77e410-d146-4b9f-b0d3-26bffaef8cb8`. G2 and G5 have **no** evidence
 file, because those gates are not closed; claiming an ID for them would be
 fabrication. G3 and G4 have artefacts (`REDTEAM-G3-001`; `RUN-007`,
-`G4-ACCEPTANCE-001`, `REDTEAM-QUEUE-001`, `QSOAK-G4-001`) and are still `PENDING`
-— an artefact is not a promotion. This RUN's evidence is `evidence/RUN-007.md`; the external-lane
+`RUN-008`, `G4-ACCEPTANCE-001`, `G4-SCHEDULER-001`, `REDTEAM-QUEUE-001`,
+`QSOAK-G4-001`, `SSOAK-G4-001`) and are still `PENDING`
+— an artefact is not a promotion. This RUN's evidence is `evidence/RUN-008.md`; the external-lane
 re-adjudication is `evidence/READJUDICATION-CLAUDE-LANE-001.md` (+ `.json`) and
 the lane comparison is `evidence/COMPARE-CLAUDE-LANE-001.md`.
 
@@ -226,14 +259,22 @@ reasons:
 - `work_orders`: 0 rows.
 - `session_checkpoints`: this table does not exist. Session continuity lives in
   `session_runs` (+ `blockers`, `next_run`, view `v_handoff`).
-- `session_runs`: 6 rows — `RUN-002` (G1 continuity), `RUN-003` (G6 PREP_ONLY),
+- `session_runs`: 7 rows — `RUN-002` (G1 continuity), `RUN-003` (G6 PREP_ONLY),
   `RUN-004` (G1 durability + gate guards), `RUN-005` (G2 intake slice + external
   lane re-adjudication), `RUN-006` (G3 governor surface + red-team), `RUN-007`
-  (G4 workflow runtime), all `CHECKPOINTED` with evidence refs.
-- Queue: 6 jobs (2 retried-then-done, 2 dead-lettered with the error on the
-  record), 2 committed external effects, 0 duplicated effect keys, 0 stuck
-  leases, 0 DONE jobs with an open attempt, scheduler `enabled = 0` and never
-  enabled. 20 `queue_soak_cycles` rows, all `ok`, append-only.
+  (G4 workflow runtime), `RUN-008` (G4 durable scheduler), all `CHECKPOINTED`
+  with evidence refs.
+- Queue: 8 jobs (2 retried-then-done, 2 dead-lettered with the error on the
+  record, 2 enqueued by the scheduler exercise), 2 committed external effects,
+  0 duplicated effect keys, 0 stuck leases, 0 DONE jobs with an open attempt.
+  28 `queue_soak_cycles` rows, all `ok`, append-only.
+- Scheduler: 1 schedule (created disarmed, armed by the Owner with a reason for
+  the RUN-008 exercise, disarmed again afterwards), 2 fires on 2 distinct
+  boundaries, 0 deduped, 0 boundaries served twice. The master switch is back to
+  `enabled = 0`. 16 `schedule_soak_cycles` rows, all `ok`, append-only —
+  `SSOAK-G4-001` is the 8-cycle soak the evidence rests on, and two exploratory
+  4-cycle runs are on the record because a `--no-record` flag-parsing bug (since
+  fixed) recorded them; they are real passing cycles, not forged ones.
 - Intake: 4 active parsers, 1 sealed source version, 2 intakes (1 `ACCEPTED`,
   1 `DUPLICATE` from re-importing the same bytes), 1 inbox item, 0 projects,
   0 title-only promotions. `intake report` is `ok: true` with no problems.
@@ -246,11 +287,11 @@ reasons:
 - `blockers`: 5 `WAITING` — official chat export missing (SOURCE), no provider
   auth wired (PROVIDER_ACCESS), Codex CLI not logged in (PROVIDER_ACCESS), no
   Windows build host (HARDWARE), merge PR #513 (OWNER_APPROVAL). 2 `RESOLVED`.
-- `next_run`: next exact action is the G4 durable scheduler under Owner-enabled
-  activation plus reboot-level queue crash evidence — or, if the official chat
+- `next_run`: next exact action is reboot-level scheduler/queue crash evidence
+  with a supervised tick daemon (still OFF by default) — or, if the official chat
   exports arrive first, G2 body recovery, which is the only thing that unblocks
-  the G3/G4 promotions. The G3 governor entry was consumed by `RUN-006` and the
-  G4 durable-queue entry by `RUN-007`.
+  the G3/G4 promotions. The G3 governor entry was consumed by `RUN-006`, the G4
+  durable-queue entry by `RUN-007`, and the scheduler entry by `RUN-008`.
 - `approvals`: 1 row, revoked. `APR-85b98f0c…` was minted by the agent during a
   CLI smoke test with `granted_by = 'owner'` although the Owner never granted it;
   it was revoked on the record and migration `0011` now refuses any approval that
@@ -258,10 +299,14 @@ reasons:
 - `redteam_probes` / `admission_attempts`: red-team results and admission denials
   are recorded and append-only; the independent validator recomputes G3 acceptance
   from these raw rows rather than from the `v_g3_acceptance` view.
-- Event ledger: 91 events, head `71b748ca7c6e51e86dafef9d5899dd1e42559c39c321896c4add36ad9e19ab67`, chain ok, integrity `ok`, emergency stop `ON`.
+- Event ledger: 105 events, head `3fa9b91a71867956f7c50b35684d34c4b30dd29aa30af6d8c668109f3211313c`, chain ok, integrity `ok`, emergency stop `ON`.
   The stop was released with an Owner reason only for the duration of the G4
-  queue exercise and re-engaged immediately afterwards; both transitions are
-  events in the ledger.
+  queue and scheduler exercises and re-engaged immediately afterwards; every
+  transition is an event in the ledger.
+- Rollback rehearsal after `0013`: `BKP-7f33dea9-8b45-4a41-9ae8-da1e18b59583`
+  (`db_sha256 95de0a1a3a6aa94502ab552038fecdb57e3dd922d855833fd4812947cb90a1c8`)
+  verified, restored into a fresh database, and the restored copy passes
+  `independent-validation` including `scheduler_recomputed`.
 
 ## 8. Codex CLI facts on this machine
 

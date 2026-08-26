@@ -298,6 +298,90 @@ function record(name, detected, detail) {
   rmSync(s.dir, { recursive: true, force: true });
 }
 
+// Case 15: one boundary that fired twice is the scheduler's version of a
+// duplicated external effect, so the validator must catch it from the raw rows.
+{
+  const s = scaffold();
+  // The switches are released on this throwaway kernel only, so the seeded lie
+  // is the double fire itself rather than a fire that the guards would refuse.
+  setStop(s.db, false, 'seeded-defect harness: seeding a double fire on a throwaway kernel', 'owner');
+  s.db.exec(
+    `UPDATE scheduler_state SET enabled = 1, reason = 'seeded-defect harness', changed_by = 'owner',
+       changed_at = '2026-08-26T00:00:00Z' WHERE id = 1`,
+  );
+  // UNIQUE(schedule_id, due_at) is what makes a double fire impossible, so the
+  // defect is injected by rebuilding the table without it — exactly the mistake
+  // a future migration could make — and the validator must still catch the lie.
+  s.db.exec('DROP TABLE schedule_fires');
+  s.db.exec(
+    `CREATE TABLE schedule_fires (
+       fire_id TEXT PRIMARY KEY, schedule_id TEXT NOT NULL, due_at TEXT NOT NULL,
+       fired_at TEXT NOT NULL, tick_id TEXT NOT NULL, job_id TEXT NOT NULL,
+       deduped INTEGER NOT NULL DEFAULT 0
+     ) STRICT`,
+  );
+  s.db.exec(
+    `INSERT INTO schedules (schedule_id, name, queue, kind, payload_json, interval_ms,
+       enabled, catchup, authority, next_due_at, fire_count, reason, created_by, created_at)
+     VALUES ('SCH-seed','seed','default','seed','{}',60000,1,0,'A2',
+             '2026-08-26T00:00:00Z',2,'seeded','owner','2026-08-26T00:00:00Z')`,
+  );
+  s.db.exec("INSERT INTO jobs (job_id, queue, kind, payload_json, payload_hash, dedupe_key, authority, state, available_at, created_at, updated_at) VALUES ('JOB-sched','default','seed','{}','" + 'b'.repeat(64) + "','sched-seed','A2','READY','2026-08-26T00:00:00Z','2026-08-26T00:00:00Z','2026-08-26T00:00:00Z')");
+  for (const id of ['SFR-seed-1', 'SFR-seed-2']) {
+    s.db.exec(
+      `INSERT INTO schedule_fires (fire_id, schedule_id, due_at, fired_at, tick_id, job_id, deduped)
+       VALUES ('${id}','SCH-seed','2026-08-26T00:00:00Z','2026-08-26T00:00:00Z','TICK-seed','JOB-sched',0)`,
+    );
+  }
+  s.db.close();
+  const run = runValidator(s.dbPath, s.migDir);
+  record(
+    'schedule_boundary_fired_twice',
+    run.status !== 0 && /FAIL scheduler_recomputed/.test(run.stdout),
+    run.stdout.match(/FAIL scheduler_recomputed.*/)?.[0] ?? '',
+  );
+  rmSync(s.dir, { recursive: true, force: true });
+}
+
+// Case 16: a scheduler soak cycle that calls a double fire a pass.
+{
+  const s = scaffold();
+  s.db.exec('DROP TRIGGER trg_schedule_soak_honest_verdict');
+  s.db.exec(
+    `INSERT INTO schedule_soak_cycles (cycle_id, soak_ref, cycle, kill_point, killed,
+       jobs_for_boundary, fires_for_boundary, ok, detail, recorded_at)
+     VALUES ('SSC-seed','SSOAK-seed',1,'after-commit',1,2,2,1,'seeded lie','2026-08-26T00:00:00Z')`,
+  );
+  s.db.close();
+  const run = runValidator(s.dbPath, s.migDir);
+  record(
+    'scheduler_soak_calls_double_fire_a_pass',
+    run.status !== 0 && /FAIL scheduler_recomputed/.test(run.stdout),
+    run.stdout.match(/FAIL scheduler_recomputed.*/)?.[0] ?? '',
+  );
+  rmSync(s.dir, { recursive: true, force: true });
+}
+
+// Case 17: an armed schedule with no Owner behind it.
+{
+  const s = scaffold();
+  s.db.exec('DROP TRIGGER trg_schedules_insert_enabled_needs_owner');
+  s.db.exec(
+    `INSERT INTO schedules (schedule_id, name, queue, kind, payload_json, interval_ms,
+       enabled, catchup, authority, next_due_at, fire_count, reason, created_by, created_at)
+     VALUES ('SCH-rogue','rogue','default','seed','{}',60000,1,0,'A2',
+             '2026-08-26T00:00:00Z',0,'','attacker','2026-08-26T00:00:00Z')`,
+  );
+  s.db.close();
+  const run = runValidator(s.dbPath, s.migDir);
+  record(
+    'schedule_armed_without_owner',
+    run.status !== 0 && /FAIL scheduler_recomputed/.test(run.stdout),
+    run.stdout.match(/FAIL scheduler_recomputed.*/)?.[0] ?? '',
+  );
+  rmSync(s.dir, { recursive: true, force: true });
+}
+
 const missed = results.filter((r) => !r.detected);
 process.stdout.write(`\nseeded defects: ${results.length}, detected: ${results.length - missed.length}, missed: ${missed.length}\n`);
 if (missed.length > 0) {

@@ -494,6 +494,59 @@ verdict(
   queueProblems.join(' | '),
 );
 
+// The scheduler, recomputed from schedule rows rather than from its own report:
+// one boundary must map to exactly one fire and one job, no armed schedule may
+// be armed by anyone but the Owner, and a soak may not call a double fire a pass.
+const schedulerProblems = [];
+const doubleFired = db
+  .prepare('SELECT schedule_id, due_at, COUNT(*) AS n FROM schedule_fires GROUP BY schedule_id, due_at HAVING n > 1')
+  .all();
+for (const d of doubleFired) schedulerProblems.push(`schedule ${d.schedule_id} fired boundary ${d.due_at} ${d.n} times`);
+const firesWithoutJobs = db
+  .prepare('SELECT COUNT(*) AS n FROM schedule_fires f LEFT JOIN jobs j ON j.job_id = f.job_id WHERE j.job_id IS NULL')
+  .get().n;
+if (firesWithoutJobs > 0) schedulerProblems.push(`${firesWithoutJobs} schedule fire(s) point at a job that does not exist`);
+const armedByOthers = db
+  .prepare("SELECT COUNT(*) AS n FROM schedules WHERE enabled = 1 AND (created_by <> 'owner' OR TRIM(reason) = '')")
+  .get().n;
+if (armedByOthers > 0) schedulerProblems.push(`${armedByOthers} armed schedule(s) lack Owner provenance or a reason`);
+const busySchedules = db.prepare('SELECT COUNT(*) AS n FROM schedules WHERE interval_ms < 1000').get().n;
+if (busySchedules > 0) schedulerProblems.push(`${busySchedules} schedule(s) tick faster than the one-second floor`);
+const understatedFires = db
+  .prepare(
+    `SELECT COUNT(*) AS n FROM schedules s
+      WHERE s.fire_count < (SELECT COUNT(*) FROM schedule_fires f WHERE f.schedule_id = s.schedule_id)`,
+  )
+  .get().n;
+if (understatedFires > 0) schedulerProblems.push(`${understatedFires} schedule(s) report fewer fires than the history holds`);
+const dishonestSchedulerSoak = db
+  .prepare('SELECT COUNT(*) AS n FROM schedule_soak_cycles WHERE ok = 1 AND (killed = 0 OR jobs_for_boundary <> 1 OR fires_for_boundary <> 1)')
+  .get().n;
+if (dishonestSchedulerSoak > 0) {
+  schedulerProblems.push(`${dishonestSchedulerSoak} scheduler soak cycle(s) call a double fire or a missing kill a pass`);
+}
+const schedulerSoaks = db
+  .prepare(
+    `SELECT soak_ref, COUNT(*) AS cycles, SUM(ok) AS ok_cycles,
+            SUM(kill_point = 'in-transaction') AS in_tx, SUM(kill_point = 'after-commit') AS after_commit
+       FROM schedule_soak_cycles GROUP BY soak_ref`,
+  )
+  .all();
+const cleanSchedulerSoak = schedulerSoaks
+  .filter((s) => s.cycles === s.ok_cycles && s.in_tx > 0 && s.after_commit > 0)
+  .sort((a, b) => b.cycles - a.cycles)[0];
+if (g4Row?.state === 'PASSED' && !cleanSchedulerSoak) {
+  schedulerProblems.push('G4: PASSED with no scheduler crash soak covering both kill points');
+}
+verdict(
+  schedulerProblems.length === 0,
+  'scheduler_recomputed',
+  `${db.prepare('SELECT COUNT(*) AS n FROM schedules').get().n} schedules, ` +
+    `${db.prepare('SELECT COUNT(*) AS n FROM schedule_fires').get().n} fires, ` +
+    `${cleanSchedulerSoak ? `soak ${cleanSchedulerSoak.soak_ref} ${cleanSchedulerSoak.ok_cycles}/${cleanSchedulerSoak.cycles}` : 'no clean soak'}`,
+  schedulerProblems.join(' | '),
+);
+
 const g5Row = gates.find((g) => g.gate_id === 'G5');
 const g6Row = gates.find((g) => g.gate_id === 'G6');
 if (g6Row?.state === 'PASSED' && g5Row?.state !== 'PASSED') gateProblems.push('G6: PASSED while G5 is not');

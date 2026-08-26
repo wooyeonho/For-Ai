@@ -24,6 +24,7 @@ const STEPS = [
     argv: ['scripts/soak.mjs', '--cycles', '2', '--batch', '8', '--evidence-dir', 'evidence/runtime'],
   },
   { id: 'queue_crash_soak', argv: ['scripts/queue-soak.mjs', '--cycles', '4'] },
+  { id: 'scheduler_crash_soak', argv: ['scripts/scheduler-soak.mjs', '--cycles', '4'] },
   { id: 'independent_validation', argv: ['scripts/independent-validation.mjs'] },
   { id: 'self_adversarial_probes', argv: ['scripts/self-adversarial-probes.mjs'] },
   { id: 'governor_red_team', argv: ['scripts/red-team-governor.mjs', '--no-record'] },

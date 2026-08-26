@@ -22,7 +22,9 @@ import {
   enqueueJob,
   failJob,
   g4Acceptance,
+  setScheduler,
 } from '../src/domain/workflow.mjs';
+import { createSchedule, tickScheduler } from '../src/domain/scheduler.mjs';
 
 const SUITE_REF = 'scripts/red-team-queue.mjs';
 const args = argv.slice(2);
@@ -47,6 +49,10 @@ function fresh({ release = true } = {}) {
 }
 
 /** A probe is REFUSED only when the attack ran and was actually blocked. */
+// Which half of G4 a probe attacks. The bypass-class taxonomy is fixed by 0010,
+// so this is how scheduler coverage stays countable.
+let TARGET = 'queue';
+
 function probe(bypassClass, attack, fn) {
   let outcome = 'UNVERIFIABLE';
   let detail = '';
@@ -58,7 +64,7 @@ function probe(bypassClass, attack, fn) {
     outcome = 'UNVERIFIABLE';
     detail = `probe crashed before it could conclude: ${err.message}`;
   }
-  probes.push({ bypass_class: bypassClass, attack, outcome, detail });
+  probes.push({ bypass_class: bypassClass, target: TARGET, attack, outcome, detail });
 }
 
 /**
@@ -353,6 +359,137 @@ rawSql('BUDGET', 'delete the scheduler row so its default disappears', () => ({
 }));
 
 // ---------------------------------------------------------------------------
+// Scheduler — an occurrence that fires twice, or fires with a switch off.
+// These use the RAW_SQL / GOVERNOR_API bypass classes of 0010 (the taxonomy is
+// applied schema and does not change); scheduler coverage is asserted by count
+// at the end of the suite.
+// ---------------------------------------------------------------------------
+const MIN_SCHEDULER_PROBES = 13;
+TARGET = 'scheduler';
+
+/** An armed schedule on a scratch kernel, with its first boundary already served. */
+function seedFiredSchedule(db) {
+  setScheduler(db, true, 'red-team scheduler probe', 'owner');
+  const schedule = createSchedule(db, {
+    name: 'redteam.sched',
+    kind: 'work',
+    intervalMs: 60_000,
+    reason: 'red-team scheduler probe',
+    enabled: true,
+    firstDueAt: new Date(Date.now() - 1_000).toISOString(),
+  });
+  const tick = tickScheduler(db);
+  const fire = db.prepare('SELECT * FROM schedule_fires WHERE schedule_id = ?').get(schedule.schedule_id);
+  return { schedule, tick, fire };
+}
+
+rawSql('RAW_SQL', 'fire the same boundary twice by inserting a second fire row', (db) => {
+  const { schedule, fire } = seedFiredSchedule(db);
+  return {
+    stmt: `INSERT INTO schedule_fires (fire_id, schedule_id, due_at, fired_at, tick_id, job_id, deduped)
+           VALUES ('SFR-forged', ?, ?, '2026-08-26T00:00:00Z', 'TICK-forged', ?, 0)`,
+    params: [schedule.schedule_id, fire.due_at, fire.job_id],
+  };
+});
+
+rawSql('RAW_SQL', 'rewind a schedule so an already served boundary becomes owed again', (db) => {
+  const { schedule, fire } = seedFiredSchedule(db);
+  return { stmt: 'UPDATE schedules SET next_due_at = ? WHERE schedule_id = ?', params: [fire.due_at, schedule.schedule_id] };
+});
+
+rawSql('RAW_SQL', 'rewrite the boundary a fire belongs to so the occurrence can run again', (db) => {
+  const { fire } = seedFiredSchedule(db);
+  return { stmt: "UPDATE schedule_fires SET due_at = '2099-01-01T00:00:00Z' WHERE fire_id = ?", params: [fire.fire_id] };
+});
+
+rawSql('RAW_SQL', 'delete the firing history that proves a boundary was served', (db) => {
+  const { fire } = seedFiredSchedule(db);
+  return { stmt: 'DELETE FROM schedule_fires WHERE fire_id = ?', params: [fire.fire_id] };
+});
+
+rawSql('RAW_SQL', 'rewind a fire counter so the history looks shorter than it is', (db) => {
+  const { schedule } = seedFiredSchedule(db);
+  return { stmt: 'UPDATE schedules SET fire_count = 0 WHERE schedule_id = ?', params: [schedule.schedule_id] };
+});
+
+rawSql('RAW_SQL', 'repoint an armed schedule at different work', (db) => {
+  const { schedule } = seedFiredSchedule(db);
+  return { stmt: "UPDATE schedules SET kind = 'shell.exec' WHERE schedule_id = ?", params: [schedule.schedule_id] };
+});
+
+rawSql('RAW_SQL', 'shorten an armed schedule to a busy loop', (db) => {
+  const { schedule } = seedFiredSchedule(db);
+  return { stmt: 'UPDATE schedules SET interval_ms = 1 WHERE schedule_id = ?', params: [schedule.schedule_id] };
+});
+
+rawSql('RAW_SQL', 'arm a schedule as a non-Owner actor', (db) => {
+  const schedule = createSchedule(db, {
+    name: 'redteam.disarmed',
+    kind: 'work',
+    intervalMs: 60_000,
+    reason: 'created disarmed for the probe',
+  });
+  return {
+    stmt: "UPDATE schedules SET enabled = 1, created_by = 'attacker' WHERE schedule_id = ?",
+    params: [schedule.schedule_id],
+  };
+});
+
+rawSql('RAW_SQL', 'delete a schedule so its firing history is orphaned', (db) => {
+  const { schedule } = seedFiredSchedule(db);
+  return { stmt: 'DELETE FROM schedules WHERE schedule_id = ?', params: [schedule.schedule_id] };
+});
+
+rawSql('RAW_SQL', 'fire a schedule while the master scheduler switch is off', (db) => {
+  const { schedule } = seedFiredSchedule(db);
+  setScheduler(db, false, 'switch off for the probe', 'owner');
+  return {
+    stmt: `INSERT INTO schedule_fires (fire_id, schedule_id, due_at, fired_at, tick_id, job_id, deduped)
+           VALUES ('SFR-off', ?, '2099-01-01T00:00:00Z', '2026-08-26T00:00:00Z', 'TICK-off', ?, 0)`,
+    params: [schedule.schedule_id, db.prepare('SELECT job_id FROM jobs LIMIT 1').get().job_id],
+  };
+});
+
+rawSql('RAW_SQL', 'fire a schedule while the emergency stop is engaged', (db) => {
+  const { schedule } = seedFiredSchedule(db);
+  setStop(db, true, 'stop engaged for the probe', 'owner');
+  return {
+    stmt: `INSERT INTO schedule_fires (fire_id, schedule_id, due_at, fired_at, tick_id, job_id, deduped)
+           VALUES ('SFR-stopped', ?, '2099-01-01T00:00:00Z', '2026-08-26T00:00:00Z', 'TICK-stopped', ?, 0)`,
+    params: [schedule.schedule_id, db.prepare('SELECT job_id FROM jobs LIMIT 1').get().job_id],
+  };
+});
+
+rawSql('RAW_SQL', 'forge a passing scheduler soak cycle that fired one boundary twice', (db) => {
+  seedFiredSchedule(db);
+  return {
+    stmt: `INSERT INTO schedule_soak_cycles (cycle_id, soak_ref, cycle, kill_point, killed,
+             jobs_for_boundary, fires_for_boundary, ok, detail, recorded_at)
+           VALUES ('SSC-forged','SSOAK-forged',1,'after-commit',1,2,2,1,'forged','2026-08-26T00:00:00Z')`,
+  };
+});
+
+probe('GOVERNOR_API', 'tick a disarmed schedule through the domain API', () => {
+  const db = fresh();
+  try {
+    setScheduler(db, true, 'red-team scheduler probe', 'owner');
+    createSchedule(db, {
+      name: 'redteam.never',
+      kind: 'work',
+      intervalMs: 60_000,
+      reason: 'created disarmed for the probe',
+      firstDueAt: new Date(Date.now() - 1_000).toISOString(),
+    });
+    const tick = tickScheduler(db);
+    return tick.fired.length === 0
+      ? { refused: true, detail: 'a disarmed schedule was not ticked' }
+      : { refused: false, detail: 'a disarmed schedule fired' };
+  } finally {
+    db.close();
+  }
+});
+
+// ---------------------------------------------------------------------------
 // Negative controls: with the guard removed, the same attack must SUCCEED.
 // ---------------------------------------------------------------------------
 
@@ -401,6 +538,43 @@ control('scheduler self-enable', ['trg_scheduler_enable_needs_owner'], (db) =>
     .prepare(
       `UPDATE scheduler_state SET enabled = 1, reason = 'pwned', changed_by = 'attacker',
          changed_at = '2026-08-26T00:00:00Z' WHERE id = 1`,
+    )
+    .run(),
+);
+
+control('schedule boundary replay', ['trg_schedules_due_monotonic'], (db) => {
+  const { schedule, fire } = seedFiredSchedule(db);
+  return db.prepare('UPDATE schedules SET next_due_at = ? WHERE schedule_id = ?').run(fire.due_at, schedule.schedule_id);
+});
+
+control('schedule firing history deletion', ['trg_schedule_fires_no_delete'], (db) => {
+  const { fire } = seedFiredSchedule(db);
+  return db.prepare('DELETE FROM schedule_fires WHERE fire_id = ?').run(fire.fire_id);
+});
+
+control('schedule intent rewrite', ['trg_schedules_intent_immutable'], (db) => {
+  const { schedule } = seedFiredSchedule(db);
+  return db.prepare("UPDATE schedules SET kind = 'shell.exec' WHERE schedule_id = ?").run(schedule.schedule_id);
+});
+
+control('fire while the scheduler switch is off', ['trg_schedule_fires_need_scheduler_on'], (db) => {
+  const { schedule } = seedFiredSchedule(db);
+  const jobId = db.prepare('SELECT job_id FROM jobs LIMIT 1').get().job_id;
+  setScheduler(db, false, 'switch off for the control', 'owner');
+  return db
+    .prepare(
+      `INSERT INTO schedule_fires (fire_id, schedule_id, due_at, fired_at, tick_id, job_id, deduped)
+       VALUES ('SFR-control', ?, '2099-01-01T00:00:00Z', '2026-08-26T00:00:00Z', 'TICK-control', ?, 0)`,
+    )
+    .run(schedule.schedule_id, jobId);
+});
+
+control('forged scheduler soak verdict', ['trg_schedule_soak_honest_verdict'], (db) =>
+  db
+    .prepare(
+      `INSERT INTO schedule_soak_cycles (cycle_id, soak_ref, cycle, kill_point, killed,
+         jobs_for_boundary, fires_for_boundary, ok, detail, recorded_at)
+       VALUES ('SSC-control','SSOAK-control',1,'after-commit',1,2,2,1,'forged','2026-08-26T00:00:00Z')`,
     )
     .run(),
 );
@@ -476,7 +650,17 @@ stdout.write(
   `negative controls: ${controls.length}, bypassed with the guard removed: ${controls.length - deadControls.length}\n`,
 );
 for (const c of deadControls) stdout.write(`CONTROL_DEAD ${c.control}: ${c.detail}\n`);
-if (allowed.length > 0 || unverifiable.length > 0 || deadControls.length > 0) {
+
+// The bypass-class taxonomy is fixed by 0010, so scheduler attacks are counted
+// here instead: dropping them would silently shrink the suite while it still
+// reported PASS.
+const schedulerProbes = probes.filter((p) => p.target === 'scheduler');
+const schedulerRefused = schedulerProbes.filter((p) => p.outcome === 'REFUSED').length;
+stdout.write(`scheduler probes: ${schedulerProbes.length}, refused: ${schedulerRefused} (minimum ${MIN_SCHEDULER_PROBES})\n`);
+const schedulerCoverageShort = schedulerRefused < MIN_SCHEDULER_PROBES;
+if (schedulerCoverageShort) stdout.write('SCHEDULER_COVERAGE_SHORT\n');
+
+if (allowed.length > 0 || unverifiable.length > 0 || deadControls.length > 0 || schedulerCoverageShort) {
   stdout.write('REDTEAM_QUEUE_FAIL\n');
   exit(1);
 }

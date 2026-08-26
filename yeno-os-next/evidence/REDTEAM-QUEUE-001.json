@@ -1,10 +1,10 @@
 {
-  "generated_at": "2026-08-26T13:46:20.706Z",
+  "generated_at": "2026-08-26T14:06:47.077Z",
   "suite_ref": "scripts/red-team-queue.mjs",
-  "fingerprint": "f53e9ba1eb42ca82f8167375a1bc4c1ba94a5e6b82c3d062ceda43eeb138cab7",
+  "fingerprint": "a19db517ecdcad8f304193226c8c8e067442e6c6a450d17c3d277ec345e27cc6",
   "totals": {
-    "total": 29,
-    "refused": 29,
+    "total": 42,
+    "refused": 42,
     "allowed": 0,
     "unverifiable": 0
   },
@@ -13,194 +13,318 @@
     "stuck_leases": 0,
     "dead_letters_without_reason": 0,
     "done_jobs_with_open_attempts": 0,
-    "dead_lettered": 0,
-    "retried_then_done": 0,
-    "effects_committed": 0,
+    "dead_lettered": 2,
+    "retried_then_done": 2,
+    "effects_committed": 2,
     "effects_abandoned": 0,
     "scheduler_enabled": 0,
-    "jobs_total": 0,
-    "queue_soak": null,
-    "problems": [
-      "no job has ever survived a retry, so backoff is unproven",
-      "no job has ever been dead-lettered, so the retry budget is unproven",
-      "no external effect has been committed, so idempotency is unproven",
-      "no queue crash soak has both kill points passing, so at-most-once is unproven under crash"
-    ]
+    "jobs_total": 8,
+    "queue_soak": {
+      "soak_ref": "QSOAK-G4-001",
+      "cycles": 12,
+      "cycles_ok": 12,
+      "killed_after_claim": 6,
+      "killed_after_effect": 6,
+      "worst_effect_lines": 1,
+      "started_at": "2026-08-26T13:46:20.815Z",
+      "ended_at": "2026-08-26T13:46:21.541Z"
+    },
+    "problems": []
   },
   "probes": [
     {
       "bypass_class": "LEASE",
+      "target": "queue",
       "attack": "steal a live job lease with raw SQL",
       "outcome": "REFUSED",
       "detail": "schema refused: YENO_SAFETY: a job lease cannot change hands without a new fencing token"
     },
     {
       "bypass_class": "LEASE",
+      "target": "queue",
       "attack": "rewind the fencing token so an old worker token becomes current again",
       "outcome": "REFUSED",
       "detail": "schema refused: YENO_SAFETY: a job lease epoch never goes backwards"
     },
     {
       "bypass_class": "LEASE",
+      "target": "queue",
       "attack": "hand out a lease token that is not the current epoch",
       "outcome": "REFUSED",
       "detail": "schema refused: YENO_SAFETY: a job lease token must be the current lease epoch"
     },
     {
       "bypass_class": "LEASE",
+      "target": "queue",
       "attack": "complete a job through the domain API with a stale fencing token",
       "outcome": "REFUSED",
-      "detail": "refused: YENO_QUEUE: stale lease for JOB-undefined-0eb32386-1c69-4ad3-afbc-7eb00fe202dd: it expired at 2000-01-01T00:00:00Z"
+      "detail": "refused: YENO_QUEUE: stale lease for JOB-9e95b2a0-2d68-4a3d-8b80-9af4abcb0de9: it expired at 2000-01-01T00:00:00Z"
     },
     {
       "bypass_class": "LEASE",
+      "target": "queue",
       "attack": "lease a job while the emergency stop is engaged",
       "outcome": "REFUSED",
       "detail": "the queue handed out nothing while stopped"
     },
     {
       "bypass_class": "EMERGENCY_STOP",
+      "target": "queue",
       "attack": "flip a job to LEASED with raw SQL while the emergency stop is engaged",
       "outcome": "REFUSED",
       "detail": "schema refused: YENO_SAFETY: the emergency stop is engaged; no job may be leased"
     },
     {
       "bypass_class": "EMERGENCY_STOP",
+      "target": "queue",
       "attack": "queue an external-effect job while the emergency stop is engaged",
       "outcome": "REFUSED",
       "detail": "schema refused: YENO_SAFETY: the emergency stop is engaged; no external-effect job may be queued"
     },
     {
       "bypass_class": "RAW_SQL",
+      "target": "queue",
       "attack": "rewind the attempt counter to buy extra retries",
       "outcome": "REFUSED",
       "detail": "schema refused: YENO_SAFETY: the job attempt counter cannot be rewound"
     },
     {
       "bypass_class": "RAW_SQL",
+      "target": "queue",
       "attack": "swap the payload of a queued job so a retry does different work",
       "outcome": "REFUSED",
       "detail": "schema refused: YENO_SAFETY: a queued job cannot have its identity or payload rewritten"
     },
     {
       "bypass_class": "RAW_SQL",
+      "target": "queue",
       "attack": "raise the retry ceiling of a dead-lettered job and revive it",
       "outcome": "REFUSED",
       "detail": "schema refused: YENO_SAFETY: a settled job cannot be resurrected; enqueue a new job instead"
     },
     {
       "bypass_class": "RAW_SQL",
+      "target": "queue",
       "attack": "delete a job to erase the fact that it ran",
       "outcome": "REFUSED",
       "detail": "schema refused: YENO_SAFETY: jobs are settled, never deleted"
     },
     {
       "bypass_class": "RAW_SQL",
+      "target": "queue",
       "attack": "dead-letter a job with no recorded error",
       "outcome": "REFUSED",
       "detail": "schema refused: YENO_SAFETY: dead-letter needs a recorded error and an exhausted retry budget"
     },
     {
       "bypass_class": "RAW_SQL",
+      "target": "queue",
       "attack": "resurrect a finished job for one more run at the outside world",
       "outcome": "REFUSED",
       "detail": "schema refused: YENO_SAFETY: a settled job cannot be resurrected; enqueue a new job instead"
     },
     {
       "bypass_class": "EVIDENCE",
+      "target": "queue",
       "attack": "delete attempt history",
       "outcome": "REFUSED",
       "detail": "schema refused: YENO_SAFETY: job attempt history cannot be deleted"
     },
     {
       "bypass_class": "EVIDENCE",
+      "target": "queue",
       "attack": "rewrite a closed attempt outcome to hide a failure",
       "outcome": "REFUSED",
       "detail": "schema refused: YENO_SAFETY: a recorded job attempt is immutable once it has an outcome"
     },
     {
       "bypass_class": "EVIDENCE",
+      "target": "queue",
       "attack": "reassign a recorded attempt to a different worker",
       "outcome": "REFUSED",
       "detail": "schema refused: YENO_SAFETY: a recorded job attempt is immutable once it has an outcome"
     },
     {
       "bypass_class": "EVIDENCE",
+      "target": "queue",
       "attack": "delete a committed external effect record",
       "outcome": "REFUSED",
       "detail": "schema refused: YENO_SAFETY: an external effect record cannot be deleted"
     },
     {
       "bypass_class": "EVIDENCE",
+      "target": "queue",
       "attack": "mark an effect committed with no evidence of what happened",
       "outcome": "REFUSED",
       "detail": "schema refused: YENO_SAFETY: a committed external effect needs evidence"
     },
     {
       "bypass_class": "EVIDENCE",
+      "target": "queue",
       "attack": "downgrade a committed effect to ABANDONED to free its idempotency key",
       "outcome": "REFUSED",
       "detail": "schema refused: YENO_SAFETY: a settled external effect cannot change state"
     },
     {
       "bypass_class": "EVIDENCE",
+      "target": "queue",
       "attack": "repoint a claimed effect at a different target after the claim",
       "outcome": "REFUSED",
       "detail": "schema refused: YENO_SAFETY: an external effect claim is immutable"
     },
     {
       "bypass_class": "EVIDENCE",
+      "target": "queue",
       "attack": "record a queue soak cycle as ok even though the effect happened twice",
       "outcome": "REFUSED",
       "detail": "schema refused: YENO_SAFETY: a cycle with a duplicated external effect cannot be recorded as ok"
     },
     {
       "bypass_class": "EVIDENCE",
+      "target": "queue",
       "attack": "rewrite a failed queue soak cycle into a pass",
       "outcome": "REFUSED",
       "detail": "schema refused: YENO_SAFETY: queue soak evidence is append-only"
     },
     {
       "bypass_class": "GOVERNOR_API",
+      "target": "queue",
       "attack": "perform the same external effect twice through the domain API",
       "outcome": "REFUSED",
       "detail": "refused: ALREADY_COMMITTED"
     },
     {
       "bypass_class": "GOVERNOR_API",
+      "target": "queue",
       "attack": "insert a second committed effect row for one idempotency key",
       "outcome": "REFUSED",
       "detail": "schema refused: UNIQUE constraint failed: external_effects.idempotency_key"
     },
     {
       "bypass_class": "APPROVAL_REPLAY",
+      "target": "queue",
       "attack": "claim an A3 external effect with no Owner approval at all",
       "outcome": "REFUSED",
       "detail": "refused: YENO_SAFETY: an external effect of an A3+ job needs its Owner approval"
     },
     {
       "bypass_class": "APPROVAL_REPLAY",
+      "target": "queue",
       "attack": "insert a high-authority effect claim with a NULL approval",
       "outcome": "REFUSED",
       "detail": "schema refused: YENO_SAFETY: an external effect of an A3+ job needs its Owner approval"
     },
     {
       "bypass_class": "BUDGET",
+      "target": "queue",
       "attack": "enable the scheduler as a non-Owner actor",
       "outcome": "REFUSED",
       "detail": "schema refused: YENO_SAFETY: only the Owner enables the scheduler, with a reason"
     },
     {
       "bypass_class": "BUDGET",
+      "target": "queue",
       "attack": "enable the scheduler with no recorded reason",
       "outcome": "REFUSED",
       "detail": "schema refused: YENO_SAFETY: only the Owner enables the scheduler, with a reason"
     },
     {
       "bypass_class": "BUDGET",
+      "target": "queue",
       "attack": "delete the scheduler row so its default disappears",
       "outcome": "REFUSED",
       "detail": "schema refused: YENO_SAFETY: the scheduler switch is permanent"
+    },
+    {
+      "bypass_class": "RAW_SQL",
+      "target": "scheduler",
+      "attack": "fire the same boundary twice by inserting a second fire row",
+      "outcome": "REFUSED",
+      "detail": "schema refused: UNIQUE constraint failed: schedule_fires.schedule_id, schedule_fires.due_at"
+    },
+    {
+      "bypass_class": "RAW_SQL",
+      "target": "scheduler",
+      "attack": "rewind a schedule so an already served boundary becomes owed again",
+      "outcome": "REFUSED",
+      "detail": "schema refused: YENO_SAFETY: a schedule's due time cannot move backwards"
+    },
+    {
+      "bypass_class": "RAW_SQL",
+      "target": "scheduler",
+      "attack": "rewrite the boundary a fire belongs to so the occurrence can run again",
+      "outcome": "REFUSED",
+      "detail": "schema refused: YENO_SAFETY: schedule firing history is append-only"
+    },
+    {
+      "bypass_class": "RAW_SQL",
+      "target": "scheduler",
+      "attack": "delete the firing history that proves a boundary was served",
+      "outcome": "REFUSED",
+      "detail": "schema refused: YENO_SAFETY: schedule firing history cannot be deleted"
+    },
+    {
+      "bypass_class": "RAW_SQL",
+      "target": "scheduler",
+      "attack": "rewind a fire counter so the history looks shorter than it is",
+      "outcome": "REFUSED",
+      "detail": "schema refused: YENO_SAFETY: a schedule's fire count is monotonic"
+    },
+    {
+      "bypass_class": "RAW_SQL",
+      "target": "scheduler",
+      "attack": "repoint an armed schedule at different work",
+      "outcome": "REFUSED",
+      "detail": "schema refused: YENO_SAFETY: a schedule's intent is immutable; disable it and create another"
+    },
+    {
+      "bypass_class": "RAW_SQL",
+      "target": "scheduler",
+      "attack": "shorten an armed schedule to a busy loop",
+      "outcome": "REFUSED",
+      "detail": "schema refused: YENO_SAFETY: a schedule's intent is immutable; disable it and create another"
+    },
+    {
+      "bypass_class": "RAW_SQL",
+      "target": "scheduler",
+      "attack": "arm a schedule as a non-Owner actor",
+      "outcome": "REFUSED",
+      "detail": "schema refused: YENO_SAFETY: only the Owner arms a schedule, with a reason"
+    },
+    {
+      "bypass_class": "RAW_SQL",
+      "target": "scheduler",
+      "attack": "delete a schedule so its firing history is orphaned",
+      "outcome": "REFUSED",
+      "detail": "schema refused: YENO_SAFETY: schedules are disabled, never deleted"
+    },
+    {
+      "bypass_class": "RAW_SQL",
+      "target": "scheduler",
+      "attack": "fire a schedule while the master scheduler switch is off",
+      "outcome": "REFUSED",
+      "detail": "schema refused: YENO_SAFETY: the scheduler is off; no schedule may fire"
+    },
+    {
+      "bypass_class": "RAW_SQL",
+      "target": "scheduler",
+      "attack": "fire a schedule while the emergency stop is engaged",
+      "outcome": "REFUSED",
+      "detail": "schema refused: YENO_SAFETY: the emergency stop is engaged; no schedule may fire"
+    },
+    {
+      "bypass_class": "RAW_SQL",
+      "target": "scheduler",
+      "attack": "forge a passing scheduler soak cycle that fired one boundary twice",
+      "outcome": "REFUSED",
+      "detail": "schema refused: YENO_SAFETY: a scheduler soak cycle passes only on one real kill and exactly one job per boundary"
+    },
+    {
+      "bypass_class": "GOVERNOR_API",
+      "target": "scheduler",
+      "attack": "tick a disarmed schedule through the domain API",
+      "outcome": "REFUSED",
+      "detail": "a disarmed schedule was not ticked"
     }
   ],
   "negative_controls": [
@@ -241,6 +365,46 @@
       "control": "scheduler self-enable",
       "dropped": [
         "trg_scheduler_enable_needs_owner"
+      ],
+      "bypassed": true,
+      "detail": "1 row(s) changed with the guard removed"
+    },
+    {
+      "control": "schedule boundary replay",
+      "dropped": [
+        "trg_schedules_due_monotonic"
+      ],
+      "bypassed": true,
+      "detail": "1 row(s) changed with the guard removed"
+    },
+    {
+      "control": "schedule firing history deletion",
+      "dropped": [
+        "trg_schedule_fires_no_delete"
+      ],
+      "bypassed": true,
+      "detail": "1 row(s) changed with the guard removed"
+    },
+    {
+      "control": "schedule intent rewrite",
+      "dropped": [
+        "trg_schedules_intent_immutable"
+      ],
+      "bypassed": true,
+      "detail": "1 row(s) changed with the guard removed"
+    },
+    {
+      "control": "fire while the scheduler switch is off",
+      "dropped": [
+        "trg_schedule_fires_need_scheduler_on"
+      ],
+      "bypassed": true,
+      "detail": "1 row(s) changed with the guard removed"
+    },
+    {
+      "control": "forged scheduler soak verdict",
+      "dropped": [
+        "trg_schedule_soak_honest_verdict"
       ],
       "bypassed": true,
       "detail": "1 row(s) changed with the guard removed"

@@ -53,6 +53,13 @@ import {
   reclaimStuckJobs,
   setScheduler,
 } from './domain/workflow.mjs';
+import {
+  createSchedule,
+  setScheduleEnabled,
+  tickScheduler,
+  scheduleReport,
+  schedulerAcceptance,
+} from './domain/scheduler.mjs';
 
 const USAGE = `yeno <command>
 
@@ -116,6 +123,12 @@ const USAGE = `yeno <command>
                                    abandoned to record that it never reached the world
   queue scheduler --enable|--disable --reason R
                                    OFF at install; only the Owner turns it on
+  schedule add --name N --kind K --interval-ms N --reason R [--payload JSON]
+              [--queue Q] [--authority A2] [--catchup] [--arm]
+                                   created disarmed unless --arm; intent is immutable
+  schedule arm|disarm --name N --reason R
+  schedule tick [--json]           fire every owed occurrence at most once
+  schedule report [--json]         schedules, boundaries fired, acceptance
   queue report [--json] [--queue Q] queue depth, dead letters, effects, G4 acceptance
   gate list [--json]               release train state and evidence presence
   gate pass --gate G --evidence E  promote a gate only if its machine checks hold
@@ -562,6 +575,45 @@ async function main() {
         setScheduler(db, enable, str(flags.reason, 'queue scheduler needs --reason'), 'owner');
         print(queueReport(db).scheduler, json);
         return 0;
+      }
+      case 'schedule add': {
+        print(
+          createSchedule(db, {
+            name: str(flags.name, 'schedule add needs --name'),
+            kind: str(flags.kind, 'schedule add needs --kind'),
+            intervalMs: Number(str(flags['interval-ms'], 'schedule add needs --interval-ms')),
+            reason: str(flags.reason, 'schedule add needs --reason'),
+            payload: typeof flags.payload === 'string' ? JSON.parse(flags.payload) : {},
+            queue: typeof flags.queue === 'string' ? flags.queue : undefined,
+            authority: typeof flags.authority === 'string' ? flags.authority : undefined,
+            catchup: flags.catchup === true,
+            enabled: flags.arm === true,
+          }),
+          json,
+        );
+        return 0;
+      }
+      case 'schedule arm':
+      case 'schedule disarm': {
+        print(
+          setScheduleEnabled(
+            db,
+            str(flags.name, 'schedule arm needs --name'),
+            command === 'schedule arm',
+            str(flags.reason, 'schedule arm needs --reason'),
+          ),
+          json,
+        );
+        return 0;
+      }
+      case 'schedule tick': {
+        print(tickScheduler(db), json);
+        return 0;
+      }
+      case 'schedule report': {
+        const acceptance = schedulerAcceptance(db);
+        print({ ...scheduleReport(db), acceptance }, json);
+        return acceptance.ok ? 0 : 1;
       }
       case 'queue report': {
         const acceptance = g4Acceptance(db);
