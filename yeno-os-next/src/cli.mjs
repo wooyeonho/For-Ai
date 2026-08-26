@@ -17,6 +17,7 @@ import {
   handoffReport,
   pendingNextRuns,
 } from './domain/handoff.mjs';
+import { activateDesires, goalTrace, observe, remember, selfReport } from './domain/self.mjs';
 
 const USAGE = `yeno <command>
 
@@ -40,6 +41,11 @@ const USAGE = `yeno <command>
   next add --gate G --action A --rationale R [--priority N] [--blocked-by ID]
   next list [--json]               pending queue in take order
   next take --ref R                consume the top entry for a session run
+  self report [--json]             functional self state (G6 PREP_ONLY)
+  self remember --kind K --content C --source S --confidence N [--salience N]
+  self observe --metric M --value N
+  self activate                    derive desire activations from internal state
+  self trace <goalId> [--json]     desire -> activation -> goal -> council -> verdict
 
 Options: --db <path> (default ${DEFAULT_DB_PATH}), --migrations <dir> (default ${MIGRATIONS_DIR})`;
 
@@ -246,6 +252,36 @@ async function main() {
           return 1;
         }
         print({ next_id: entry.next_id, gate_id: entry.gate_id, exact_action: entry.exact_action }, json);
+        return 0;
+      }
+      case 'self report': {
+        print(selfReport(db), json);
+        return 0;
+      }
+      case 'self remember': {
+        const item = remember(db, {
+          kind: str(flags.kind, 'self remember requires --kind'),
+          content: str(flags.content, 'self remember requires --content'),
+          sourceRef: str(flags.source, 'self remember requires --source'),
+          confidence: Number(flags.confidence ?? 0.5),
+          salience: Number(flags.salience ?? 0),
+        });
+        print({ memory_id: item.memory_id, kind: item.kind, idempotent: item.idempotent }, json);
+        return 0;
+      }
+      case 'self observe': {
+        const row = observe(db, str(flags.metric, 'self observe requires --metric'), Number(flags.value));
+        print(row, json);
+        return 0;
+      }
+      case 'self activate': {
+        print(activateDesires(db), json);
+        return 0;
+      }
+      case 'self trace': {
+        const goalId = positional[2] ?? flags.goal;
+        if (typeof goalId !== 'string') throw new Error('self trace requires a goal id');
+        print(goalTrace(db, goalId), json);
         return 0;
       }
       case 'stop engage': {

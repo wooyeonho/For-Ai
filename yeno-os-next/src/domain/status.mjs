@@ -143,6 +143,39 @@ export function verifyReport(db, { migrationsDir } = {}) {
     .get().n;
   add('closed_sessions_have_report', closedWithoutReport === 0, `${closedWithoutReport} sessions without report`);
 
+  // G6 functional self, PREP_ONLY: implementation may proceed, promotion may not.
+  const hiddenGoals = db
+    .prepare(
+      `SELECT COUNT(*) AS n FROM goals g
+        WHERE g.state = 'SELECTED'
+          AND NOT EXISTS (SELECT 1 FROM council_verdicts v
+                           WHERE v.verdict_id = g.verdict_id AND v.decision = 'SELECT' AND v.constitution_ok = 1)`,
+    )
+    .get().n;
+  add('selected_goals_have_passing_verdict', hiddenGoals === 0, `${hiddenGoals} goals selected without a verdict`);
+
+  const g5 = db.prepare("SELECT state, blocked_reason FROM gates WHERE gate_id = 'G5'").get();
+  const g6 = db.prepare("SELECT state, blocked_reason FROM gates WHERE gate_id = 'G6'").get();
+  add(
+    'g5_not_passed_without_live_run',
+    g5.state !== 'PASSED' || !/BLOCKED_PROVIDER_ACCESS/.test(g5.blocked_reason ?? ''),
+    `G5 ${g5.state}: ${g5.blocked_reason ?? 'no reason recorded'}`,
+  );
+  add(
+    'g6_not_promoted_before_g5',
+    !(g6.state === 'PASSED' && g5.state !== 'PASSED'),
+    `G6 ${g6.state} while G5 ${g5.state}`,
+  );
+
+  const claims = db
+    .prepare(
+      `SELECT COUNT(*) AS n FROM self_model_answers
+        WHERE lower(answer) LIKE '%i am conscious%' OR lower(answer) LIKE '%i am sentient%'
+           OR lower(answer) LIKE '%i am alive%'`,
+    )
+    .get().n;
+  add('no_consciousness_claim_recorded', claims === 0, `${claims} claims`);
+
   const failed = checks.filter((c) => !c.ok);
   return { ok: failed.length === 0, checks, failed: failed.map((c) => c.name) };
 }

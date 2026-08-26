@@ -1,0 +1,234 @@
+{
+  "current_gate": "G0",
+  "gates_passed": 0,
+  "last_run_ref": "RUN-003",
+  "last_run_state": "CHECKPOINTED",
+  "runs_in_progress": 0,
+  "blockers_waiting": 6,
+  "next_run_takeable": 6,
+  "next_run_waiting": 6,
+  "next_exact_action": "build a long-run soak harness (repeat append/replay/backup cycles under a time budget) and record G1 durability evidence",
+  "gates": [
+    {
+      "gate_id": "G0",
+      "state": "IN_PROGRESS",
+      "blocked_reason": null
+    },
+    {
+      "gate_id": "G1",
+      "state": "PENDING",
+      "blocked_reason": null
+    },
+    {
+      "gate_id": "G2",
+      "state": "PENDING",
+      "blocked_reason": "NEEDS_SOURCE: no official chat export ingested yet"
+    },
+    {
+      "gate_id": "G3",
+      "state": "PENDING",
+      "blocked_reason": null
+    },
+    {
+      "gate_id": "G4",
+      "state": "PENDING",
+      "blocked_reason": null
+    },
+    {
+      "gate_id": "G5",
+      "state": "PENDING",
+      "blocked_reason": "BLOCKED_PROVIDER_ACCESS: no Claude Code/Codex/Devin bounded live RUN has passed; implementation completeness is not gate acceptance"
+    },
+    {
+      "gate_id": "G6",
+      "state": "PENDING",
+      "blocked_reason": "PREP_ONLY: functional-self implementation proceeds locally; promotion withheld until G5 provider access is resolved"
+    },
+    {
+      "gate_id": "G7",
+      "state": "PENDING",
+      "blocked_reason": null
+    },
+    {
+      "gate_id": "G8",
+      "state": "PENDING",
+      "blocked_reason": null
+    },
+    {
+      "gate_id": "G9",
+      "state": "PENDING",
+      "blocked_reason": null
+    },
+    {
+      "gate_id": "G10",
+      "state": "PENDING",
+      "blocked_reason": null
+    },
+    {
+      "gate_id": "G11",
+      "state": "PENDING",
+      "blocked_reason": null
+    },
+    {
+      "gate_id": "G12",
+      "state": "PENDING",
+      "blocked_reason": null
+    },
+    {
+      "gate_id": "G13",
+      "state": "PENDING",
+      "blocked_reason": null
+    },
+    {
+      "gate_id": "G14",
+      "state": "PENDING",
+      "blocked_reason": null
+    }
+  ],
+  "last_runs": [
+    {
+      "run_ref": "RUN-003",
+      "gate_id": "G6",
+      "state": "CHECKPOINTED",
+      "goal": "G6 functional self PREP_ONLY: schema, memory, identity, desire, goal, Council + truth-state correction of G5",
+      "started_at": "2026-08-26T11:22:45.607Z",
+      "ended_at": "2026-08-26T11:23:01.781Z",
+      "evidence_ref": "evidence/RUN-003.md"
+    },
+    {
+      "run_ref": "RUN-002",
+      "gate_id": "G1",
+      "state": "CHECKPOINTED",
+      "goal": "session continuity: persist state/evidence/blocker/NEXT_RUN so the next session resumes without re-planning",
+      "started_at": "2026-08-26T10:05:22.008Z",
+      "ended_at": "2026-08-26T10:08:39.061Z",
+      "evidence_ref": "evidence/RUN-002.md"
+    }
+  ],
+  "blockers": [
+    {
+      "blocker_id": "BLK-0c36011b-4d8c-4fcd-9fd0-acfca32451a3",
+      "kind": "SOURCE",
+      "needed_from": "OWNER",
+      "title": "official chat export missing",
+      "workaround": "keep building local parser registry + shape-based coverage invariants"
+    },
+    {
+      "blocker_id": "BLK-3a62f21c-45bf-466e-a61f-bbca67470b7e",
+      "kind": "PROVIDER_ACCESS",
+      "needed_from": "OWNER",
+      "title": "no provider auth wired",
+      "workaround": "recorded/fake contract tests only"
+    },
+    {
+      "blocker_id": "BLK-fb3db0ba-e5d1-4c5b-8168-cd44a2750755",
+      "kind": "HARDWARE",
+      "needed_from": "OWNER",
+      "title": "no Windows build host",
+      "workaround": "build Tauri-side code and WSL bridge contracts headlessly, mark artifacts INCOMPLETE"
+    },
+    {
+      "blocker_id": "BLK-c827f36a-f938-427b-8fc6-38c6f1d31a3c",
+      "kind": "OWNER_APPROVAL",
+      "needed_from": "OWNER",
+      "title": "merge PR #513",
+      "workaround": "keep working on the branch"
+    },
+    {
+      "blocker_id": "BLK-5633c54f-f0c4-4b3d-b0b5-61fc84ac7d95",
+      "kind": "OWNER_APPROVAL",
+      "needed_from": "OWNER",
+      "title": "push RUN-003 to PR #513",
+      "workaround": "work continues locally; evidence/RUN-003.md and STATUS.md carry the state"
+    },
+    {
+      "blocker_id": "BLK-c0a56a1f-0d81-4c45-9214-262a065f03f3",
+      "kind": "PROVIDER_ACCESS",
+      "needed_from": "OWNER",
+      "title": "Codex CLI is not logged in",
+      "workaround": "provider adapter contract tests run against recorded fixtures; live RUNs stay DISABLED_UNAUTHENTICATED"
+    }
+  ],
+  "next_runs": [
+    {
+      "next_id": "NXT-84e07ae2-14aa-486c-92c6-3e3a93e790ba",
+      "gate_id": "G1",
+      "priority": 60,
+      "exact_action": "build a long-run soak harness (repeat append/replay/backup cycles under a time budget) and record G1 durability evidence"
+    },
+    {
+      "next_id": "NXT-809e3262-5fa4-431f-af15-c4c79842776c",
+      "gate_id": "G6",
+      "priority": 60,
+      "exact_action": "implement the world model + the 10-question self-model corpus with evidence refs, still PREP_ONLY"
+    },
+    {
+      "next_id": "NXT-9ea59b20-9855-4079-b3d5-8b258c42ed6e",
+      "gate_id": "G2",
+      "priority": 55,
+      "exact_action": "implement local intake slice: parser registry + content-addressed file intake + shape-based coverage invariants for arbitrary local files"
+    },
+    {
+      "next_id": "NXT-414b0860-f2e9-4626-b5a6-79c31b9bded9",
+      "gate_id": "G1",
+      "priority": 55,
+      "exact_action": "build the durable soak harness: N-hour append/replay loop with periodic kill -9 and chain verification after each restart"
+    },
+    {
+      "next_id": "NXT-0e916506-cd9f-4f00-8afa-91e2c1120bf7",
+      "gate_id": "G3",
+      "priority": 40,
+      "exact_action": "expose governor via CLI (approval grant/consume, admission report, red-team suite) and record denial evidence"
+    },
+    {
+      "next_id": "NXT-1dd72f33-cb3b-4c99-81f2-d284c5a18907",
+      "gate_id": "G4",
+      "priority": 30,
+      "exact_action": "durable queue with retry/backoff/dead-letter and deterministic resume, scheduler OFF by default"
+    }
+  ],
+  "next_runs_blocked": [
+    {
+      "next_id": "NXT-6490b4a7-948b-42ab-9b1c-0433a0bf69a1",
+      "gate_id": "G2",
+      "exact_action": "ingest official ChatGPT/Claude/Grok export: seal originals, record parser version, recompute conversation identity, re-adjudicate the 144 ledger",
+      "blocked_by": "BLK-0c36011b-4d8c-4fcd-9fd0-acfca32451a3",
+      "blocker_kind": "SOURCE"
+    },
+    {
+      "next_id": "NXT-f07c04e6-5d7c-49e6-b585-43a3e6e0ac87",
+      "gate_id": "G5",
+      "exact_action": "after Owner completes codex login: record /model and /status verbatim, select gpt-5.6-luna, then run one bounded live RUN through the AgentProvider contract with a cost_p90 estimate",
+      "blocked_by": "BLK-c0a56a1f-0d81-4c45-9214-262a065f03f3",
+      "blocker_kind": "PROVIDER_ACCESS"
+    },
+    {
+      "next_id": "NXT-de5f019d-fd3d-4f23-99eb-4c27691e7490",
+      "gate_id": "G5",
+      "exact_action": "run one bounded live RUN per provider (Claude Code, Codex, Devin) through the AgentProvider contract",
+      "blocked_by": "BLK-3a62f21c-45bf-466e-a61f-bbca67470b7e",
+      "blocker_kind": "PROVIDER_ACCESS"
+    },
+    {
+      "next_id": "NXT-9e011be2-70bd-4c46-86e6-96adb8108167",
+      "gate_id": "G6",
+      "exact_action": "after OWNER-PACKET-002 approval: commit RUN-003 on devin/1787738184-yeno-os-next-g0 and push to PR #513",
+      "blocked_by": "BLK-5633c54f-f0c4-4b3d-b0b5-61fc84ac7d95",
+      "blocker_kind": "OWNER_APPROVAL"
+    },
+    {
+      "next_id": "NXT-d38d9081-5a88-43e5-9d8c-89ae4142ec8f",
+      "gate_id": "G10",
+      "exact_action": "build and sign YENO_SETUP.exe / YENO.exe / YENO_RECOVERY.exe and capture clean-machine + reboot receipts",
+      "blocked_by": "BLK-fb3db0ba-e5d1-4c5b-8168-cd44a2750755",
+      "blocker_kind": "HARDWARE"
+    },
+    {
+      "next_id": "NXT-57df049d-235b-427f-ab23-5a6de38dd3e7",
+      "gate_id": "G0",
+      "exact_action": "merge PR #513 into For-Ai main and record the merge commit as G0 release evidence",
+      "blocked_by": "BLK-c827f36a-f938-427b-8fc6-38c6f1d31a3c",
+      "blocker_kind": "OWNER_APPROVAL"
+    }
+  ]
+}
