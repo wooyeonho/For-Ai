@@ -294,3 +294,23 @@ test('the command vocabulary is closed, excludes granting an approval, and holds
   }
   assert.equal(typeof runCommand, 'function');
 });
+
+test('the facade serves the pinned UI contract and serves it read-only', async () => {
+  const ctx = freshDb();
+  try {
+    await withServer(ctx, async ({ call }) => {
+      const served = await (await call('/contract')).json();
+      const pinned = JSON.parse(readFileSync(new URL('../contracts/ui-contract.json', import.meta.url), 'utf8'));
+      assert.equal(served.contract_hash, pinned.contract_hash);
+      assert.deepEqual(Object.keys(served.commands).sort(), Object.keys(COMMANDS).sort());
+      // Every advertised button is a command this kernel implements.
+      for (const entry of Object.values(served.panels)) {
+        for (const action of entry.actions) assert.ok(COMMANDS[action.command]);
+      }
+      // Reading the contract is the only thing /contract does.
+      assert.equal((await call('/contract', { method: 'POST', body: '{}' })).status, 404);
+    });
+  } finally {
+    ctx.cleanup();
+  }
+});

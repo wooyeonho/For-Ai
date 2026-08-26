@@ -869,6 +869,60 @@ verdict(
   gateProblems.join(' | '),
 );
 
+// ---------------------------------------------------------------------------
+// G8 UI contract. The pinned contract is what the future desktop shell is allowed
+// to draw and invoke, so the lie worth catching is a pin that no longer matches
+// the kernel: a panel column that vanished, a command in the pin that the API
+// does not implement, or an action the pin grants that no command backs. The
+// columns are read from the live views and the command names are parsed out of
+// the API source, never taken from the module.
+// ---------------------------------------------------------------------------
+const contractPath = join(REPO, 'contracts', 'ui-contract.json');
+const contractProblems = [];
+let pinnedPanelCount = 0;
+if (!existsSync(contractPath)) contractProblems.push('contracts/ui-contract.json is missing');
+else {
+  const pinned = JSON.parse(readFileSync(contractPath, 'utf8'));
+  pinnedPanelCount = Object.keys(pinned.panels ?? {}).length;
+  const { contract_hash: pinnedHash, ...pinnedBody } = pinned;
+  if (digest(stable(pinnedBody)) !== pinnedHash) contractProblems.push('pinned contract_hash does not match its own body');
+
+  // Command names as they appear in the API source, not as the module reports.
+  const apiSource = readFileSync(join(REPO, 'src', 'api', 'server.mjs'), 'utf8');
+  const vocabulary = new Set(
+    [...apiSource.matchAll(/^\s{2}'([a-z]+\.[a-z]+)':\s*\{$/gm)].map((m) => m[1]),
+  );
+  for (const name of Object.keys(pinned.commands ?? {})) {
+    if (!vocabulary.has(name)) contractProblems.push(`pinned command ${name} is not in the API source`);
+  }
+  for (const name of vocabulary) {
+    if (!pinned.commands?.[name]) contractProblems.push(`API command ${name} is not in the pinned contract`);
+  }
+  if (/'[a-z]+\.grant'/.test(apiSource)) contractProblems.push('the API exposes an approval-granting command');
+
+  for (const [name, entry] of Object.entries(pinned.panels ?? {})) {
+    if (!viewNames.has(entry.view)) {
+      contractProblems.push(`panel ${name} names view ${entry.view}, which does not exist`);
+      continue;
+    }
+    const live = db.prepare('SELECT name FROM pragma_table_info(?)').all(entry.view).map((r) => r.name);
+    if (stable(live) !== stable(entry.columns)) {
+      contractProblems.push(`panel ${name} columns differ from ${entry.view}`);
+    }
+    for (const action of entry.actions ?? []) {
+      if (!vocabulary.has(action.command)) {
+        contractProblems.push(`panel ${name} offers ${action.command}, which the API does not implement`);
+      }
+    }
+  }
+}
+verdict(
+  contractProblems.length === 0,
+  'ui_contract_recomputed',
+  `${pinnedPanelCount} panels pinned, columns re-read from the views`,
+  contractProblems.join(' | '),
+);
+
 db.close();
 
 const failed = findings.filter((f) => !f.ok);

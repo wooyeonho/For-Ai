@@ -15,6 +15,7 @@ import { promoteInbox } from '../domain/intake.mjs';
 import { revokeApproval } from '../domain/governance.mjs';
 import { cancelJob } from '../domain/workflow.mjs';
 import { panel, panels, panelNames, g8ReadSideAcceptance } from '../domain/mission-control.mjs';
+import { uiContract } from '../domain/ui-contract.mjs';
 
 export const LOOPBACK = '127.0.0.1';
 export const DEFAULT_ORIGINS = ['http://localhost', 'http://127.0.0.1', 'tauri://localhost'];
@@ -216,6 +217,11 @@ export function createServer({ dbPath, token, origins = DEFAULT_ORIGINS, pollMs 
             emergency_stop: stopEngaged(rw) ? 'ENGAGED' : 'RELEASED',
             panels: panelNames(),
           });
+        }
+        // The shell asks the kernel what it is allowed to draw and invoke, so a
+        // stale build cannot show a panel or a button this kernel does not have.
+        if (request.method === 'GET' && url.pathname === '/contract') {
+          return send(200, uiContract(ro, COMMANDS));
         }
         if (request.method === 'GET' && url.pathname === '/panels') {
           const limit = url.searchParams.has('limit') ? Number(url.searchParams.get('limit')) : null;

@@ -99,6 +99,20 @@ async function main() {
     probe('invented_panel', 404, (await call('/panel/wallet')).status);
     probe('invented_route', 404, (await call('/vault')).status);
 
+    // The served contract is the shell's whole permitted vocabulary, so it must
+    // agree with the pin and must not advertise anything the API cannot do.
+    const served = await (await call('/contract')).json();
+    const pinned = JSON.parse(readFileSync(join(REPO, 'contracts/ui-contract.json'), 'utf8'));
+    probe('served_contract_matches_the_pin', pinned.contract_hash, served.contract_hash);
+    const advertised = Object.values(served.panels).flatMap((p) => p.actions.map((a) => a.command));
+    probe(
+      'contract_advertises_no_unimplemented_action',
+      true,
+      advertised.every((name) => Boolean(served.commands[name])),
+    );
+    probe('contract_advertises_no_granting', false, advertised.some((name) => /grant/.test(name)));
+    probe('contract_is_read_only', 404, (await call('/contract', { method: 'POST', body: '{}' })).status);
+
     // A fresh kernel is stopped by default, so every command must be refused
     // before any Owner reason exists on this machine.
     probe('command_while_stopped', 423, (await command({ command: 'self.observe', payload: { metric: 'waiting_blockers', value: 3 } })).status);

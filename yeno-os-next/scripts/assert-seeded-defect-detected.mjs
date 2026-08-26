@@ -640,6 +640,42 @@ function scaffoldWithCycle() {
   rmSync(s.dir, { recursive: true, force: true });
 }
 
+// Case 28: a panel view grows a column the pinned UI contract does not know
+// about. A shell built against the pin would either ignore real state or draw a
+// field nobody reviewed, so the drift has to fail rather than be absorbed.
+{
+  const s = scaffold();
+  s.db.exec('DROP VIEW v_mc_inbox');
+  s.db.exec(
+    `CREATE VIEW v_mc_inbox AS
+     SELECT inbox_id, title, state, 0 AS has_body, 0 AS attempts, 'guess' AS owner_mood FROM inbox_items`,
+  );
+  s.db.close();
+  const run = runValidator(s.dbPath, s.migDir);
+  record(
+    'ui_contract_misses_a_new_panel_column',
+    run.status !== 0 && /FAIL ui_contract_recomputed/.test(run.stdout),
+    run.stdout.match(/FAIL ui_contract_recomputed.*/)?.[0] ?? '',
+  );
+  rmSync(s.dir, { recursive: true, force: true });
+}
+
+// Case 29: a panel the contract promises has no view at all. The shell would
+// have to invent the panel's contents, which is the failure mode the read side
+// exists to prevent.
+{
+  const s = scaffold();
+  s.db.exec('DROP VIEW v_mc_costs');
+  s.db.close();
+  const run = runValidator(s.dbPath, s.migDir);
+  record(
+    'ui_contract_promises_a_panel_whose_view_is_gone',
+    run.status !== 0 && /FAIL ui_contract_recomputed/.test(run.stdout),
+    run.stdout.match(/FAIL ui_contract_recomputed.*/)?.[0] ?? '',
+  );
+  rmSync(s.dir, { recursive: true, force: true });
+}
+
 const missed = results.filter((r) => !r.detected);
 process.stdout.write(`\nseeded defects: ${results.length}, detected: ${results.length - missed.length}, missed: ${missed.length}\n`);
 if (missed.length > 0) {

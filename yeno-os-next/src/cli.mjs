@@ -64,6 +64,7 @@ import {
 } from './domain/portfolio.mjs';
 import { makeArtifactVerifier } from './domain/portfolio-verifier.mjs';
 import { panel, panels, panelNames, g8ReadSideAcceptance } from './domain/mission-control.mjs';
+import { uiContract } from './domain/ui-contract.mjs';
 import {
   createServer as createApiServer,
   COMMANDS as API_COMMANDS,
@@ -165,6 +166,10 @@ const USAGE = `yeno <command>
                                    acceptance)
   mc panel --name inbox|projects|timeline|council|approvals|evidence|costs|settings
            [--json] [--limit N]    one panel, deterministic, no writes possible
+  mc contract [--json]             the UI contract the desktop shell must obey:
+                                   every panel, its view, its columns and the
+                                   commands it may invoke, derived from the views
+                                   and the API allowlist and hashed
   api serve [--port N] [--json]     local facade for the desktop shell: 127.0.0.1
                                    only, token required, reads read-only, writes
                                    limited to the allowlisted command vocabulary
@@ -247,6 +252,10 @@ async function main() {
         const acceptance = g8ReadSideAcceptance(roDb);
         print({ ...panels(roDb, { limit }), acceptance }, json);
         return acceptance.ok ? 0 : 1;
+      }
+      if (sub === 'contract') {
+        print(uiContract(roDb, API_COMMANDS), json);
+        return 0;
       }
       if (sub === 'panel') {
         const name = str(flags.name, `mc panel needs --name (${panelNames().join('|')})`);
