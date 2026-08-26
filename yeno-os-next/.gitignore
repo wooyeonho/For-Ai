@@ -1,0 +1,11 @@
+state/
+backups/
+evidence/runtime/
+tmp/
+*.db
+*.db-wal
+*.db-shm
+.env
+.env.*
+!.env.example
+node_modules/

@@ -1,0 +1,321 @@
+{
+  "manifest_version": 1,
+  "started_at": "2026-08-26T09:50:14.073Z",
+  "finished_at": "2026-08-26T09:50:15.330Z",
+  "node_version": "v24.19.0",
+  "platform": "linux-x64",
+  "ok": true,
+  "steps_total": 10,
+  "steps_failed": 0,
+  "steps": [
+    {
+      "id": "node_version",
+      "argv": [
+        "--version"
+      ],
+      "exit_code": 0,
+      "ok": true,
+      "duration_ms": 4,
+      "stdout_sha256": "b7677d3ec37ee1897ba07dc2cfe8292fe421c9ac93396cca5bbece486d1a2a41",
+      "stdout_tail": "v24.19.0",
+      "stderr_tail": ""
+    },
+    {
+      "id": "unit_and_adversarial_tests",
+      "argv": [
+        "--test",
+        "--test-reporter=spec"
+      ],
+      "exit_code": 0,
+      "ok": true,
+      "duration_ms": 786,
+      "stdout_sha256": "28d57fc32560bd884aab863dbe7786c10ef695aeb40dfdcdef6996d56147e58b",
+      "stdout_tail": "✔ projections are derived from the ledger and rebuild deterministically (5.959375ms)\n✔ a wiped projection is fully recovered from events alone (3.384949ms)\n✔ catchUp is incremental and does not reapply old events (3.086666ms)\n✔ unknown event types are ignored rather than crashing the projector (2.731193ms)\nℹ tests 52\nℹ suites 0\nℹ pass 52\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 756.521146",
+      "stderr_tail": ""
+    },
+    {
+      "id": "migration_checksum_pin",
+      "argv": [
+        "scripts/pin-migration-checksums.mjs",
+        "--check"
+      ],
+      "exit_code": 0,
+      "ok": true,
+      "duration_ms": 24,
+      "stdout_sha256": "2ebf6300e6ec9db31af56b46e6f1b4f46bdd415a902e6bb54b7033c82ebe194b",
+      "stdout_tail": "CHECKSUM_PIN_OK: 2 migrations pinned",
+      "stderr_tail": ""
+    },
+    {
+      "id": "cli_migrate",
+      "argv": [
+        "src/cli.mjs",
+        "migrate"
+      ],
+      "exit_code": 0,
+      "ok": true,
+      "duration_ms": 32,
+      "stdout_sha256": "c4fe886f634e69b44721ffc8025227c759c677243bb6a84eb22f90e2c3aee965",
+      "stdout_tail": "applied:\n  - 0001_core.sql\n  - 0002_release_control.sql\ntotal: 2",
+      "stderr_tail": ""
+    },
+    {
+      "id": "cli_status",
+      "argv": [
+        "src/cli.mjs",
+        "status",
+        "--json"
+      ],
+      "exit_code": 0,
+      "ok": true,
+      "duration_ms": 35,
+      "stdout_sha256": "db1ac583ab2a220435e3c7160adc9bba332dc8027122ba924114117a51502a6a",
+      "stdout_tail": "    {\n      \"gate_id\": \"G13\",\n      \"state\": \"PENDING\",\n      \"blocked_reason\": null\n    },\n    {\n      \"gate_id\": \"G14\",\n      \"state\": \"PENDING\",\n      \"blocked_reason\": null\n    }\n  ]\n}",
+      "stderr_tail": ""
+    },
+    {
+      "id": "cli_verify",
+      "argv": [
+        "src/cli.mjs",
+        "verify",
+        "--json"
+      ],
+      "exit_code": 0,
+      "ok": true,
+      "duration_ms": 31,
+      "stdout_sha256": "31c0a63e998079147907e5f99e2c5cce5b3a387566e19fef40e09a16bb7241d7",
+      "stdout_tail": "      \"name\": \"passed_gates_have_evidence\",\n      \"ok\": true,\n      \"detail\": \"0 gates\"\n    },\n    {\n      \"name\": \"projections_not_ahead_of_ledger\",\n      \"ok\": true,\n      \"detail\": \"0 projections ahead\"\n    }\n  ],\n  \"failed\": []\n}",
+      "stderr_tail": ""
+    },
+    {
+      "id": "event_replay",
+      "argv": [
+        "src/cli.mjs",
+        "event",
+        "replay",
+        "--json"
+      ],
+      "exit_code": 0,
+      "ok": true,
+      "duration_ms": 30,
+      "stdout_sha256": "ec2db710441e7519753ec3c113b91c7e0595d6d3c1c70fce64bfc56f69d7ced4",
+      "stdout_tail": "  },\n  \"projections\": {\n    \"proj_inbox_state\": {\n      \"last_seq\": 0,\n      \"rows\": 0\n    },\n    \"proj_run_state\": {\n      \"last_seq\": 0,\n      \"rows\": 0\n    }\n  }\n}",
+      "stderr_tail": ""
+    },
+    {
+      "id": "projection_rebuild",
+      "argv": [
+        "src/cli.mjs",
+        "projection",
+        "rebuild"
+      ],
+      "exit_code": 0,
+      "ok": true,
+      "duration_ms": 28,
+      "stdout_sha256": "e9eb2b1e95200b148c7b8595bef85a36e2e1e1564c400c356c4016995662f08e",
+      "stdout_tail": "proj_inbox_state:\n  last_seq: 0\n  rows: 0\nproj_run_state:\n  last_seq: 0\n  rows: 0",
+      "stderr_tail": ""
+    },
+    {
+      "id": "independent_validation",
+      "argv": [
+        "scripts/independent-validation.mjs"
+      ],
+      "exit_code": 0,
+      "ok": true,
+      "duration_ms": 27,
+      "stdout_sha256": "eecc9f262e491aee2aebe16aac6e61328f132a56c485a24fe6b4f549f3a9d6f9",
+      "stdout_tail": "PASS sqlite_integrity\nPASS migration_checksum — 0001_core.sql\nPASS migration_checksum — 0002_release_control.sql\nPASS migration_order\nPASS pinned_checksums\nPASS event_hash_chain — 0 events, head=0000000000000000\nPASS projection_matches_ledger — 0 inbox rows\nPASS safety_objects_present\nPASS vault_bytes_rehashed — 0 source versions\nINDEPENDENT_VALIDATION_PASS",
+      "stderr_tail": ""
+    },
+    {
+      "id": "seeded_defect_detection",
+      "argv": [
+        "scripts/assert-seeded-defect-detected.mjs"
+      ],
+      "exit_code": 0,
+      "ok": true,
+      "duration_ms": 258,
+      "stdout_sha256": "20303fc98e8e9388e182f404360c46183e1b7071ca73ad672f1a2abcf59ea518",
+      "stdout_tail": "DETECTED control_clean_kernel_passes\nDETECTED event_payload_tampered — FAIL event_hash — seq 1 stored=89bd41bb96564ac995b8e2a97d91c10ac05080339def47694b1a50d37dd96c4f recomputed=6e1dd076533ac179fedad1d8ea85c13305b496d90b000001995a51be29fe2363\nDETECTED event_deleted — FAIL event_seq_contiguous — expected 2 got 3\nDETECTED projection_hand_edited — FAIL projection_matches_ledger — IN-3: want={\"attempts\":0,\"state\":\"BODY_MISSING\",\"title\":\"seed 3\"} got={\"attempts\":0,\"state\":\"PROMOTED\",\"title\":\"seed 3\"}\nDETECTED applied_migration_edited — FAIL migration_checksum — 0001_core.sql db=8518c63459b7a679d51f10a452d6ccd6b5571c5ee5c657aa343e1e8f96343d61 disk=67b8158509f31bd9297151cd8bbc6b3ce607f8c3f5bc5b986ffab96c778a4f50\nDETECTED safety_trigger_dropped — FAIL safety_object_present — trg_runs_cost_hard_gate is missing\nDETECTED vault_bytes_mismatch — FAIL vault_bytes_rehashed — SV-1: bytes hash mismatch\nDETECTED corrupted_backup_refused — DB_HASH_MISMATCH: manifest=d000955eca96f8619b20684f1d6fa8a09f22be205553b8ac5b9cd68ec76a0e75 actual=9e845eb65805251d8fb10d671f9b44119ad8143b4e3f064da78686af30868db0 | OPEN_FAILED: database disk image is malformed\n\nseeded defects: 8, detected: 8, missed: 0\nSEEDED_DEFECT_CHECK_PASS",
+      "stderr_tail": ""
+    }
+  ],
+  "source_inventory": [
+    {
+      "path": ".claude/hooks/completion-guard.mjs",
+      "size": 1174,
+      "sha256": "9a09c95ac92a1c27cf9b63135701c1b40e60407c9b5c154786dc655a6f9f7063"
+    },
+    {
+      "path": ".claude/hooks/guard-rules.mjs",
+      "size": 5442,
+      "sha256": "c8df746b1b809fc239945ef971ab1474bb4ba007e05577094cabf36327176461"
+    },
+    {
+      "path": ".claude/hooks/pretooluse-guard.mjs",
+      "size": 1673,
+      "sha256": "ffc8c6e4da17e67ee7660f66de86769f365972e6cfed2bd78d8c66beb3bd4484"
+    },
+    {
+      "path": ".claude/settings.json",
+      "size": 1514,
+      "sha256": "bca400a75a0935ed7a5751972e7f9efec9069e21bf07bed4bbf1171e2288f2e0"
+    },
+    {
+      "path": "README.md",
+      "size": 3263,
+      "sha256": "c533f83f8391d3cd9298f28491b37c3c18f54319a279fadba2559f09413e87a6"
+    },
+    {
+      "path": "migrations/0001_core.sql",
+      "size": 14695,
+      "sha256": "8518c63459b7a679d51f10a452d6ccd6b5571c5ee5c657aa343e1e8f96343d61"
+    },
+    {
+      "path": "migrations/0002_release_control.sql",
+      "size": 5179,
+      "sha256": "7ce52c1eaf09d63e3c65a5fc948008fe74dec33fc921de2dbf206d9a84a8e8e4"
+    },
+    {
+      "path": "migrations/CHECKSUMS.json",
+      "size": 188,
+      "sha256": "460e81addaa48de20844009833fba96496154d9052b303c2d4c8673e6829c046"
+    },
+    {
+      "path": "package.json",
+      "size": 422,
+      "sha256": "8e1a6a1c14c599aaa4b6f05b77223763443696711fa0a25702de1cb4e0e9ad55"
+    },
+    {
+      "path": "scripts/assert-seeded-defect-detected.mjs",
+      "size": 6507,
+      "sha256": "ea56d839af27c7456d560cebd64a3b9d52b78bd44521b06de9495eabbac9116e"
+    },
+    {
+      "path": "scripts/crash-writer.mjs",
+      "size": 1307,
+      "sha256": "bcde754e6f281d99aeab7e11610bd0062db908f27ffda7c8ff6535692e04a3d0"
+    },
+    {
+      "path": "scripts/independent-validation.mjs",
+      "size": 7728,
+      "sha256": "53d398528a75697755cf05c509e42ee52e3df2a52670e6e04e4d719653a0cbb6"
+    },
+    {
+      "path": "scripts/local-ci.mjs",
+      "size": 3558,
+      "sha256": "ce00341dd7e8dbc7a4cd739ef3d58350a7e38fb7488e6a47d5e4567f3c401627"
+    },
+    {
+      "path": "scripts/pin-migration-checksums.mjs",
+      "size": 1892,
+      "sha256": "171210f0b66a8ba7b6b245b7383947707135b139dc0e8bb10670813bd479991c"
+    },
+    {
+      "path": "scripts/record-baseline.mjs",
+      "size": 9473,
+      "sha256": "a554b8faadf7fcf7cbbd547369cc45932f3f8b90195a3f14b7aa853696df20f0"
+    },
+    {
+      "path": "src/cli.mjs",
+      "size": 6112,
+      "sha256": "8ea1bf7f842aa31ab4d8063c23be5aba1c633216b8122c7f5ba08fef4f0e34d2"
+    },
+    {
+      "path": "src/core/backup.mjs",
+      "size": 5094,
+      "sha256": "e144153b1e0617c5c03d05e0a930e86d9c1b779fc6b930db0af8163fe5f6e28c"
+    },
+    {
+      "path": "src/core/db.mjs",
+      "size": 1066,
+      "sha256": "af68e6692b36432459855f65562cff0e49b5d4fee10ac10a80ba59ef65bef247"
+    },
+    {
+      "path": "src/core/events.mjs",
+      "size": 2563,
+      "sha256": "35dfe042c7d2922a9bcc497b8dcbd16f0b24861ad70f680df98593d7b44b10df"
+    },
+    {
+      "path": "src/core/governor.mjs",
+      "size": 6596,
+      "sha256": "cf7849f52ec3b95588247fd2a8e4cf95fb82d02781e9022c932f51d1aef226d7"
+    },
+    {
+      "path": "src/core/hash.mjs",
+      "size": 989,
+      "sha256": "12c0b503bc27981d3229b7c0f1cabf9d2f5377a7e97ce13ac4e49fb3a2380eeb"
+    },
+    {
+      "path": "src/core/ids.mjs",
+      "size": 203,
+      "sha256": "2ac4d46be6418e7a6b94253247fc54a9fc60f8b4befd20bab2367afafeefef7d"
+    },
+    {
+      "path": "src/core/lease.mjs",
+      "size": 2647,
+      "sha256": "679bd98ea2ff34f2cbe181a7f3eed9b4c75aa60d1e53d0bf7fdd6ca702cf07c9"
+    },
+    {
+      "path": "src/core/migrate.mjs",
+      "size": 3057,
+      "sha256": "6636720ff70dcf900796d6d2d6432010ecdf9bbd0c303d6b6643003010422cf1"
+    },
+    {
+      "path": "src/core/projections.mjs",
+      "size": 3164,
+      "sha256": "f34425c9deec142482ddea7b8e9aaa9286b66eb26f4abf45809101da0d521776"
+    },
+    {
+      "path": "src/domain/status.mjs",
+      "size": 5524,
+      "sha256": "29f06d36e93f1b1d6a71623b8d97343c485fe2a30b1d6f949b70a0bacbc92fe8"
+    },
+    {
+      "path": "test/backup.test.mjs",
+      "size": 3755,
+      "sha256": "81b54c6bf8692aaf48a9a33bbd63971cca2e7ac142e6db73001bcb372d0322ff"
+    },
+    {
+      "path": "test/durability.test.mjs",
+      "size": 2819,
+      "sha256": "78b4d26419d33bc197e6cac9d323ce42c6d33fd169db0999f700faab4c15b8e9"
+    },
+    {
+      "path": "test/events.test.mjs",
+      "size": 3447,
+      "sha256": "c988bf249d396fbe59b06148d510bd71f5b0a941661ece61501710f9bcdc3ee2"
+    },
+    {
+      "path": "test/governor.test.mjs",
+      "size": 10345,
+      "sha256": "31a3008770f1e1138ee546ad8abd6beef34c111efae55c62567e5b6252948f6c"
+    },
+    {
+      "path": "test/guards.test.mjs",
+      "size": 5502,
+      "sha256": "20faf55480844401a6f9aa77c8c25d4da3357c44727b2b1b96d4eaf0acbe5d96"
+    },
+    {
+      "path": "test/helpers.mjs",
+      "size": 1094,
+      "sha256": "a87cc969e2a6c8cd6f46cfd593c18edff9d2e73363803df66cd711d7988f56ec"
+    },
+    {
+      "path": "test/lease.test.mjs",
+      "size": 2487,
+      "sha256": "9af82cb74a6bc4a39b2e482fe1c048636f108c8ad7e3cbaafc8fbd896d700300"
+    },
+    {
+      "path": "test/migrations.test.mjs",
+      "size": 2845,
+      "sha256": "67a08d75ee428c5335f630cec96898a55c0330d9d721adb4f4ddcd292f9f9192"
+    },
+    {
+      "path": "test/projections.test.mjs",
+      "size": 2377,
+      "sha256": "7fb053f5470cd20e6879052e7577ed6ab6b4bfa9dae73746a921e9202ce73c3e"
+    }
+  ]
+}

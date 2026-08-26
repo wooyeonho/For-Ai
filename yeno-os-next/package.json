@@ -1,0 +1,16 @@
+{
+  "name": "yeno-os-next",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "description": "YENO Living OS — WSL Brain truth kernel (Node 24, ESM, zero external packages)",
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "scripts": {
+    "test": "node --test --test-reporter=spec",
+    "ci": "node scripts/local-ci.mjs",
+    "status": "node src/cli.mjs status",
+    "verify": "node src/cli.mjs verify"
+  }
+}
