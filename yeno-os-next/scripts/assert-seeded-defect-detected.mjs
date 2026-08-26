@@ -135,7 +135,65 @@ function record(name, detected, detail) {
   rmSync(s.dir, { recursive: true, force: true });
 }
 
-// Case 8: a corrupted backup file must be refused by backup verify.
+// Case 8: a project promoted from a title with neither a recovered body nor an
+// Owner confirmation. The schema refuses this, so the defect is injected with
+// triggers off — exactly the state a stray writer or a restored bad backup would
+// leave behind, and the coverage invariant must still catch it afterwards.
+{
+  const s = scaffold();
+  const now = new Date().toISOString();
+  s.db.prepare(
+    `INSERT INTO inbox_items (inbox_id, title, source_version_id, state, attempts, next_action, created_at, updated_at)
+     VALUES ('IN-TITLE','title only', NULL, 'BODY_MISSING', 0, 'await official export', ?, ?)`,
+  ).run(now, now);
+  s.db.exec('DROP TRIGGER trg_projects_promotion_needs_evidence');
+  s.db.prepare(
+    `INSERT INTO projects (project_id, code, name, status, priority_raw, promoted_from_inbox, created_at, updated_at)
+     VALUES ('PRJ-FORGED','FORGED','title only','REGISTRY',0,'IN-TITLE', ?, ?)`,
+  ).run(now, now);
+  s.db.close();
+  const run = runValidator(s.dbPath, s.migDir);
+  record(
+    'title_only_project_promoted',
+    run.status !== 0 && /intake_coverage_recomputed/.test(run.stdout),
+    run.stdout.match(/FAIL intake_coverage.*/)?.[0] ?? '',
+  );
+  rmSync(s.dir, { recursive: true, force: true });
+}
+
+// Case 9: an inbox item marked RECOVERED with no recovery attempt behind it.
+{
+  const s = scaffold();
+  const now = new Date().toISOString();
+  s.db.prepare('INSERT INTO blobs (sha256, size_bytes, bytes, created_at) VALUES (?, ?, ?, ?)').run(
+    'c'.repeat(64),
+    5,
+    Buffer.from('hello'),
+    now,
+  );
+  s.db.prepare("INSERT INTO sources (source_id, kind, origin_ref, created_at) VALUES ('SRC-R','FILE','seed',?)").run(now);
+  s.db
+    .prepare(
+      `INSERT INTO source_versions (source_version_id, source_id, blob_sha256, parser_version, provenance_json, fetched_at, confidence)
+       VALUES ('SV-R','SRC-R', ?, 'plain-file/v1', '{}', ?, 'PARSED')`,
+    )
+    .run('c'.repeat(64), now);
+  s.db.exec('DROP TRIGGER trg_inbox_recovered_needs_attempt');
+  s.db.prepare(
+    `INSERT INTO inbox_items (inbox_id, title, source_version_id, state, attempts, next_action, created_at, updated_at)
+     VALUES ('IN-CLAIMED','claims a body', 'SV-R', 'RECOVERED', 1, 'owner review', ?, ?)`,
+  ).run(now, now);
+  s.db.close();
+  const run = runValidator(s.dbPath, s.migDir);
+  record(
+    'recovered_without_attempt',
+    run.status !== 0 && /intake_coverage_recomputed/.test(run.stdout),
+    run.stdout.match(/FAIL intake_coverage.*/)?.[0] ?? '',
+  );
+  rmSync(s.dir, { recursive: true, force: true });
+}
+
+// Case 10: a corrupted backup file must be refused by backup verify.
 {
   const s = scaffold();
   const backup = await createBackup(s.db, { dir: join(s.dir, 'backups') });

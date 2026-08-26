@@ -6,6 +6,7 @@ import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { verifyReport } from './status.mjs';
 import { durabilityEvidence } from './soak.mjs';
+import { intakeCoverage } from './intake.mjs';
 
 const REPO_ROOT = new URL('../../', import.meta.url).pathname;
 
@@ -43,6 +44,7 @@ const REQUIREMENTS = {
     return reasons;
   },
   G2: (db) => {
+    const reasons = [];
     const official = db
       .prepare(
         `SELECT COUNT(*) AS n FROM source_versions sv
@@ -50,7 +52,17 @@ const REQUIREMENTS = {
           WHERE s.kind = 'CHAT_EXPORT' AND sv.confidence <> 'RAW'`,
       )
       .get().n;
-    return official === 0 ? ['NEEDS_SOURCE: no official chat export has been ingested'] : [];
+    if (official === 0) reasons.push('NEEDS_SOURCE: no official chat export has been ingested');
+    // The coverage invariant is part of acceptance, not a report: an item with no
+    // next action, a body claimed without provenance, or a project promoted from
+    // a title alone all block G2 even once an export exists.
+    const coverage = intakeCoverage(db);
+    reasons.push(...coverage.problems);
+    const stillMissing = db
+      .prepare("SELECT COUNT(*) AS n FROM inbox_items WHERE state IN ('BODY_MISSING','NEEDS_SOURCE')")
+      .get().n;
+    if (stillMissing > 0) reasons.push(`${stillMissing} inbox items still have no recovered body`);
+    return reasons;
   },
   G5: (db) => {
     // A bounded live provider RUN is an approved A3 run that actually finished.

@@ -24,6 +24,7 @@ const STEPS = [
     argv: ['scripts/soak.mjs', '--cycles', '2', '--batch', '8', '--evidence-dir', 'evidence/runtime'],
   },
   { id: 'independent_validation', argv: ['scripts/independent-validation.mjs'] },
+  { id: 'self_adversarial_probes', argv: ['scripts/self-adversarial-probes.mjs'] },
   { id: 'seeded_defect_detection', argv: ['scripts/assert-seeded-defect-detected.mjs'] },
 ];
 

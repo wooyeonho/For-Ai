@@ -253,6 +253,93 @@ verdict(
   soakProblems.join(' | '),
 );
 
+// 8b. Intake coverage, recomputed from the base tables rather than read out of
+// v_intake_invariant, so a wrong view cannot certify itself. A title is not a
+// body and a body is not a project: each of those claims is checked against the
+// rows that would have to exist for it to be true.
+{
+  const intakeProblems = [];
+  const count = (sql, ...args) => db.prepare(sql).get(...args).n;
+
+  const noNextAction = count("SELECT COUNT(*) AS n FROM inbox_items WHERE TRIM(next_action) = ''");
+  if (noNextAction > 0) intakeProblems.push(`${noNextAction} inbox items have no next action`);
+
+  const bodyless = count(
+    "SELECT COUNT(*) AS n FROM inbox_items WHERE state IN ('RECOVERED','PARTIAL') AND source_version_id IS NULL",
+  );
+  if (bodyless > 0) intakeProblems.push(`${bodyless} items claim a recovered body with no provenance`);
+
+  const unattested = db
+    .prepare(
+      `SELECT i.inbox_id FROM inbox_items i
+        WHERE i.state IN ('RECOVERED','PARTIAL')
+          AND NOT EXISTS (
+            SELECT 1 FROM recovery_attempts a
+             WHERE a.inbox_id = i.inbox_id
+               AND a.outcome IN ('RECOVERED','PARTIAL')
+               AND a.source_version_id = i.source_version_id)`,
+    )
+    .all();
+  if (unattested.length > 0) {
+    intakeProblems.push(`${unattested.length} recovered items have no matching recovery attempt: ${unattested.map((r) => r.inbox_id).slice(0, 5).join(',')}`);
+  }
+
+  const titleOnly = db
+    .prepare(
+      `SELECT project_id FROM projects
+        WHERE promoted_from_inbox IS NOT NULL AND body_evidence_ref IS NULL AND owner_confirmation_ref IS NULL`,
+    )
+    .all();
+  if (titleOnly.length > 0) {
+    intakeProblems.push(`${titleOnly.length} projects were promoted from a title alone: ${titleOnly.map((r) => r.project_id).slice(0, 5).join(',')}`);
+  }
+
+  // Provenance is per (source, bytes, parser); identical bytes from different
+  // origins are separate versions, and a re-import must not have forked one.
+  const forked = db
+    .prepare(
+      `SELECT source_id, blob_sha256, parser_version, COUNT(*) AS n FROM source_versions
+        GROUP BY source_id, blob_sha256, parser_version, provenance_json HAVING n > 1`,
+    )
+    .all();
+  if (forked.length > 0) intakeProblems.push(`${forked.length} source_version groups were duplicated by re-import`);
+
+  const acceptedWithoutProvenance = count(
+    "SELECT COUNT(*) AS n FROM intakes WHERE outcome = 'ACCEPTED' AND source_version_id IS NULL",
+  );
+  if (acceptedWithoutProvenance > 0) {
+    intakeProblems.push(`${acceptedWithoutProvenance} accepted intakes name no source_version`);
+  }
+
+  const orphanIntakes = count(
+    `SELECT COUNT(*) AS n FROM intakes i
+      WHERE i.source_version_id IS NOT NULL
+        AND NOT EXISTS (SELECT 1 FROM source_versions sv WHERE sv.source_version_id = i.source_version_id)`,
+  );
+  if (orphanIntakes > 0) intakeProblems.push(`${orphanIntakes} intakes point at a missing source_version`);
+
+  const fetchedWithoutEvidence = count(
+    "SELECT COUNT(*) AS n FROM source_candidates WHERE state = 'FETCHED' AND (evidence_ref IS NULL OR TRIM(evidence_ref) = '')",
+  );
+  if (fetchedWithoutEvidence > 0) intakeProblems.push(`${fetchedWithoutEvidence} candidates claim FETCHED with no evidence`);
+
+  const g2State = db.prepare("SELECT state FROM gates WHERE gate_id = 'G2'").get()?.state;
+  if (g2State === 'PASSED') {
+    const chatExports = count("SELECT COUNT(*) AS n FROM sources WHERE kind = 'CHAT_EXPORT'");
+    const unresolved = count("SELECT COUNT(*) AS n FROM inbox_items WHERE state IN ('BODY_MISSING','NEEDS_SOURCE')");
+    if (chatExports === 0) intakeProblems.push('G2: PASSED with no official chat export ingested');
+    if (unresolved > 0) intakeProblems.push(`G2: PASSED with ${unresolved} unresolved inbox items`);
+  }
+
+  const inboxTotal = count('SELECT COUNT(*) AS n FROM inbox_items');
+  verdict(
+    intakeProblems.length === 0,
+    'intake_coverage_recomputed',
+    `${inboxTotal} inbox items, ${count('SELECT COUNT(*) AS n FROM source_versions')} source versions, ${count('SELECT COUNT(*) AS n FROM intakes')} intakes`,
+    intakeProblems.join(' | '),
+  );
+}
+
 // 9. Release train: every PASSED gate must point at an evidence file that
 // really exists on disk, pass in order, and satisfy its own gate rule. This is
 // recomputed here without importing src/core or src/domain.

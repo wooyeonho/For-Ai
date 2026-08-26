@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+import { readFileSync } from 'node:fs';
 import { argv, exit, stdout } from 'node:process';
 import { openDb, DEFAULT_DB_PATH } from './core/db.mjs';
 import { migrate, MIGRATIONS_DIR, appliedMigrations } from './core/migrate.mjs';
@@ -20,6 +21,15 @@ import {
 import { activateDesires, goalTrace, observe, remember, selfReport } from './domain/self.mjs';
 import { soakReport } from './domain/soak.mjs';
 import { gateReport, passGate } from './domain/gate.mjs';
+import {
+  ingest,
+  intakeReport,
+  promoteInbox,
+  recordCandidateProbe,
+  recordRecoveryAttempt,
+  recoveryQueue,
+  registerParsers,
+} from './domain/intake.mjs';
 
 const USAGE = `yeno <command>
 
@@ -49,6 +59,15 @@ const USAGE = `yeno <command>
   self activate                    derive desire activations from internal state
   self trace <goalId> [--json]     desire -> activation -> goal -> council -> verdict
   soak report [--soak ID] [--json] G1 durability soak sessions and probe results
+  intake parsers                   register the built-in parser registry
+  intake file --path P --parser ID [--kind FILE] [--origin REF] [--note N]
+                                   seal bytes in the vault, then parse (re-import is a no-op)
+  intake report [--json]           coverage invariant, parsers, states, candidates
+  intake queue [--json] [--limit N] items still waiting on a body
+  recovery attempt --inbox ID --method M --outcome O [--source-version SV] [--evidence E] --detail D
+  candidate probe --id ID --state S [--evidence E] [--detail D]
+  inbox promote --inbox ID --code C --name N [--body-evidence E] [--owner-confirmation E]
+                                   refuses title-only promotion
   gate list [--json]               release train state and evidence presence
   gate pass --gate G --evidence E  promote a gate only if its machine checks hold
                                    (refusal reasons are recorded, never bypassed)
@@ -259,6 +278,66 @@ async function main() {
         }
         print({ next_id: entry.next_id, gate_id: entry.gate_id, exact_action: entry.exact_action }, json);
         return 0;
+      }
+      case 'intake parsers': {
+        print(registerParsers(db), json);
+        return 0;
+      }
+      case 'intake file': {
+        const path = str(flags.path, 'intake file requires --path');
+        const result = ingest(db, {
+          bytes: readFileSync(path),
+          kind: typeof flags.kind === 'string' ? flags.kind : 'FILE',
+          originRef: typeof flags.origin === 'string' ? flags.origin : path,
+          parserId: str(flags.parser, 'intake file requires --parser'),
+          note: typeof flags.note === 'string' ? flags.note : null,
+        });
+        catchUp(db);
+        print(result, json);
+        return result.outcome === 'REJECTED' ? 1 : 0;
+      }
+      case 'intake report': {
+        const report = intakeReport(db);
+        print(report, json);
+        return report.ok ? 0 : 1;
+      }
+      case 'intake queue': {
+        print(recoveryQueue(db, Number(flags.limit ?? 20)), json);
+        return 0;
+      }
+      case 'recovery attempt': {
+        const result = recordRecoveryAttempt(db, str(flags.inbox, 'recovery attempt requires --inbox'), {
+          method: str(flags.method, 'recovery attempt requires --method'),
+          outcome: str(flags.outcome, 'recovery attempt requires --outcome'),
+          sourceVersionId: typeof flags['source-version'] === 'string' ? flags['source-version'] : null,
+          evidenceRef: typeof flags.evidence === 'string' ? flags.evidence : null,
+          detail: str(flags.detail, 'recovery attempt requires --detail'),
+        });
+        catchUp(db);
+        print(result, json);
+        return 0;
+      }
+      case 'candidate probe': {
+        const row = recordCandidateProbe(db, str(flags.id, 'candidate probe requires --id'), {
+          state: str(flags.state, 'candidate probe requires --state'),
+          evidenceRef: typeof flags.evidence === 'string' ? flags.evidence : null,
+          detail: typeof flags.detail === 'string' ? flags.detail : '',
+        });
+        print(row, json);
+        return 0;
+      }
+      case 'inbox promote': {
+        const result = promoteInbox(db, str(flags.inbox, 'inbox promote requires --inbox'), {
+          code: str(flags.code, 'inbox promote requires --code'),
+          name: str(flags.name, 'inbox promote requires --name'),
+          bodyEvidenceRef: typeof flags['body-evidence'] === 'string' ? flags['body-evidence'] : null,
+          ownerConfirmationRef:
+            typeof flags['owner-confirmation'] === 'string' ? flags['owner-confirmation'] : null,
+          programUg: typeof flags.program === 'string' ? flags.program : null,
+        });
+        catchUp(db);
+        print(result, json);
+        return result.promoted ? 0 : 1;
       }
       case 'gate list': {
         print(gateReport(db), json);
