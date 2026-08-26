@@ -578,6 +578,48 @@ verdict(
   daemonProblems.join(' | '),
 );
 
+// Supervision soak, recomputed from the raw rows. The claim is narrower than
+// the daemon soak's and easier to fake, so it is checked separately: a cycle
+// whose daemon was killed under a live supervisor only passes if the supervisor
+// really produced a *different* process, and a soak only counts if at least one
+// cycle killed the whole tree — the case nothing local can recover from.
+const supervisorProblems = [];
+const dishonestSupervisorSoak = db
+  .prepare(
+    `SELECT COUNT(*) AS n FROM supervisor_soak_cycles
+      WHERE ok = 1 AND ((death <> 'clean' AND killed = 0)
+                        OR (death = 'child' AND (restarts < 1 OR distinct_child_pids < 2))
+                        OR duplicate_boundaries <> 0 OR duplicate_jobs <> 0 OR fires_regressed <> 0)`,
+  )
+  .get().n;
+if (dishonestSupervisorSoak > 0) {
+  supervisorProblems.push(
+    `${dishonestSupervisorSoak} supervisor soak cycle(s) call a missing kill, a restart with no new process or a duplicated boundary a pass`,
+  );
+}
+const supervisorSoaks = db
+  .prepare(
+    `SELECT soak_ref, COUNT(*) AS cycles, SUM(ok) AS ok_cycles, SUM(boundaries_served) AS served,
+            SUM(restarts) AS restarts,
+            SUM(death = 'child' AND killed = 1) AS child_kills,
+            SUM(death = 'supervisor' AND killed = 1) AS tree_kills
+       FROM supervisor_soak_cycles GROUP BY soak_ref`,
+  )
+  .all();
+const cleanSupervisorSoak = supervisorSoaks
+  .filter((s) => s.cycles === s.ok_cycles && s.child_kills > 0 && s.tree_kills > 0 && s.restarts > 0 && s.served >= s.cycles)
+  .sort((a, b) => b.cycles - a.cycles)[0];
+verdict(
+  supervisorProblems.length === 0,
+  'scheduler_supervisor_recomputed',
+  cleanSupervisorSoak
+    ? `soak ${cleanSupervisorSoak.soak_ref} ${cleanSupervisorSoak.ok_cycles}/${cleanSupervisorSoak.cycles}, ` +
+        `${cleanSupervisorSoak.child_kills} child kills, ${cleanSupervisorSoak.tree_kills} tree kills, ` +
+        `${cleanSupervisorSoak.restarts} unattended restarts, ${cleanSupervisorSoak.served} boundaries served, 0 duplicated`
+    : 'no clean supervisor soak on record',
+  supervisorProblems.join(' | '),
+);
+
 const g5Row = gates.find((g) => g.gate_id === 'G5');
 const g6Row = gates.find((g) => g.gate_id === 'G6');
 if (g6Row?.state === 'PASSED' && g5Row?.state !== 'PASSED') gateProblems.push('G6: PASSED while G5 is not');

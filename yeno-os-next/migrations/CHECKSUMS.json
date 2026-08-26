@@ -12,5 +12,6 @@
   "0011_approval_provenance.sql": "7056e8a9336cab355e16b6dab6b3fffac9fbcda417bd7d96394e6099ce7357d5",
   "0012_workflow_runtime.sql": "9447ba9eef987a8d1dec565616ed806a9c85874486e0d37ae9d8797d059bdefe",
   "0013_scheduler.sql": "c144ff9a7db3bdd4b3250a892953aa750880f6e4fe94e374d6153796ebfffccf",
-  "0014_scheduler_daemon.sql": "cf358bccbbc0b96c3c427d4853c0afa3f769949e0c208d89ed2139b1e9a05a38"
+  "0014_scheduler_daemon.sql": "cf358bccbbc0b96c3c427d4853c0afa3f769949e0c208d89ed2139b1e9a05a38",
+  "0015_supervisor.sql": "35a577e8e025bc084095673ed2bc99377b38e354c7fb2e2953208d18706242d3"
 }

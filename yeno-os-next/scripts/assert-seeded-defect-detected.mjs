@@ -421,6 +421,48 @@ function record(name, detected, detail) {
   rmSync(s.dir, { recursive: true, force: true });
 }
 
+// Case 20: a supervisor soak cycle claiming the supervisor replaced a killed
+// daemon while only ever running one process — a restart that never happened.
+{
+  const s = scaffold();
+  s.db.exec('DROP TRIGGER trg_supervisor_soak_honest_verdict');
+  s.db.exec(
+    `INSERT INTO supervisor_soak_cycles (cycle_id, soak_ref, cycle, death, killed, restarts,
+       distinct_child_pids, ran_ms, boundaries_served, duplicate_boundaries, duplicate_jobs,
+       fires_regressed, ok, detail, recorded_at)
+     VALUES ('VSC-seed','VSOAK-seed',1,'child',1,1,1,1000,3,0,0,0,1,'seeded lie','2026-08-26T00:00:00Z')`,
+  );
+  s.db.close();
+  const run = runValidator(s.dbPath, s.migDir);
+  record(
+    'supervisor_soak_claims_a_restart_with_no_new_process',
+    run.status !== 0 && /FAIL scheduler_supervisor_recomputed/.test(run.stdout),
+    run.stdout.match(/FAIL scheduler_supervisor_recomputed.*/)?.[0] ?? '',
+  );
+  rmSync(s.dir, { recursive: true, force: true });
+}
+
+// Case 21: a supervisor soak cycle that served the same boundary twice across a
+// tree kill and passed anyway — the exactly-once claim quietly abandoned.
+{
+  const s = scaffold();
+  s.db.exec('DROP TRIGGER trg_supervisor_soak_honest_verdict');
+  s.db.exec(
+    `INSERT INTO supervisor_soak_cycles (cycle_id, soak_ref, cycle, death, killed, restarts,
+       distinct_child_pids, ran_ms, boundaries_served, duplicate_boundaries, duplicate_jobs,
+       fires_regressed, ok, detail, recorded_at)
+     VALUES ('VSC-dup','VSOAK-seed',1,'supervisor',1,0,1,1000,3,1,0,0,1,'seeded lie','2026-08-26T00:00:00Z')`,
+  );
+  s.db.close();
+  const run = runValidator(s.dbPath, s.migDir);
+  record(
+    'supervisor_soak_calls_a_duplicated_boundary_a_pass',
+    run.status !== 0 && /FAIL scheduler_supervisor_recomputed/.test(run.stdout),
+    run.stdout.match(/FAIL scheduler_supervisor_recomputed.*/)?.[0] ?? '',
+  );
+  rmSync(s.dir, { recursive: true, force: true });
+}
+
 const missed = results.filter((r) => !r.detected);
 process.stdout.write(`\nseeded defects: ${results.length}, detected: ${results.length - missed.length}, missed: ${missed.length}\n`);
 if (missed.length > 0) {
