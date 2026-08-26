@@ -34,6 +34,7 @@ const STEPS = [
   { id: 'ui_contract_pin', argv: ['scripts/pin-ui-contract.mjs', '--check'] },
   { id: 'ui_render_screen', argv: ['src/cli.mjs', 'mc', 'render', '--limit', '1'] },
   { id: 'ui_follow_exercise', argv: ['scripts/ui-follow-exercise.mjs'] },
+  { id: 'ui_screen_soak', argv: ['scripts/ui-screen-soak.mjs', '--cycles=4'] },
   { id: 'independent_validation', argv: ['scripts/independent-validation.mjs'] },
   { id: 'self_adversarial_probes', argv: ['scripts/self-adversarial-probes.mjs'] },
   { id: 'governor_red_team', argv: ['scripts/red-team-governor.mjs', '--no-record'] },
