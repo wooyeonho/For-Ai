@@ -32,6 +32,7 @@ function stable(value) {
 const findings = [];
 const fail = (check, detail) => findings.push({ check, ok: false, detail });
 const pass = (check, detail = '') => findings.push({ check, ok: true, detail });
+const verdict = (ok, check, passDetail, failDetail) => (ok ? pass(check, passDetail) : fail(check, failDetail));
 
 if (!existsSync(dbPath)) {
   process.stderr.write(`INDEPENDENT_VALIDATION: no database at ${dbPath}\n`);
@@ -42,7 +43,7 @@ const db = new DatabaseSync(dbPath, { readOnly: true });
 
 // 1. SQLite's own integrity opinion.
 const integrity = db.prepare('PRAGMA integrity_check').all().map((r) => Object.values(r)[0]).join('; ');
-integrity === 'ok' ? pass('sqlite_integrity') : fail('sqlite_integrity', integrity);
+verdict(integrity === 'ok', 'sqlite_integrity', '', integrity);
 
 // 2. Migration checksums recomputed from the files on disk.
 const applied = db.prepare('SELECT filename, checksum, applied_order FROM schema_migrations ORDER BY applied_order').all();
@@ -53,9 +54,12 @@ for (const row of applied) {
     continue;
   }
   const recomputed = digest(readFileSync(join(migrationsDir, row.filename), 'utf8'));
-  recomputed === row.checksum
-    ? pass('migration_checksum', row.filename)
-    : fail('migration_checksum', `${row.filename} db=${row.checksum} disk=${recomputed}`);
+  verdict(
+    recomputed === row.checksum,
+    'migration_checksum',
+    row.filename,
+    `${row.filename} db=${row.checksum} disk=${recomputed}`,
+  );
 }
 if (applied.map((r) => r.filename).join(',') !== diskFiles.slice(0, applied.length).join(',')) {
   fail('migration_order', `applied=${applied.map((r) => r.filename)} disk=${diskFiles}`);
@@ -137,9 +141,12 @@ for (const [id, want] of expectedInbox) {
   if (!got || stable(got) !== stable(want)) inboxMismatch.push(`${id}: want=${stable(want)} got=${stable(got)}`);
 }
 for (const id of storedInbox.keys()) if (!expectedInbox.has(id)) inboxMismatch.push(`${id}: not derivable from events`);
-inboxMismatch.length === 0
-  ? pass('projection_matches_ledger', `${expectedInbox.size} inbox rows`)
-  : fail('projection_matches_ledger', inboxMismatch.join(' | '));
+verdict(
+  inboxMismatch.length === 0,
+  'projection_matches_ledger',
+  `${expectedInbox.size} inbox rows`,
+  inboxMismatch.join(' | '),
+);
 
 // 6. Safety objects must still exist in the schema.
 const objects = new Set(db.prepare("SELECT name FROM sqlite_master WHERE type IN ('trigger','view','table')").all().map((r) => r.name));
@@ -191,9 +198,12 @@ for (const row of vaultRows) {
   const recomputed = createHash('sha256').update(row.bytes).digest('hex');
   if (recomputed !== row.blob_sha256) vaultProblems.push(`${row.source_version_id}: bytes hash mismatch`);
 }
-vaultProblems.length === 0
-  ? pass('vault_bytes_rehashed', `${vaultRows.length} source versions`)
-  : fail('vault_bytes_rehashed', vaultProblems.join(' | '));
+verdict(
+  vaultProblems.length === 0,
+  'vault_bytes_rehashed',
+  `${vaultRows.length} source versions`,
+  vaultProblems.join(' | '),
+);
 
 // 8. Durability: recompute every passing soak verdict from the probe rows
 // alone, so a soak cannot be believed on the strength of its own summary.
@@ -236,9 +246,12 @@ for (const s of soakSessions) {
 const g1State = db.prepare("SELECT state FROM gates WHERE gate_id = 'G1'").get()?.state;
 const passingSoaks = soakSessions.filter((s) => s.state === 'PASSED').length;
 if (g1State === 'PASSED' && passingSoaks === 0) soakProblems.push('G1 is PASSED with no passing soak session');
-soakProblems.length === 0
-  ? pass('soak_verdicts_recomputed', `${soakSessions.length} sessions, ${passingSoaks} passing`)
-  : fail('soak_verdicts_recomputed', soakProblems.join(' | '));
+verdict(
+  soakProblems.length === 0,
+  'soak_verdicts_recomputed',
+  `${soakSessions.length} sessions, ${passingSoaks} passing`,
+  soakProblems.join(' | '),
+);
 
 // 9. Release train: every PASSED gate must point at an evidence file that
 // really exists on disk, pass in order, and satisfy its own gate rule. This is
@@ -277,9 +290,12 @@ if (g5Row?.state === 'PASSED') {
     .get().n;
   if (liveRuns === 0) gateProblems.push('G5: PASSED with no approved live provider RUN');
 }
-gateProblems.length === 0
-  ? pass('gate_promotions_recomputed', `${gates.filter((g) => g.state === 'PASSED').length} gates passed`)
-  : fail('gate_promotions_recomputed', gateProblems.join(' | '));
+verdict(
+  gateProblems.length === 0,
+  'gate_promotions_recomputed',
+  `${gates.filter((g) => g.state === 'PASSED').length} gates passed`,
+  gateProblems.join(' | '),
+);
 
 db.close();
 
