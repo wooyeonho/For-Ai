@@ -560,6 +560,86 @@ function scaffoldWithCycle() {
   rmSync(s.dir, { recursive: true, force: true });
 }
 
+// G8 read side. A dashboard lies by omission and by relabelling, so each case
+// rewrites one Mission Control view — exactly what a "small UI fix" would do —
+// and the validator must catch the surface drifting from the tables.
+// Case 25: the Inbox panel quietly hides the items that have no body.
+{
+  const s = scaffold();
+  s.db.exec(
+    `INSERT INTO inbox_items (inbox_id, title, state, attempts, next_action, created_at, updated_at)
+     VALUES ('IN-hidden', 'a title with no body', 'BODY_MISSING', 0, 'await official export',
+             '2026-08-26T00:00:00Z', '2026-08-26T00:00:00Z')`,
+  );
+  s.db.exec('DROP VIEW v_mc_inbox');
+  s.db.exec('CREATE VIEW v_mc_inbox AS SELECT *, 1 AS has_body FROM inbox_items WHERE 0 = 1');
+  s.db.close();
+  const run = runValidator(s.dbPath, s.migDir);
+  record(
+    'mission_control_inbox_panel_hides_items',
+    run.status !== 0 && /FAIL mission_control_panels_recomputed/.test(run.stdout),
+    run.stdout.match(/FAIL mission_control_panels_recomputed.*/)?.[0] ?? '',
+  );
+  rmSync(s.dir, { recursive: true, force: true });
+}
+
+// Case 26: the Approvals panel draws every grant as live, so an expired or
+// revoked authority looks usable.
+{
+  const s = scaffold();
+  s.db.exec('DROP VIEW v_mc_approvals');
+  s.db.exec(
+    `CREATE VIEW v_mc_approvals AS
+     SELECT approval_id, exact_action, target, 'LIVE' AS state, uses, max_uses, max_cost_krw,
+            expires_at, granted_by, owner_packet_ref, rollback_plan, created_at FROM approvals`,
+  );
+  setStop(s.db, false, 'seeded defect: approval panel', 'owner');
+  s.db.exec(
+    `INSERT INTO approvals (approval_id, scope_hash, exact_action, target, payload_hash, max_cost_krw,
+       expires_at, max_uses, uses, rollback_plan, revoked, granted_by, created_at, owner_packet_ref)
+     VALUES ('APR-seeded-stale', 'seededscope', 'seed.action', 'seed://target', 'seededpayload', 0,
+       '2020-01-01T00:00:00.000Z', 1, 0, 'none', 0, 'owner', '2020-01-01T00:00:00.000Z',
+       'evidence/OWNER-PACKET-002.md')`,
+  );
+  s.db.close();
+  const run = runValidator(s.dbPath, s.migDir);
+  record(
+    'mission_control_shows_an_expired_approval_as_live',
+    run.status !== 0 && /FAIL mission_control_panels_recomputed/.test(run.stdout),
+    run.stdout.match(/FAIL mission_control_panels_recomputed.*/)?.[0] ?? '',
+  );
+  rmSync(s.dir, { recursive: true, force: true });
+}
+
+// Case 27: the Settings panel reports the emergency stop as released while it is
+// engaged — the single most dangerous thing a panel can get wrong.
+{
+  const s = scaffold();
+  s.db.exec('DROP VIEW v_mc_settings');
+  s.db.exec(
+    `CREATE VIEW v_mc_settings AS
+     SELECT 0 AS emergency_stop_engaged, NULL AS emergency_stop_reason,
+            (SELECT enabled FROM scheduler_state WHERE id = 1) AS scheduler_enabled,
+            0 AS schedules_armed, 0 AS schedules,
+            (SELECT max_active FROM portfolio_capacity WHERE id = 1) AS portfolio_max_active,
+            (SELECT COUNT(*) FROM projects WHERE status IN ('BUILD','WATCH')) AS projects_active,
+            (SELECT version FROM identity_kernel WHERE active = 1) AS identity_version,
+            (SELECT version FROM release_state WHERE id = 1) AS release_version,
+            (SELECT current_gate FROM release_state WHERE id = 1) AS current_gate,
+            (SELECT COUNT(*) FROM schema_migrations) AS migrations_applied,
+            (SELECT COUNT(*) FROM events) AS events,
+            (SELECT hash FROM events ORDER BY seq DESC LIMIT 1) AS head_hash`,
+  );
+  s.db.close();
+  const run = runValidator(s.dbPath, s.migDir);
+  record(
+    'mission_control_shows_the_stop_as_released_while_engaged',
+    run.status !== 0 && /FAIL mission_control_panels_recomputed/.test(run.stdout),
+    run.stdout.match(/FAIL mission_control_panels_recomputed.*/)?.[0] ?? '',
+  );
+  rmSync(s.dir, { recursive: true, force: true });
+}
+
 const missed = results.filter((r) => !r.detected);
 process.stdout.write(`\nseeded defects: ${results.length}, detected: ${results.length - missed.length}, missed: ${missed.length}\n`);
 if (missed.length > 0) {

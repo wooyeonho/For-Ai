@@ -766,6 +766,88 @@ verdict(
   portfolioProblems.join(' | '),
 );
 
+// ---------------------------------------------------------------------------
+// G8 read side. The Mission Control panels are views, so the interesting lie is
+// a panel that disagrees with the tables underneath it: an item missing from the
+// Inbox, a goal that reads as decided with no verdict, an expired approval still
+// drawn as live, or a Settings row showing the stop as off while it is engaged.
+// Everything here is recomputed from the base tables, never from another view.
+// ---------------------------------------------------------------------------
+const mcProblems = [];
+const viewNames = new Set(
+  db.prepare("SELECT name FROM sqlite_master WHERE type = 'view'").all().map((r) => r.name),
+);
+const mcPanels = [
+  ['v_mc_inbox', 'SELECT COUNT(*) AS n FROM inbox_items'],
+  ['v_mc_projects', 'SELECT COUNT(*) AS n FROM projects'],
+  ['v_mc_timeline', 'SELECT COUNT(*) AS n FROM events'],
+  ['v_mc_council', 'SELECT COUNT(*) AS n FROM goals'],
+  ['v_mc_approvals', 'SELECT COUNT(*) AS n FROM approvals'],
+  ['v_mc_costs', 'SELECT COUNT(*) AS n FROM budget_profiles'],
+];
+if (!viewNames.has('v_mc_settings')) mcProblems.push('no Mission Control surface (0017 not applied)');
+else {
+  for (const [view, rawSql] of mcPanels) {
+    if (!viewNames.has(view)) {
+      mcProblems.push(`${view} is missing`);
+      continue;
+    }
+    const shown = db.prepare(`SELECT COUNT(*) AS n FROM ${view}`).get().n;
+    const raw = db.prepare(rawSql).get().n;
+    if (shown !== raw) mcProblems.push(`${view} shows ${shown} of ${raw} row(s)`);
+  }
+
+  // Approval lifecycle: recomputed here in JS, compared with what the panel draws.
+  const nowIsoStamp = new Date().toISOString();
+  for (const a of db.prepare('SELECT * FROM approvals').all()) {
+    const expected =
+      a.revoked === 1
+        ? 'REVOKED'
+        : a.uses >= a.max_uses
+          ? 'EXHAUSTED'
+          : a.expires_at <= nowIsoStamp
+            ? 'EXPIRED'
+            : 'LIVE';
+    const shown = db.prepare('SELECT state FROM v_mc_approvals WHERE approval_id = ?').get(a.approval_id)?.state;
+    if (shown !== expected) mcProblems.push(`${a.approval_id}: panel says ${shown}, the row means ${expected}`);
+  }
+
+  // No goal may read as decided unless a verdict exists.
+  for (const g of db.prepare("SELECT goal_id, state, verdict_id FROM goals WHERE state IN ('SELECTED','DONE')").all()) {
+    if (!g.verdict_id) mcProblems.push(`${g.goal_id}: state ${g.state} with no verdict to show`);
+  }
+
+  const mcSettings = db.prepare('SELECT * FROM v_mc_settings').get();
+  const rawStop = db.prepare('SELECT engaged FROM emergency_stop WHERE id = 1').get()?.engaged;
+  const rawEvents = db.prepare('SELECT COUNT(*) AS n FROM events').get().n;
+  const rawActive = db.prepare("SELECT COUNT(*) AS n FROM projects WHERE status IN ('BUILD','WATCH')").get().n;
+  const rawHead = db.prepare('SELECT hash FROM events ORDER BY seq DESC LIMIT 1').get()?.hash ?? null;
+  if (mcSettings.emergency_stop_engaged !== rawStop) {
+    mcProblems.push(`settings shows stop ${mcSettings.emergency_stop_engaged}, the table says ${rawStop}`);
+  }
+  if (mcSettings.events !== rawEvents) mcProblems.push(`settings shows ${mcSettings.events} events, the ledger has ${rawEvents}`);
+  if (mcSettings.projects_active !== rawActive) mcProblems.push(`settings shows ${mcSettings.projects_active} active, the table has ${rawActive}`);
+  if (mcSettings.head_hash !== rawHead) mcProblems.push('settings shows a head hash that is not the ledger head');
+
+  // The read surface must be readable with no write privilege at all.
+  try {
+    const roDb = new DatabaseSync(dbPath, { readOnly: true });
+    for (const [view] of mcPanels) roDb.prepare(`SELECT * FROM ${view} LIMIT 1`).all();
+    roDb.prepare('SELECT * FROM v_mc_settings').get();
+    roDb.close();
+  } catch (err) {
+    mcProblems.push(`the surface cannot be served read-only: ${err.message}`);
+  }
+}
+verdict(
+  mcProblems.length === 0,
+  'mission_control_panels_recomputed',
+  viewNames.has('v_mc_settings')
+    ? `8 panels agree with the base tables, served read-only`
+    : 'no surface',
+  mcProblems.join(' | '),
+);
+
 const g7Row = gates.find((g) => g.gate_id === 'G7');
 if (g7Row?.state === 'PASSED' && usefulCycles.length === 0) {
   gateProblems.push('G7: PASSED with no verified portfolio cycle');

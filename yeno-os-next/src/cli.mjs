@@ -62,6 +62,7 @@ import {
   setProjectStatus,
 } from './domain/portfolio.mjs';
 import { makeArtifactVerifier } from './domain/portfolio-verifier.mjs';
+import { panel, panels, panelNames, g8ReadSideAcceptance } from './domain/mission-control.mjs';
 import {
   createSchedule,
   setScheduleEnabled,
@@ -152,6 +153,11 @@ const USAGE = `yeno <command>
                                    one pass: source -> goal -> RUN -> independent
                                    verification -> outcome -> memory
   portfolio report [--json]        capacity, adapters, demand, cycles, G7 acceptance
+  mc panels [--json] [--limit N]   the whole Mission Control read surface, served
+                                   from a read-only handle (8 panels + G8 read-side
+                                   acceptance)
+  mc panel --name inbox|projects|timeline|council|approvals|evidence|costs|settings
+           [--json] [--limit N]    one panel, deterministic, no writes possible
   gate list [--json]               release train state and evidence presence
   gate pass --gate G --evidence E  promote a gate only if its machine checks hold
                                    (refusal reasons are recorded, never bypassed)
@@ -219,6 +225,29 @@ async function main() {
       db.close();
     }
     return 0;
+  }
+
+  // Mission Control is the read side only: it is served from a read-only handle
+  // so a panel can never write, no matter what the code above it asks for.
+  if (command === 'mc') {
+    const roDb = openDb(dbPath, { readOnly: true });
+    try {
+      const limit = flags.limit === undefined ? null : Number(flags.limit);
+      if (sub === 'panels' || sub === undefined) {
+        const acceptance = g8ReadSideAcceptance(roDb);
+        print({ ...panels(roDb, { limit }), acceptance }, json);
+        return acceptance.ok ? 0 : 1;
+      }
+      if (sub === 'panel') {
+        const name = str(flags.name, `mc panel needs --name (${panelNames().join('|')})`);
+        print(panel(roDb, name, { limit }), json);
+        return 0;
+      }
+      stdout.write(`${USAGE}\n`);
+      return 2;
+    } finally {
+      roDb.close();
+    }
   }
 
   const db = openDb(dbPath);

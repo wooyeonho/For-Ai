@@ -65,6 +65,7 @@ c144ff9a7db3bdd4b3250a892953aa750880f6e4fe94e374d6153796ebfffccf  migrations/001
 cf358bccbbc0b96c3c427d4853c0afa3f769949e0c208d89ed2139b1e9a05a38  migrations/0014_scheduler_daemon.sql
 35a577e8e025bc084095673ed2bc99377b38e354c7fb2e2953208d18706242d3  migrations/0015_supervisor.sql
 58c2ecf0411ad2170e714a100bd1508d7b61b216366db19d99cf4f667e4612ea  migrations/0016_portfolio.sql
+82c5c8d63973cb0e16e8b8fa504eb22a5234779f9e95e8a60a025586db5fca00  migrations/0017_mission_control.sql
 ```
 
 All sixteen are applied and pinned in `migrations/CHECKSUMS.json`; `node
@@ -133,10 +134,10 @@ $ node --test
 ℹ todo 0
 ```
 
-**163 tests.** 63 at G0/continuity, plus 11 functional-self, 9 durability soak,
+**171 tests.** 63 at G0/continuity, plus 11 functional-self, 9 durability soak,
 5 gate-promotion, 14 G2 intake, 14 G3 governance, 11 G4 workflow-runtime, 11 G4
-scheduler, 5 G4 scheduler-daemon, 8 G4 scheduler-supervisor and 12 G7
-PortfolioOps tests. No 67-test run exists in this checkout.
+scheduler, 5 G4 scheduler-daemon, 8 G4 scheduler-supervisor, 12 G7 PortfolioOps
+and 8 G8 Mission Control read-side tests. No 67-test run exists in this checkout.
 
 `npm run lint` and `npm run typecheck` were attempted and **do not exist** in
 this repository (`npm error Missing script`). They are absent, not passing.
@@ -256,7 +257,8 @@ a fresh DB, 30000 events, 1800/1800 probes passing, 308314 ms.
 | G5 Agent Team | `PENDING` | `BLOCKED_PROVIDER_ACCESS`: no Claude Code / Codex / Devin bounded live RUN has passed |
 | G6 Functional Self | `PENDING` | `PREP_ONLY`: implementation and tests proceed locally; promotion withheld until G5 is resolved |
 | G7 PortfolioOps | `PENDING` | one source carried through goal → durable RUN → independent verification → outcome → memory, twice over (two adapters), plus crash-mid-RUN recovery and refusal to scale without demand/utility or past capacity, are built and evidenced (`evidence/RUN-011.md`); promotion refused because gate order is enforced |
-| G8–G14 | `PENDING` | no evidence |
+| G8 Mission Control | `PENDING` | the read side is built and evidenced (`evidence/RUN-012.md`): migration `0017` adds eight deterministic views (Inbox/Projects/Timeline/Council/Approvals/Evidence/Costs/Settings), `mc panels`/`mc panel` serve them from a read-only handle, the independent validator recomputes every panel from the base tables, and three seeded defects prove a lying panel is caught. The Tauri 2 desktop shell, Living Body, state colours, keyboard/accessibility, the 8GB RAM profile and push-to-talk voice are **not** built — the shell needs an Owner-approved Rust/Cargo install |
+| G9–G14 | `PENDING` | no evidence |
 
 `release_state.current_gate` = `G2`, `gates_passed` = 2.
 
@@ -290,6 +292,7 @@ e6baf57899e60bcd520d1be35a11c67129767db8017ab16d77f902fcee9c57ec  evidence/RUN-0
 54e0636d5bd2d2899df31455a73cc07abc66ebcc4e28a92a8817cf39518f8605  evidence/RUN-009.md
 5266be885bbed2302240c035f6978ab5622545c284ecf15c4cec158e1ad7b432  evidence/RUN-010.md
 6c90e9865bfe0f8bed702b29b4d6d8788eec5d03bed7423513320c6ec52e28b2  evidence/RUN-011.md
+ee9ae974c846399aef0ad9bf87037ce3d0a12b455e5a47e50333498b74999c97  evidence/RUN-012.md
 93c779dd6efd77a8d5efa49930019f06fc4440c6c02331413c4c93e9563a7894  evidence/G4-ACCEPTANCE-001.json
 a0c9103a8f1789c26ea69e196b55144a1b5f09e1f73ac89971a74efd740705e7  evidence/G4-SCHEDULER-001.json
 79a73ee406d014e5e769c460f60777fb3abf2a47c813f7844b392b6cb819367e  evidence/G4-DAEMON-001.json
@@ -307,8 +310,9 @@ fabrication. G3 and G4 have artefacts (`REDTEAM-G3-001`; `RUN-007`,
 `RUN-008`, `RUN-009`, `RUN-010`, `G4-ACCEPTANCE-001`, `G4-SCHEDULER-001`,
 `G4-DAEMON-001`, `G4-SUPERVISOR-001`, `REDTEAM-QUEUE-001`, `QSOAK-G4-001`,
 `SSOAK-G4-001`, `DSOAK-G4-001`, `VSOAK-G4-001`) and are still `PENDING`
-— an artefact is not a promotion. G7 likewise has an artefact (`RUN-011`) and is
-still `PENDING`. This RUN's evidence is `evidence/RUN-011.md`; the external-lane
+— an artefact is not a promotion. G7 likewise has an artefact (`RUN-011`) and G8
+a read-side artefact (`RUN-012`), and both are still `PENDING`. This RUN's
+evidence is `evidence/RUN-012.md`; the external-lane
 re-adjudication is `evidence/READJUDICATION-CLAUDE-LANE-001.md` (+ `.json`) and
 the lane comparison is `evidence/COMPARE-CLAUDE-LANE-001.md`.
 
@@ -330,7 +334,8 @@ reasons:
   lane re-adjudication), `RUN-006` (G3 governor surface + red-team), `RUN-007`
   (G4 workflow runtime), `RUN-008` (G4 durable scheduler), `RUN-009` (G4
   scheduler daemon), `RUN-010` (G4 scheduler supervisor), `RUN-011` (G7
-  PortfolioOps), all `CHECKPOINTED` with evidence refs.
+  PortfolioOps), `RUN-012` (G8 Mission Control read side), all `CHECKPOINTED`
+  with evidence refs.
 - Portfolio: 2 projects, 2 adapters (`for_ai`, `shopping_shorts`, both enabled on
   `G7-EX-1`), 4 `demand_evidence` rows (2 `DEMAND`, 2 `UTILITY`, every one citing
   a source reference), 3 `portfolio_cycles` rows, all `USEFUL` and all verified by
@@ -382,8 +387,10 @@ reasons:
   is not started here. Real-OS-restart autostart / service registration stays G10
   work and is not claimed here. The G3 governor entry was consumed by `RUN-006`,
   the G4 durable-queue entry by `RUN-007`, the scheduler entry by `RUN-008`, the
-  daemon entry by `RUN-009`, the supervisor entry by `RUN-010`, and the G7
-  PortfolioOps entry by `RUN-011`.
+  daemon entry by `RUN-009`, the supervisor entry by `RUN-010`, the G7
+  PortfolioOps entry by `RUN-011`, and the G8 read-surface entry by `RUN-012`.
+  The queued NEXT_RUN is the Owner Packet for the Rust/Cargo + Tauri 2 install
+  plus the local `127.0.0.1` API/SSE facade the shell will read.
 - `approvals`: 1 row, revoked. `APR-85b98f0c…` was minted by the agent during a
   CLI smoke test with `granted_by = 'owner'` although the Owner never granted it;
   it was revoked on the record and migration `0011` now refuses any approval that
