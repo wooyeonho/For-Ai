@@ -32,6 +32,7 @@ const STEPS = [
   { id: 'portfolio_loop_exercise', argv: ['scripts/portfolio-exercise.mjs'] },
   { id: 'mission_control_surface', argv: ['src/cli.mjs', 'mc', 'panels', '--json', '--limit', '1'] },
   { id: 'ui_contract_pin', argv: ['scripts/pin-ui-contract.mjs', '--check'] },
+  { id: 'ui_render_screen', argv: ['src/cli.mjs', 'mc', 'render', '--limit', '1'] },
   { id: 'independent_validation', argv: ['scripts/independent-validation.mjs'] },
   { id: 'self_adversarial_probes', argv: ['scripts/self-adversarial-probes.mjs'] },
   { id: 'governor_red_team', argv: ['scripts/red-team-governor.mjs', '--no-record'] },

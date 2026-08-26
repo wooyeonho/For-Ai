@@ -65,6 +65,7 @@ import {
 import { makeArtifactVerifier } from './domain/portfolio-verifier.mjs';
 import { panel, panels, panelNames, g8ReadSideAcceptance } from './domain/mission-control.mjs';
 import { uiContract } from './domain/ui-contract.mjs';
+import { renderScreen, currentRefusals } from './ui/render.mjs';
 import {
   createServer as createApiServer,
   COMMANDS as API_COMMANDS,
@@ -166,6 +167,10 @@ const USAGE = `yeno <command>
                                    acceptance)
   mc panel --name inbox|projects|timeline|council|approvals|evidence|costs|settings
            [--json] [--limit N]    one panel, deterministic, no writes possible
+  mc render [--limit N]            the whole screen as text, drawn only from the
+                                   contract and the panels: a column the contract
+                                   does not list cannot appear and a refused
+                                   button is drawn disabled
   mc contract [--json]             the UI contract the desktop shell must obey:
                                    every panel, its view, its columns and the
                                    commands it may invoke, derived from the views
@@ -255,6 +260,13 @@ async function main() {
       }
       if (sub === 'contract') {
         print(uiContract(roDb, API_COMMANDS), json);
+        return 0;
+      }
+      if (sub === 'render') {
+        const contract = uiContract(roDb, API_COMMANDS);
+        const data = panels(roDb, { limit: limit ?? 5 }).panels;
+        const refusals = currentRefusals(roDb, contract, { emergencyStopOn: stopEngaged(roDb) });
+        stdout.write(`${renderScreen(contract, data, { refusals }).join('\n')}\n`);
         return 0;
       }
       if (sub === 'panel') {

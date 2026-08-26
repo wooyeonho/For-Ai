@@ -134,11 +134,11 @@ $ node --test
 ℹ todo 0
 ```
 
-**185 tests.** 63 at G0/continuity, plus 11 functional-self, 9 durability soak,
+**191 tests.** 63 at G0/continuity, plus 11 functional-self, 9 durability soak,
 5 gate-promotion, 14 G2 intake, 14 G3 governance, 11 G4 workflow-runtime, 11 G4
 scheduler, 5 G4 scheduler-daemon, 8 G4 scheduler-supervisor, 12 G7 PortfolioOps,
-8 G8 Mission Control read-side, 11 G8 local-API and 3 G8 UI-contract tests. No
-67-test run exists in this checkout.
+8 G8 Mission Control read-side, 11 G8 local-API, 3 G8 UI-contract and 6 G8
+UI-renderer tests. No 67-test run exists in this checkout.
 
 `npm run lint` and `npm run typecheck` were attempted and **do not exist** in
 this repository (`npm error Missing script`). They are absent, not passing.
@@ -146,7 +146,7 @@ this repository (`npm error Missing script`). They are absent, not passing.
 Other verifiers, all from this RUN:
 
 ```text
-$ node scripts/local-ci.mjs        -> 22/22 PASS, LOCAL_CI_PASS
+$ node scripts/local-ci.mjs        -> 23/23 PASS, LOCAL_CI_PASS
 $ node src/cli.mjs verify          -> ok: true, failed: []
 $ node scripts/independent-validation.mjs -> INDEPENDENT_VALIDATION_PASS
     PASS soak_verdicts_recomputed — 20 sessions, 20 passing
@@ -264,7 +264,7 @@ a fresh DB, 30000 events, 1800/1800 probes passing, 308314 ms.
 | G5 Agent Team | `PENDING` | `BLOCKED_PROVIDER_ACCESS`: no Claude Code / Codex / Devin bounded live RUN has passed |
 | G6 Functional Self | `PENDING` | `PREP_ONLY`: implementation and tests proceed locally; promotion withheld until G5 is resolved |
 | G7 PortfolioOps | `PENDING` | one source carried through goal → durable RUN → independent verification → outcome → memory, twice over (two adapters), plus crash-mid-RUN recovery and refusal to scale without demand/utility or past capacity, are built and evidenced (`evidence/RUN-011.md`); promotion refused because gate order is enforced |
-| G8 Mission Control | `PENDING` | the read side is built and evidenced (`evidence/RUN-012.md`): migration `0017` adds eight deterministic views (Inbox/Projects/Timeline/Council/Approvals/Evidence/Costs/Settings), `mc panels`/`mc panel` serve them from a read-only handle, the independent validator recomputes every panel from the base tables, and three seeded defects prove a lying panel is caught. The Tauri 2 desktop shell, Living Body, state colours, keyboard/accessibility, the 8GB RAM profile and push-to-talk voice are **not** built — the shell needs an Owner-approved Rust/Cargo install (`evidence/OWNER-PACKET-003.md`). The local boundary the shell will read is also built and attacked (`evidence/RUN-013.md`): `127.0.0.1`-only bind, mandatory `x-yeno-token`, origin allowlist, rate limit, reads from a read-only handle, a closed two-command write vocabulary that goes command handler → Governor → transaction → event → projection, and 21 independent HTTP probes (`API_RED_TEAM_PASS`, 0 leaks) run from a process that imports nothing from `src/`. `evidence/RUN-014.md` moves admission itself to the Governor: every command declares its own authority, target and cost, `admit()` returns the verdict, a denial answers `403` with the reason code and the `admission_attempts` id (`423` for the stop), the vocabulary is now five panel actions with **granting** an approval deliberately excluded, and two negative controls prove the probes have teeth by deleting one guard in a throwaway copy of `src/` and observing the leak. `evidence/RUN-015.md` fixes the shell's vocabulary before the shell exists: `src/domain/ui-contract.mjs` derives each panel's columns from `pragma_table_info` on the live views and each panel's buttons from the API allowlist (three panels have actions; Timeline, Evidence, Projects, Council and Costs have none, and granting an approval is absent because it is absent from the API), `contracts/ui-contract.json` pins the contract and its hash so drift fails local CI, `GET /contract` serves it read-only (`POST` is a `404`), the independent validator re-reads the columns and parses `src/api/server.mjs` as text to confirm the pinned commands are exactly the implemented ones, and two more seeded defects (an unexpected panel column, a dropped panel view) are caught. Still **not** gate acceptance: a contract is not a rendered interface |
+| G8 Mission Control | `PENDING` | the read side is built and evidenced (`evidence/RUN-012.md`): migration `0017` adds eight deterministic views (Inbox/Projects/Timeline/Council/Approvals/Evidence/Costs/Settings), `mc panels`/`mc panel` serve them from a read-only handle, the independent validator recomputes every panel from the base tables, and three seeded defects prove a lying panel is caught. The Tauri 2 desktop shell, Living Body, state colours, keyboard/accessibility, the 8GB RAM profile and push-to-talk voice are **not** built — the shell needs an Owner-approved Rust/Cargo install (`evidence/OWNER-PACKET-003.md`). The local boundary the shell will read is also built and attacked (`evidence/RUN-013.md`): `127.0.0.1`-only bind, mandatory `x-yeno-token`, origin allowlist, rate limit, reads from a read-only handle, a closed two-command write vocabulary that goes command handler → Governor → transaction → event → projection, and 21 independent HTTP probes (`API_RED_TEAM_PASS`, 0 leaks) run from a process that imports nothing from `src/`. `evidence/RUN-014.md` moves admission itself to the Governor: every command declares its own authority, target and cost, `admit()` returns the verdict, a denial answers `403` with the reason code and the `admission_attempts` id (`423` for the stop), the vocabulary is now five panel actions with **granting** an approval deliberately excluded, and two negative controls prove the probes have teeth by deleting one guard in a throwaway copy of `src/` and observing the leak. `evidence/RUN-015.md` fixes the shell's vocabulary before the shell exists: `src/domain/ui-contract.mjs` derives each panel's columns from `pragma_table_info` on the live views and each panel's buttons from the API allowlist (three panels have actions; Timeline, Evidence, Projects, Council and Costs have none, and granting an approval is absent because it is absent from the API), `contracts/ui-contract.json` pins the contract and its hash so drift fails local CI, `GET /contract` serves it read-only (`POST` is a `404`), the independent validator re-reads the columns and parses `src/api/server.mjs` as text to confirm the pinned commands are exactly the implemented ones, and two more seeded defects (an unexpected panel column, a dropped panel view) are caught. Still **not** gate acceptance: a contract is not a rendered interface. `evidence/RUN-016.md` adds the renderer that contract implies, minus the pixels: `src/ui/render.mjs` draws every panel as text from the contract plus the served rows and enforces the four rules a hand-written UI gets wrong — a column the contract does not list is never drawn even when the row carries it, a contract column the row lacks is drawn `—` instead of shifting the columns after it, rows from another view are refused rather than relabelled, and a button the kernel would refuse now is drawn disabled with the reason (on a fresh, restored or rebooted kernel that is every button). `mc render` and CI step `ui_render_screen` run it on the live kernel. Text lines are still not a desktop application |
 | G9–G14 | `PENDING` | no evidence |
 
 `release_state.current_gate` = `G2`, `gates_passed` = 2.
@@ -304,6 +304,7 @@ ee9ae974c846399aef0ad9bf87037ce3d0a12b455e5a47e50333498b74999c97  evidence/RUN-0
 a60e676133c74414fc5b74e17c9bff60b81d79c4885248330a856db5c5878e14  evidence/RUN-013.md
 fa52e9d8d4993c2cb5e97583bf754547bde09e3e56b40ad896b382a06f475bf0  evidence/RUN-014.md
 aae2bfb3215653f2f69eeb71379093c929b1a05a2c83bc69d76ad6bbe19428e1  evidence/RUN-015.md
+6fdf2eac48657b5b5471df4c7d2d10bd850e6b55333fb492440f3129d2ac8974  evidence/RUN-016.md
 992ad062d29348829494682450ab416280a4e301725c9170150bc432cfeb9b5f  contracts/ui-contract.json
 93c779dd6efd77a8d5efa49930019f06fc4440c6c02331413c4c93e9563a7894  evidence/G4-ACCEPTANCE-001.json
 a0c9103a8f1789c26ea69e196b55144a1b5f09e1f73ac89971a74efd740705e7  evidence/G4-SCHEDULER-001.json
@@ -407,10 +408,13 @@ reasons:
   to the Governor, and the deterministic UI contract by `RUN-015`, which derives
   every panel's columns from the views and every button from `COMMANDS`, pins the
   result in `contracts/ui-contract.json` and serves it at `GET /contract`. The
-  queued NEXT_RUN is an install-free rendering harness that draws every panel from
-  `/contract` plus `/panels` as text and asserts that a column absent from the
-  contract cannot reach the screen and a denied action cannot be pressed — the
-  shell's acceptance test, written before the shell.
+  rendering harness by `RUN-016`, which draws all eight panels as text from the
+  contract and refuses to show a column the contract does not list or to draw a
+  refused button as pressable. The queued NEXT_RUN is an install-free SSE refresh
+  contract: pin what `/events/stream` guarantees (ordering, resume from a
+  sequence, what a dropped connection may and may not do to the screen) and test
+  the text renderer against a live stream, so the shell can redraw from the ledger
+  without polling and without inventing intermediate states.
 - `approvals`: 1 row, revoked. `APR-85b98f0c…` was minted by the agent during a
   CLI smoke test with `granted_by = 'owner'` although the Owner never granted it;
   it was revoked on the record and migration `0011` now refuses any approval that
