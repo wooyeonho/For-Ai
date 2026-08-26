@@ -12,6 +12,10 @@ import { appendEvent } from '../src/core/events.mjs';
 import { catchUp } from '../src/core/projections.mjs';
 import { createBackup, verifyBackup } from '../src/core/backup.mjs';
 import { setStop } from '../src/core/governor.mjs';
+import { ingest, registerParsers } from '../src/domain/intake.mjs';
+import { observe } from '../src/domain/self.mjs';
+import { registerAdapter, runPortfolioCycle } from '../src/domain/portfolio.mjs';
+import { makeArtifactVerifier } from '../src/domain/portfolio-verifier.mjs';
 
 const REPO = new URL('..', import.meta.url).pathname;
 const MIGRATIONS = join(REPO, 'migrations');
@@ -459,6 +463,99 @@ function record(name, detected, detail) {
     'supervisor_soak_calls_a_duplicated_boundary_a_pass',
     run.status !== 0 && /FAIL scheduler_supervisor_recomputed/.test(run.stdout),
     run.stdout.match(/FAIL scheduler_supervisor_recomputed.*/)?.[0] ?? '',
+  );
+  rmSync(s.dir, { recursive: true, force: true });
+}
+
+// G7. These cases need a *real* portfolio cycle first: a lie about a verified
+// pass is only interesting if everything around it is genuine.
+function scaffoldWithCycle() {
+  const s = scaffold();
+  setStop(s.db, false, 'seeded defect harness', 'owner');
+  registerParsers(s.db);
+  const intake = ingest(s.db, {
+    bytes: Buffer.from('# seeded source\nthe fare is 1500 KRW\nthe office opens at 09:00\n', 'utf8'),
+    kind: 'FILE',
+    originRef: 'seed://portfolio/source.md',
+    parserId: 'plain-file/v1',
+  });
+  const at = '2026-08-26T00:00:00Z';
+  s.db
+    .prepare(
+      `INSERT INTO projects (project_id, code, name, program_ug, status, priority_raw, promoted_from_inbox,
+         body_evidence_ref, owner_confirmation_ref, created_at, updated_at)
+       VALUES ('PRJ-seed','SEED-1','seeded project','UG02','REGISTRY',0,NULL,'seed fixture',NULL,?,?)`,
+    )
+    .run(at, at);
+  registerAdapter(s.db, { projectId: 'PRJ-seed', kind: 'for_ai', enabled: true, note: 'seed' });
+  observe(s.db, 'unresolved_inbox', 12);
+  const out = runPortfolioCycle(s.db, {
+    projectId: 'PRJ-seed',
+    adapterKind: 'for_ai',
+    sourceVersionId: intake.source_version_id,
+    worker: 'seed-worker',
+    verify: makeArtifactVerifier({ dbPath: s.dbPath, artifactDir: join(s.dir, 'artifacts') }),
+  });
+  if (!out.ran || out.cycle.outcome !== 'USEFUL') {
+    throw new Error(`seeded portfolio cycle did not pass: ${JSON.stringify(out)}`);
+  }
+  return { ...s, cycle: out.cycle, sourceVersionId: intake.source_version_id };
+}
+
+// Case 22: a verified pass whose artefact is not what the source can produce —
+// the exact shape of a fabricated deliverable with a real audit trail around it.
+{
+  const s = scaffoldWithCycle();
+  s.db.exec('DROP TRIGGER trg_portfolio_cycle_append_only');
+  s.db
+    .prepare('UPDATE portfolio_cycles SET artifact_sha256 = ? WHERE cycle_id = ?')
+    .run('f'.repeat(64), s.cycle.cycle_id);
+  s.db.prepare('UPDATE jobs SET artifact_ref = ? WHERE job_id = ?').run('f'.repeat(64), s.cycle.job_id);
+  // Artefact rows are immutable, so the lie has to bring its own row: the
+  // paperwork is complete and only the bytes never existed.
+  s.db
+    .prepare(
+      `INSERT INTO artifacts (artifact_id, job_id, run_id, kind, sha256, size_bytes, path, created_at)
+       VALUES ('ART-seeded-lie', ?, NULL, 'portfolio.adapter_output', ?, 1, NULL, '2026-08-26T00:00:00Z')`,
+    )
+    .run(s.cycle.job_id, 'f'.repeat(64));
+  s.db.close();
+  const run = runValidator(s.dbPath, s.migDir);
+  record(
+    'portfolio_cycle_claims_an_artifact_the_source_cannot_produce',
+    run.status !== 0 && /FAIL portfolio_cycles_recomputed/.test(run.stdout),
+    run.stdout.match(/FAIL portfolio_cycles_recomputed.*/)?.[0] ?? '',
+  );
+  rmSync(s.dir, { recursive: true, force: true });
+}
+
+// Case 23: a verified pass whose goal no council ever selected — work that skipped
+// the internal debate but kept the paperwork.
+{
+  const s = scaffoldWithCycle();
+  s.db.prepare('UPDATE goals SET verdict_id = NULL WHERE goal_id = ?').run(s.cycle.goal_id);
+  s.db.close();
+  const run = runValidator(s.dbPath, s.migDir);
+  record(
+    'portfolio_cycle_cites_a_goal_no_council_selected',
+    run.status !== 0 && /FAIL portfolio_cycles_recomputed/.test(run.stdout),
+    run.stdout.match(/FAIL portfolio_cycles_recomputed.*/)?.[0] ?? '',
+  );
+  rmSync(s.dir, { recursive: true, force: true });
+}
+
+// Case 24: a project scaled into active work with no demand and no utility on
+// record — growth the Owner's machine never agreed to.
+{
+  const s = scaffoldWithCycle();
+  s.db.exec('DROP TRIGGER trg_project_activation_needs_demand_update');
+  s.db.exec("UPDATE projects SET status = 'BUILD' WHERE project_id = 'PRJ-seed'");
+  s.db.close();
+  const run = runValidator(s.dbPath, s.migDir);
+  record(
+    'project_is_active_with_no_demand_or_utility_evidence',
+    run.status !== 0 && /FAIL portfolio_cycles_recomputed/.test(run.stdout),
+    run.stdout.match(/FAIL portfolio_cycles_recomputed.*/)?.[0] ?? '',
   );
   rmSync(s.dir, { recursive: true, force: true });
 }

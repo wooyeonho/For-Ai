@@ -54,6 +54,15 @@ import {
   setScheduler,
 } from './domain/workflow.mjs';
 import {
+  g7Acceptance,
+  portfolioReport,
+  recordDemandEvidence,
+  registerAdapter,
+  runPortfolioCycle,
+  setProjectStatus,
+} from './domain/portfolio.mjs';
+import { makeArtifactVerifier } from './domain/portfolio-verifier.mjs';
+import {
   createSchedule,
   setScheduleEnabled,
   tickScheduler,
@@ -130,6 +139,19 @@ const USAGE = `yeno <command>
   schedule tick [--json]           fire every owed occurrence at most once
   schedule report [--json]         schedules, boundaries fired, acceptance
   queue report [--json] [--queue Q] queue depth, dead letters, effects, G4 acceptance
+  portfolio adapter --project ID --kind for_ai|shopping_shorts [--enable] [--note N]
+                                   register a project adapter (disabled by default)
+  portfolio demand --project ID --kind DEMAND|UTILITY --metric M --value N
+                   --source REF [--detail D]
+                                   measured demand or utility; a number with no
+                                   source is refused, and rows are append-only
+  portfolio activate --project ID --status BUILD|WATCH|REGISTRY|ARCHIVE --reason R
+                                   refused without demand+utility, or past capacity
+  portfolio run --project ID --kind K --source-version ID [--worker W]
+                [--artifact-dir DIR]
+                                   one pass: source -> goal -> RUN -> independent
+                                   verification -> outcome -> memory
+  portfolio report [--json]        capacity, adapters, demand, cycles, G7 acceptance
   gate list [--json]               release train state and evidence presence
   gate pass --gate G --evidence E  promote a gate only if its machine checks hold
                                    (refusal reasons are recorded, never bypassed)
@@ -619,6 +641,59 @@ async function main() {
         const acceptance = g4Acceptance(db);
         print({ ...queueReport(db, { queue: typeof flags.queue === 'string' ? flags.queue : null }), acceptance }, json);
         return acceptance.problems.length === 0 ? 0 : 1;
+      }
+      case 'portfolio adapter': {
+        print(
+          registerAdapter(db, {
+            projectId: str(flags.project, 'portfolio adapter needs --project'),
+            kind: str(flags.kind, 'portfolio adapter needs --kind'),
+            enabled: flags.enable === true,
+            note: typeof flags.note === 'string' ? flags.note : '',
+          }),
+          json,
+        );
+        return 0;
+      }
+      case 'portfolio demand': {
+        print(
+          recordDemandEvidence(db, {
+            projectId: str(flags.project, 'portfolio demand needs --project'),
+            kind: str(flags.kind, 'portfolio demand needs --kind DEMAND|UTILITY'),
+            metric: str(flags.metric, 'portfolio demand needs --metric'),
+            value: Number(str(String(flags.value ?? ''), 'portfolio demand needs --value')),
+            sourceRef: str(flags.source, 'portfolio demand needs --source: a number with no source is not evidence'),
+            detail: typeof flags.detail === 'string' ? flags.detail : '',
+          }),
+          json,
+        );
+        return 0;
+      }
+      case 'portfolio activate': {
+        const out = setProjectStatus(
+          db,
+          str(flags.project, 'portfolio activate needs --project'),
+          str(flags.status, 'portfolio activate needs --status'),
+          str(flags.reason, 'portfolio activate needs --reason'),
+        );
+        print(out, json);
+        return out.changed || out.idempotent ? 0 : 1;
+      }
+      case 'portfolio run': {
+        const artifactDir = typeof flags['artifact-dir'] === 'string' ? flags['artifact-dir'] : 'artifacts/portfolio';
+        const out = runPortfolioCycle(db, {
+          projectId: str(flags.project, 'portfolio run needs --project'),
+          adapterKind: str(flags.kind, 'portfolio run needs --kind'),
+          sourceVersionId: str(flags['source-version'], 'portfolio run needs --source-version'),
+          worker: typeof flags.worker === 'string' ? flags.worker : 'portfolio-cli',
+          verify: makeArtifactVerifier({ dbPath, artifactDir }),
+        });
+        print(out, json);
+        return out.ran && out.cycle.outcome === 'USEFUL' ? 0 : 1;
+      }
+      case 'portfolio report': {
+        const acceptance = g7Acceptance(db);
+        print({ ...portfolioReport(db), acceptance }, json);
+        return acceptance.ok ? 0 : 1;
       }
       case 'stop engage': {
         setStop(db, true, String(flags.reason ?? 'cli'), 'cli');

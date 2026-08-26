@@ -620,6 +620,157 @@ verdict(
   supervisorProblems.join(' | '),
 );
 
+// G7 PortfolioOps, recomputed from the raw bytes. The adapters are reimplemented
+// here from their contracts so the artefact hash on every USEFUL cycle is checked
+// against what the *source* actually yields: a cycle that recorded an artefact the
+// stored source cannot produce is caught even if every kernel table agrees.
+const portfolioProblems = [];
+const contentLines = (text) =>
+  text
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter((l) => l !== '' && !l.startsWith('#'));
+
+function expectedArtifact(kind, text, sourceVersionId) {
+  const lines = contentLines(text);
+  if (kind === 'for_ai') {
+    return {
+      adapter: 'for_ai',
+      contract_version: '1',
+      output_kind: 'CLAIM_CANDIDATES',
+      source_ref: sourceVersionId,
+      claim_count: lines.length,
+      claims: lines.map((line, i) => ({
+        candidate_id: `CAND-${String(i + 1).padStart(4, '0')}`,
+        text: line,
+        source_ref: sourceVersionId,
+        status: 'NEEDS_VERIFICATION',
+        confidence: 'LOW',
+      })),
+      verified_claims: 0,
+    };
+  }
+  if (kind === 'shopping_shorts') {
+    const sections = [
+      ['HOOK', 0],
+      ['BODY', 1],
+      ['CTA', 2],
+    ].map(([section, line_index]) => {
+      const line = lines[line_index];
+      return line === undefined
+        ? { section, state: 'NEEDS_SOURCE', text: null, source_ref: sourceVersionId, line_index }
+        : { section, state: 'SOURCED', text: line, source_ref: sourceVersionId, line_index };
+    });
+    return {
+      adapter: 'shopping_shorts',
+      contract_version: '1',
+      output_kind: 'SHORTS_OUTLINE',
+      source_ref: sourceVersionId,
+      topic: lines[0] ?? null,
+      sections,
+      needs_source: sections.filter((s) => s.state === 'NEEDS_SOURCE').map((s) => s.section),
+      published: false,
+    };
+  }
+  return null;
+}
+
+const cycles = db
+  .prepare(
+    `SELECT c.*, a.kind AS adapter_kind, a.output_kind, p.code AS project_code
+       FROM portfolio_cycles c
+       JOIN project_adapters a ON a.adapter_id = c.adapter_id
+       JOIN projects p ON p.project_id = c.project_id`,
+  )
+  .all();
+for (const c of cycles) {
+  if (c.outcome !== 'USEFUL') continue;
+  const missing = ['source_version_id', 'goal_id', 'job_id', 'artifact_sha256', 'memory_id'].filter((k) => !c[k]);
+  if (missing.length > 0) {
+    portfolioProblems.push(`${c.cycle_id}: USEFUL with no ${missing.join(', ')}`);
+    continue;
+  }
+  if (c.verified !== 1 || !String(c.verifier).trim() || c.verifier === c.adapter_kind) {
+    portfolioProblems.push(`${c.cycle_id}: USEFUL without an independent verification (verifier ${c.verifier})`);
+  }
+  const goal = db
+    .prepare(
+      `SELECT g.state, v.decision, v.constitution_ok FROM goals g
+         LEFT JOIN council_verdicts v ON v.verdict_id = g.verdict_id WHERE g.goal_id = ?`,
+    )
+    .get(c.goal_id);
+  if (!goal) portfolioProblems.push(`${c.cycle_id}: cites goal ${c.goal_id}, which does not exist`);
+  else if (goal.decision !== 'SELECT' || goal.constitution_ok !== 1) {
+    portfolioProblems.push(`${c.cycle_id}: cites a goal no council selected (${goal.decision ?? 'no verdict'})`);
+  }
+  const job = db.prepare('SELECT state, artifact_ref FROM jobs WHERE job_id = ?').get(c.job_id);
+  if (!job) portfolioProblems.push(`${c.cycle_id}: cites job ${c.job_id}, which does not exist`);
+  else if (job.state !== 'DONE') portfolioProblems.push(`${c.cycle_id}: USEFUL on a job that is ${job.state}`);
+  else if (job.artifact_ref !== c.artifact_sha256) {
+    portfolioProblems.push(`${c.cycle_id}: the job produced ${job.artifact_ref}, the cycle claims ${c.artifact_sha256}`);
+  }
+  if (db.prepare('SELECT COUNT(*) AS n FROM artifacts WHERE sha256 = ?').get(c.artifact_sha256).n === 0) {
+    portfolioProblems.push(`${c.cycle_id}: no artefact row for ${c.artifact_sha256}`);
+  }
+  if (db.prepare('SELECT COUNT(*) AS n FROM memory_items WHERE memory_id = ?').get(c.memory_id).n === 0) {
+    portfolioProblems.push(`${c.cycle_id}: cites memory ${c.memory_id}, which does not exist`);
+  }
+  const source = db
+    .prepare(
+      `SELECT sv.blob_sha256, b.bytes FROM source_versions sv JOIN blobs b ON b.sha256 = sv.blob_sha256
+        WHERE sv.source_version_id = ?`,
+    )
+    .get(c.source_version_id);
+  if (!source) {
+    portfolioProblems.push(`${c.cycle_id}: cites source version ${c.source_version_id}, which has no stored bytes`);
+    continue;
+  }
+  const bytes = Buffer.from(source.bytes);
+  if (createHash('sha256').update(bytes).digest('hex') !== source.blob_sha256) {
+    portfolioProblems.push(`${c.cycle_id}: the vault bytes behind ${c.source_version_id} do not match their hash`);
+    continue;
+  }
+  const expected = expectedArtifact(c.adapter_kind, bytes.toString('utf8'), c.source_version_id);
+  if (expected === null) {
+    portfolioProblems.push(`${c.cycle_id}: adapter ${c.adapter_kind} has no independent contract to check against`);
+  } else if (digest(stable(expected)) !== c.artifact_sha256) {
+    portfolioProblems.push(
+      `${c.cycle_id}: the artefact hash is not what ${c.adapter_kind} yields from the stored source bytes`,
+    );
+  }
+}
+const portfolioCapacity = db.prepare('SELECT max_active FROM portfolio_capacity WHERE id = 1').get();
+const activeProjectRows = db.prepare("SELECT project_id, code FROM projects WHERE status IN ('BUILD','WATCH')").all();
+if (!portfolioCapacity) portfolioProblems.push('no portfolio capacity row');
+else if (activeProjectRows.length > portfolioCapacity.max_active) {
+  portfolioProblems.push(`${activeProjectRows.length} active projects exceed the capacity of ${portfolioCapacity.max_active}`);
+}
+for (const p of activeProjectRows) {
+  const kinds = db
+    .prepare("SELECT kind, COUNT(*) AS n FROM demand_evidence WHERE project_id = ? GROUP BY kind")
+    .all(p.project_id);
+  const has = (k) => (kinds.find((r) => r.kind === k)?.n ?? 0) > 0;
+  if (!has('DEMAND') || !has('UTILITY')) {
+    portfolioProblems.push(`${p.code} is active without both demand and utility evidence`);
+  }
+}
+const sourcelessDemand = db.prepare("SELECT COUNT(*) AS n FROM demand_evidence WHERE TRIM(source_ref) = ''").get().n;
+if (sourcelessDemand > 0) portfolioProblems.push(`${sourcelessDemand} demand row(s) cite no source`);
+
+const usefulCycles = cycles.filter((c) => c.outcome === 'USEFUL');
+verdict(
+  portfolioProblems.length === 0,
+  'portfolio_cycles_recomputed',
+  `${usefulCycles.length}/${cycles.length} cycles USEFUL, artefacts rehashed from the stored source bytes, ` +
+    `${activeProjectRows.length}/${portfolioCapacity?.max_active ?? '?'} active`,
+  portfolioProblems.join(' | '),
+);
+
+const g7Row = gates.find((g) => g.gate_id === 'G7');
+if (g7Row?.state === 'PASSED' && usefulCycles.length === 0) {
+  gateProblems.push('G7: PASSED with no verified portfolio cycle');
+}
+
 const g5Row = gates.find((g) => g.gate_id === 'G5');
 const g6Row = gates.find((g) => g.gate_id === 'G6');
 if (g6Row?.state === 'PASSED' && g5Row?.state !== 'PASSED') gateProblems.push('G6: PASSED while G5 is not');

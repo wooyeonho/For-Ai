@@ -3,6 +3,7 @@ backups/
 evidence/runtime/
 evidence/local-ci-20*.json
 tmp/
+artifacts/
 *.db
 *.db-wal
 *.db-shm

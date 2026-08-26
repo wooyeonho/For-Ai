@@ -37,8 +37,9 @@ e482ddd yeno-os-next: persistent session continuity + fail-closed shell indirect
 18cc021 Add yeno-os-next: G0 Baseline Lock of the local Truth Kernel
 ```
 
-Ten commits, the RUN-009 scheduler-daemon work as the eleventh, and the RUN-010
-scheduler-supervisor work in §3–§5 committed on top as the twelfth. The "seven
+Ten commits, the RUN-009 scheduler-daemon work as the eleventh, the RUN-010
+scheduler-supervisor work as the twelfth, and the RUN-011 G7 PortfolioOps work in
+§3–§5 committed on top as the thirteenth. The "seven
 commits" reported from elsewhere never existed in this checkout; if that work exists in another WSL folder or Claude
 Code checkout, it has not reached this repository and is therefore not part of
 the truth state. Recovery plan is in §9.
@@ -63,10 +64,11 @@ b9a97c0ac7c188011d0adc1595264e31534a516896c4299d825521af86ede5f9  migrations/000
 c144ff9a7db3bdd4b3250a892953aa750880f6e4fe94e374d6153796ebfffccf  migrations/0013_scheduler.sql
 cf358bccbbc0b96c3c427d4853c0afa3f769949e0c208d89ed2139b1e9a05a38  migrations/0014_scheduler_daemon.sql
 35a577e8e025bc084095673ed2bc99377b38e354c7fb2e2953208d18706242d3  migrations/0015_supervisor.sql
+58c2ecf0411ad2170e714a100bd1508d7b61b216366db19d99cf4f667e4612ea  migrations/0016_portfolio.sql
 ```
 
-All fifteen are applied and pinned in `migrations/CHECKSUMS.json`; `node
-scripts/pin-migration-checksums.mjs --check` reports 15 migrations pinned and
+All sixteen are applied and pinned in `migrations/CHECKSUMS.json`; `node
+scripts/pin-migration-checksums.mjs --check` reports 16 migrations pinned and
 `0001` is untouched. `0006` adds the durability tables,
 `0007` makes a soak pass require a complete probe set in every planned cycle,
 `0008` makes gate promotion order, the G1 crash/restore floor, and the
@@ -103,7 +105,18 @@ backwards. `0015` is purely additive: `supervisor_soak_cycles` records one row
 per supervised death cycle, append-only and undeletable, and for a child death a
 pass additionally requires at least one restart **and** at least two distinct
 child PIDs — "I restarted it" with a single PID on record is refused at the SQL
-level.
+level. `0016` is purely additive and carries G7 PortfolioOps: `portfolio_capacity`
+(`max_active` seeded to 1 for this machine), `demand_evidence` (append-only,
+undeletable, a measured number must cite a non-empty source reference),
+`project_adapters`, and `portfolio_cycles` (append-only, undeletable, unique on
+`(project_id, adapter_id, source_version_id)` so a replay is the same row). Its
+ten triggers make the two G7 rules SQL-level rather than code-level: a cycle
+cannot be `USEFUL` without `verified = 1`, a non-empty verifier that differs from
+the adapter that built the artefact, and links to a source version, a
+Council-`SELECT`ed goal, a durable job, an artefact hash and a memory row; and a
+project cannot reach `BUILD`/`WATCH` without both a `DEMAND` and a `UTILITY` row
+or past `max_active`, on INSERT and on UPDATE, so raw SQL cannot scale the
+portfolio either.
 
 ## 4. Tests
 
@@ -111,19 +124,19 @@ Exact command and original tail of output:
 
 ```text
 $ node --test
-ℹ tests 151
+ℹ tests 163
 ℹ suites 0
-ℹ pass 151
+ℹ pass 163
 ℹ fail 0
 ℹ cancelled 0
 ℹ skipped 0
 ℹ todo 0
 ```
 
-**151 tests.** 63 at G0/continuity, plus 11 functional-self, 9 durability soak,
+**163 tests.** 63 at G0/continuity, plus 11 functional-self, 9 durability soak,
 5 gate-promotion, 14 G2 intake, 14 G3 governance, 11 G4 workflow-runtime, 11 G4
-scheduler, 5 G4 scheduler-daemon and 8 G4 scheduler-supervisor tests. No 67-test
-run exists in this checkout.
+scheduler, 5 G4 scheduler-daemon, 8 G4 scheduler-supervisor and 12 G7
+PortfolioOps tests. No 67-test run exists in this checkout.
 
 `npm run lint` and `npm run typecheck` were attempted and **do not exist** in
 this repository (`npm error Missing script`). They are absent, not passing.
@@ -131,7 +144,7 @@ this repository (`npm error Missing script`). They are absent, not passing.
 Other verifiers, all from this RUN:
 
 ```text
-$ node scripts/local-ci.mjs        -> 18/18 PASS, LOCAL_CI_PASS
+$ node scripts/local-ci.mjs        -> 19/19 PASS, LOCAL_CI_PASS
 $ node src/cli.mjs verify          -> ok: true, failed: []
 $ node scripts/independent-validation.mjs -> INDEPENDENT_VALIDATION_PASS
     PASS soak_verdicts_recomputed — 20 sessions, 20 passing
@@ -142,9 +155,12 @@ $ node scripts/independent-validation.mjs -> INDEPENDENT_VALIDATION_PASS
     PASS scheduler_daemon_recomputed — soak DSOAK-G4-001 8/8, 7 real kills, 12 boundaries served, 0 duplicated
     PASS scheduler_supervisor_recomputed — soak VSOAK-G4-001 6/6, 3 child kills, 2 tree kills,
                                            3 unattended restarts, 14 boundaries served, 0 duplicated
+    PASS portfolio_cycles_recomputed — 3/3 cycles USEFUL, artefacts rehashed from the stored
+                                       source bytes, 1/1 active
     PASS gate_promotions_recomputed — 2 gates passed
 $ node scripts/self-adversarial-probes.mjs -> SELF_PROBES_PASS: 11/11
-$ node scripts/assert-seeded-defect-detected.mjs -> seeded defects 21, detected 21, missed 0
+$ node scripts/assert-seeded-defect-detected.mjs -> seeded defects 24, detected 24, missed 0
+$ node scripts/portfolio-exercise.mjs -> PORTFOLIO_EXERCISE_PASS
 $ node scripts/red-team-governor.mjs
     red-team probes: 38, refused: 38, allowed: 0, unverifiable: 0
     negative controls: 4, bypassed with the guard removed: 4
@@ -239,7 +255,8 @@ a fresh DB, 30000 events, 1800/1800 probes passing, 308314 ms.
 | G4 Workflow Runtime | `PENDING` | durable queue, retry/backoff/dead-letter, leases with monotonic fencing tokens, at-most-once external effects, artifacts, a durable scheduler that fires each boundary at most once with both switches OFF by default, an unattended daemon that keeps that guarantee across repeated kills and restarts, and a supervisor that restarts the daemon by itself with deterministic backoff and a crash-loop stop are built and evidenced (`evidence/RUN-007.md`, `evidence/RUN-008.md`, `evidence/RUN-009.md`, `evidence/RUN-010.md`, `evidence/G4-ACCEPTANCE-001.json`, `evidence/G4-SCHEDULER-001.json`, `evidence/G4-DAEMON-001.json`, `evidence/G4-SUPERVISOR-001.json`, `evidence/REDTEAM-QUEUE-001.json`); promotion refused because gate order is enforced: `earlier gates not passed: G2=PENDING, G3=PENDING` |
 | G5 Agent Team | `PENDING` | `BLOCKED_PROVIDER_ACCESS`: no Claude Code / Codex / Devin bounded live RUN has passed |
 | G6 Functional Self | `PENDING` | `PREP_ONLY`: implementation and tests proceed locally; promotion withheld until G5 is resolved |
-| G7–G14 | `PENDING` | no evidence |
+| G7 PortfolioOps | `PENDING` | one source carried through goal → durable RUN → independent verification → outcome → memory, twice over (two adapters), plus crash-mid-RUN recovery and refusal to scale without demand/utility or past capacity, are built and evidenced (`evidence/RUN-011.md`); promotion refused because gate order is enforced |
+| G8–G14 | `PENDING` | no evidence |
 
 `release_state.current_gate` = `G2`, `gates_passed` = 2.
 
@@ -272,6 +289,7 @@ b38474c1210e3d803a9db973923fb6381a423d49c0386d8065bd60cd1e3570c4  evidence/RUN-0
 e6baf57899e60bcd520d1be35a11c67129767db8017ab16d77f902fcee9c57ec  evidence/RUN-008.md
 54e0636d5bd2d2899df31455a73cc07abc66ebcc4e28a92a8817cf39518f8605  evidence/RUN-009.md
 5266be885bbed2302240c035f6978ab5622545c284ecf15c4cec158e1ad7b432  evidence/RUN-010.md
+6c90e9865bfe0f8bed702b29b4d6d8788eec5d03bed7423513320c6ec52e28b2  evidence/RUN-011.md
 93c779dd6efd77a8d5efa49930019f06fc4440c6c02331413c4c93e9563a7894  evidence/G4-ACCEPTANCE-001.json
 a0c9103a8f1789c26ea69e196b55144a1b5f09e1f73ac89971a74efd740705e7  evidence/G4-SCHEDULER-001.json
 79a73ee406d014e5e769c460f60777fb3abf2a47c813f7844b392b6cb819367e  evidence/G4-DAEMON-001.json
@@ -289,7 +307,8 @@ fabrication. G3 and G4 have artefacts (`REDTEAM-G3-001`; `RUN-007`,
 `RUN-008`, `RUN-009`, `RUN-010`, `G4-ACCEPTANCE-001`, `G4-SCHEDULER-001`,
 `G4-DAEMON-001`, `G4-SUPERVISOR-001`, `REDTEAM-QUEUE-001`, `QSOAK-G4-001`,
 `SSOAK-G4-001`, `DSOAK-G4-001`, `VSOAK-G4-001`) and are still `PENDING`
-— an artefact is not a promotion. This RUN's evidence is `evidence/RUN-010.md`; the external-lane
+— an artefact is not a promotion. G7 likewise has an artefact (`RUN-011`) and is
+still `PENDING`. This RUN's evidence is `evidence/RUN-011.md`; the external-lane
 re-adjudication is `evidence/READJUDICATION-CLAUDE-LANE-001.md` (+ `.json`) and
 the lane comparison is `evidence/COMPARE-CLAUDE-LANE-001.md`.
 
@@ -306,12 +325,19 @@ reasons:
 - `work_orders`: 0 rows.
 - `session_checkpoints`: this table does not exist. Session continuity lives in
   `session_runs` (+ `blockers`, `next_run`, view `v_handoff`).
-- `session_runs`: 9 rows — `RUN-002` (G1 continuity), `RUN-003` (G6 PREP_ONLY),
+- `session_runs`: 10 rows — `RUN-002` (G1 continuity), `RUN-003` (G6 PREP_ONLY),
   `RUN-004` (G1 durability + gate guards), `RUN-005` (G2 intake slice + external
   lane re-adjudication), `RUN-006` (G3 governor surface + red-team), `RUN-007`
   (G4 workflow runtime), `RUN-008` (G4 durable scheduler), `RUN-009` (G4
-  scheduler daemon), `RUN-010` (G4 scheduler supervisor), all `CHECKPOINTED` with
-  evidence refs.
+  scheduler daemon), `RUN-010` (G4 scheduler supervisor), `RUN-011` (G7
+  PortfolioOps), all `CHECKPOINTED` with evidence refs.
+- Portfolio: 2 projects, 2 adapters (`for_ai`, `shopping_shorts`, both enabled on
+  `G7-EX-1`), 4 `demand_evidence` rows (2 `DEMAND`, 2 `UTILITY`, every one citing
+  a source reference), 3 `portfolio_cycles` rows, all `USEFUL` and all verified by
+  `scripts/verify-portfolio-artifact.mjs` in a separate process, 1 of 1 allowed
+  active project. The second project was refused activation at 1/1 capacity and
+  is on the record as such. `portfolio report` acceptance is `ok: true` while the
+  gate itself stays `PENDING`.
 - Queue: 8 jobs (2 retried-then-done, 2 dead-lettered with the error on the
   record, 2 enqueued by the scheduler exercise), 2 committed external effects,
   0 duplicated effect keys, 0 stuck leases, 0 DONE jobs with an open attempt.
@@ -347,14 +373,17 @@ reasons:
 - `blockers`: 5 `WAITING` — official chat export missing (SOURCE), no provider
   auth wired (PROVIDER_ACCESS), Codex CLI not logged in (PROVIDER_ACCESS), no
   Windows build host (HARDWARE), merge PR #513 (OWNER_APPROVAL). 2 `RESOLVED`.
-- `next_run`: next exact action is G7 PortfolioOps' smallest end-to-end slice
-  (source → goal → RUN → verification → outcome → memory for one project adapter)
+- `next_run`: next exact action is the read-only Mission Control projection
+  surface for G8 (Inbox/Projects/Timeline/Council/Approvals/Evidence/Costs as
+  deterministic views over the existing events, validated against the raw rows)
   — or, if the official chat exports arrive first, G2 body recovery, which is the
-  only thing that unblocks the G3/G4 promotions. Real-OS-restart autostart /
-  service registration stays G10 work and is not claimed here. The G3 governor
-  entry was consumed by `RUN-006`, the G4 durable-queue entry by `RUN-007`, the
-  scheduler entry by `RUN-008`, the daemon entry by `RUN-009`, and the supervisor
-  entry by `RUN-010`.
+  only thing that unblocks the G3/G4 promotions. G8's Tauri 2 desktop shell needs
+  a Rust/Cargo toolchain, which is an install and therefore an Owner Packet, so it
+  is not started here. Real-OS-restart autostart / service registration stays G10
+  work and is not claimed here. The G3 governor entry was consumed by `RUN-006`,
+  the G4 durable-queue entry by `RUN-007`, the scheduler entry by `RUN-008`, the
+  daemon entry by `RUN-009`, the supervisor entry by `RUN-010`, and the G7
+  PortfolioOps entry by `RUN-011`.
 - `approvals`: 1 row, revoked. `APR-85b98f0c…` was minted by the agent during a
   CLI smoke test with `granted_by = 'owner'` although the Owner never granted it;
   it was revoked on the record and migration `0011` now refuses any approval that
@@ -362,14 +391,16 @@ reasons:
 - `redteam_probes` / `admission_attempts`: red-team results and admission denials
   are recorded and append-only; the independent validator recomputes G3 acceptance
   from these raw rows rather than from the `v_g3_acceptance` view.
-- Event ledger: 112 events, head `2a6989c3457206e0cad0fb5f280bf0dc9725f2000acc0a8a1ae9195b6e60a861`, chain ok, integrity `ok`, emergency stop `ON`.
+- Event ledger: 196 events, head `766b574822778cb64283134d22563fad1519a65a060365a02bed05c7b312d6a7`, chain ok, integrity `ok`, emergency stop `ON`.
   The stop was released with an Owner reason only for the duration of the G4
-  queue and scheduler exercises and re-engaged immediately afterwards; every
-  transition is an event in the ledger.
-- Rollback rehearsal after `0014`: `BKP-65f795de-8368-46be-873a-a1cc631f5a71`
-  (`db_sha256 5bc59d1461c661bbf40361374fbcf174ea3ef7ab845880d330873b0108e65b60`)
-  verified, restored into a fresh database, and the restored copy passes
-  `independent-validation` including `scheduler_daemon_recomputed`.
+  queue/scheduler exercises and the G7 portfolio exercise, and re-engaged
+  immediately afterwards; every transition is an event in the ledger.
+- Rollback rehearsal after `0016`:
+  `BKP-bab11ea6-b374-435a-b6cc-df09748f5fb3` verified (integrity `ok`, 193 events,
+  head `a0fe13d9dc24dd713937cdd3044c009b2c6ce0d08753cf38b40e5866affd31c3`),
+  restored into a fresh database, and the restored copy passes
+  `independent-validation` including `portfolio_cycles_recomputed` with the same
+  3/3 `USEFUL` cycles and 1/1 active project.
 
 ## 8. Codex CLI facts on this machine
 

@@ -29,6 +29,7 @@ const STEPS = [
   { id: 'scheduler_crash_soak', argv: ['scripts/scheduler-soak.mjs', '--cycles', '4', '--no-record'] },
   { id: 'scheduler_daemon_restart_soak', argv: ['scripts/daemon-soak.mjs', '--cycles', '4', '--no-record'] },
   { id: 'scheduler_supervisor_soak', argv: ['scripts/supervisor-soak.mjs', '--cycles', '3', '--no-record'] },
+  { id: 'portfolio_loop_exercise', argv: ['scripts/portfolio-exercise.mjs'] },
   { id: 'independent_validation', argv: ['scripts/independent-validation.mjs'] },
   { id: 'self_adversarial_probes', argv: ['scripts/self-adversarial-probes.mjs'] },
   { id: 'governor_red_team', argv: ['scripts/red-team-governor.mjs', '--no-record'] },
