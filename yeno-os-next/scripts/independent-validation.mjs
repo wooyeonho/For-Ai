@@ -150,7 +150,12 @@ for (const required of [
   'trg_runs_cost_hard_gate',
   'trg_runs_ax_forbidden',
   'trg_approvals_scope_immutable',
+  'trg_session_checkpoint_needs_next_run',
+  'trg_session_close_needs_evidence',
+  'trg_next_run_single_consume',
+  'trg_next_run_no_delete',
   'v_effective_source_versions',
+  'v_handoff',
   'admission_attempts',
 ]) {
   if (!objects.has(required)) fail('safety_object_present', `${required} is missing`);

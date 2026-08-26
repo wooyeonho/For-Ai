@@ -46,6 +46,21 @@ test('local verification commands stay allowed', () => {
   }
 });
 
+test('shell expansion the guard cannot resolve is denied', () => {
+  for (const command of [
+    'x=push; git $x origin main',
+    'git $(echo push) origin main',
+    'git `echo push` origin main',
+    'eval "git push origin main"',
+    'echo push | xargs git',
+    'alias gp="git push"',
+    'source ./deploy.sh',
+    'GIT=$(which git); $GIT push',
+  ]) {
+    assert.equal(bash(command).permission, DENY, `indirection slipped through: ${command}`);
+  }
+});
+
 test('quote, spacing and indirection bypasses are still denied', () => {
   const attempts = [
     'g"i"t push origin main',

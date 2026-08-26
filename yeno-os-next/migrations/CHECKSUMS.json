@@ -1,4 +1,6 @@
 {
   "0001_core.sql": "8518c63459b7a679d51f10a452d6ccd6b5571c5ee5c657aa343e1e8f96343d61",
-  "0002_release_control.sql": "7ce52c1eaf09d63e3c65a5fc948008fe74dec33fc921de2dbf206d9a84a8e8e4"
+  "0002_release_control.sql": "7ce52c1eaf09d63e3c65a5fc948008fe74dec33fc921de2dbf206d9a84a8e8e4",
+  "0003_continuity.sql": "c08ae635def3c2a041c2db58fcd33c76416d4c464b8c13252133b44937ddbd47",
+  "0004_handoff_view.sql": "25b07e25f8ac6fdf29095ca5279b7f348f248706d4e6f35cf3bae841e4e3a82f"
 }

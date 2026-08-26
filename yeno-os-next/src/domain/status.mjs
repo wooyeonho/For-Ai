@@ -31,6 +31,7 @@ export function statusReport(db, { migrationsDir } = {}) {
     admission_denials: counts("SELECT COUNT(*) AS n FROM admission_attempts WHERE decision = 'DENY'"),
     budget: db.prepare('SELECT profile_id, monthly_limit_krw, spent_krw FROM budget_profiles WHERE active = 1').get(),
     gates: db.prepare('SELECT gate_id, state, blocked_reason FROM gates ORDER BY ordinal').all(),
+    continuity: db.prepare('SELECT * FROM v_handoff').get(),
   };
 }
 
@@ -110,6 +111,37 @@ export function verifyReport(db, { migrationsDir } = {}) {
     .prepare('SELECT COUNT(*) AS n FROM projections WHERE last_seq > (SELECT COALESCE(MAX(seq), 0) FROM events)')
     .get().n;
   add('projections_not_ahead_of_ledger', staleProjections === 0, `${staleProjections} projections ahead`);
+
+  // Continuity: the mission ends at G14, so once sessions have run and gates are
+  // still open the ledger must carry an unblocked next action to hand off.
+  const missionOpen = db.prepare("SELECT COUNT(*) AS n FROM gates WHERE state <> 'PASSED'").get().n > 0;
+  const endedSessions = db
+    .prepare("SELECT COUNT(*) AS n FROM session_runs WHERE state <> 'IN_PROGRESS'")
+    .get().n;
+  const pendingNext = db
+    .prepare(
+      `SELECT COUNT(*) AS n FROM next_run n
+        LEFT JOIN blockers b ON b.blocker_id = n.blocked_by
+        WHERE n.consumed_at IS NULL AND (b.blocker_id IS NULL OR b.state <> 'WAITING')`,
+    )
+    .get().n;
+  add(
+    'open_mission_has_next_run',
+    !missionOpen || endedSessions === 0 || pendingNext > 0,
+    `${pendingNext} unblocked NEXT_RUN entries after ${endedSessions} ended sessions`,
+  );
+
+  const waitingWithoutDetail = db
+    .prepare("SELECT COUNT(*) AS n FROM blockers WHERE state = 'WAITING' AND (detail IS NULL OR detail = '')")
+    .get().n;
+  add('waiting_blockers_are_explained', waitingWithoutDetail === 0, `${waitingWithoutDetail} unexplained blockers`);
+
+  const closedWithoutReport = db
+    .prepare(
+      "SELECT COUNT(*) AS n FROM session_runs WHERE state <> 'IN_PROGRESS' AND (report IS NULL OR report = '')",
+    )
+    .get().n;
+  add('closed_sessions_have_report', closedWithoutReport === 0, `${closedWithoutReport} sessions without report`);
 
   const failed = checks.filter((c) => !c.ok);
   return { ok: failed.length === 0, checks, failed: failed.map((c) => c.name) };

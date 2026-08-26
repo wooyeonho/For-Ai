@@ -19,6 +19,32 @@ export function normalizeCommand(raw) {
     .toLowerCase();
 }
 
+/**
+ * Detects shell indirection on the raw command, before normalisation strips the
+ * characters that reveal it. Returns null when the command is literal.
+ */
+export function detectIndirection(raw) {
+  const command = String(raw ?? '');
+  for (const rule of INDIRECTION_RULES) {
+    if (rule.re.test(command)) return rule.code;
+  }
+  return null;
+}
+
+/**
+ * Shell expansion the guard cannot resolve statically: `x=push; git $x`,
+ * `git $(echo push)`, `eval`, `sh -c`, `xargs`. Pattern matching after
+ * expansion is impossible here, so unresolvable indirection is refused rather
+ * than guessed. Run the literal command instead.
+ */
+const INDIRECTION_RULES = [
+  { code: 'COMMAND_SUBSTITUTION', re: /\$\(|`|<\(/ },
+  { code: 'VARIABLE_EXPANSION', re: /\$\{?[a-zA-Z_][a-zA-Z0-9_]*\}?/ },
+  { code: 'INDIRECT_EXECUTION', re: /(^|[\s;|&])(eval|exec|source|xargs)\s/ },
+  { code: 'SHELL_WRAPPER', re: /(^|[\s;|&])(ba|z|k|da)?sh\s+(-[a-z]*[cs]|--command)\b/ },
+  { code: 'ALIAS_DEFINITION', re: /(^|[\s;|&])(alias|function)\s/ },
+];
+
 const EXTERNAL_EFFECT_RULES = [
   { code: 'GIT_MUTATION', re: /\bgit\s+(commit|push|merge|rebase|tag|cherry-pick|revert|remote\s+(add|set-url))\b/ },
   { code: 'GIT_HISTORY_DESTRUCTIVE', re: /\bgit\s+(reset\s+--hard|clean\s+-[a-z]*f|push\s+.*--force)/ },
@@ -66,6 +92,14 @@ export function evaluateToolUse(input, context = {}) {
   if (tool === 'bash' || tool === 'shell' || tool === 'exec') {
     const command = normalizeCommand(toolInput.command);
     if (command === '') return decision(ALLOW, 'EMPTY', 'no command');
+    const indirection = detectIndirection(toolInput.command);
+    if (indirection) {
+      return decision(
+        DENY,
+        indirection,
+        `the guard cannot resolve shell expansion (${indirection}); run the literal command instead`,
+      );
+    }
     for (const rule of EXTERNAL_EFFECT_RULES) {
       if (rule.re.test(command)) {
         return decision(DENY, rule.code, `blocked by guard rule ${rule.code}: needs an Owner approval packet`);

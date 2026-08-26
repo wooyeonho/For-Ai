@@ -2,7 +2,7 @@
 // Seeded-defect harness: proves the validators actually detect damage instead
 // of printing green. Each case builds a throwaway kernel, injects one specific
 // defect, and requires the matching validator to fail.
-import { mkdtempSync, rmSync, copyFileSync, writeFileSync, readFileSync, mkdirSync, openSync, writeSync, closeSync, statSync } from 'node:fs';
+import { mkdtempSync, rmSync, copyFileSync, writeFileSync, readFileSync, mkdirSync, readdirSync, openSync, writeSync, closeSync, statSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { spawnSync } from 'node:child_process';
@@ -20,7 +20,7 @@ function scaffold() {
   const dir = mkdtempSync(join(tmpdir(), 'yeno-defect-'));
   const migDir = join(dir, 'migrations');
   mkdirSync(migDir, { recursive: true });
-  for (const f of ['0001_core.sql', '0002_release_control.sql', 'CHECKSUMS.json']) {
+  for (const f of readdirSync(MIGRATIONS)) {
     copyFileSync(join(MIGRATIONS, f), join(migDir, f));
   }
   const dbPath = join(dir, 'yeno.db');

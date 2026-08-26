@@ -7,6 +7,16 @@ import { catchUp, rebuild } from './core/projections.mjs';
 import { createBackup, verifyBackup, restoreBackup } from './core/backup.mjs';
 import { setStop, stopEngaged } from './core/governor.mjs';
 import { statusReport, verifyReport } from './domain/status.mjs';
+import {
+  startRun,
+  checkpointRun,
+  openBlocker,
+  settleBlocker,
+  queueNextRun,
+  takeNextRun,
+  handoffReport,
+  pendingNextRuns,
+} from './domain/handoff.mjs';
 
 const USAGE = `yeno <command>
 
@@ -22,6 +32,14 @@ const USAGE = `yeno <command>
   restore --from <backup> --to <newDb> [--force]
   stop engage --reason R           engage emergency stop
   stop release --reason R          release emergency stop (Owner authority)
+  handoff show [--json]            state, blockers, NEXT_RUN for the next session
+  run start --ref R --gate G --goal G --baseline B [--authority A2] [--session S]
+  run checkpoint --ref R --report TEXT [--evidence REF] [--state CHECKPOINTED]
+  blocker add --kind K --from OWNER --title T --detail D [--gate G] [--workaround W]
+  blocker settle <id> --resolution R [--state RESOLVED|ABANDONED]
+  next add --gate G --action A --rationale R [--priority N] [--blocked-by ID]
+  next list [--json]               pending queue in take order
+  next take --ref R                consume the top entry for a session run
 
 Options: --db <path> (default ${DEFAULT_DB_PATH}), --migrations <dir> (default ${MIGRATIONS_DIR})`;
 
@@ -41,6 +59,11 @@ function parseArgs(args) {
     } else positional.push(arg);
   }
   return { positional, flags };
+}
+
+function str(value, message) {
+  if (typeof value !== 'string' || value === '') throw new Error(message);
+  return value;
 }
 
 function print(value, json) {
@@ -144,6 +167,86 @@ async function main() {
         const result = await restoreBackup(from, to, { force: flags.force === true });
         print(result, json);
         return result.ok ? 0 : 1;
+      }
+      case 'handoff show': {
+        print(handoffReport(db), json);
+        return 0;
+      }
+      case 'run start': {
+        const run = startRun(db, {
+          runRef: str(flags.ref, 'run start requires --ref'),
+          gateId: str(flags.gate, 'run start requires --gate'),
+          goal: str(flags.goal, 'run start requires --goal'),
+          baselineRef: str(flags.baseline, 'run start requires --baseline'),
+          sessionRef: typeof flags.session === 'string' ? flags.session : null,
+          authority: typeof flags.authority === 'string' ? flags.authority : 'A2',
+        });
+        print({ run_ref: run.run_ref, state: run.state, idempotent: run.idempotent }, json);
+        return 0;
+      }
+      case 'run checkpoint': {
+        const run = checkpointRun(db, str(flags.ref, 'run checkpoint requires --ref'), {
+          report: str(flags.report, 'run checkpoint requires --report'),
+          evidenceRef: typeof flags.evidence === 'string' ? flags.evidence : null,
+          state: typeof flags.state === 'string' ? flags.state : 'CHECKPOINTED',
+        });
+        print({ run_ref: run.run_ref, state: run.state, ended_at: run.ended_at }, json);
+        return 0;
+      }
+      case 'blocker add': {
+        const blocker = openBlocker(db, {
+          kind: str(flags.kind, 'blocker add requires --kind'),
+          neededFrom: str(flags.from, 'blocker add requires --from'),
+          title: str(flags.title, 'blocker add requires --title'),
+          detail: str(flags.detail, 'blocker add requires --detail'),
+          gateId: typeof flags.gate === 'string' ? flags.gate : null,
+          workaround: typeof flags.workaround === 'string' ? flags.workaround : null,
+        });
+        print({ blocker_id: blocker.blocker_id, state: blocker.state }, json);
+        return 0;
+      }
+      case 'blocker settle': {
+        const id = positional[2] ?? flags.id;
+        if (typeof id !== 'string') throw new Error('blocker settle requires an id');
+        const blocker = settleBlocker(db, id, {
+          state: typeof flags.state === 'string' ? flags.state : 'RESOLVED',
+          resolution: str(flags.resolution, 'blocker settle requires --resolution'),
+        });
+        print({ blocker_id: blocker.blocker_id, state: blocker.state }, json);
+        return 0;
+      }
+      case 'next add': {
+        const entry = queueNextRun(db, {
+          gateId: str(flags.gate, 'next add requires --gate'),
+          exactAction: str(flags.action, 'next add requires --action'),
+          rationale: str(flags.rationale, 'next add requires --rationale'),
+          priority: Number(flags.priority ?? 0),
+          blockedBy: typeof flags['blocked-by'] === 'string' ? flags['blocked-by'] : null,
+          createdBy: typeof flags.actor === 'string' ? flags.actor : 'cli',
+        });
+        print({ next_id: entry.next_id, gate_id: entry.gate_id, priority: entry.priority }, json);
+        return 0;
+      }
+      case 'next list': {
+        print(
+          pendingNextRuns(db).map((n) => ({
+            next_id: n.next_id,
+            gate_id: n.gate_id,
+            priority: n.priority,
+            exact_action: n.exact_action,
+          })),
+          json,
+        );
+        return 0;
+      }
+      case 'next take': {
+        const entry = takeNextRun(db, str(flags.ref, 'next take requires --ref'));
+        if (!entry) {
+          print({ taken: null, reason: 'no unblocked NEXT_RUN entry' }, json);
+          return 1;
+        }
+        print({ next_id: entry.next_id, gate_id: entry.gate_id, exact_action: entry.exact_action }, json);
+        return 0;
       }
       case 'stop engage': {
         setStop(db, true, String(flags.reason ?? 'cli'), 'cli');
