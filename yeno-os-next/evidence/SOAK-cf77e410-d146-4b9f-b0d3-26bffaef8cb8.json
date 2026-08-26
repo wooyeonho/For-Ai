@@ -1,0 +1,79 @@
+{
+  "kind": "yeno-soak-evidence",
+  "version": 1,
+  "soak_id": "SOAK-cf77e410-d146-4b9f-b0d3-26bffaef8cb8",
+  "outcome": {
+    "state": "PASSED",
+    "reasons": []
+  },
+  "report": {
+    "generated_at": "2026-08-26T12:26:53.690Z",
+    "required_probe_kinds": [
+      "CRASH_REPLAY",
+      "CHAIN_VERIFY",
+      "PROJECTION_DETERMINISM",
+      "INTEGRITY",
+      "BACKUP_RESTORE",
+      "LEASE_FENCING"
+    ],
+    "passed_sessions": 3,
+    "sessions": [
+      {
+        "soak_id": "SOAK-cf77e410-d146-4b9f-b0d3-26bffaef8cb8",
+        "gate_id": "G1",
+        "state": "PASSED",
+        "planned_cycles": 300,
+        "completed_cycles": 300,
+        "kill_count": 300,
+        "restore_count": 300,
+        "events_appended": 30000,
+        "duration_ms": 308314,
+        "head_hash": "2b0426af562c970376b608dd7f63538481653f92a8aba79db38539bbcfd1be6f",
+        "evidence_ref": "evidence/SOAK-cf77e410-d146-4b9f-b0d3-26bffaef8cb8.json",
+        "failure": null,
+        "probes": 1800,
+        "probes_failed": 0,
+        "probe_kinds": 6,
+        "probes_by_kind": [
+          {
+            "kind": "BACKUP_RESTORE",
+            "runs": 300,
+            "passed": 300,
+            "worst_ms": 973
+          },
+          {
+            "kind": "CHAIN_VERIFY",
+            "runs": 300,
+            "passed": 300,
+            "worst_ms": 186
+          },
+          {
+            "kind": "CRASH_REPLAY",
+            "runs": 300,
+            "passed": 300,
+            "worst_ms": 301
+          },
+          {
+            "kind": "INTEGRITY",
+            "runs": 300,
+            "passed": 300,
+            "worst_ms": 60
+          },
+          {
+            "kind": "LEASE_FENCING",
+            "runs": 300,
+            "passed": 300,
+            "worst_ms": 1
+          },
+          {
+            "kind": "PROJECTION_DETERMINISM",
+            "runs": 300,
+            "passed": 300,
+            "worst_ms": 665
+          }
+        ],
+        "failures": []
+      }
+    ]
+  }
+}

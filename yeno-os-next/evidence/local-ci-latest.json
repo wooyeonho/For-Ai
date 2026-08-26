@@ -1,0 +1,921 @@
+{
+  "manifest_version": 1,
+  "started_at": "2026-08-26T16:23:05.638Z",
+  "finished_at": "2026-08-26T16:23:36.772Z",
+  "node_version": "v24.19.0",
+  "platform": "linux-x64",
+  "ok": true,
+  "steps_total": 25,
+  "steps_failed": 0,
+  "steps": [
+    {
+      "id": "node_version",
+      "argv": [
+        "--version"
+      ],
+      "exit_code": 0,
+      "ok": true,
+      "duration_ms": 4,
+      "stdout_sha256": "b7677d3ec37ee1897ba07dc2cfe8292fe421c9ac93396cca5bbece486d1a2a41",
+      "stdout_tail": "v24.19.0",
+      "stderr_tail": ""
+    },
+    {
+      "id": "unit_and_adversarial_tests",
+      "argv": [
+        "--test",
+        "--test-reporter=spec"
+      ],
+      "exit_code": 0,
+      "ok": true,
+      "duration_ms": 8794,
+      "stdout_sha256": "705f562b4901fdc81dd9ddaf5d6ac9fe4ba07cddd2549957203c155dee0fc293",
+      "stdout_tail": "✔ cancellation is recorded, closes the open attempt, and is final (16.65538ms)\n✔ the emergency stop closes the queue, and the scheduler is off until the Owner enables it (17.419234ms)\n✔ an A3+ job cannot touch the outside world without the approval the governor consumed (16.530704ms)\n✔ idempotency keys are payload-sensitive, and G4 acceptance stays honest (15.981631ms)\nℹ tests 204\nℹ suites 0\nℹ pass 204\nℹ fail 0\nℹ cancelled 0\nℹ skipped 0\nℹ todo 0\nℹ duration_ms 8763.023222",
+      "stderr_tail": ""
+    },
+    {
+      "id": "migration_checksum_pin",
+      "argv": [
+        "scripts/pin-migration-checksums.mjs",
+        "--check"
+      ],
+      "exit_code": 0,
+      "ok": true,
+      "duration_ms": 31,
+      "stdout_sha256": "d01c151d270117ff0d58c5014b0f8b120538907bfe09219e5ace8227508a6cf3",
+      "stdout_tail": "CHECKSUM_PIN_OK: 18 migrations pinned",
+      "stderr_tail": ""
+    },
+    {
+      "id": "cli_migrate",
+      "argv": [
+        "src/cli.mjs",
+        "migrate"
+      ],
+      "exit_code": 0,
+      "ok": true,
+      "duration_ms": 61,
+      "stdout_sha256": "01d3ec4f1fea5c37df8ccf7acaafcce8657882b8f2b279ed710f3e0960a9eb4f",
+      "stdout_tail": "applied:\n\ntotal: 18",
+      "stderr_tail": ""
+    },
+    {
+      "id": "cli_status",
+      "argv": [
+        "src/cli.mjs",
+        "status",
+        "--json"
+      ],
+      "exit_code": 0,
+      "ok": true,
+      "duration_ms": 71,
+      "stdout_sha256": "a9fe55976635368094c0d78cfcb4bef50762e0a1837223f81cfdf6b1f636e97b",
+      "stdout_tail": "    \"kill_count\": 300,\n    \"restore_count\": 300,\n    \"events_appended\": 30000,\n    \"duration_ms\": 308314,\n    \"head_hash\": \"2b0426af562c970376b608dd7f63538481653f92a8aba79db38539bbcfd1be6f\",\n    \"evidence_ref\": \"evidence/SOAK-cf77e410-d146-4b9f-b0d3-26bffaef8cb8.json\",\n    \"failure\": null,\n    \"probes\": 1800,\n    \"probes_failed\": 0,\n    \"probe_kinds\": 6\n  }\n}",
+      "stderr_tail": ""
+    },
+    {
+      "id": "cli_verify",
+      "argv": [
+        "src/cli.mjs",
+        "verify",
+        "--json"
+      ],
+      "exit_code": 0,
+      "ok": true,
+      "duration_ms": 76,
+      "stdout_sha256": "9808235d7b72b24aaea3f1da5e086e39f27ef5c2e76957df66a9e8e1dc4965d7",
+      "stdout_tail": "      \"name\": \"g6_not_promoted_before_g5\",\n      \"ok\": true,\n      \"detail\": \"G6 PENDING while G5 PENDING\"\n    },\n    {\n      \"name\": \"no_consciousness_claim_recorded\",\n      \"ok\": true,\n      \"detail\": \"0 claims\"\n    }\n  ],\n  \"failed\": []\n}",
+      "stderr_tail": ""
+    },
+    {
+      "id": "event_replay",
+      "argv": [
+        "src/cli.mjs",
+        "event",
+        "replay",
+        "--json"
+      ],
+      "exit_code": 0,
+      "ok": true,
+      "duration_ms": 64,
+      "stdout_sha256": "f5cab5aa912a1620215f68c1773ef483e3c0ff4c19fe2e41f55383204a2b9744",
+      "stdout_tail": "  },\n  \"projections\": {\n    \"proj_inbox_state\": {\n      \"last_seq\": 243,\n      \"rows\": 2\n    },\n    \"proj_run_state\": {\n      \"last_seq\": 243,\n      \"rows\": 0\n    }\n  }\n}",
+      "stderr_tail": ""
+    },
+    {
+      "id": "projection_rebuild",
+      "argv": [
+        "src/cli.mjs",
+        "projection",
+        "rebuild"
+      ],
+      "exit_code": 0,
+      "ok": true,
+      "duration_ms": 61,
+      "stdout_sha256": "3bb37b6f9de2225adee223ef791447049d50d75e1a8883740b40796ce140e57b",
+      "stdout_tail": "proj_inbox_state:\n  last_seq: 243\n  rows: 2\nproj_run_state:\n  last_seq: 243\n  rows: 0",
+      "stderr_tail": ""
+    },
+    {
+      "id": "durability_soak",
+      "argv": [
+        "scripts/soak.mjs",
+        "--cycles",
+        "2",
+        "--batch",
+        "8",
+        "--evidence-dir",
+        "evidence/runtime"
+      ],
+      "exit_code": 0,
+      "ok": true,
+      "duration_ms": 271,
+      "stdout_sha256": "4428598acdb99dc8699e59104c211a1fd2468ab53efef82cee0ea2c89dcc6f92",
+      "stdout_tail": "soak SOAK-e134def2-b852-4150-ac08-3eba3ad96a90: 2 cycles x 8 events, scratch /tmp/yeno-soak-W03IAt/yeno.db\ncycle 1/2: 6/6 probes ok\ncycle 2/2: 6/6 probes ok\nevidence/runtime/SOAK-e134def2-b852-4150-ac08-3eba3ad96a90.json\nSOAK_PASS SOAK-e134def2-b852-4150-ac08-3eba3ad96a90",
+      "stderr_tail": ""
+    },
+    {
+      "id": "queue_crash_soak",
+      "argv": [
+        "scripts/queue-soak.mjs",
+        "--cycles",
+        "4"
+      ],
+      "exit_code": 0,
+      "ok": true,
+      "duration_ms": 351,
+      "stdout_sha256": "4232baf6585a390fd61ea76ff01c2d4be653eacac3c6bc0b45647dae1ae04e45",
+      "stdout_tail": "    \"worst_effect_lines\": 1,\n    \"started_at\": \"2026-08-26T16:23:15.199Z\",\n    \"ended_at\": \"2026-08-26T16:23:15.418Z\"\n  },\n  \"queue\": [\n    {\n      \"state\": \"LEASED\",\n      \"n\": 4\n    }\n  ]\n}\nQUEUE_SOAK_PASS 4/4",
+      "stderr_tail": ""
+    },
+    {
+      "id": "scheduler_crash_soak",
+      "argv": [
+        "scripts/scheduler-soak.mjs",
+        "--cycles",
+        "4",
+        "--no-record"
+      ],
+      "exit_code": 0,
+      "ok": true,
+      "duration_ms": 347,
+      "stdout_sha256": "1223b3a5c4d3ccd0a2dd33df9527f1a9c94e96728ea79c8213751e80d78c4fe4",
+      "stdout_tail": "  \"soak_ref\": \"SSOAK-22347b26-4649-4d35-96a0-996b2f60d01e\",\n  \"acceptance\": {\n    \"generated_at\": \"2026-08-26T16:23:15.767Z\",\n    \"schedules\": 4,\n    \"armed\": 4,\n    \"fires\": 4,\n    \"deduped_fires\": 0,\n    \"problems\": [],\n    \"ok\": true\n  }\n}\nSCHEDULER_SOAK_PASS 4/4",
+      "stderr_tail": ""
+    },
+    {
+      "id": "scheduler_daemon_restart_soak",
+      "argv": [
+        "scripts/daemon-soak.mjs",
+        "--cycles",
+        "4",
+        "--no-record"
+      ],
+      "exit_code": 0,
+      "ok": true,
+      "duration_ms": 5629,
+      "stdout_sha256": "524b89b0cf8b8913874adc299d37d26f72d2e2b75509b3cb9f6329a9cbbeabc1",
+      "stdout_tail": "  \"total_boundaries_served\": 6,\n  \"acceptance\": {\n    \"generated_at\": \"2026-08-26T16:23:21.395Z\",\n    \"schedules\": 1,\n    \"armed\": 1,\n    \"fires\": 6,\n    \"deduped_fires\": 0,\n    \"problems\": [],\n    \"ok\": true\n  }\n}\nDAEMON_SOAK_PASS 4/4 boundaries=6",
+      "stderr_tail": ""
+    },
+    {
+      "id": "scheduler_supervisor_soak",
+      "argv": [
+        "scripts/supervisor-soak.mjs",
+        "--cycles",
+        "3",
+        "--no-record"
+      ],
+      "exit_code": 0,
+      "ok": true,
+      "duration_ms": 6405,
+      "stdout_sha256": "b284f52317a496c24ab7650ab98e7d6d917202de9c9c8854b3a69a1bfb6f8fff",
+      "stdout_tail": "  \"total_boundaries_served\": 7,\n  \"acceptance\": {\n    \"generated_at\": \"2026-08-26T16:23:27.800Z\",\n    \"schedules\": 1,\n    \"armed\": 1,\n    \"fires\": 7,\n    \"deduped_fires\": 0,\n    \"problems\": [],\n    \"ok\": true\n  }\n}\nSUPERVISOR_SOAK_PASS 3/3 boundaries=7",
+      "stderr_tail": ""
+    },
+    {
+      "id": "portfolio_loop_exercise",
+      "argv": [
+        "scripts/portfolio-exercise.mjs"
+      ],
+      "exit_code": 0,
+      "ok": true,
+      "duration_ms": 1173,
+      "stdout_sha256": "9a6cde8111057acf4b53108e83c7e71c385408ee049683495b549b2a84503146",
+      "stdout_tail": "PASS stop_released — released with an Owner reason for the duration of the exercise\nPASS project — G7-EX-1 (PRJ-G7EX-1787756218873) carries source SV-028d430f-7a63-4943-80a3-29824935d66d from INBOX-9311e47588f08870e357628e\nPASS adapters — for_ai and shopping_shorts registered and enabled\nPASS activation_refused_without_evidence — already active from an earlier run of this exercise: the refusal was recorded then\nPASS activated — G7-EX-1 is BUILD\nPASS for_ai_pass — not run: ALREADY_RUN\nPASS crash_mid_run — child was SIGKILLed holding the job; job left LEASED, cycles recorded by the dead worker: 0\nPASS recovered_after_crash — reclaimed 1, outcome USEFUL, jobs 1, artefacts 1, cycles 1\nPASS shopping_shorts_pass — not run: ALREADY_RUN\nPASS capacity_refusal — portfolio capacity is full (1/1 active)\nPORTFOLIO_EXERCISE_PASS",
+      "stderr_tail": ""
+    },
+    {
+      "id": "mission_control_surface",
+      "argv": [
+        "src/cli.mjs",
+        "mc",
+        "panels",
+        "--json",
+        "--limit",
+        "1"
+      ],
+      "exit_code": 0,
+      "ok": true,
+      "duration_ms": 62,
+      "stdout_sha256": "dd6a4e92c8cc932476613d5d0b71df541d399a9b2d3959d8e6ee960938801678",
+      "stdout_tail": "        \"name\": \"no_goal_shown_decided_without_verdict\",\n        \"ok\": true,\n        \"detail\": \"0 offender(s)\"\n      },\n      {\n        \"name\": \"settings_shows_the_real_stop\",\n        \"ok\": true,\n        \"detail\": \"panel 1, table 1\"\n      }\n    ]\n  }\n}",
+      "stderr_tail": ""
+    },
+    {
+      "id": "ui_contract_pin",
+      "argv": [
+        "scripts/pin-ui-contract.mjs",
+        "--check"
+      ],
+      "exit_code": 0,
+      "ok": true,
+      "duration_ms": 75,
+      "stdout_sha256": "0f561417c995a8beb90cce29386912be522f5da61f4e8fbc80c71297c9fc7e44",
+      "stdout_tail": "UI_CONTRACT_PIN_OK: 8 panels, 5 commands, 3 panel actions",
+      "stderr_tail": ""
+    },
+    {
+      "id": "ui_render_screen",
+      "argv": [
+        "src/cli.mjs",
+        "mc",
+        "render",
+        "--limit",
+        "1"
+      ],
+      "exit_code": 0,
+      "ok": true,
+      "duration_ms": 63,
+      "stdout_sha256": "4320aacb3196c21e24b01c639f7acd3f7e3aa157f579b88b2ffd402f73aa5b2e",
+      "stdout_tail": "EVIDENCE  (1/41, 16 need attention)\nkind               ref_id             label              state              evidence_ref       sha256             at                \nRUN                RUN-018            prove the screen c CHECKPOINTED       RUN-018            —                  2026-08-26T16:11:4\n\nCOSTS  (1/3)\nprofile_id         name               monthly_limit_krw  spent_krw          remaining_krw      active             owner_promoted     cost_denials       runs              \nBP-LOCAL           Local Safe 300k    300000             0                  300000             1                  1                  0                  0                 \n\nSETTINGS  (1/1, 1 need attention)\nemergency_stop_eng emergency_stop_rea scheduler_enabled  schedules_armed    schedules          portfolio_max_acti projects_active    identity_version   release_version    current_gate       migrations_applied events             head_hash         \n1                  G7 exercise finish 0                  0                  1                  1                  1                  1                  0.0.1              G2                 18                 246                c54b07fe5b978feda5\n[ self.observe ] disabled: EMERGENCY_STOP",
+      "stderr_tail": ""
+    },
+    {
+      "id": "ui_follow_exercise",
+      "argv": [
+        "scripts/ui-follow-exercise.mjs"
+      ],
+      "exit_code": 0,
+      "ok": true,
+      "duration_ms": 743,
+      "stdout_sha256": "78e227a206cdbe0aebfaff6ca65a3a59c23798afccf06efe5a1e92c57edd97ea",
+      "stdout_tail": "OK command_accepted_after_owner_released_the_stop — status 202\nOK command_event_reached_the_follower — cursor 3\nOK no_gap_forced_a_refetch_on_a_clean_stream\nOK screen_shows_the_effect_only_after_its_event — cursor 3 visible in the timeline\nOK released_stop_makes_the_buttons_pressable_again\nOK dropped_connection_marks_the_screen_stale — stale: DISCONNECTED; last seen event 3\nOK reopening_refetches_before_believing_the_screen\nOK resume_delivers_only_events_after_the_last_seen_sequence — from 3 to 4\nOK negative_control_gap_detection_removed — the check breaks with the rule removed\nOK negative_control_replay_guard_removed — the check breaks with the rule removed\nui follow checks: 11, failed: 0\nUI_FOLLOW_EXERCISE_PASS",
+      "stderr_tail": ""
+    },
+    {
+      "id": "ui_screen_soak",
+      "argv": [
+        "scripts/ui-screen-soak.mjs",
+        "--cycles=4"
+      ],
+      "exit_code": 0,
+      "ok": true,
+      "duration_ms": 1812,
+      "stdout_sha256": "02081e1ff8faf95795bd5fb9c031bb2e313fcf2fb61ecf471c10daa86fa6125d",
+      "stdout_tail": "cycle 1: head 3, cursor 3, accepted 202, denied 400/422, identical true (44 lines)\ncycle 2: head 5, cursor 5, accepted 202, denied 400/422, identical true (46 lines)\ncycle 3: head 7, cursor 7, accepted 202, denied 400/422, identical true (46 lines)\ncycle 4: head 9, cursor 9, accepted 202, denied 400/422, identical true (46 lines)\nscreen soak cycles: 4, divergent screens: 0, bad accepts: 0, leaked denials: 0, stale cursors: 0\nUI_SCREEN_SOAK_PASS 4/4",
+      "stderr_tail": ""
+    },
+    {
+      "id": "independent_validation",
+      "argv": [
+        "scripts/independent-validation.mjs"
+      ],
+      "exit_code": 0,
+      "ok": true,
+      "duration_ms": 57,
+      "stdout_sha256": "a0f331563ddfd3c87416c414fc12de6b3818dfa26e03cdc7c83371fe07037c43",
+      "stdout_tail": "PASS intake_coverage_recomputed — 2 inbox items, 2 source versions, 3 intakes\nPASS governor_recomputed — 381 red-team probes, 1 denials recorded\nPASS workflow_runtime_recomputed — 11 jobs, 2 external effects, soak QSOAK-G4-001 12/12\nPASS scheduler_recomputed — 1 schedules, 2 fires, soak SSOAK-G4-001 8/8\nPASS scheduler_daemon_recomputed — soak DSOAK-G4-001 8/8, 7 real kills, 12 boundaries served, 0 duplicated\nPASS scheduler_supervisor_recomputed — soak VSOAK-G4-001 6/6, 3 child kills, 2 tree kills, 3 unattended restarts, 14 boundaries served, 0 duplicated\nPASS portfolio_cycles_recomputed — 3/3 cycles USEFUL, artefacts rehashed from the stored source bytes, 1/1 active\nPASS mission_control_panels_recomputed — 8 panels agree with the base tables, served read-only\nPASS gate_promotions_recomputed — 2 gates passed\nPASS ui_contract_recomputed — 8 panels pinned, columns re-read from the views\nPASS evolution_lab_recomputed — 0 proposals, benchmark verdicts recomputed from their own numbers\nINDEPENDENT_VALIDATION_PASS",
+      "stderr_tail": ""
+    },
+    {
+      "id": "self_adversarial_probes",
+      "argv": [
+        "scripts/self-adversarial-probes.mjs"
+      ],
+      "exit_code": 0,
+      "ok": true,
+      "duration_ms": 207,
+      "stdout_sha256": "6df13d22797d6ea56e42e96aca523820b8a1e4f10a9c672250cef471810d67c1",
+      "stdout_tail": "PASS          cost_hard_gate_enforced_in_schema\n        schema refused: YENO_SAFETY: cost_p90 unknown or exceeds remaining budget\nPASS          ax_method_refused_in_schema\n        schema refused: YENO_SAFETY: A3+ RUN needs a live in-scope Owner approval\nPASS          emergency_stop_defaults_ON_on_a_fresh_install\n        a freshly migrated DB has emergency_stop.engaged = 1 as stored state, not derived from a log whose absence means OFF\nPASS          cli_refuses_gate_pass_without_real_evidence\n        CLI refused:     \"evidence file evidence/DOES-NOT-EXIST.md does not exist in the repository\"   ] }\nPASS          durability_soak_floor_100_cycles\n        300 cycles, 300 SIGKILLs, 300 restores, 1800 probes with 0 failures, evidence evidence/SOAK-cf77e410-d146-4b9f-b0d3-26bffaef8cb8.json\n\nSELF_PROBES_PASS: 11/11",
+      "stderr_tail": ""
+    },
+    {
+      "id": "governor_red_team",
+      "argv": [
+        "scripts/red-team-governor.mjs",
+        "--no-record"
+      ],
+      "exit_code": 0,
+      "ok": true,
+      "duration_ms": 696,
+      "stdout_sha256": "558b5a2ff1e7e7fae9917c4e8257d6e8a83022382727b259c322c7de02a49769",
+      "stdout_tail": "REFUSED      RAW_SQL               rewrite an event payload in the ledger\nREFUSED      RAW_SQL               delete an admission denial record\nREFUSED      RAW_SQL               rewrite the reason code of a recorded denial\nREFUSED      EVIDENCE              pass G3 through the domain layer with an evidence file that does not exist\nREFUSED      EVIDENCE              rewrite a recorded red-team result to hide an allowed bypass\nREFUSED      EVIDENCE              grant an approval citing an Owner Packet that does not exist\nREFUSED      EVIDENCE              insert an approval with no Owner Packet reference at all\nREFUSED      EVIDENCE              repoint an approval at a different Owner Packet after the fact\n\nred-team probes: 38, refused: 38, allowed: 0, unverifiable: 0\nnegative controls: 4, bypassed with the guard removed: 4\nREDTEAM_PASS",
+      "stderr_tail": ""
+    },
+    {
+      "id": "queue_red_team",
+      "argv": [
+        "scripts/red-team-queue.mjs",
+        "--no-record"
+      ],
+      "exit_code": 0,
+      "ok": true,
+      "duration_ms": 935,
+      "stdout_sha256": "c10b71ad2cd7f5d3eeb19b4edc9a9e062b2c992f8fb187f33cac83c1062b303f",
+      "stdout_tail": "REFUSED      RAW_SQL            shorten an armed schedule to a busy loop\nREFUSED      RAW_SQL            arm a schedule as a non-Owner actor\nREFUSED      RAW_SQL            delete a schedule so its firing history is orphaned\nREFUSED      RAW_SQL            fire a schedule while the master scheduler switch is off\nREFUSED      RAW_SQL            fire a schedule while the emergency stop is engaged\nREFUSED      RAW_SQL            forge a passing scheduler soak cycle that fired one boundary twice\nREFUSED      GOVERNOR_API       tick a disarmed schedule through the domain API\n\nqueue red-team probes: 42, refused: 42, allowed: 0, unverifiable: 0\nnegative controls: 11, bypassed with the guard removed: 11\nscheduler probes: 13, refused: 13 (minimum 13)\nREDTEAM_QUEUE_PASS",
+      "stderr_tail": ""
+    },
+    {
+      "id": "api_red_team",
+      "argv": [
+        "scripts/red-team-api.mjs"
+      ],
+      "exit_code": 0,
+      "ok": true,
+      "duration_ms": 1191,
+      "stdout_sha256": "bd80ac2cde2a9fbb9f50c720915569d98125e6af4ddcb081cdc5930504c50c02",
+      "stdout_tail": "REFUSED/OK accepted_command: expected 202, got 202\nREFUSED/OK minting_an_approval: expected 400, got 400\nREFUSED/OK cancelling_an_invented_job: expected 422, got 422\nREFUSED/OK promoting_an_invented_inbox_item: expected 422, got 422\nREFUSED/OK projects_still_empty: expected 0, got 0\nREFUSED/OK command_after_re_engage: expected 423, got 423\nREFUSED/OK read_flood_is_rate_limited: expected true, got true\nREFUSED/OK read_flood_wrote_nothing: expected 3, got 3\nREFUSED/OK negative_control_stop_guard_leaks_when_removed: expected true, got true\nREFUSED/OK negative_control_token_guard_leaks_when_removed: expected true, got true\napi red team probes: 25, leaks: 0\nAPI_RED_TEAM_PASS",
+      "stderr_tail": ""
+    },
+    {
+      "id": "seeded_defect_detection",
+      "argv": [
+        "scripts/assert-seeded-defect-detected.mjs"
+      ],
+      "exit_code": 0,
+      "ok": true,
+      "duration_ms": 1951,
+      "stdout_sha256": "1316f02e57827241b91d96a9ccba3d5282d24c7b26520df169ee8dfdf85b83ae",
+      "stdout_tail": "DETECTED project_is_active_with_no_demand_or_utility_evidence — FAIL portfolio_cycles_recomputed — SEED-1 is active without both demand and utility evidence\nDETECTED mission_control_inbox_panel_hides_items — FAIL mission_control_panels_recomputed — v_mc_inbox shows 0 of 1 row(s)\nDETECTED mission_control_shows_an_expired_approval_as_live — FAIL mission_control_panels_recomputed — APR-seeded-stale: panel says LIVE, the row means EXPIRED\nDETECTED mission_control_shows_the_stop_as_released_while_engaged — FAIL mission_control_panels_recomputed — settings shows stop 0, the table says 1\nDETECTED ui_contract_misses_a_new_panel_column — FAIL ui_contract_recomputed — panel inbox columns differ from v_mc_inbox\nDETECTED ui_contract_promises_a_panel_whose_view_is_gone — FAIL ui_contract_recomputed — panel costs names view v_mc_costs, which does not exist\nDETECTED evolution_proposal_is_approved_without_owner_consent — FAIL evolution_lab_recomputed — PRP-seeded is APPROVED without an approval\nDETECTED evolution_benchmark_claims_pass_on_worse_numbers — FAIL evolution_lab_recomputed — BMK-seeded claims PASS but its numbers got worse\nDETECTED evolution_proposal_targets_its_own_judge — FAIL evolution_lab_recomputed — PRP-seeded-leash targets scripts/independent-validation.mjs, which scripts/independent-validation.mjs forbids\n\nseeded defects: 32, detected: 32, missed: 0\nSEEDED_DEFECT_CHECK_PASS",
+      "stderr_tail": ""
+    }
+  ],
+  "source_inventory": [
+    {
+      "path": ".claude/hooks/completion-guard.mjs",
+      "size": 1174,
+      "sha256": "9a09c95ac92a1c27cf9b63135701c1b40e60407c9b5c154786dc655a6f9f7063"
+    },
+    {
+      "path": ".claude/hooks/guard-rules.mjs",
+      "size": 6733,
+      "sha256": "ea49d41b4b5309e347d68d83d974f65ae590f6dbdc5601bb4d19f4ec81f7d033"
+    },
+    {
+      "path": ".claude/hooks/pretooluse-guard.mjs",
+      "size": 1673,
+      "sha256": "ffc8c6e4da17e67ee7660f66de86769f365972e6cfed2bd78d8c66beb3bd4484"
+    },
+    {
+      "path": ".claude/settings.json",
+      "size": 1514,
+      "sha256": "bca400a75a0935ed7a5751972e7f9efec9069e21bf07bed4bbf1171e2288f2e0"
+    },
+    {
+      "path": "CLAUDE.md",
+      "size": 25267,
+      "sha256": "710c7021912a88c185f55cf3accf306343f938a144e3762f11ac943339481a2c"
+    },
+    {
+      "path": "README.md",
+      "size": 3263,
+      "sha256": "c533f83f8391d3cd9298f28491b37c3c18f54319a279fadba2559f09413e87a6"
+    },
+    {
+      "path": "STATUS.md",
+      "size": 37757,
+      "sha256": "c74d0f3abe0c7aafe1dd9a8f1e3a15f2b4e11b4636d6be9b3bd0b028e103ec3d"
+    },
+    {
+      "path": "artifacts/portfolio/for_ai-256f30acc7b310d1.json",
+      "size": 27213,
+      "sha256": "e260715b1884b0c2205eab3f5bacf98c59f1e0b7a8cb1062b2e9ca18cb6a4fc3"
+    },
+    {
+      "path": "artifacts/portfolio/for_ai-3a33f8db45648aed.json",
+      "size": 251949,
+      "sha256": "59b1b4bed290729743559e1bddd932ce4db45220175a883a99082725ec6935bd"
+    },
+    {
+      "path": "artifacts/portfolio/shopping_shorts-6a6091748e23952b.json",
+      "size": 2458,
+      "sha256": "464bd9e7e2a180ffa607bef6008ae7af96732562af4519eaa7fd6d35a8b87793"
+    },
+    {
+      "path": "contracts/ui-contract.json",
+      "size": 3726,
+      "sha256": "992ad062d29348829494682450ab416280a4e301725c9170150bc432cfeb9b5f"
+    },
+    {
+      "path": "migrations/0001_core.sql",
+      "size": 14695,
+      "sha256": "8518c63459b7a679d51f10a452d6ccd6b5571c5ee5c657aa343e1e8f96343d61"
+    },
+    {
+      "path": "migrations/0002_release_control.sql",
+      "size": 5179,
+      "sha256": "7ce52c1eaf09d63e3c65a5fc948008fe74dec33fc921de2dbf206d9a84a8e8e4"
+    },
+    {
+      "path": "migrations/0003_continuity.sql",
+      "size": 5020,
+      "sha256": "c08ae635def3c2a041c2db58fcd33c76416d4c464b8c13252133b44937ddbd47"
+    },
+    {
+      "path": "migrations/0004_handoff_view.sql",
+      "size": 1456,
+      "sha256": "25b07e25f8ac6fdf29095ca5279b7f348f248706d4e6f35cf3bae841e4e3a82f"
+    },
+    {
+      "path": "migrations/0005_functional_self.sql",
+      "size": 11067,
+      "sha256": "9e39681171f9af12e31d1b294f6f060905da690f51017f8846bd004b8bfd25fd"
+    },
+    {
+      "path": "migrations/0006_durability.sql",
+      "size": 4397,
+      "sha256": "b2b83c0ac7bd44aa1614133448758aa982a97eedcb607efd52049f19c21c409f"
+    },
+    {
+      "path": "migrations/0007_soak_per_cycle_evidence.sql",
+      "size": 1663,
+      "sha256": "f6b73de158d62ca2a031ba9adaabf181b1c098bd27608660bfe9e1624b10d544"
+    },
+    {
+      "path": "migrations/0008_gate_promotion_guard.sql",
+      "size": 1516,
+      "sha256": "b9a97c0ac7c188011d0adc1595264e31534a516896c4299d825521af86ede5f9"
+    },
+    {
+      "path": "migrations/0009_intake.sql",
+      "size": 8718,
+      "sha256": "1e50bd5951ae428f53c73c58624380ecd2e864239578bcfa4c27a4d2e655237e"
+    },
+    {
+      "path": "migrations/0010_governor_guard.sql",
+      "size": 8017,
+      "sha256": "56375f513760c3cefcf20d086022aac1a76fc1a76e5de2b13c64e8dcb0415591"
+    },
+    {
+      "path": "migrations/0011_approval_provenance.sql",
+      "size": 1263,
+      "sha256": "7056e8a9336cab355e16b6dab6b3fffac9fbcda417bd7d96394e6099ce7357d5"
+    },
+    {
+      "path": "migrations/0012_workflow_runtime.sql",
+      "size": 16593,
+      "sha256": "9447ba9eef987a8d1dec565616ed806a9c85874486e0d37ae9d8797d059bdefe"
+    },
+    {
+      "path": "migrations/0013_scheduler.sql",
+      "size": 9983,
+      "sha256": "c144ff9a7db3bdd4b3250a892953aa750880f6e4fe94e374d6153796ebfffccf"
+    },
+    {
+      "path": "migrations/0014_scheduler_daemon.sql",
+      "size": 2692,
+      "sha256": "cf358bccbbc0b96c3c427d4853c0afa3f769949e0c208d89ed2139b1e9a05a38"
+    },
+    {
+      "path": "migrations/0015_supervisor.sql",
+      "size": 3524,
+      "sha256": "35a577e8e025bc084095673ed2bc99377b38e354c7fb2e2953208d18706242d3"
+    },
+    {
+      "path": "migrations/0016_portfolio.sql",
+      "size": 9250,
+      "sha256": "58c2ecf0411ad2170e714a100bd1508d7b61b216366db19d99cf4f667e4612ea"
+    },
+    {
+      "path": "migrations/0017_mission_control.sql",
+      "size": 7309,
+      "sha256": "82c5c8d63973cb0e16e8b8fa504eb22a5234779f9e95e8a60a025586db5fca00"
+    },
+    {
+      "path": "migrations/0018_evolution_lab.sql",
+      "size": 14751,
+      "sha256": "5939d8baabb5ed757d9ba896504c0fb3d7987ee8eefd04aaa6dd4b2de87e81e5"
+    },
+    {
+      "path": "migrations/CHECKSUMS.json",
+      "size": 1733,
+      "sha256": "ec98362e1e30ff23eda1a0c3d7abc68077e9df4f5638adaa991f4ea607bb0f33"
+    },
+    {
+      "path": "package.json",
+      "size": 422,
+      "sha256": "8e1a6a1c14c599aaa4b6f05b77223763443696711fa0a25702de1cb4e0e9ad55"
+    },
+    {
+      "path": "scripts/assert-seeded-defect-detected.mjs",
+      "size": 34111,
+      "sha256": "3d9e0d78cbc0d0034956e7fbe8480cb866899d0e162aa8ce24361534a379dd85"
+    },
+    {
+      "path": "scripts/crash-writer.mjs",
+      "size": 1307,
+      "sha256": "bcde754e6f281d99aeab7e11610bd0062db908f27ffda7c8ff6535692e04a3d0"
+    },
+    {
+      "path": "scripts/daemon-soak.mjs",
+      "size": 6940,
+      "sha256": "163ebacf9ac90398141bcc1760a78cb9fcabf36e7c59c5c01f2236f25afa47d5"
+    },
+    {
+      "path": "scripts/independent-validation.mjs",
+      "size": 47249,
+      "sha256": "a05b28441b84ef4ebdfe4df9078390f79b80024259896e914074787af500419f"
+    },
+    {
+      "path": "scripts/local-ci.mjs",
+      "size": 5064,
+      "sha256": "42690481444f1bcb0e5152b809879475f4259b1308da2e14fe0f78dcb598a8f4"
+    },
+    {
+      "path": "scripts/pin-migration-checksums.mjs",
+      "size": 1892,
+      "sha256": "171210f0b66a8ba7b6b245b7383947707135b139dc0e8bb10670813bd479991c"
+    },
+    {
+      "path": "scripts/pin-ui-contract.mjs",
+      "size": 2060,
+      "sha256": "6ab345a4083db5f5521ecc4c73e3e2c9d85349cb1e11f4c6f1ccafba145c0127"
+    },
+    {
+      "path": "scripts/portfolio-exercise.mjs",
+      "size": 14298,
+      "sha256": "88b71c70b75383ef405d4fac319a1b7b9ed37ef5667240b4508284b89f1bbb2e"
+    },
+    {
+      "path": "scripts/queue-exercise.mjs",
+      "size": 6116,
+      "sha256": "ca70d3ad5d260d230c74905093deb838700fd51df80fbc0ca71fce3bf41c0acb"
+    },
+    {
+      "path": "scripts/queue-soak.mjs",
+      "size": 5836,
+      "sha256": "ba564e387b58d26937eba683aa74d03f8d0a6e56cc552c929dde222a7c5dfb56"
+    },
+    {
+      "path": "scripts/queue-worker.mjs",
+      "size": 2685,
+      "sha256": "8b6ae997be4edcd871e387f08127882f49f8d59937a3db05658e58b0e845eef7"
+    },
+    {
+      "path": "scripts/readjudicate-external-lane.mjs",
+      "size": 18115,
+      "sha256": "70bed815e8b25cb1d536d4dc70864d5f2a44f4915d9b281ba41fef6e19223428"
+    },
+    {
+      "path": "scripts/record-baseline.mjs",
+      "size": 9473,
+      "sha256": "a554b8faadf7fcf7cbbd547369cc45932f3f8b90195a3f14b7aa853696df20f0"
+    },
+    {
+      "path": "scripts/red-team-api.mjs",
+      "size": 8809,
+      "sha256": "4392a6093223421740b44b2f685a772f07490afce3af5591105e5ded1e99cd3b"
+    },
+    {
+      "path": "scripts/red-team-governor.mjs",
+      "size": 23434,
+      "sha256": "5a0bcc38ad0d83f794ce516fb3fa23ac807dd93bf42c9b673afca20694a1523d"
+    },
+    {
+      "path": "scripts/red-team-queue.mjs",
+      "size": 28157,
+      "sha256": "0c80df6cd932d700c70768077e288445ca64b67bf537e4dfd266d7b19e6c744c"
+    },
+    {
+      "path": "scripts/scheduler-daemon.mjs",
+      "size": 1815,
+      "sha256": "3dcb875dbd563d5080427db87115610ec071957dd5b18f3da42ddf59ddbf33af"
+    },
+    {
+      "path": "scripts/scheduler-exercise.mjs",
+      "size": 5817,
+      "sha256": "23265e3f15eed7a7fa3788270d00fc69dfd7ba321175da1cc1273314a7099a98"
+    },
+    {
+      "path": "scripts/scheduler-soak.mjs",
+      "size": 4957,
+      "sha256": "ac5dafec91279bc6a05aef4b8db3a91bd1dcce303c90e1aa237d97528dbda922"
+    },
+    {
+      "path": "scripts/scheduler-supervisor.mjs",
+      "size": 3465,
+      "sha256": "17e2e4701b6ea0aa916d139d5d888f67133f7180efa4abab29c794d5b70c7211"
+    },
+    {
+      "path": "scripts/scheduler-tick-worker.mjs",
+      "size": 1714,
+      "sha256": "60bba7504400b454060085f8e295cd6403915d37b178bc2560439358e164b652"
+    },
+    {
+      "path": "scripts/self-adversarial-probes.mjs",
+      "size": 8028,
+      "sha256": "ca39414d07e3dc720d036f3d0746aab141d3b33627053f4d57f3e798ef70a45d"
+    },
+    {
+      "path": "scripts/soak.mjs",
+      "size": 10223,
+      "sha256": "0de7a3cd23d51c26adf38882535e897c55d5ab5f57c44da015e388d2512f4f41"
+    },
+    {
+      "path": "scripts/supervisor-soak.mjs",
+      "size": 9598,
+      "sha256": "de6b17bbee76546b8a66b5ceae5ebfffb037726b1f99733d35244363a2f4dd6e"
+    },
+    {
+      "path": "scripts/ui-follow-exercise.mjs",
+      "size": 8543,
+      "sha256": "1ea627dcdbdda38aaa5673b77e5f7b157e9f01481c6c05b15f2214e43168bed7"
+    },
+    {
+      "path": "scripts/ui-screen-soak.mjs",
+      "size": 7284,
+      "sha256": "b01cb8edc38aa16fecff74c3dcf1599d94de3ca8442c059f3fb46ceeb1d42764"
+    },
+    {
+      "path": "scripts/verify-portfolio-artifact.mjs",
+      "size": 6069,
+      "sha256": "985a6a9c94f8a412a69cf693179517946a5297978ac5265bcd6f0b8fca35aae0"
+    },
+    {
+      "path": "src/api/server.mjs",
+      "size": 12049,
+      "sha256": "45dad5b29d6e05a8692d85ad8f33fd14f0a746defe4bf6958502dc05e92b9e44"
+    },
+    {
+      "path": "src/cli.mjs",
+      "size": 39079,
+      "sha256": "fb00ea6877ededf4ebb9872cc649b631e57a929a3a0c9675e309be8f651b2422"
+    },
+    {
+      "path": "src/core/backup.mjs",
+      "size": 5094,
+      "sha256": "e144153b1e0617c5c03d05e0a930e86d9c1b779fc6b930db0af8163fe5f6e28c"
+    },
+    {
+      "path": "src/core/db.mjs",
+      "size": 1066,
+      "sha256": "af68e6692b36432459855f65562cff0e49b5d4fee10ac10a80ba59ef65bef247"
+    },
+    {
+      "path": "src/core/events.mjs",
+      "size": 2563,
+      "sha256": "35dfe042c7d2922a9bcc497b8dcbd16f0b24861ad70f680df98593d7b44b10df"
+    },
+    {
+      "path": "src/core/governor.mjs",
+      "size": 6596,
+      "sha256": "cf7849f52ec3b95588247fd2a8e4cf95fb82d02781e9022c932f51d1aef226d7"
+    },
+    {
+      "path": "src/core/hash.mjs",
+      "size": 989,
+      "sha256": "12c0b503bc27981d3229b7c0f1cabf9d2f5377a7e97ce13ac4e49fb3a2380eeb"
+    },
+    {
+      "path": "src/core/ids.mjs",
+      "size": 203,
+      "sha256": "2ac4d46be6418e7a6b94253247fc54a9fc60f8b4befd20bab2367afafeefef7d"
+    },
+    {
+      "path": "src/core/lease.mjs",
+      "size": 2647,
+      "sha256": "679bd98ea2ff34f2cbe181a7f3eed9b4c75aa60d1e53d0bf7fdd6ca702cf07c9"
+    },
+    {
+      "path": "src/core/migrate.mjs",
+      "size": 3057,
+      "sha256": "6636720ff70dcf900796d6d2d6432010ecdf9bbd0c303d6b6643003010422cf1"
+    },
+    {
+      "path": "src/core/projections.mjs",
+      "size": 3164,
+      "sha256": "f34425c9deec142482ddea7b8e9aaa9286b66eb26f4abf45809101da0d521776"
+    },
+    {
+      "path": "src/domain/evolution.mjs",
+      "size": 13407,
+      "sha256": "77b5ef97a5e0ded17fefbf5c277f89df9924c54aef8b9d72bd857a6d5abb97a5"
+    },
+    {
+      "path": "src/domain/gate.mjs",
+      "size": 7345,
+      "sha256": "eb11afed147466ed5f9339d75d23bc92caddbc04cff05fbd5ea80e88702cd609"
+    },
+    {
+      "path": "src/domain/governance.mjs",
+      "size": 7585,
+      "sha256": "f88098026ecddbcd1956f92f00b4f7d3ff6fe2792dd96845d0f529a1af9e6f81"
+    },
+    {
+      "path": "src/domain/handoff.mjs",
+      "size": 7735,
+      "sha256": "43f9786496794e9b8fc5cef2bc1161bb9a2510aacbdebbee237fc7cd6af431f1"
+    },
+    {
+      "path": "src/domain/intake.mjs",
+      "size": 16577,
+      "sha256": "b55502361ab4bb41c85b45a9b5be058bcfd2a4f8d46bb56bc7421e33fae5aea9"
+    },
+    {
+      "path": "src/domain/mission-control.mjs",
+      "size": 6400,
+      "sha256": "7d70889e69a819ab8ed47ae39e5dc3822167a6b9f485fe46d30f4c094ae40e25"
+    },
+    {
+      "path": "src/domain/parsers.mjs",
+      "size": 5538,
+      "sha256": "ae2548cf694747f3d98a77b7e32fea9eb251567fb761ae53ea5b4d287cf4e2fe"
+    },
+    {
+      "path": "src/domain/portfolio-verifier.mjs",
+      "size": 2108,
+      "sha256": "bab28f069427d15e01dfb521541dbf1244b46f760d38bef4454c22431852feb0"
+    },
+    {
+      "path": "src/domain/portfolio.mjs",
+      "size": 21517,
+      "sha256": "125e979e61831b43e0728e4814efd4851e65bad5841621c6123bb73ff6af57ae"
+    },
+    {
+      "path": "src/domain/scheduler.mjs",
+      "size": 11002,
+      "sha256": "bde47368620719f3a304abc12cff56a395e7259b836e545340fa10544ae23d09"
+    },
+    {
+      "path": "src/domain/self.mjs",
+      "size": 14983,
+      "sha256": "efaec2b4e9cdadbeb33af47462c07d310f572be557a141e0c65fec4c712fb2d5"
+    },
+    {
+      "path": "src/domain/soak.mjs",
+      "size": 5571,
+      "sha256": "323bf21bbdbccd7e7e438c2a006ea06b4d879c0276b055d6b56992c460aedbe7"
+    },
+    {
+      "path": "src/domain/status.mjs",
+      "size": 9397,
+      "sha256": "e4e59a76c164092362fc5067ebdbaa80e113a50ef50a031b5505011bf5bf0c22"
+    },
+    {
+      "path": "src/domain/supervisor.mjs",
+      "size": 2213,
+      "sha256": "80cc76de37d9e45996c2335e27e958c05a06fa3b1382273e291f402a35943c2f"
+    },
+    {
+      "path": "src/domain/ui-contract.mjs",
+      "size": 3574,
+      "sha256": "c32801050d5d945914793ea99e7ddf964d796ae9e8ae1b666b063717ec02512a"
+    },
+    {
+      "path": "src/domain/workflow.mjs",
+      "size": 18877,
+      "sha256": "4a6f82fa70d7027eea5136cedfcbf59b65e57aae07f4571d234b74d67b77995e"
+    },
+    {
+      "path": "src/ui/follower.mjs",
+      "size": 3883,
+      "sha256": "51d1064c74bc03887b0d97d41325933fc20b095178761bf0ac19be0fbacc500a"
+    },
+    {
+      "path": "src/ui/render.mjs",
+      "size": 3983,
+      "sha256": "760c4afd5647dbc8a26b602f1e8012457ae0df8349e1dcf31c407ded118112d5"
+    },
+    {
+      "path": "test/api.test.mjs",
+      "size": 12125,
+      "sha256": "108ec64610d265215afa391a8b1eb04be58154ae80dda8b01e2557042b7efa1e"
+    },
+    {
+      "path": "test/backup.test.mjs",
+      "size": 3755,
+      "sha256": "81b54c6bf8692aaf48a9a33bbd63971cca2e7ac142e6db73001bcb372d0322ff"
+    },
+    {
+      "path": "test/continuity.test.mjs",
+      "size": 6714,
+      "sha256": "4abf0bc3da2ce47685ee3d348b9585d4aebf40bb6ea36c35f39ad5bb4028c00a"
+    },
+    {
+      "path": "test/daemon.test.mjs",
+      "size": 6012,
+      "sha256": "adecefb41b4a3cfc5b504e87dce1db03e1d9d7e7f1c5fb44a3e34355d4a1af84"
+    },
+    {
+      "path": "test/durability-soak.test.mjs",
+      "size": 9407,
+      "sha256": "fecad18d117637a3e2ace95fe08e105c1d847b15375d420044b306d0e62dc79b"
+    },
+    {
+      "path": "test/durability.test.mjs",
+      "size": 2819,
+      "sha256": "78b4d26419d33bc197e6cac9d323ce42c6d33fd169db0999f700faab4c15b8e9"
+    },
+    {
+      "path": "test/events.test.mjs",
+      "size": 3447,
+      "sha256": "c988bf249d396fbe59b06148d510bd71f5b0a941661ece61501710f9bcdc3ee2"
+    },
+    {
+      "path": "test/evolution.test.mjs",
+      "size": 14440,
+      "sha256": "3a440e882df647f9f7831bb30876bdcee114538380c198dc44240a7a762d7c59"
+    },
+    {
+      "path": "test/functional-self.test.mjs",
+      "size": 10337,
+      "sha256": "0a6b75ec826de8c20cd25ccd746662f13605a874d891a814e5b4eefe8744fd6d"
+    },
+    {
+      "path": "test/gate-promotion.test.mjs",
+      "size": 4965,
+      "sha256": "e1384a5a71e95f66c3190924569225a8dfbfc01296ba861aac021dbac17edffd"
+    },
+    {
+      "path": "test/governance.test.mjs",
+      "size": 12026,
+      "sha256": "0edb661f470ae7db2612a1ed6b2edaa386e37be81f1e37742ef1f1d9121e9089"
+    },
+    {
+      "path": "test/governor.test.mjs",
+      "size": 10402,
+      "sha256": "ae6a7f17547fe84f2f6119b718e88c8d8f32a1718b50f7cb8dc038b374ee9d13"
+    },
+    {
+      "path": "test/guards.test.mjs",
+      "size": 5961,
+      "sha256": "126bba8cded4a852b748b3fb698dc105b44c2b88a26966ba1c76afffffb58d52"
+    },
+    {
+      "path": "test/helpers.mjs",
+      "size": 1094,
+      "sha256": "a87cc969e2a6c8cd6f46cfd593c18edff9d2e73363803df66cd711d7988f56ec"
+    },
+    {
+      "path": "test/intake.test.mjs",
+      "size": 15436,
+      "sha256": "378dd3da7d901798dde57dca941cc75f22166d2558b7b9c87ca3dd7d27ca3285"
+    },
+    {
+      "path": "test/lease.test.mjs",
+      "size": 2487,
+      "sha256": "9af82cb74a6bc4a39b2e482fe1c048636f108c8ad7e3cbaafc8fbd896d700300"
+    },
+    {
+      "path": "test/migrations.test.mjs",
+      "size": 2845,
+      "sha256": "67a08d75ee428c5335f630cec96898a55c0330d9d721adb4f4ddcd292f9f9192"
+    },
+    {
+      "path": "test/mission-control.test.mjs",
+      "size": 6808,
+      "sha256": "9baf6d8e984e2b86edd10631eccafc741a5cd552831c964b10dc3d70b7dbbda6"
+    },
+    {
+      "path": "test/portfolio.test.mjs",
+      "size": 15596,
+      "sha256": "02dc9d493066d347963674ddff69941e924d868e94330e80eee8607e755f3a3c"
+    },
+    {
+      "path": "test/projections.test.mjs",
+      "size": 2377,
+      "sha256": "7fb053f5470cd20e6879052e7577ed6ab6b4bfa9dae73746a921e9202ce73c3e"
+    },
+    {
+      "path": "test/scheduler.test.mjs",
+      "size": 8593,
+      "sha256": "1f10c65a314926f2fdc8e518ca40d86240e849411c5276976295458736df28ea"
+    },
+    {
+      "path": "test/supervisor.test.mjs",
+      "size": 6721,
+      "sha256": "832514dd8787f821ad4d3dfb30db20c7aea946361f5c6dddffa6a2281d6f6b61"
+    },
+    {
+      "path": "test/ui-contract.test.mjs",
+      "size": 3607,
+      "sha256": "7d0efe9218a65d9fd938d448390f91fadb375342b98122db8a7d1d0f0a7addec"
+    },
+    {
+      "path": "test/ui-follower.test.mjs",
+      "size": 6115,
+      "sha256": "762f9ec9916fb904ac2434bc980c2821248816a0d69f8b69ee941adaac399952"
+    },
+    {
+      "path": "test/ui-render.test.mjs",
+      "size": 4922,
+      "sha256": "6fdafc07da8ca0258b5959ef724a85424ed880263bec7de2ae9f5199e7d90b3a"
+    },
+    {
+      "path": "test/workflow.test.mjs",
+      "size": 13597,
+      "sha256": "2dc47da5120bd8a22c7157ed9fd525b84698c951d10db9864d4f896daadec61a"
+    }
+  ]
+}

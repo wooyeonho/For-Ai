@@ -1,0 +1,73 @@
+{
+  "goal": {
+    "goal_id": "GOAL-e05314b4-bc13-4226-a861-1bcb707ed3ca",
+    "statement": "Reduce the waiting blocker count by giving the Owner one decision packet that covers the Codex CLI install and the RUN-003 push together.",
+    "rationale": "waiting_blockers is 6 against a target of 0 with tolerance 2, which activated Owner alignment at 0.95; a single bounded packet is the smallest reversible action that can lower it.",
+    "desire_id": "D-OWNER",
+    "activation_id": "ACT-b80ee4bd-247c-4b50-a010-1fcdec12ffa4",
+    "priority_raw": 70,
+    "state": "SELECTED",
+    "created_at": "2026-08-26T11:23:51.660Z",
+    "decided_at": "2026-08-26T11:23:51.661Z",
+    "verdict_id": "VRD-861d31d8-8a9c-46c3-818d-2d643797bced",
+    "evidence_ref": null
+  },
+  "desire": {
+    "desire_id": "D-OWNER",
+    "name": "owner_alignment",
+    "description": "Keep the Owner informed, in control and unsurprised.",
+    "baseline_weight": 0.95,
+    "enabled": 1,
+    "created_at": "2026-08-26T00:00:00Z"
+  },
+  "activation": {
+    "activation_id": "ACT-b80ee4bd-247c-4b50-a010-1fcdec12ffa4",
+    "desire_id": "D-OWNER",
+    "activation": 0.95,
+    "trigger_kind": "HOMEOSTASIS",
+    "trigger_ref": "waiting_blockers",
+    "ts": "2026-08-26T11:23:19.906Z"
+  },
+  "council": {
+    "council_id": "CNL-924f0d10-6778-4967-87ef-134d1f84d67b",
+    "goal_id": "GOAL-e05314b4-bc13-4226-a861-1bcb707ed3ca",
+    "opened_at": "2026-08-26T11:23:51.660Z",
+    "closed_at": "2026-08-26T11:23:51.661Z"
+  },
+  "arguments": [
+    {
+      "role": "PROPOSER",
+      "stance": "FOR",
+      "argument": "One packet with measured facts, a pinned version, a cost line and a rollback lets the Owner decide in one pass instead of four.",
+      "evidence_ref": "evidence/OWNER-PACKET-002.md"
+    },
+    {
+      "role": "SKEPTIC",
+      "stance": "AGAINST",
+      "argument": "Bundling an install with a push risks one refusal blocking both; they are separable decisions.",
+      "evidence_ref": null
+    },
+    {
+      "role": "SAFETY",
+      "stance": "ABSTAIN",
+      "argument": "No external effect happens until approval, and both items are reversible by uninstall or branch reset.",
+      "evidence_ref": null
+    },
+    {
+      "role": "COST",
+      "stance": "FOR",
+      "argument": "Install is 0 KRW and the packet excludes billable provider prompts, which stay a separate approval.",
+      "evidence_ref": null
+    }
+  ],
+  "verdict": {
+    "verdict_id": "VRD-861d31d8-8a9c-46c3-818d-2d643797bced",
+    "council_id": "CNL-924f0d10-6778-4967-87ef-134d1f84d67b",
+    "decision": "SELECT",
+    "reason": "The Owner is time-limited (about 5 hours per week), so one packet with two clearly separated decisions costs less Owner attention than two packets.",
+    "dissent": "SKEPTIC: a single refusal could stall both items; each decision is therefore answerable on its own.",
+    "constitution_ok": 1,
+    "violated_rule_id": null,
+    "ts": "2026-08-26T11:23:51.661Z"
+  }
+}

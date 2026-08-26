@@ -1,0 +1,79 @@
+{
+  "generated_at": "2026-08-26T14:04:50.510Z",
+  "schedules": 1,
+  "armed": 0,
+  "fires": 2,
+  "deduped_fires": 0,
+  "problems": [],
+  "ok": true,
+  "schedule_report": {
+    "generated_at": "2026-08-26T14:04:50.510Z",
+    "scheduler_enabled": false,
+    "stop_engaged": true,
+    "schedules": [
+      {
+        "schedule_id": "SCH-5fb1ecee-8248-4eee-b12d-112aed0f353a",
+        "name": "g4.exercise.1787753052022",
+        "enabled": 0,
+        "catchup": 0,
+        "interval_ms": 60000,
+        "next_due_at": "2026-08-26T20:06:11.028Z",
+        "fire_count": 2,
+        "recorded_fires": 2,
+        "deduped_fires": 0,
+        "distinct_boundaries": 2
+      }
+    ],
+    "recent_fires": [
+      {
+        "schedule_id": "SCH-5fb1ecee-8248-4eee-b12d-112aed0f353a",
+        "due_at": "2026-08-26T14:05:11.028Z",
+        "fired_at": "2026-08-26T20:05:11.028Z",
+        "job_id": "JOB-054c623f-d2d8-4442-8ebc-b4d9b43a906c",
+        "deduped": 0
+      },
+      {
+        "schedule_id": "SCH-5fb1ecee-8248-4eee-b12d-112aed0f353a",
+        "due_at": "2026-08-26T14:04:11.028Z",
+        "fired_at": "2026-08-26T14:04:12.031Z",
+        "job_id": "JOB-47bccdf6-065e-4277-8fa0-b25b49c6669a",
+        "deduped": 0
+      }
+    ]
+  },
+  "scheduler_soaks": [
+    {
+      "soak_ref": "SSOAK-3e9bb946-371f-489a-b46b-62179db12e2f",
+      "cycles": 4,
+      "cycles_ok": 4,
+      "killed_in_transaction": 2,
+      "killed_after_commit": 2,
+      "worst_fires": 1,
+      "worst_jobs": 1,
+      "started_at": "2026-08-26T13:59:37.997Z",
+      "ended_at": "2026-08-26T13:59:38.188Z"
+    },
+    {
+      "soak_ref": "SSOAK-G4-001",
+      "cycles": 8,
+      "cycles_ok": 8,
+      "killed_in_transaction": 4,
+      "killed_after_commit": 4,
+      "worst_fires": 1,
+      "worst_jobs": 1,
+      "started_at": "2026-08-26T14:03:26.148Z",
+      "ended_at": "2026-08-26T14:03:26.582Z"
+    },
+    {
+      "soak_ref": "SSOAK-a1bc1fc8-15aa-4bde-b8f6-dcf60c41f62f",
+      "cycles": 4,
+      "cycles_ok": 4,
+      "killed_in_transaction": 2,
+      "killed_after_commit": 2,
+      "worst_fires": 1,
+      "worst_jobs": 1,
+      "started_at": "2026-08-26T14:04:20.104Z",
+      "ended_at": "2026-08-26T14:04:20.286Z"
+    }
+  ]
+}

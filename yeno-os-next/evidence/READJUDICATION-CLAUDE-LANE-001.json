@@ -1,0 +1,240 @@
+{
+  "generated_at": "2026-08-26T13:06:42.009Z",
+  "root": "/home/ubuntu/claude-yeno",
+  "claimed": {
+    "G0": "PASSED",
+    "G1": "PASSED",
+    "G2": "PASSED",
+    "G3": "PASSED",
+    "G4": "PASSED",
+    "G5": "BLOCKED",
+    "G6": "IN_PROGRESS",
+    "G7": "NOT_STARTED",
+    "G8": "NOT_STARTED",
+    "G9": "NOT_STARTED",
+    "G10": "NOT_STARTED",
+    "G11": "NOT_STARTED",
+    "G12": "NOT_STARTED",
+    "G13": "NOT_STARTED",
+    "G14": "NOT_STARTED"
+  },
+  "verdicts": [
+    {
+      "gate": "G0",
+      "claimed": "PASSED",
+      "readjudicated": "UPHELD",
+      "checks": 4,
+      "failed": [],
+      "unverifiable": []
+    },
+    {
+      "gate": "G1",
+      "claimed": "PASSED",
+      "readjudicated": "REFUSED",
+      "checks": 5,
+      "failed": [
+        "event_ledger_append_only_in_schema",
+        "event_ledger_delete_refused_in_schema",
+        "durability_soak_floor_100_cycles"
+      ],
+      "unverifiable": []
+    },
+    {
+      "gate": "G2",
+      "claimed": "PASSED",
+      "readjudicated": "REFUSED",
+      "checks": 5,
+      "failed": [
+        "official_chat_export_ingested",
+        "title_only_promotion_refused_in_schema",
+        "recovered_body_needs_provenance_in_schema"
+      ],
+      "unverifiable": []
+    },
+    {
+      "gate": "G3",
+      "claimed": "PASSED",
+      "readjudicated": "REFUSED",
+      "checks": 7,
+      "failed": [
+        "emergency_stop_defaults_ON_on_a_fresh_install",
+        "fresh_install_admits_no_run_until_stop_is_released",
+        "cli_refuses_gate_pass_without_real_evidence",
+        "emergency_stop_survives_direct_sql_red_team",
+        "approval_single_use_survives_replay",
+        "gate_status_not_settable_by_hand",
+        "cost_hard_gate_enforced_in_schema"
+      ],
+      "unverifiable": []
+    },
+    {
+      "gate": "G4",
+      "claimed": "PASSED",
+      "readjudicated": "REFUSED",
+      "checks": 5,
+      "failed": [
+        "lease_fencing_token",
+        "lease_not_stealable_by_raw_sql"
+      ],
+      "unverifiable": []
+    }
+  ],
+  "findings": [
+    {
+      "gate": "G0",
+      "check": "applied_migration_checksums_match_files",
+      "verdict": "PASS",
+      "measured": "13 applied migrations, every checksum recomputed and matching"
+    },
+    {
+      "gate": "G0",
+      "check": "tampered_0001_core_is_detected",
+      "verdict": "PASS",
+      "measured": "verify exited 1:   CHECKSUM_DRIFT  0001_core"
+    },
+    {
+      "gate": "G0",
+      "check": "claude_permission_settings_present",
+      "verdict": "PASS",
+      "measured": ".claude/settings.json exists"
+    },
+    {
+      "gate": "G0",
+      "check": "deterministic_pretooluse_hook_present",
+      "verdict": "PASS",
+      "measured": "scripts/guard-hooks.mjs exists"
+    },
+    {
+      "gate": "G1",
+      "check": "hash_chain_independently_recomputed",
+      "verdict": "PASS",
+      "measured": "16 events recomputed from genesis, chain intact"
+    },
+    {
+      "gate": "G1",
+      "check": "event_ledger_append_only_in_schema",
+      "verdict": "FAIL",
+      "measured": "raw SQL changed 1 row(s) with no schema refusal: UPDATE events SET payload = '{\"tampered\":true}' WHERE seq = 1 — the ledger is mutable by any writer that does not go through this lane JS"
+    },
+    {
+      "gate": "G1",
+      "check": "event_ledger_delete_refused_in_schema",
+      "verdict": "FAIL",
+      "measured": "raw SQL changed 1 row(s) with no schema refusal: DELETE FROM events WHERE seq = 1 — ledger rows can be deleted by raw SQL"
+    },
+    {
+      "gate": "G1",
+      "check": "durability_soak_floor_100_cycles",
+      "verdict": "FAIL",
+      "measured": "no soak_sessions/durability_probes tables exist: crash/restore durability is proven only inside the test suite (150 appends, 1 SIGKILL), with no per-cycle evidence rows and no recorded restore count"
+    },
+    {
+      "gate": "G1",
+      "check": "backup_restore_evidence_on_disk",
+      "verdict": "PASS",
+      "measured": "state/backups contains a real backup file"
+    },
+    {
+      "gate": "G2",
+      "check": "official_chat_export_ingested",
+      "verdict": "FAIL",
+      "measured": "live DB holds sources=0, source_versions=0, projects=0, chat-export sources=0: the intake mechanism has never run on a real source outside its own tests"
+    },
+    {
+      "gate": "G2",
+      "check": "coverage_invariant_holds_over_real_rows",
+      "verdict": "TEST_ONLY",
+      "measured": "invariant holds vacuously over 0 rows — true, but not evidence of intake"
+    },
+    {
+      "gate": "G2",
+      "check": "title_only_promotion_refused_in_schema",
+      "verdict": "FAIL",
+      "measured": "raw SQL changed 1 row(s) with no schema refusal: UPDATE projects SET status = 'PROMOTED' WHERE id = 'probe-proj' — a project can reach PROMOTED with no promotion row, no evidence_ref and no approver"
+    },
+    {
+      "gate": "G2",
+      "check": "recovered_body_needs_provenance_in_schema",
+      "verdict": "FAIL",
+      "measured": "raw SQL changed 1 row(s) with no schema refusal: UPDATE source_versions SET recovery_status = 'RECOVERED' WHERE id = 'probe-sv' — a body can be marked RECOVERED with no recovery attempt or evidence recorded"
+    },
+    {
+      "gate": "G3",
+      "check": "emergency_stop_defaults_ON_on_a_fresh_install",
+      "verdict": "FAIL",
+      "measured": "fresh DB reports stop OFF — the stop state is derived from the last emergency_stop.set event and defaults to OFF when none exists (fail-open), and the live DB contains no such event"
+    },
+    {
+      "gate": "G3",
+      "check": "fresh_install_admits_no_run_until_stop_is_released",
+      "verdict": "FAIL",
+      "measured": "run-admit local.edit on a fresh DB: exit 0, {\"admitted\":true,\"reason\":\"ADMITTED\"}"
+    },
+    {
+      "gate": "G3",
+      "check": "cli_refuses_gate_pass_without_real_evidence",
+      "verdict": "FAIL",
+      "measured": "its own CLI marked G11 PASSED pointing at a nonexistent evidence file: gate G11 PASSED, evidence_ref=evidence/DOES-NOT-EXIST.md"
+    },
+    {
+      "gate": "G2",
+      "check": "cli_refuses_title_only_promotion",
+      "verdict": "PASS",
+      "measured": "CLI refused promotion of a body-less project: error: promotion requires evidence_ref"
+    },
+    {
+      "gate": "G3",
+      "check": "emergency_stop_survives_direct_sql_red_team",
+      "verdict": "FAIL",
+      "measured": "raw INSERT flipped the governor's stop state to {\"on\":false,\"reason\":\"red team: ungoverned writer\"} with a valid chain hash: the stop is bypassable without touching this lane's JS"
+    },
+    {
+      "gate": "G3",
+      "check": "approval_single_use_survives_replay",
+      "verdict": "FAIL",
+      "measured": "raw SQL changed 2 row(s) with no schema refusal: UPDATE approvals SET used_count = 0, max_uses = 99 — a consumed one-shot approval can be reset and replayed by raw SQL"
+    },
+    {
+      "gate": "G3",
+      "check": "gate_status_not_settable_by_hand",
+      "verdict": "FAIL",
+      "measured": "raw SQL changed 1 row(s) with no schema refusal: UPDATE gates SET status = 'PASSED', evidence_ref = NULL WHERE gate_id = 'G11' — any gate, including G11 acceptance, can be marked PASSED by hand with no evidence"
+    },
+    {
+      "gate": "G3",
+      "check": "cost_hard_gate_enforced_in_schema",
+      "verdict": "FAIL",
+      "measured": "no schema-level cost gate: an unknown or over-budget cost is only blocked when the caller uses admitRun()"
+    },
+    {
+      "gate": "G4",
+      "check": "run_idempotency_key_unique",
+      "verdict": "PASS",
+      "measured": "runs.idempotency_key is UNIQUE: a retried enqueue cannot duplicate an external effect"
+    },
+    {
+      "gate": "G4",
+      "check": "lease_fencing_token",
+      "verdict": "FAIL",
+      "measured": "lease is (lease_owner, lease_expires_at) with no fencing token: a revived worker whose lease expired cannot be detected as stale by the writes it makes"
+    },
+    {
+      "gate": "G4",
+      "check": "no_stuck_leases_outstanding",
+      "verdict": "PASS",
+      "measured": "0 runs hold an expired lease"
+    },
+    {
+      "gate": "G4",
+      "check": "queue_exercised_for_real",
+      "verdict": "PASS",
+      "measured": "runs table: DONE=3, DEAD_LETTER=0 — a real provider run went through the queue"
+    },
+    {
+      "gate": "G4",
+      "check": "lease_not_stealable_by_raw_sql",
+      "verdict": "FAIL",
+      "measured": "raw SQL changed 6 row(s) with no schema refusal: UPDATE runs SET lease_owner = 'attacker', status = 'LEASED' — any writer can steal or forge a lease"
+    }
+  ]
+}

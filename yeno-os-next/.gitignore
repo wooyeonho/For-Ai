@@ -1,0 +1,13 @@
+state/
+backups/
+evidence/runtime/
+evidence/local-ci-20*.json
+tmp/
+artifacts/
+*.db
+*.db-wal
+*.db-shm
+.env
+.env.*
+!.env.example
+node_modules/

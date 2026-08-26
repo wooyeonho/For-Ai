@@ -1,0 +1,186 @@
+{
+  "version": 1,
+  "transport": {
+    "bind": "127.0.0.1",
+    "token_header": "x-yeno-token",
+    "stream": "/events/stream"
+  },
+  "panels": {
+    "inbox": {
+      "view": "v_mc_inbox",
+      "columns": [
+        "inbox_id",
+        "title",
+        "state",
+        "attempts",
+        "next_action",
+        "evidence_ref",
+        "has_body",
+        "source_version_id",
+        "origin_ref",
+        "recovery_attempts",
+        "promoted_project_id",
+        "updated_at"
+      ],
+      "actions": [
+        {
+          "command": "inbox.promote",
+          "authority": "A2"
+        }
+      ]
+    },
+    "projects": {
+      "view": "v_mc_projects",
+      "columns": [
+        "project_id",
+        "code",
+        "name",
+        "program_ug",
+        "status",
+        "priority_raw",
+        "priority_display",
+        "promoted_from_inbox",
+        "body_evidence_ref",
+        "adapters",
+        "adapters_enabled",
+        "demand_rows",
+        "utility_rows",
+        "cycles",
+        "cycles_useful",
+        "updated_at"
+      ],
+      "actions": []
+    },
+    "timeline": {
+      "view": "v_mc_timeline",
+      "columns": [
+        "seq",
+        "event_id",
+        "ts",
+        "type",
+        "actor",
+        "authority",
+        "payload",
+        "hash"
+      ],
+      "actions": []
+    },
+    "council": {
+      "view": "v_mc_council",
+      "columns": [
+        "goal_id",
+        "statement",
+        "state",
+        "priority_raw",
+        "desire_id",
+        "desire_name",
+        "council_id",
+        "opened_at",
+        "closed_at",
+        "arguments",
+        "arguments_against",
+        "verdict_id",
+        "decision",
+        "reason",
+        "dissent",
+        "constitution_ok",
+        "violated_rule_id",
+        "evidence_ref"
+      ],
+      "actions": []
+    },
+    "approvals": {
+      "view": "v_mc_approvals",
+      "columns": [
+        "approval_id",
+        "exact_action",
+        "target",
+        "state",
+        "uses",
+        "max_uses",
+        "max_cost_krw",
+        "expires_at",
+        "granted_by",
+        "owner_packet_ref",
+        "rollback_plan",
+        "created_at"
+      ],
+      "actions": [
+        {
+          "command": "approval.revoke",
+          "authority": "A2"
+        }
+      ]
+    },
+    "evidence": {
+      "view": "v_mc_evidence",
+      "columns": [
+        "kind",
+        "ref_id",
+        "label",
+        "state",
+        "evidence_ref",
+        "sha256",
+        "at"
+      ],
+      "actions": []
+    },
+    "costs": {
+      "view": "v_mc_costs",
+      "columns": [
+        "profile_id",
+        "name",
+        "monthly_limit_krw",
+        "spent_krw",
+        "remaining_krw",
+        "active",
+        "owner_promoted",
+        "cost_denials",
+        "runs"
+      ],
+      "actions": []
+    },
+    "settings": {
+      "view": "v_mc_settings",
+      "columns": [
+        "emergency_stop_engaged",
+        "emergency_stop_reason",
+        "scheduler_enabled",
+        "schedules_armed",
+        "schedules",
+        "portfolio_max_active",
+        "projects_active",
+        "identity_version",
+        "release_version",
+        "current_gate",
+        "migrations_applied",
+        "events",
+        "head_hash"
+      ],
+      "actions": [
+        {
+          "command": "self.observe",
+          "authority": "A2"
+        }
+      ]
+    }
+  },
+  "commands": {
+    "approval.revoke": {
+      "authority": "A2"
+    },
+    "inbox.promote": {
+      "authority": "A2"
+    },
+    "run.cancel": {
+      "authority": "A2"
+    },
+    "self.observe": {
+      "authority": "A2"
+    },
+    "self.remember": {
+      "authority": "A2"
+    }
+  },
+  "contract_hash": "91ec7c0ebae127534d1b82313ac4156d2bee36f8a63128409f7607bd8fa13a67"
+}

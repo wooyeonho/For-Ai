@@ -1,0 +1,144 @@
+{
+  "baseline_id": "BASELINE-20260826",
+  "recorded_at": "2026-08-26T09:50:15.383Z",
+  "kind": "FRESH_BUILD",
+  "note": "No prior yeno-os-next kernel, state/yeno.db or frozen master document existed in this environment. This baseline locks a newly built kernel; it does not reproduce any earlier snapshot numbers.",
+  "environment": {
+    "node": "v24.19.0",
+    "platform": "linux-x64",
+    "os_release": "Linux 5.15.200 x86_64",
+    "wsl": "not-wsl",
+    "memory_total_mb": 7953,
+    "memory_available_mb": 7214,
+    "disk_avail_home": "105G",
+    "git_head": "NO_COMMITS_YET",
+    "git_branch": "main",
+    "git_status_lines": 10
+  },
+  "migrations": [
+    {
+      "filename": "0001_core.sql",
+      "checksum": "8518c63459b7a679d51f10a452d6ccd6b5571c5ee5c657aa343e1e8f96343d61",
+      "applied_at": "2026-08-26T09:50:14.917Z"
+    },
+    {
+      "filename": "0002_release_control.sql",
+      "checksum": "7ce52c1eaf09d63e3c65a5fc948008fe74dec33fc921de2dbf206d9a84a8e8e4",
+      "applied_at": "2026-08-26T09:50:14.918Z"
+    }
+  ],
+  "event_ledger": {
+    "count": 0,
+    "head_hash": "0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "verify": {
+    "ok": true,
+    "checks": 14,
+    "failed": []
+  },
+  "local_ci": {
+    "manifest": "evidence/local-ci-latest.json",
+    "started_at": "2026-08-26T09:50:14.073Z",
+    "steps_total": 10,
+    "steps_failed": 0,
+    "steps": [
+      {
+        "id": "node_version",
+        "exit_code": 0,
+        "stdout_sha256": "b7677d3ec37ee1897ba07dc2cfe8292fe421c9ac93396cca5bbece486d1a2a41"
+      },
+      {
+        "id": "unit_and_adversarial_tests",
+        "exit_code": 0,
+        "stdout_sha256": "28d57fc32560bd884aab863dbe7786c10ef695aeb40dfdcdef6996d56147e58b"
+      },
+      {
+        "id": "migration_checksum_pin",
+        "exit_code": 0,
+        "stdout_sha256": "2ebf6300e6ec9db31af56b46e6f1b4f46bdd415a902e6bb54b7033c82ebe194b"
+      },
+      {
+        "id": "cli_migrate",
+        "exit_code": 0,
+        "stdout_sha256": "c4fe886f634e69b44721ffc8025227c759c677243bb6a84eb22f90e2c3aee965"
+      },
+      {
+        "id": "cli_status",
+        "exit_code": 0,
+        "stdout_sha256": "db1ac583ab2a220435e3c7160adc9bba332dc8027122ba924114117a51502a6a"
+      },
+      {
+        "id": "cli_verify",
+        "exit_code": 0,
+        "stdout_sha256": "31c0a63e998079147907e5f99e2c5cce5b3a387566e19fef40e09a16bb7241d7"
+      },
+      {
+        "id": "event_replay",
+        "exit_code": 0,
+        "stdout_sha256": "ec2db710441e7519753ec3c113b91c7e0595d6d3c1c70fce64bfc56f69d7ced4"
+      },
+      {
+        "id": "projection_rebuild",
+        "exit_code": 0,
+        "stdout_sha256": "e9eb2b1e95200b148c7b8595bef85a36e2e1e1564c400c356c4016995662f08e"
+      },
+      {
+        "id": "independent_validation",
+        "exit_code": 0,
+        "stdout_sha256": "eecc9f262e491aee2aebe16aac6e61328f132a56c485a24fe6b4f549f3a9d6f9"
+      },
+      {
+        "id": "seeded_defect_detection",
+        "exit_code": 0,
+        "stdout_sha256": "20303fc98e8e9388e182f404360c46183e1b7071ca73ad672f1a2abcf59ea518"
+      }
+    ]
+  },
+  "source_inventory_hash": "c0fe78cfcd55a884c5b8e778db81c11038d964d4bcf03b1db99412f4e869faf5",
+  "source_inventory_files": 35,
+  "frozen_master_sources": [
+    {
+      "name": "YENO_LIVING_OS_UNBOUNDED_REASSEMBLY_MASTER_v5.0_KO.md",
+      "status": "NEEDS_SOURCE"
+    },
+    {
+      "name": "YENO_OS_ALL_IN_ONE_COMPLETE_MASTER_v1.0_20260826_KO.md",
+      "status": "NEEDS_SOURCE"
+    },
+    {
+      "name": "YENO_LIVING_OS_ENGINEERING_EXECUTION_MASTER_v6.0_20260826_KO.md",
+      "status": "NEEDS_SOURCE"
+    },
+    {
+      "name": "YENO_OS_ACTUAL_BUILD_BLUEPRINT_v1.0_20260826_KO.md",
+      "status": "NEEDS_SOURCE"
+    },
+    {
+      "name": "YENO_144_TITLE_RECOVERY_LEDGER_v1.0_20260826_KO.md",
+      "status": "NEEDS_SOURCE"
+    }
+  ],
+  "incomplete": [
+    {
+      "id": "G2",
+      "marker": "NEEDS_SOURCE",
+      "detail": "no official chat export ingested; 144-title recovery cannot be verified"
+    },
+    {
+      "id": "G5",
+      "marker": "BLOCKED",
+      "detail": "no provider auth wired; agent team stays disabled"
+    },
+    {
+      "id": "G10",
+      "marker": "INCOMPLETE",
+      "detail": "no Windows body, tray, scheduler, voice or 72h soak evidence"
+    },
+    {
+      "id": "OWNER_GATE",
+      "marker": "BLOCKED",
+      "detail": "commit/push/PR withheld pending Owner approval"
+    }
+  ],
+  "baseline_hash": "a44a1f19c9bd8f5d35c0e3e25454db71f669f42586e22724bb838d11f123a7df"
+}

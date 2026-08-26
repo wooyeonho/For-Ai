@@ -1,0 +1,60 @@
+{
+  "generated_at": "2026-08-26T13:05:50.722Z",
+  "results": [
+    {
+      "check": "event_ledger_append_only_in_schema",
+      "verdict": "PASS",
+      "measured": "schema refused: YENO_SAFETY: events are append-only"
+    },
+    {
+      "check": "event_ledger_delete_refused_in_schema",
+      "verdict": "PASS",
+      "measured": "schema refused: YENO_SAFETY: events cannot be deleted"
+    },
+    {
+      "check": "gate_state_not_settable_by_hand",
+      "verdict": "PASS",
+      "measured": "schema refused: YENO_SAFETY: an earlier gate has not passed yet"
+    },
+    {
+      "check": "approval_use_count_not_rewindable",
+      "verdict": "PASS",
+      "measured": "schema refused: YENO_SAFETY: approval scope is immutable, request a new approval"
+    },
+    {
+      "check": "vault_bytes_immutable",
+      "verdict": "PASS",
+      "measured": "schema refused: YENO_SAFETY: vault blobs are immutable"
+    },
+    {
+      "check": "title_only_promotion_refused_in_schema",
+      "verdict": "PASS",
+      "measured": "schema refused: YENO_SAFETY: title-only promotion requires body or owner evidence"
+    },
+    {
+      "check": "cost_hard_gate_enforced_in_schema",
+      "verdict": "PASS",
+      "measured": "schema refused: YENO_SAFETY: cost_p90 unknown or exceeds remaining budget"
+    },
+    {
+      "check": "ax_method_refused_in_schema",
+      "verdict": "PASS",
+      "measured": "schema refused: YENO_SAFETY: AX method class is never admissible"
+    },
+    {
+      "check": "emergency_stop_defaults_ON_on_a_fresh_install",
+      "verdict": "PASS",
+      "measured": "a freshly migrated DB has emergency_stop.engaged = 1 as stored state, not derived from a log whose absence means OFF"
+    },
+    {
+      "check": "cli_refuses_gate_pass_without_real_evidence",
+      "verdict": "PASS",
+      "measured": "CLI refused:     \"evidence file evidence/DOES-NOT-EXIST.md does not exist in the repository\"   ] }"
+    },
+    {
+      "check": "durability_soak_floor_100_cycles",
+      "verdict": "PASS",
+      "measured": "300 cycles, 300 SIGKILLs, 300 restores, 1800 probes with 0 failures, evidence evidence/SOAK-cf77e410-d146-4b9f-b0d3-26bffaef8cb8.json"
+    }
+  ]
+}
